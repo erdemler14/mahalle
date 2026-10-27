@@ -151,6 +151,16 @@ function CityScene({ selected, owned, onSelect, hour }) {
 
     properties.forEach((p, i) => addBuilding(p, i, owned.includes(p.id)));
 
+    // A subtle pulsing ring makes the currently selected property easy to spot.
+    const selectionRingMaterial = new THREE.MeshStandardMaterial({
+      color: '#8b78ff', emissive: '#5e49d7', emissiveIntensity: 0.45,
+      transparent: true, opacity: 0.78, roughness: 0.55
+    });
+    const selectionRing = new THREE.Mesh(new THREE.TorusGeometry(1.55, 0.045, 6, 32), selectionRingMaterial);
+    selectionRing.rotation.x = -Math.PI / 2;
+    selectionRing.position.y = 0.035;
+    scene.add(selectionRing);
+
     // Distant street frontage to frame the playable block.
     const fillerMat = new THREE.MeshStandardMaterial({ color: '#c8c0b1', roughness: 1 });
     for (let i = 0; i < 8; i++) {
@@ -324,6 +334,10 @@ function CityScene({ selected, owned, onSelect, hour }) {
       frame = requestAnimationFrame(animate);
       const elapsed = (Date.now() - startedAt) / 1000;
       const currentHour = hourRef.current;
+      const selectedProperty = properties.find(p => p.id === selectedRef.current);
+      if (selectedProperty) selectionRing.position.set(selectedProperty.x, 0.035, selectedProperty.z);
+      const pulse = 1 + Math.sin(elapsed * 2.4) * 0.035;
+      selectionRing.scale.setScalar(pulse);
       const isNight = currentHour >= 19 || currentHour < 6;
       const isDusk = !isNight && (currentHour < 8 || currentHour >= 17);
       const lightColor = isNight ? nightBackground : isDusk ? duskBackground : dayBackground;
