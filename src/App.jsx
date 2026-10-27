@@ -376,6 +376,7 @@ function App() {
   const [steps, setSteps] = useState(() => Number.isFinite(saved.steps) ? saved.steps : 0);
   const [cash, setCash] = useState(() => Number.isFinite(saved.cash) ? saved.cash : 75);
   const [owned, setOwned] = useState(() => Array.isArray(saved.owned) ? saved.owned.filter(id => properties.some(p => p.id === id)) : []);
+  const [rented, setRented] = useState(() => Array.isArray(saved.rented) ? saved.rented.filter(id => properties.some(p => p.id === id)) : []);
   const [selected, setSelected] = useState(() => properties.some(p => p.id === saved.selected) ? saved.selected : 1);
   const [notice, setNotice] = useState('');
   const [showPortfolio, setShowPortfolio] = useState(() => Boolean(saved.showPortfolio));
@@ -400,21 +401,23 @@ function App() {
   const profession = professionOptions.find(p => p.id === professionId) || professionOptions[5];
   const active = properties.find(p => p.id === selected) || properties[0];
   const portfolio = properties.filter(p => owned.includes(p.id));
+  const rentedProperties = portfolio.filter(p => rented.includes(p.id));
   const annualRent = portfolio.reduce((sum, p) => sum + p.rent, 0);
-  const selectedVenueCompatible = owned.includes(active.id) && supportsProfessionAt(active, professionId);
-  const hasSuitablePremise = portfolio.some(p => supportsProfessionAt(p, professionId));
+  const realizedAnnualRent = rentedProperties.reduce((sum, p) => sum + p.rent, 0);
+  const selectedVenueCompatible = owned.includes(active.id) && !rented.includes(active.id) && supportsProfessionAt(active, professionId);
+  const hasSuitablePremise = portfolio.some(p => !rented.includes(p.id) && supportsProfessionAt(p, professionId));
   const [noticeId, setNoticeId] = useState(0);
 
   useEffect(() => {
     try {
       window.localStorage.setItem(SAVE_KEY, JSON.stringify({
-        version: 1, steps, cash, owned, selected, showPortfolio, professionId,
+        version: 1, steps, cash, owned, rented, selected, showPortfolio, professionId,
         hour, day, month, year, workHours, shopPropertyId, log: log.slice(0, 5)
       }));
     } catch {
       // The game remains playable if browser storage is disabled or full.
     }
-  }, [steps, cash, owned, selected, showPortfolio, professionId, hour, day, month, year, workHours, shopPropertyId, log]);
+  }, [steps, cash, owned, rented, selected, showPortfolio, professionId, hour, day, month, year, workHours, shopPropertyId, log]);
 
   const tell = (text) => {
     setNotice(text);
@@ -432,9 +435,9 @@ function App() {
       const nextDay = nextDayRaw > 30 ? 1 : nextDayRaw;
       const nextMonthRaw = month + (nextDayRaw > 30 ? 1 : 0);
       const nextMonth = nextMonthRaw > 12 ? 1 : nextMonthRaw;
-      const overhead = profession.overhead;
+      const overhead = professionId !== 'amele' && hasSuitablePremise ? profession.overhead : 0;
       const maintenance = portfolio.reduce((sum, p) => sum + Math.max(0.01, Math.round((p.price * 0.003 / 365) * 100) / 100), 0);
-      const monthlyRent = nextDayRaw > 30 ? Math.round((portfolio.reduce((sum, p) => sum + p.rent, 0) / 12) * 100) / 100 : 0;
+      const monthlyRent = nextDayRaw > 30 ? Math.round((realizedAnnualRent / 12) * 100) / 100 : 0;
       setCash(v => Math.max(0, Math.round((v - overhead - maintenance + monthlyRent) * 100) / 100));
       setDay(nextDay);
       setMonth(nextMonth);
@@ -485,8 +488,8 @@ function App() {
     const nextDay = nextDayRaw > 30 ? 1 : nextDayRaw;
     const nextMonthRaw = month + (nextDayRaw > 30 ? 1 : 0);
     const nextMonth = nextMonthRaw > 12 ? 1 : nextMonthRaw;
-    const upkeep = profession.overhead + portfolio.reduce((sum, p) => sum + Math.max(0.01, Math.round((p.price * 0.003 / 365) * 100) / 100), 0);
-    const rent = nextDayRaw > 30 ? Math.round((annualRent / 12) * 100) / 100 : 0;
+    const upkeep = (professionId !== 'amele' && hasSuitablePremise ? profession.overhead : 0) + portfolio.reduce((sum, p) => sum + Math.max(0.01, Math.round((p.price * 0.003 / 365) * 100) / 100), 0);
+    const rent = nextDayRaw > 30 ? Math.round((realizedAnnualRent / 12) * 100) / 100 : 0;
     setCash(v => Math.max(0, Math.round((v - upkeep + rent) * 100) / 100));
     setDay(nextDay);
     setMonth(nextMonth);
@@ -501,8 +504,22 @@ function App() {
     if (cash < active.price) { tell('Bu mülk için yeterli sermayen yok. Önce çalışıp birikim yap.'); return; }
     setCash(v => v - active.price);
     setOwned(v => [...v, active.id]);
+    setRented(v => v.filter(id => id !== active.id));
+    setShopPropertyId(null);
     setSteps(v => v + 1);
     tell(`${active.name} satın alındı. Şimdi bu mekanın desteklediği işletme türlerinden birini seçebilirsin.`);
+  };
+
+  const toggleRent = () => {
+    if (!owned.includes(active.id)) { tell('Kiraya verebilmek için önce bu mülkü satın almalısın.'); return; }
+    if (rented.includes(active.id)) {
+      setRented(v => v.filter(id => id !== active.id));
+      tell(`${active.name} için kiracılık sona erdi. Bundan sonra kira tahsil edilmeyecek.`);
+      return;
+    }
+    setRented(v => [...v, active.id]);
+    if (shopPropertyId === active.id) setShopPropertyId(null);
+    tell(`${active.name} kiraya verildi. Oyun takviminde ay sonuna gelince kira tahsil edilecek.`);
   };
 
   clockAction.current = () => advanceHour(false);
@@ -520,7 +537,7 @@ function App() {
 
   const resetGame = () => {
     if (typeof window !== 'undefined' && !window.confirm('Yeni oyun başlatılsın mı? Mevcut mahalle kaydı silinecek.')) return;
-    setSteps(0); setCash(75); setOwned([]); setSelected(1); setShowPortfolio(false);
+    setSteps(0); setCash(75); setOwned([]); setRented([]); setSelected(1); setShowPortfolio(false);
     setProfessionId('amele'); setHour(8); setDay(1); setMonth(1); setYear(1923);
     setWorkHours(0); setShopPropertyId(null);
     setLog([{ id: Date.now(), text: 'Yeni bir hikaye başladı. Gündelik işçilikle sermaye biriktir veya uygun bir dükkan edin.' }]);
@@ -578,7 +595,7 @@ function App() {
         <section className="work-card">
           <div className="section-heading"><span>03 / VARDİYA</span><span className="count-tag">{steps.toString().padStart(3, '0')}</span></div>
           <div className="work-status"><span className={hour >= 8 && hour < 19 ? 'status-light active' : 'status-light'} />{hour >= 8 && hour < 19 ? 'ÇALIŞMA SAATLERİ' : 'MESAİ DIŞI'}</div>
-          <button className="work-button" onClick={() => advanceHour(true)} disabled={hour >= 22 || hour < 6}>1 SAAT ÇALIŞ <span>＋</span></button>
+          <button className="work-button" onClick={() => advanceHour(true)} disabled={hour < 8 || hour >= 19}>1 SAAT ÇALIŞ <span>＋</span></button>
           <button className="rest-button" onClick={sleepUntilMorning}>UYU · YENİ GÜNE GEÇ <span>↗</span></button>
           <p className="small-note">Gündelik işçi olarak dükkansız çalışabilirsin. Diğer mesleklerde seçili ve sahip olduğun mekanın mesleğe uygun olması gerekir. Açık işletmenin satışları saat ilerledikçe işler.</p>
         </section>
@@ -592,14 +609,17 @@ function App() {
             <div><span>Satış bedeli</span><strong>₺{active.price.toLocaleString('tr-TR')}</strong></div>
             <div><span>Yıllık kira</span><strong>₺{active.rent.toLocaleString('tr-TR')}</strong></div>
             <div><span>Kat sayısı</span><strong>{active.floors} kat</strong></div>
-            <div><span>Durum</span><strong className={owned.includes(active.id) ? 'owned-text' : ''}>{owned.includes(active.id) ? 'PORTFÖYÜNDE' : 'SATILIK'}</strong></div>
+            <div><span>Durum</span><strong className={owned.includes(active.id) ? 'owned-text' : ''}>{!owned.includes(active.id) ? 'SATILIK' : rented.includes(active.id) ? 'KİRADA' : 'PORTFÖYÜNDE'}</strong></div>
           </div>
           <button className={owned.includes(active.id) ? 'buy-button is-owned' : 'buy-button'} onClick={buy} disabled={owned.includes(active.id)}>
             {owned.includes(active.id) ? 'MÜLK SENİN' : 'MÜLKÜ SATIN AL'} <span>{owned.includes(active.id) ? '✓' : '↗'}</span>
           </button>
-          {owned.includes(active.id) && (selectedVenueCompatible
-            ? <button className="operate-button" onClick={toggleShop}>{shopOpen ? 'İŞLETMENİ KAPAT' : 'DÜKKANI İŞLETMEYE AÇ'}</button>
-            : <div className="property-note"><span>i</span> Bu mekanı işletmek için üstteki meslek seçiminden uygun bir iş seç.</div> )}
+          {owned.includes(active.id) && <button className="rent-button" onClick={toggleRent}>{rented.includes(active.id) ? 'KİRACIYI ÇIKAR' : 'MÜLKÜ KİRAYA VER'}</button>}
+          {owned.includes(active.id) && (rented.includes(active.id)
+            ? <div className="property-note"><span>i</span> Bu mülk kirada. İşletmek için önce kiracılığı sona erdir.</div>
+            : selectedVenueCompatible
+              ? <button className="operate-button" onClick={toggleShop}>{shopOpen ? 'İŞLETMENİ KAPAT' : 'DÜKKANI İŞLETMEYE AÇ'}</button>
+              : <div className="property-note"><span>i</span> Bu mekanı işletmek için üstteki meslek seçiminden uygun bir iş seç.</div> )}
           <div className="property-note"><span>i</span> Mülk fiyatları şimdilik oyun dengesi için belirlenmiştir.</div>
         </section>
 
@@ -609,7 +629,7 @@ function App() {
             portfolio.slice(0, 2).map(p => <div className="portfolio-row" key={p.id}><span className="portfolio-thumb">⌂</span><span className="portfolio-name">{p.name}<small>{p.type} · Yıllık ₺{p.rent}</small></span><span className="portfolio-value">₺{p.price}</span></div>)}
           {showPortfolio && <div className="portfolio-expanded">
             {portfolio.length === 0 ? <p>İlk yatırımın burada görünecek.</p> : portfolio.map(p => <div className="portfolio-row" key={p.id}><span className="portfolio-thumb">⌂</span><span className="portfolio-name">{p.name}<small>Yıllık kira: ₺{p.rent}</small></span><span className="portfolio-value">₺{p.price}</span></div>)}
-            <div className="portfolio-total">YILLIK KİRA POTANSİYELİ <strong>₺{annualRent}</strong></div>
+            <div className="portfolio-total">POTANSİYEL YILLIK KİRA <strong>₺{annualRent}</strong></div><div className="portfolio-total">KİRAYA VERİLENLERİN YILLIK GELİRİ <strong>₺{realizedAnnualRent}</strong></div>
           </div>}
         </section>
 
@@ -620,7 +640,7 @@ function App() {
       </aside>
     </section>
 
-    <footer className="footer"><span>MAHALLE <i>©</i> 1923</span><span>GEÇMİŞİN İÇİNDE BİR GELECEK KUR.</span><span>PROTOTİP 0.3.0</span></footer>
+    <footer className="footer"><span>MAHALLE <i>©</i> 1923</span><span>GEÇMİŞİN İÇİNDE BİR GELECEK KUR.</span><span>PROTOTİP 0.4.0</span></footer>
     <div className="economy-note">Kayıt bu tarayıcıda otomatik saklanır. Ekonomi değerleri oynanabilir prototip varsayımlarıdır; doğrulanmış 1923 ücret ve fiyat verileri değildir.</div>
     {notice && <div className="toast" key={noticeId} role="status">{notice}</div>}
   </main>;
