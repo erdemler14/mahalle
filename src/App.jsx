@@ -22,7 +22,19 @@ const properties = [
   { id: 17, name: 'Marangoz atölyesi', type: 'Atölye', price: 520, rent: 48, x: -10.5, z: 10.5, color: '#b99a7d', floors: 2, style: 'Avlulu ahşap atölye' },
   { id: 18, name: 'Manav tezgahı', type: 'Ticaret', price: 390, rent: 42, x: 10.5, z: 10.5, color: '#aebc91', floors: 1, style: 'Sokak manavı' },
   { id: 19, name: 'Lokanta', type: 'İşletme', price: 760, rent: 84, x: -3.5, z: 12.5, color: '#c9a58d', floors: 2, style: 'Esnaf lokantası' },
-  { id: 20, name: 'Demirci dükkanı', type: 'Atölye', price: 610, rent: 54, x: 3.5, z: 12.5, color: '#9d9b9a', floors: 2, style: 'Küçük demirci ocağı' }
+  { id: 20, name: 'Demirci dükkanı', type: 'Atölye', price: 610, rent: 54, x: 3.5, z: 12.5, color: '#9d9b9a', floors: 2, style: 'Küçük demirci ocağı' },
+  { id: 21, name: 'Voyvoda Caddesi hanı', type: 'Ticaret', price: 1680, rent: 118, x: -15.3, z: -10.2, color: '#c5b6a0', floors: 4, style: 'Yüksek tavanlı, kemerli girişli Galata hanı' },
+  { id: 22, name: 'Galata yokuşu evi', type: 'Konut', price: 940, rent: 64, x: 15.2, z: -10.1, color: '#b8c5bd', floors: 4, style: 'Dar cepheli, ahşap cumbalı şehir evi' },
+  { id: 23, name: 'Karaköy aktar dükkanı', type: 'Ticaret', price: 710, rent: 55, x: -15.3, z: -4.8, color: '#d7c09d', floors: 2, style: 'Ahşap vitrinli mahalle aktarı' },
+  { id: 24, name: 'Galata apartmanı', type: 'Konut', price: 1340, rent: 92, x: 15.2, z: -4.7, color: '#c7b9b0', floors: 5, style: 'Taş cepheli, kat silmeli apartman' },
+  { id: 25, name: 'Tünel çıkışı kahvesi', type: 'İşletme', price: 990, rent: 78, x: -15.3, z: 1.2, color: '#c7b89e', floors: 3, style: 'Köşe kahvesi ve açık oturma alanı' },
+  { id: 26, name: 'Küçük terzi dükkanı', type: 'Atölye', price: 680, rent: 49, x: 15.2, z: 1.2, color: '#c4b2a5', floors: 3, style: 'Dar cepheli zanaat dükkanı' },
+  { id: 27, name: 'Levanten aile apartmanı', type: 'Konut', price: 1560, rent: 105, x: -15.3, z: 7.1, color: '#b8c3c9', floors: 5, style: 'Konsollu cumba ve dökme demir balkonlar' },
+  { id: 28, name: 'Mahalle bakkalı', type: 'Ticaret', price: 760, rent: 59, x: 15.2, z: 7.1, color: '#d6c3a8', floors: 2, style: 'Kepenkli, dar vitrinli bakkal' },
+  { id: 29, name: 'Avlulu sabun imalathanesi', type: 'Atölye', price: 860, rent: 61, x: -15.3, z: 12.8, color: '#b9b3a6', floors: 2, style: 'Arka avlulu küçük imalathane' },
+  { id: 30, name: 'Cumba altı kiralık daireler', type: 'Konut', price: 1190, rent: 82, x: 15.2, z: 12.8, color: '#c8b8c2', floors: 4, style: 'Üst katlarda kiralık daireleri olan apartman' },
+  { id: 31, name: 'Meyhane sokağı lokantası', type: 'İşletme', price: 1260, rent: 96, x: -5.5, z: 17.2, color: '#c7a18e', floors: 2, style: 'Sokak köşesinde eski usul lokanta' },
+  { id: 32, name: 'Küçük matbaa ve kırtasiye', type: 'Atölye', price: 930, rent: 68, x: 5.5, z: 17.2, color: '#b8b0a4', floors: 3, style: 'Baskı atölyesi ve kırtasiye' }
 ];
 
 const SAVE_KEY = 'mahalle-save-v1';
@@ -53,6 +65,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
   const selectRef = useRef(onSelect);
   const selectedRef = useRef(selected);
   const hourRef = useRef(hour);
+  const cameraControlRef = useRef(null);
   useEffect(() => { selectRef.current = onSelect; }, [onSelect]);
   useEffect(() => { selectedRef.current = selected; }, [selected]);
   useEffect(() => { hourRef.current = hour; }, [hour]);
@@ -88,19 +101,19 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
     sun.shadow.camera.left = -22; sun.shadow.camera.right = 22; sun.shadow.camera.top = 22; sun.shadow.camera.bottom = -22;
     scene.add(sun);
 
-    const ground = new THREE.Mesh(new THREE.PlaneGeometry(80, 80), new THREE.MeshStandardMaterial({ color: '#d8d5ca', roughness: 1 }));
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(100, 100), new THREE.MeshStandardMaterial({ color: '#d8d5ca', roughness: 1 }));
     ground.rotation.x = -Math.PI / 2;
     ground.position.y = -0.08;
     ground.receiveShadow = true;
     scene.add(ground);
 
     const streetMat = new THREE.MeshStandardMaterial({ color: '#aaa79e', roughness: 1 });
-    const street = new THREE.Mesh(new THREE.PlaneGeometry(11.5, 38), streetMat);
+    const street = new THREE.Mesh(new THREE.PlaneGeometry(11.5, 48), streetMat);
     street.rotation.x = -Math.PI / 2;
     street.position.set(0, 0, 0);
     street.receiveShadow = true;
     scene.add(street);
-    const crossStreet = new THREE.Mesh(new THREE.PlaneGeometry(38, 9.2), streetMat);
+    const crossStreet = new THREE.Mesh(new THREE.PlaneGeometry(48, 9.2), streetMat);
     crossStreet.rotation.x = -Math.PI / 2;
     crossStreet.position.set(0, 0.005, 0.7);
     crossStreet.receiveShadow = true;
@@ -111,19 +124,19 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
     const pavingMats = ['#c7c2b6', '#bcb7aa', '#d1cabc'].map(color => new THREE.MeshStandardMaterial({ color, roughness: 1 }));
     // Continuous sidewalks and stone curbs make the road read as a street, not a floating plane.
     for (const side of [-1, 1]) {
-      const sidewalk = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 38), pavingMats[0]);
+      const sidewalk = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 48), pavingMats[0]);
       sidewalk.rotation.x = -Math.PI / 2; sidewalk.position.set(side * 6.85, -0.005, 0); sidewalk.receiveShadow = true; scene.add(sidewalk);
-      const curb = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.12, 38), curbMat);
+      const curb = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.12, 48), curbMat);
       curb.position.set(side * 5.72, 0.035, 0); curb.receiveShadow = true; scene.add(curb);
-      for (let z = -18; z <= 18; z += 1.35) {
+      for (let z = -18; z <= 23; z += 1.35) {
         const tile = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.025, 1.22), pavingMats[Math.abs(Math.round(z * 10)) % 3]);
         tile.position.set(side * 6.85, 0.012, z); tile.receiveShadow = true; scene.add(tile);
       }
     }
     for (const side of [-1, 1]) {
-      const sidewalk = new THREE.Mesh(new THREE.PlaneGeometry(38, 1.9), pavingMats[1]);
+      const sidewalk = new THREE.Mesh(new THREE.PlaneGeometry(48, 1.9), pavingMats[1]);
       sidewalk.rotation.x = -Math.PI / 2; sidewalk.position.set(0, 0.002, side * 5.55); sidewalk.receiveShadow = true; scene.add(sidewalk);
-      const curb = new THREE.Mesh(new THREE.BoxGeometry(38, 0.12, 0.14), curbMat);
+      const curb = new THREE.Mesh(new THREE.BoxGeometry(48, 0.12, 0.14), curbMat);
       curb.position.set(0, 0.035, side * 5.15); scene.add(curb);
     }
     for (let i = -12; i <= 12; i += 2) {
@@ -135,13 +148,12 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
     const buildingMeshes = [];
     const addBuilding = (p, idx, isOwned, ownerInfo, currentPlayerId) => {
       const group = new THREE.Group();
-      const shopIds = [1, 4, 7, 9, 10, 12];
-      const isShopfront = shopIds.includes(p.id);
-      const isGrandFacade = p.id === 4 || p.id === 8 || p.id === 10;
-      const isTimberHouse = p.id === 6 || p.id === 11;
-      const w = p.id === 4 || p.id === 10 ? 2.75 : p.id === 9 ? 2.45 : 2.05;
-      const d = p.id === 2 || p.id === 8 ? 2.35 : 1.9;
-      const floorHeight = p.id === 10 ? 0.94 : 0.88;
+      const isShopfront = ['Ticaret', 'İşletme'].includes(p.type) || [1, 4, 7, 9, 10, 12].includes(p.id);
+      const isGrandFacade = p.floors >= 4 || [4, 8, 10, 21, 24, 27].includes(p.id);
+      const isTimberHouse = [6, 11, 22, 30].includes(p.id);
+      const w = [4, 10, 21, 24, 27].includes(p.id) ? 2.75 : [9, 25, 31].includes(p.id) ? 2.45 : 2.05;
+      const d = [2, 8, 21, 24, 27].includes(p.id) ? 2.35 : 1.9;
+      const floorHeight = isGrandFacade ? 0.91 : 0.88;
       const h = p.floors * floorHeight;
       const facadeColors = ['#d9c8ad', '#c6b8a4', '#c7c0b3', '#d5c4a8', '#d4cbb9', '#c9b6a2', '#d8cbb4', '#c7c2b5', '#cbbca6', '#d7c8b0', '#d0c3af', '#bfae98'];
       const baseColor = ownerInfo ? (ownerInfo.playerId === currentPlayerId ? '#b9c8b2' : '#b8c8d9') : (isOwned ? '#b9c8b2' : facadeColors[idx % facadeColors.length]);
@@ -180,7 +192,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
 
       const windowMat = new THREE.MeshStandardMaterial({ color: '#50666a', roughness: 0.5, metalness: 0.04 });
       const glassGlow = new THREE.MeshStandardMaterial({ color: '#8b9b96', roughness: 0.42, metalness: 0.04 });
-      const windowCols = p.id === 10 || p.id === 4 ? 3 : 2;
+      const windowCols = isGrandFacade || p.type === 'Konut' && p.floors >= 4 ? 3 : 2;
       for (let floor = 0; floor < p.floors; floor++) {
         for (let col = 0; col < windowCols; col++) {
           const x = (col - (windowCols - 1) / 2) * (windowCols === 3 ? 0.67 : 0.86);
@@ -198,7 +210,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
       }
 
       // Cumbas project from the upper storeys, with visible brackets underneath.
-      if (p.id === 2 || p.id === 5 || p.id === 6 || p.id === 8) {
+      if ([2, 5, 6, 8, 22, 24, 27, 30].includes(p.id) || (p.type === 'Konut' && p.floors >= 4)) {
         const bayY = Math.min(h - 0.48, floorHeight * (p.floors - 1.45));
         const bay = new THREE.Mesh(new THREE.BoxGeometry(w * 0.72, 0.7, 0.5), mat);
         bay.position.set(0, bayY, d / 2 + 0.2); bay.castShadow = true; group.add(bay);
@@ -213,7 +225,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
       }
 
       // Shallow iron balconies on larger apartment and commercial facades.
-      if ([2, 4, 8, 10].includes(p.id)) {
+      if ([2, 4, 8, 10, 21, 24, 27].includes(p.id) || (p.type === 'Konut' && p.floors >= 4)) {
         const balconyY = floorHeight * 1.72;
         const balconyW = w * (p.id === 10 ? 0.72 : 0.58);
         const ironRail = new THREE.MeshStandardMaterial({ color: '#343c3b', roughness: 0.72, metalness: 0.35 });
@@ -257,7 +269,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
         ctx.fillRect(0, 0, 512, 128);
         ctx.strokeStyle = '#d5bd8c'; ctx.lineWidth = 5; ctx.strokeRect(8, 8, 496, 112);
         ctx.fillStyle = '#f0dfb7'; ctx.font = 'bold 42px Georgia, serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        const sign = p.id === 7 ? 'SARAP & ERZAK' : p.id === 12 ? 'KAHVEHANE' : p.id === 9 ? 'MATBAA' : p.id === 10 ? 'MAGAZA' : p.id === 4 ? 'HAN' : 'TICARET';
+        const sign = p.id === 7 ? 'SARAP & ERZAK' : p.id === 12 || p.id === 25 ? 'KAHVEHANE' : p.id === 9 || p.id === 32 ? 'MATBAA' : p.id === 10 || p.id === 28 ? 'MAGAZA' : p.id === 4 || p.id === 21 ? 'HAN' : p.id === 23 ? 'AKTAR' : p.id === 31 ? 'LOKANTA' : p.id === 26 ? 'TERZI' : 'TICARET';
         ctx.fillText(sign, 256, 64, 470);
         const signTexture = new THREE.CanvasTexture(signCanvas);
         signTexture.colorSpace = THREE.SRGBColorSpace;
@@ -265,7 +277,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
         const signBoard = new THREE.Mesh(new THREE.BoxGeometry(w * 0.86, 0.28, 0.07), signMat);
         signBoard.position.set(0, 1.16, d / 2 + 0.09); group.add(signBoard);
 
-        if ([1, 7, 10, 12].includes(p.id)) {
+        if ([1, 7, 10, 12, 23, 25, 28, 31].includes(p.id)) {
           const awningColors = p.id === 7 ? ['#8b5145', '#e2c9a0'] : ['#a55f48', '#ead9b8'];
           for (let stripe = 0; stripe < 6; stripe++) {
             const awning = new THREE.Mesh(new THREE.BoxGeometry(w * 0.86 / 6, 0.07, 0.38), new THREE.MeshStandardMaterial({ color: awningColors[stripe % 2], roughness: 0.95 }));
@@ -342,7 +354,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
       const win = new THREE.Mesh(new THREE.BoxGeometry(0.29, 0.34, 0.035), tramWindowMat);
       win.position.set(-0.4 + i * 0.4, 0.91, 1.315); tram.add(win);
     }
-    tram.position.set(-0.1, 0, -7.4);
+    tram.position.set(0, 0, -15);
     scene.add(tram);
 
     // Street furniture: period-style lamps, small trees and pavement edges.
@@ -438,8 +450,8 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
     let radius = camera.position.distanceTo(target);
     let phi = Math.acos(camera.position.y / radius);
     const placeCamera = () => {
-      phi = Math.max(0.35, Math.min(1.18, phi));
-      radius = Math.max(12, Math.min(30, radius));
+      phi = Math.max(0.28, Math.min(1.22, phi));
+      radius = Math.max(7, Math.min(42, radius));
       camera.position.set(
         target.x + radius * Math.sin(phi) * Math.sin(theta),
         target.y + radius * Math.cos(phi),
@@ -447,6 +459,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
       );
       camera.lookAt(target);
     };
+    cameraControlRef.current = (action) => { if (action === 'in') radius -= 3; else if (action === 'out') radius += 3; else { radius = 25; theta = Math.PI / 4; phi = 0.78; target.set(0, 0, 0); } placeCamera(); };
     const onPointerDown = (event) => {
       dragging = true; moved = false; lastX = event.clientX; lastY = event.clientY;
       renderer.domElement.setPointerCapture?.(event.pointerId);
@@ -464,7 +477,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
     const onPointerUp = () => { dragging = false; };
     const onWheel = (event) => {
       event.preventDefault();
-      radius += event.deltaY * 0.018;
+      radius += event.deltaY * 0.012;
       placeCamera();
     };
     const onClick = (event) => {
@@ -518,7 +531,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
       hemisphere.intensity = isNight ? 0.72 : isDusk ? 1.2 : 2.0;
       sun.intensity = isNight ? 0.28 : isDusk ? 1.35 : 3.0;
       lampGlass.emissiveIntensity = isNight ? 1.15 : isDusk ? 0.55 : 0.18;
-      tram.position.x = -0.1 + Math.sin(Date.now() * 0.00015) * 0.8;
+      tram.position.z = -16 + ((elapsed * 1.25) % 32);
       pedestrians.forEach((ped, i) => {
         const progress = (elapsed * ped.speed + ped.phase) % 1;
         const stride = elapsed * ped.speed * Math.PI * 24 + i;
@@ -560,7 +573,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
     };
   }, [owned, ownerByProperty, playerId]);
 
-  return <div className="scene-host" ref={host} aria-label="Beyoğlu 1923 3D mahalle sahnesi"><div className="scene-building-overlay" ref={overlayRef}>{overlay}</div></div>;
+  return <div className="scene-host" ref={host} aria-label="Beyoğlu 1923 3D mahalle sahnesi"><div className="scene-building-overlay" ref={overlayRef}>{overlay}</div><div className="map-zoom-controls"><button type="button" aria-label="Yakınlaştır" title="Yakınlaştır" onClick={() => cameraControlRef.current?.('in')}>＋</button><button type="button" aria-label="Uzaklaştır" title="Uzaklaştır" onClick={() => cameraControlRef.current?.('out')}>−</button><button type="button" aria-label="Haritayı sıfırla" title="Haritayı sıfırla" onClick={() => cameraControlRef.current?.('reset')}>⌂</button></div><div className="map-hint">Sürükle: döndür · Tekerlek: yakınlaş / uzaklaş</div></div>;
 }
 
 function App() {
