@@ -402,3 +402,15 @@ button,select,input{touch-action:manipulation}
 .mastery-note{margin:10px 0 0;color:#a7b9b2;font-size:10px;line-height:1.5}
 @media(max-width:680px){.mastery-panel{padding:12px;border-radius:10px}.mastery-stats{gap:5px}.mastery-stats span{font-size:9px}.mastery-stats strong{font-size:11px}.mastery-foot{font-size:8px}}
 @media(prefers-reduced-motion:reduce){.mastery-meter span{transition:none}}
+
+/* Endless career progression after the introductory milestones */
+.progression-loop{display:flex;flex-direction:column;gap:8px;padding:12px;background:linear-gradient(145deg,#21382f,#242e3b);border:1px solid #55735e;border-radius:4px;color:#f0f7f2}
+.progression-loop-kicker{font:700 9px 'IBM Plex Mono',monospace;letter-spacing:1px;color:#ffce6a}
+.progression-loop>strong{font:700 16px 'Oxanium',sans-serif}
+.progression-loop>span{font-size:11px;line-height:1.5;color:#c1d0c8}
+.progression-loop-meter{height:6px;background:#40564b;border-radius:2px;overflow:hidden;margin-top:3px}
+.progression-loop-meter span{display:block;height:100%;background:linear-gradient(90deg,#63e6be,#ffca58);transition:width .25s ease}
+.progression-loop-foot{display:flex;justify-content:space-between;font:9px 'IBM Plex Mono',monospace;color:#b8c9c0}
+.progression-loop-reward{margin-top:2px;padding-top:9px;border-top:1px solid #ffffff20;font-size:10px;line-height:1.45;color:#ffdda0}
+@media(max-width:680px){.progression-loop{padding:11px;border-radius:9px}}
+@media(prefers-reduced-motion:reduce){.progression-loop-meter span{transition:none}}
