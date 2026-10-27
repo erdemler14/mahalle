@@ -220,3 +220,25 @@ h1 span{color:#ffca58;font-weight:700}
 .room-leave-button{border-color:#69404a;background:#382630;color:#ffc1c7}
 .multiplayer-panel>p{margin:12px 0 0;color:#8194a8;font-size:10px;line-height:1.6;max-width:850px}
 @media(max-width:680px){.multiplayer-panel{padding:14px}.multiplayer-controls{align-items:stretch}.room-create-button,.room-join,.room-leave-button{width:100%}.room-join input{flex:1;min-width:0}.room-code{justify-content:space-between}}
+
+
+/* Player identity, shared ownership, and direct actions in the 3D scene */
+.player-name-field{display:flex;align-items:center;gap:9px;color:#8ea1b6;font:700 9px 'IBM Plex Mono',monospace;letter-spacing:.7px}
+.player-name-field input{width:160px;min-height:38px;padding:0 10px;background:#101923;border:1px solid #3a4b60;border-radius:3px;color:#f1f5fa;font:500 12px 'Space Grotesk',sans-serif;letter-spacing:0;outline:none}
+.player-name-field input:focus,.room-join input:focus{border-color:#63e6be}
+.world-panel{position:relative}
+.scene-action-card{position:absolute;z-index:5;left:16px;bottom:66px;width:min(285px,calc(100% - 32px));display:flex;flex-direction:column;gap:7px;padding:13px 14px;background:rgba(19,29,38,.94);border:1px solid rgba(196,211,219,.32);box-shadow:0 8px 26px rgba(20,25,29,.2);backdrop-filter:blur(8px);color:#f3f0e8}
+.scene-action-eyebrow{font:700 9px 'IBM Plex Mono',monospace;letter-spacing:1px;color:#9caebd}
+.scene-action-card>strong{font:600 16px 'Space Grotesk',sans-serif;line-height:1.2}
+.scene-action-card>span{font:11px 'Space Grotesk',sans-serif;color:#c4d0d4}
+.scene-action-buttons{display:flex;flex-wrap:wrap;gap:6px;margin-top:3px}
+.scene-action-buttons button{min-height:32px;padding:0 10px;border:1px solid #5c9b89;border-radius:2px;background:#294e47;color:#d9f7e9;font:700 9px 'IBM Plex Mono',monospace;cursor:pointer}
+.scene-action-buttons button:hover{background:#35695e}
+.owner-chip{display:inline-flex;margin:3px 0 10px;padding:5px 8px;background:#e4ebf3;border:1px solid #c6d2e0;color:#3f5871;font:700 9px 'IBM Plex Mono',monospace;letter-spacing:.5px}
+.incoming-offer{display:flex;flex-direction:column;gap:8px;margin-top:14px;padding:13px;background:#15222c;border:1px solid #4c786d;border-radius:3px;color:#eef4f0}
+.incoming-offer>strong{font:700 11px 'IBM Plex Mono',monospace;color:#a9f0d4;text-transform:uppercase}
+.incoming-offer>span{font-size:12px;line-height:1.5}
+.incoming-offer>div{display:flex;gap:8px}
+.incoming-offer button{min-height:32px;padding:0 12px;border:1px solid #5c9b89;border-radius:2px;background:#294e47;color:#d9f7e9;font:700 9px 'IBM Plex Mono',monospace;cursor:pointer}
+.incoming-offer button:last-child{background:#39262b;border-color:#77515a;color:#ffd4d9}
+@media(max-width:680px){.player-name-field{width:100%;justify-content:space-between}.player-name-field input{flex:1;width:0}.scene-action-card{left:8px;bottom:60px;width:min(265px,calc(100% - 16px));padding:10px 11px}.scene-action-card>strong{font-size:14px}.scene-action-buttons button{min-height:30px}}
