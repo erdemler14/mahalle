@@ -378,3 +378,9 @@ button,select,input{touch-action:manipulation}
 .progression-complete strong{font:700 15px 'Oxanium',sans-serif;color:#63e6be}
 .progression-complete span{font-size:11px;color:#a9c0b6}
 @media(max-width:760px){.progression-card{padding:15px;border-radius:12px}.progression-title{font-size:19px}.progression-detail{font-size:12px}.progression-next strong{font-size:13px}}
+
+/* Milestone feedback: short, legible celebration without blocking play */
+.toast{animation:mahalle-toast-in .28s cubic-bezier(.2,.8,.2,1) both;box-shadow:0 12px 32px #00000024}
+.toast:has(:first-child){border-left-color:#ffca58}
+@keyframes mahalle-toast-in{from{opacity:0;transform:translateY(10px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
+@media(prefers-reduced-motion:reduce){.toast{animation:none}.progression-meter span{transition:none}}
