@@ -207,24 +207,43 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
       }
       const shaft = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.85), dark);
       shaft.position.set(0, 0.43, direction > 0 ? 0.88 : -0.88); cart.add(shaft);
-      // Simple horse silhouette: torso, neck, head and four articulated-looking legs.
-      const horseMat = new THREE.MeshStandardMaterial({ color: '#65452f', roughness: 0.98 });
+      // More organic horse silhouette: rounded body, sloped neck, muzzle, ears, mane and jointed legs.
+      const horseMat = new THREE.MeshStandardMaterial({ color: '#765039', roughness: 0.96 });
+      const horseLightMat = new THREE.MeshStandardMaterial({ color: '#8d6548', roughness: 0.98 });
       const maneMat = new THREE.MeshStandardMaterial({ color: '#30251f', roughness: 1 });
+      const hoofMat = new THREE.MeshStandardMaterial({ color: '#342b25', roughness: 1 });
       const horse = new THREE.Group();
-      const torso = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.48, 0.92), horseMat);
-      torso.position.y = 0.68; horse.add(torso);
-      const neck = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.62, 0.28), horseMat);
-      neck.position.set(0, 1.0, 0.47); neck.rotation.x = -0.22; horse.add(neck);
-      const head = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.32, 0.34), horseMat);
-      head.position.set(0, 1.18, 0.64); horse.add(head);
-      const mane = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.42, 0.22), maneMat);
-      mane.position.set(0, 1.1, 0.42); horse.add(mane);
-      const tail = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.36, 0.12), maneMat);
-      tail.position.set(0, 0.78, -0.48); tail.rotation.x = -0.3; horse.add(tail);
+      const torso = new THREE.Mesh(new THREE.SphereGeometry(0.5, 12, 9), horseMat);
+      torso.scale.set(0.43, 0.48, 1.02); torso.position.set(0, 0.77, 0); torso.castShadow = true; horse.add(torso);
+      const shoulder = new THREE.Mesh(new THREE.SphereGeometry(0.34, 10, 8), horseMat);
+      shoulder.scale.set(0.78, 1.12, 0.92); shoulder.position.set(0, 0.78, 0.34); horse.add(shoulder);
+      const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.22, 0.67, 9), horseLightMat);
+      neck.position.set(0, 1.05, 0.48); neck.rotation.x = -0.42; neck.castShadow = true; horse.add(neck);
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.22, 10, 8), horseMat);
+      head.scale.set(0.76, 1.12, 1.25); head.position.set(0, 1.36, 0.72); horse.add(head);
+      const muzzle = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 6), horseLightMat);
+      muzzle.scale.set(0.8, 0.78, 1.15); muzzle.position.set(0, 1.27, 0.91); horse.add(muzzle);
+      for (const side of [-1, 1]) {
+        const ear = new THREE.Mesh(new THREE.ConeGeometry(0.055, 0.19, 6), horseMat);
+        ear.position.set(side * 0.11, 1.57, 0.69); ear.rotation.z = side * -0.16; horse.add(ear);
+        const eye = new THREE.Mesh(new THREE.SphereGeometry(0.025, 6, 5), hoofMat);
+        eye.position.set(side * 0.16, 1.39, 0.75); horse.add(eye);
+      }
+      const mane = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.48, 0.3), maneMat);
+      mane.position.set(0, 1.22, 0.43); mane.rotation.x = -0.32; horse.add(mane);
+      const tail = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.075, 0.44, 7), maneMat);
+      tail.position.set(0, 0.72, -0.49); tail.rotation.x = -0.45; horse.add(tail);
       const legs = [];
-      for (const x of [-0.14, 0.14]) for (const z of [-0.25, 0.32]) {
-        const leg = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.48, 0.1), horseMat);
-        leg.position.set(x, 0.28, z); horse.add(leg); legs.push(leg);
+      for (const x of [-0.15, 0.15]) for (const z of [-0.3, 0.34]) {
+        const leg = new THREE.Group();
+        leg.position.set(x, 0.53, z);
+        const upper = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.07, 0.31, 7), horseMat);
+        upper.position.y = -0.12; leg.add(upper);
+        const lower = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.045, 0.24, 7), horseLightMat);
+        lower.position.y = -0.34; leg.add(lower);
+        const hoof = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.07, 0.11), hoofMat);
+        hoof.position.set(0, -0.49, 0.015); leg.add(hoof);
+        horse.add(leg); legs.push(leg);
       }
       horse.position.set(0, 0, direction > 0 ? 1.55 : -1.55);
       cart.add(horse);
@@ -607,15 +626,40 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
         radiusGoal = 25; thetaGoal = Math.PI / 4; phiGoal = 0.78; targetGoal.set(0, 0, 0);
       }
     };
+    const activePointers = new Map();
+    let pinchDistance = 0;
+    const pointerDistance = () => {
+      const points = [...activePointers.values()];
+      if (points.length < 2) return 0;
+      return Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y);
+    };
     const onPointerDown = (event) => {
       if (event.pointerType === 'mouse' && event.button !== 0 && event.button !== 2) return;
-      dragging = true; moved = false; lastX = event.clientX; lastY = event.clientY;
-      // Left-drag orbits; right-drag or Shift + left-drag pans.
-      dragMode = event.pointerType === 'touch' ? 'rotate' : (event.button === 2 || event.shiftKey ? 'pan' : 'rotate');
+      activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      dragging = true;
+      if (activePointers.size === 1) {
+        moved = false; lastX = event.clientX; lastY = event.clientY;
+        // Mouse: left drag rotates, right/shift drag pans. Touch: one finger rotates.
+        dragMode = event.pointerType === 'touch' ? 'rotate' : (event.button === 2 || event.shiftKey ? 'pan' : 'rotate');
+      } else {
+        moved = true;
+        pinchDistance = pointerDistance();
+      }
       renderer.domElement.style.cursor = 'grabbing';
       renderer.domElement.setPointerCapture?.(event.pointerId);
     };
     const onPointerMove = (event) => {
+      if (!activePointers.has(event.pointerId)) return;
+      activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      if (activePointers.size >= 2) {
+        const nextDistance = pointerDistance();
+        if (pinchDistance > 0 && nextDistance > 0) {
+          radiusGoal = clamp(radiusGoal * (pinchDistance / nextDistance), 5.5, 40);
+          if (Math.abs(nextDistance - pinchDistance) > 1) moved = true;
+        }
+        pinchDistance = nextDistance;
+        return;
+      }
       if (!dragging) return;
       const dx = event.clientX - lastX;
       const dy = event.clientY - lastY;
@@ -630,7 +674,16 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
       }
       lastX = event.clientX; lastY = event.clientY;
     };
-    const onPointerUp = () => { dragging = false; renderer.domElement.style.cursor = 'grab'; };
+    const onPointerUp = (event) => {
+      if (event?.pointerId != null) activePointers.delete(event.pointerId);
+      dragging = activePointers.size > 0;
+      pinchDistance = activePointers.size >= 2 ? pointerDistance() : 0;
+      if (activePointers.size === 1) {
+        const remaining = [...activePointers.values()][0];
+        lastX = remaining.x; lastY = remaining.y;
+      }
+      if (!dragging) renderer.domElement.style.cursor = 'grab';
+    };
     const onWheel = (event) => {
       event.preventDefault();
       // Exponential, clamped dolly input avoids large jumps on high-resolution trackpads.
@@ -751,7 +804,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
     };
   }, [owned, ownerByProperty, playerId]);
 
-  return <div className="scene-host" ref={host} aria-label="Beyoğlu 1923 3D mahalle sahnesi"><div className="scene-building-overlay" ref={overlayRef}>{overlay}</div><div className="map-zoom-controls"><button type="button" aria-label="Yakınlaştır" title="Yakınlaştır" onClick={() => cameraControlRef.current?.('in')}>＋</button><button type="button" aria-label="Uzaklaştır" title="Uzaklaştır" onClick={() => cameraControlRef.current?.('out')}>−</button><button type="button" aria-label="Seçili binaya git" title="Seçili binaya git" onClick={() => cameraControlRef.current?.('focus', properties.find(item => item.id === selected))}>⌖</button><button type="button" aria-label="Haritayı sıfırla" title="Haritayı sıfırla" onClick={() => cameraControlRef.current?.('reset')}>⌂</button></div><div className="map-hint">Sol sürükle: döndür · Sağ sürükle: ilerle · Shift + sol: ilerle · Tekerlek: zoom</div></div>;
+  return <div className="scene-host" ref={host} aria-label="Beyoğlu 1923 3D mahalle sahnesi"><div className="scene-building-overlay" ref={overlayRef}>{overlay}</div><div className="map-zoom-controls"><button type="button" aria-label="Yakınlaştır" title="Yakınlaştır" onClick={() => cameraControlRef.current?.('in')}>＋</button><button type="button" aria-label="Uzaklaştır" title="Uzaklaştır" onClick={() => cameraControlRef.current?.('out')}>−</button><button type="button" aria-label="Seçili binaya git" title="Seçili binaya git" onClick={() => cameraControlRef.current?.('focus', properties.find(item => item.id === selected))}>⌖</button><button type="button" aria-label="Haritayı sıfırla" title="Haritayı sıfırla" onClick={() => cameraControlRef.current?.('reset')}>⌂</button></div><div className="map-hint">Tek parmak: döndür · İki parmak: yakınlaştır / uzaklaştır · Sağ sürükle: ilerle</div></div>;
 }
 
 function App() {
