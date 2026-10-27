@@ -14,7 +14,15 @@ const properties = [
   { id: 9, name: 'Matbaa atölyesi', type: 'Atölye', price: 620, rent: 45, x: 7.2, z: 2.7, color: '#cbb2a0', floors: 2, style: 'Zanaat atölyesi' },
   { id: 10, name: 'İstiklal üzerinde mağaza', type: 'Ticaret', price: 1480, rent: 108, x: -5.6, z: 7.4, color: '#dfc9a3', floors: 4, style: 'Süslü ticaret cephesi' },
   { id: 11, name: 'Avlulu aile evi', type: 'Konut', price: 570, rent: 35, x: 0.1, z: 8.0, color: '#c6b8cf', floors: 2, style: 'İç avlulu konut' },
-  { id: 12, name: 'Küçük kahvehane', type: 'İşletme', price: 480, rent: 62, x: 5.5, z: 7.5, color: '#c5b9a4', floors: 2, style: 'Sokak kahvehanesi' }
+  { id: 12, name: 'Küçük kahvehane', type: 'İşletme', price: 480, rent: 62, x: 5.5, z: 7.5, color: '#c5b9a4', floors: 2, style: 'Sokak kahvehanesi' },
+  { id: 13, name: 'Mahalle fırını', type: 'İşletme', price: 560, rent: 68, x: -10.5, z: -1.0, color: '#d9b28a', floors: 2, style: 'Taş fırın cephesi' },
+  { id: 14, name: 'Kasap dükkanı', type: 'Ticaret', price: 590, rent: 70, x: 10.5, z: -1.0, color: '#b9a39a', floors: 2, style: 'Dar vitrinli dükkan' },
+  { id: 15, name: 'Eczane', type: 'Ticaret', price: 820, rent: 88, x: -10.5, z: 5.5, color: '#c2cbb6', floors: 3, style: 'Eski şehir eczanesi' },
+  { id: 16, name: 'Kitapçı ve kırtasiye', type: 'Ticaret', price: 640, rent: 72, x: 10.5, z: 5.5, color: '#c6b69f', floors: 2, style: 'Ahşap raflı mağaza' },
+  { id: 17, name: 'Marangoz atölyesi', type: 'Atölye', price: 520, rent: 48, x: -10.5, z: 10.5, color: '#b99a7d', floors: 2, style: 'Avlulu ahşap atölye' },
+  { id: 18, name: 'Manav tezgahı', type: 'Ticaret', price: 390, rent: 42, x: 10.5, z: 10.5, color: '#aebc91', floors: 1, style: 'Sokak manavı' },
+  { id: 19, name: 'Lokanta', type: 'İşletme', price: 760, rent: 84, x: -3.5, z: 12.5, color: '#c9a58d', floors: 2, style: 'Esnaf lokantası' },
+  { id: 20, name: 'Demirci dükkanı', type: 'Atölye', price: 610, rent: 54, x: 3.5, z: 12.5, color: '#9d9b9a', floors: 2, style: 'Küçük demirci ocağı' }
 ];
 
 const SAVE_KEY = 'mahalle-save-v1';
@@ -25,6 +33,14 @@ const venueTypesByProfession = {
   terzi: ['Atölye'],
   matbaaci: ['Atölye'],
   kahveci: ['İşletme', 'Ticaret'],
+  firinci: ['İşletme', 'Ticaret'],
+  kasap: ['Ticaret'],
+  eczaci: ['Ticaret'],
+  kitapci: ['Ticaret'],
+  marangoz: ['Atölye', 'Depo'],
+  manav: ['Ticaret', 'İşletme'],
+  lokantaci: ['İşletme', 'Ticaret'],
+  demirci: ['Atölye'],
   amele: []
 };
 function supportsProfessionAt(property, professionId) {
@@ -566,7 +582,7 @@ function App() {
   const [selected, setSelected] = useState(() => properties.some(p => p.id === saved.selected) ? saved.selected : 1);
   const [notice, setNotice] = useState('');
   const [showPortfolio, setShowPortfolio] = useState(() => Boolean(saved.showPortfolio));
-  const [professionId, setProfessionId] = useState(() => ['kolonyaci', 'leblebici', 'terzi', 'matbaaci', 'kahveci', 'amele'].includes(saved.professionId) ? saved.professionId : 'amele');
+  const [professionId, setProfessionId] = useState(() => ['kolonyaci', 'leblebici', 'terzi', 'matbaaci', 'kahveci', 'firinci', 'kasap', 'eczaci', 'kitapci', 'marangoz', 'manav', 'lokantaci', 'demirci', 'amele'].includes(saved.professionId) ? saved.professionId : 'amele');
   const [hour, setHour] = useState(() => Number.isInteger(saved.hour) && saved.hour >= 0 && saved.hour <= 23 ? saved.hour : 8);
   const [day, setDay] = useState(() => Number.isInteger(saved.day) && saved.day >= 1 && saved.day <= 30 ? saved.day : 1);
   const [month, setMonth] = useState(() => Number.isInteger(saved.month) && saved.month >= 1 && saved.month <= 12 ? saved.month : 1);
@@ -631,6 +647,14 @@ function App() {
     { id: 'terzi', name: 'Terzi', gross: 6.1, overhead: 5, description: 'Siparişle çalışır; düzenli müşteri kazandırır.' },
     { id: 'matbaaci', name: 'Matbaacı', gross: 7.3, overhead: 9, description: 'Daha yüksek gelir, daha pahalı malzeme ve bakım.' },
     { id: 'kahveci', name: 'Kahveci', gross: 5.6, overhead: 10, description: 'Müşteri trafiğine ve sarf malzemesine bağlı.' },
+    { id: 'firinci', name: 'Fırıncı', gross: 6.4, overhead: 11, description: 'Un, yakıt ve günlük üretim maliyeti.' },
+    { id: 'kasap', name: 'Kasap', gross: 6.8, overhead: 12, description: 'Soğuk zincir yok; günlük taze ürün ve fire riski.' },
+    { id: 'eczaci', name: 'Eczacı', gross: 7.2, overhead: 8, description: 'Daha pahalı stok, daha düşük satış hacmi.' },
+    { id: 'kitapci', name: 'Kitapçı ve kırtasiyeci', gross: 5.3, overhead: 5, description: 'Kitap, defter ve yazı malzemeleri.' },
+    { id: 'marangoz', name: 'Marangoz', gross: 7.0, overhead: 9, description: 'Sipariş, kereste ve atölye giderleri.' },
+    { id: 'manav', name: 'Manav', gross: 5.1, overhead: 7, description: 'Günlük tedarik, hızlı satış ve bozulma riski.' },
+    { id: 'lokantaci', name: 'Lokantacı', gross: 6.2, overhead: 13, description: 'Yemek satışı, malzeme ve günlük mutfak gideri.' },
+    { id: 'demirci', name: 'Demirci', gross: 7.4, overhead: 10, description: 'Metal, kömür ve sipariş bazlı üretim.' },
     { id: 'amele', name: 'Gündelik işçi', gross: 3.7, overhead: 0, description: 'Dükkan gerekmez; çalıştığın saat kadar ücret.' }
   ];
   const tradeCatalog = {
@@ -639,7 +663,15 @@ function App() {
     7: [{ id: 'sarap-uretim', name: 'Ev yapımı şarap üretimi', cost: 8, price: 4.5, units: 4, production: true }, { id: 'sarap', name: 'Toptan şişe şarap', cost: 8, price: 4.5, units: 4 }, { id: 'erzak', name: 'Kuru erzak', cost: 10, price: 2.5, units: 8 }, { id: 'zeytin', name: 'Zeytin ve peynir', cost: 11, price: 3, units: 8 }],
     9: [{ id: 'baski', name: 'Basılı ilan ve evrak', cost: 14, price: 4, units: 6 }, { id: 'defter', name: 'Defter ve kırtasiye', cost: 10, price: 2.8, units: 8 }],
     10: [{ id: 'kumas', name: 'Kumaş ve hazır giyim', cost: 18, price: 5.5, units: 7 }, { id: 'ithalat', name: 'İthal küçük eşya', cost: 20, price: 6, units: 7 }, { id: 'kitap', name: 'Kitap ve kırtasiye', cost: 14, price: 4.2, units: 8 }],
-    12: [{ id: 'kahve', name: 'Kahve ve çay', cost: 12, price: 3.5, units: 10 }, { id: 'tatli', name: 'Şerbet ve tatlı', cost: 10, price: 3, units: 8 }]
+    12: [{ id: 'kahve', name: 'Kahve ve çay', cost: 12, price: 3.5, units: 10 }, { id: 'tatli', name: 'Şerbet ve tatlı', cost: 10, price: 3, units: 8 }],
+    13: [{ id: 'ekmek', name: 'Ekmek', cost: 8, price: 2.8, units: 8 }, { id: 'pogaca', name: 'Poğaça ve çörek', cost: 10, price: 4, units: 8 }],
+    14: [{ id: 'et', name: 'Günlük et', cost: 18, price: 5.5, units: 5 }, { id: 'sakatat', name: 'Sakatat ve kemik suyu', cost: 10, price: 3.5, units: 5 }],
+    15: [{ id: 'ilac', name: 'Temel ilaçlar', cost: 20, price: 6, units: 5 }, { id: 'bakim', name: 'Merhem ve bakım ürünleri', cost: 12, price: 4, units: 5 }],
+    16: [{ id: 'kitap', name: 'Kitap', cost: 16, price: 5, units: 6 }, { id: 'kirtasiye', name: 'Defter ve kalem', cost: 10, price: 3.5, units: 6 }],
+    17: [{ id: 'mobilya', name: 'Küçük ahşap eşya', cost: 18, price: 7, units: 4, production: true }, { id: 'tamir', name: 'Tamir ve marangozluk işi', cost: 10, price: 4, units: 4 }],
+    18: [{ id: 'sebze', name: 'Mevsim sebzesi', cost: 9, price: 3, units: 5 }, { id: 'meyve', name: 'Meyve sepeti', cost: 12, price: 4, units: 5 }],
+    19: [{ id: 'yemek', name: 'Günün yemeği', cost: 16, price: 5.5, units: 5 }, { id: 'corba', name: 'Çorba ve ekmek', cost: 10, price: 3.5, units: 5 }],
+    20: [{ id: 'demir', name: 'Metal eşya', cost: 20, price: 7, units: 4, production: true }, { id: 'tamirat', name: 'Demir tamiratı', cost: 12, price: 4.5, units: 4 }]
   };
   const profession = professionOptions.find(p => p.id === professionId) || professionOptions[5];
   const active = properties.find(p => p.id === selected) || properties[0];
@@ -713,21 +745,25 @@ function App() {
     } else if (work && !isWorkingHour) {
       detail = 'Bu saatte iş bulmak zor. Dinlenmeyi veya saati ilerletmeyi seçtin.';
     }
-    if (shopPropertyId !== null && owned.includes(shopPropertyId) && !rented.includes(shopPropertyId) && hour >= 8 && hour < 19) {
-      const property = properties.find(p => p.id === shopPropertyId);
-      const product = (tradeCatalog[property?.id] || []).find(item => item.id === businessPlans[property?.id]);
-      const stock = stockByProperty[property?.id] || 0;
-      if (product && product.price > 0 && stock > 0 && Math.random() < 0.72) {
+    // Her portföy işletmesi, ürün ve stok tanımlandıktan sonra bağımsız çalışır.
+    // Oyuncunun her saat o dükkana gidip işletmeyi açması gerekmez.
+    if (hour >= 8 && hour < 19) {
+      const stockChanges = {};
+      const sales = [];
+      owned.forEach(propertyId => {
+        if (rented.includes(propertyId)) return;
+        const property = properties.find(p => p.id === propertyId);
+        const product = (tradeCatalog[propertyId] || []).find(item => item.id === businessPlans[propertyId]);
+        const stock = stockByProperty[propertyId] || 0;
+        if (!product || product.price <= 0 || stock <= 0 || Math.random() >= 0.72) return;
         const sold = Math.min(stock, Math.random() < 0.22 ? 2 : 1);
         const revenue = Math.round(sold * product.price * 100) / 100;
         net += revenue;
-        setStockByProperty(old => ({ ...old, [property.id]: Math.max(0, (old[property.id] || 0) - sold) }));
-        detail += `${detail ? ' · ' : ''}${product.name}: ${sold} adet satıldı, ciro +₺${revenue.toFixed(2)}`;
-      } else if (!product) {
-        detail += `${detail ? ' · ' : ''}Dükkan açık ancak satış için ürün grubu ve ilk stok gerekli`;
-      } else if (stock <= 0) {
-        detail += `${detail ? ' · ' : ''}${product.name} stoğu bitti; tedarik yapılmalı`;
-      }
+        stockChanges[propertyId] = Math.max(0, stock - sold);
+        sales.push(`${property?.name || 'İşletme'}: ${sold} adet ${product.name}, +₺${revenue.toFixed(2)}`);
+      });
+      if (Object.keys(stockChanges).length) setStockByProperty(old => ({ ...old, ...stockChanges }));
+      if (sales.length) detail += `${detail ? ' · ' : ''}${sales.join(' · ')}`;
     }
     setCash(v => Math.max(0, Math.round((v + net) * 100) / 100));
     const nextHour = (hour + 1) % 24;
@@ -979,7 +1015,7 @@ function App() {
             {!ownerByProperty[active.id] && !owned.includes(active.id) && <button onClick={buy}>SATIN AL</button>}
             {ownerByProperty[active.id]?.playerId === playerId && owned.includes(active.id) && <button onClick={toggleRent}>{rented.includes(active.id) ? 'KİRACILIĞI BİTİR' : 'KİRAYA VER'}</button>}
             {ownerByProperty[active.id] && ownerByProperty[active.id].playerId !== playerId && <button onClick={sendOffer}>SATIN ALMA TEKLİFİ</button>}
-            {owned.includes(active.id) && !rented.includes(active.id) && <button onClick={toggleShop}>{shopOpen ? 'İŞLETMENİ KAPAT' : 'İŞLETMEYİ AÇ'}</button>}
+            {owned.includes(active.id) && !rented.includes(active.id) && <button onClick={toggleShop}>{shopOpen ? 'İŞLETMEYİ DURDUR' : 'İŞLETME AYARLARI'}</button>}
           </div>
         </div>} />
         <div className="map-legend"><span><i className="legend-dot available" /> SATILIK MÜLK</span><span><i className="legend-dot owned" /> SENİN MÜLKÜN</span><span className="map-hint">SÜRÜKLE: DÖNDÜR · KAYDIR: YAKINLAŞ · BİNAYA TIKLA</span></div>
@@ -1041,7 +1077,7 @@ function App() {
             <div className="stock-line"><span>Birim maliyet / satış</span><strong>{(() => { const item = (tradeCatalog[active.id] || []).find(product => product.id === businessPlans[active.id]); return item && item.units > 0 ? `₺${(item.cost / item.units).toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} / ₺${item.price.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : '—'; })()}</strong></div>
             <div className="stock-line"><span>Parti başına tahmini brüt fark</span><strong>₺{(() => { const item = (tradeCatalog[active.id] || []).find(product => product.id === businessPlans[active.id]); return item ? (item.price * item.units - item.cost).toLocaleString('tr-TR', {maximumFractionDigits: 2}) : '0'; })()}</strong></div>
             <button className="stock-button" onClick={stockBusiness}>{(tradeCatalog[active.id] || []).find(item => item.id === businessPlans[active.id])?.production ? "ÜRETİM YAP / STOK EKLE" : "TEDARİK ET / STOK AL"}</button>
-            <p>Alış maliyeti parti içindir; satış fiyatı tek ürün içindir. Birim maliyet, parti maliyetinin adet sayısına bölünmesiyle hesaplanır. Brüt farktan günlük işletme giderleri ayrıca düşer.</p>
+            <p>Alış maliyeti parti içindir; satış fiyatı tek ürün içindir. Stok ve ürün grubu tanımlanınca bu işletme, kiraya verilmediği sürece çalışma saatlerinde otomatik satış yapar. Brüt farktan günlük işletme giderleri ayrıca düşer.</p>
           </div>}
 
           {owned.includes(active.id) && (rented.includes(active.id)
