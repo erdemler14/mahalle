@@ -37,7 +37,16 @@ const properties = [
   { id: 32, name: 'Küçük matbaa ve kırtasiye', type: 'Atölye', price: 930, rent: 68, x: 5.5, z: 17.2, color: '#b8b0a4', floors: 3, style: 'Baskı atölyesi ve kırtasiye' }
 ];
 
+// Arrange the purchasable buildings along real street frontages. The central corridor stays clear for the tram.
+properties.forEach((property, index) => {
+  const frontage = Math.floor(index / 8);
+  const slot = index % 8;
+  property.x = frontage === 0 ? -8.5 : frontage === 1 ? 8.5 : frontage === 2 ? -18.5 : 18.5;
+  property.z = -22 + slot * 6.1;
+});
+
 const SAVE_KEY = 'mahalle-save-v1';
+const SAVE_BACKUP_KEY = 'mahalle-save-v1-backup';
 const DAILY_LIVING_COST = 2.5;
 const venueTypesByProfession = {
   kolonyaci: ['Ticaret', 'Atölye'],
@@ -113,11 +122,18 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
     street.position.set(0, 0, 0);
     street.receiveShadow = true;
     scene.add(street);
-    const crossStreet = new THREE.Mesh(new THREE.PlaneGeometry(48, 9.2), streetMat);
+    const crossStreet = new THREE.Mesh(new THREE.PlaneGeometry(48, 5.2), streetMat);
     crossStreet.rotation.x = -Math.PI / 2;
-    crossStreet.position.set(0, 0.005, 0.7);
+    crossStreet.position.set(0, 0.005, -12.8);
     crossStreet.receiveShadow = true;
     scene.add(crossStreet);
+    for (const sideX of [-13.5, 13.5]) {
+      const sideStreet = new THREE.Mesh(new THREE.PlaneGeometry(5.2, 48), streetMat);
+      sideStreet.rotation.x = -Math.PI / 2;
+      sideStreet.position.set(sideX, 0.002, 0);
+      sideStreet.receiveShadow = true;
+      scene.add(sideStreet);
+    }
 
     const stoneMat = new THREE.MeshStandardMaterial({ color: '#c7c2b6', roughness: 1 });
     const curbMat = new THREE.MeshStandardMaterial({ color: '#d8d1c2', roughness: 0.96 });
@@ -357,7 +373,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
         }
       }
       const side = i % 2 === 0 ? -1 : 1;
-      b.position.set(side * (10.0 + (i % 3) * 1.0), 0, -13 + i * 2.9);
+      b.position.set(side * (24.0 + (i % 3) * 0.8), 0, -20 + i * 4.3);
       scene.add(b);
     }
 
@@ -549,7 +565,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
       hemisphere.intensity = isNight ? 0.72 : isDusk ? 1.2 : 2.0;
       sun.intensity = isNight ? 0.28 : isDusk ? 1.35 : 3.0;
       lampGlass.emissiveIntensity = isNight ? 1.15 : isDusk ? 0.55 : 0.18;
-      tram.position.z = -16 + ((elapsed * 1.25) % 32);
+      tram.position.z = -23 + ((elapsed * 1.45) % 46);
       pedestrians.forEach((ped, i) => {
         const progress = (elapsed * ped.speed + ped.phase) % 1;
         const stride = elapsed * ped.speed * Math.PI * 24 + i;
@@ -605,7 +621,14 @@ function App() {
       saveRef.current = {};
     }
   }
-  const saved = saveRef.current || {};
+  const primarySaved = saveRef.current || {};
+  let backupSaved = {};
+  if (typeof window !== 'undefined') {
+    try { backupSaved = JSON.parse(window.localStorage.getItem(SAVE_BACKUP_KEY) || 'null') || {}; } catch { backupSaved = {}; }
+  }
+  const saved = (!Array.isArray(primarySaved.owned) || primarySaved.owned.length === 0) && Array.isArray(backupSaved.owned) && backupSaved.owned.length > 0
+    ? backupSaved
+    : primarySaved;
   const [steps, setSteps] = useState(() => Number.isFinite(saved.steps) ? saved.steps : 0);
   const [cash, setCash] = useState(() => Number.isFinite(saved.cash) ? saved.cash : 75);
   const [owned, setOwned] = useState(() => Array.isArray(saved.owned) ? saved.owned.filter(id => properties.some(p => p.id === id)) : []);
@@ -613,6 +636,7 @@ function App() {
   const [selected, setSelected] = useState(() => properties.some(p => p.id === saved.selected) ? saved.selected : 1);
   const [notice, setNotice] = useState('');
   const [showPortfolio, setShowPortfolio] = useState(() => Boolean(saved.showPortfolio));
+  const [portfolioDetailId, setPortfolioDetailId] = useState(null);
   const [professionId, setProfessionId] = useState(() => ['kolonyaci', 'leblebici', 'terzi', 'matbaaci', 'kahveci', 'firinci', 'kasap', 'eczaci', 'kitapci', 'marangoz', 'manav', 'lokantaci', 'demirci', 'amele'].includes(saved.professionId) ? saved.professionId : 'amele');
   const [hour, setHour] = useState(() => Number.isInteger(saved.hour) && saved.hour >= 0 && saved.hour <= 23 ? saved.hour : 8);
   const [clockRunning, setClockRunning] = useState(true);
@@ -748,8 +772,12 @@ function App() {
 
   useEffect(() => {
     try {
+      const previousSave = JSON.parse(window.localStorage.getItem(SAVE_KEY) || 'null');
+      if (previousSave && Array.isArray(previousSave.owned) && previousSave.owned.length > 0) {
+        window.localStorage.setItem(SAVE_BACKUP_KEY, JSON.stringify(previousSave));
+      }
       window.localStorage.setItem(SAVE_KEY, JSON.stringify({
-        version: 1, playerName, steps, cash, owned, rented, selected, showPortfolio, professionId, marketValues,
+        version: 2, playerName, steps, cash, owned, rented, selected, showPortfolio, professionId, marketValues,
         hour, day, month, year, workHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, log: log.slice(0, 5)
       }));
     } catch {
@@ -774,11 +802,12 @@ function App() {
       const nextDay = nextDayRaw > 30 ? 1 : nextDayRaw;
       const nextMonthRaw = month + (nextDayRaw > 30 ? 1 : 0);
       const nextMonth = nextMonthRaw > 12 ? 1 : nextMonthRaw;
-      const businessOverhead = professionId !== 'amele' && hasSuitablePremise ? profession.overhead : 0;
+      const business = settleDailyBusinesses();
       const maintenance = portfolio.reduce((sum, p) => sum + Math.max(0.01, Math.round((getMarketValue(p) * 0.003 / 365) * 100) / 100), 0);
-      const dailyCost = DAILY_LIVING_COST + businessOverhead + maintenance;
+      const dailyCost = DAILY_LIVING_COST + maintenance + business.costs;
       const dailyRent = Math.round(dailyRentIncome * 100) / 100;
-      setCash(v => Math.max(0, Math.round((v - dailyCost + dailyRent) * 100) / 100));
+      const dailyNet = dailyRent + business.revenue - dailyCost;
+      setCash(v => Math.round((v + dailyNet) * 100) / 100));
       setDay(nextDay);
       setMonth(nextMonth);
       const nextYear = nextMonthRaw > 12 ? year + 1 : year;
@@ -786,7 +815,7 @@ function App() {
       if (nextMonthRaw > 12) setYear(v => v + 1);
       setHour(6);
       setWorkHours(0);
-      tell(`Yeni gün başladı. Yaşam gideri: ${DAILY_LIVING_COST}; işletme gideri: ${businessOverhead}; mülk bakımı: ${maintenance}; günlük kira geliri: +${dailyRent}.`);
+      tell(`Yeni gün başladı. Kira +₺${dailyRent.toFixed(2)}, işletme hasılatı +₺${business.revenue.toFixed(2)}, yaşam ve bakım -₺${(DAILY_LIVING_COST + maintenance).toFixed(2)}, işletme gideri -₺${business.costs.toFixed(2)}; net ₺${dailyNet.toFixed(2)}.`);
       return;
     }
     const isWorkingHour = hour >= 8 && hour < 19;
@@ -839,17 +868,48 @@ function App() {
     else tell(`${String(hour).padStart(2, '0')}:00 — Sokak sakin. Bu saatte düzenli bir gelir elde etmedin.`);
   };
 
+  const settleDailyBusinesses = () => {
+    let revenue = 0;
+    let operatingCosts = 0;
+    const stockChanges = {};
+    const entries = [];
+    owned.forEach(propertyId => {
+      if (rented.includes(propertyId)) return;
+      const property = properties.find(item => item.id === propertyId);
+      if (!property || !['İşletme', 'Atölye', 'Ticaret'].includes(property.type)) return;
+      const planId = businessPlans[propertyId];
+      const product = (tradeCatalog[propertyId] || []).find(item => item.id === planId);
+      if (!product || product.price <= 0) return;
+      const stock = Math.max(0, Number(stockByProperty[propertyId]) || 0);
+      const dailyCost = property.type === 'İşletme' ? 4.5 : property.type === 'Atölye' ? 3.5 : 2.5;
+      operatingCosts += dailyCost;
+      if (stock <= 0) {
+        entries.push(property.name + ': stok bitti, günlük gider -₺' + dailyCost.toFixed(2));
+        return;
+      }
+      const sold = Math.min(stock, 2 + Math.floor(Math.random() * 3));
+      const multiplier = property.type === 'İşletme' ? 2.1 : property.type === 'Atölye' ? 2.0 : 1.7;
+      const takings = Math.round(sold * product.price * multiplier * 100) / 100;
+      revenue += takings;
+      stockChanges[propertyId] = stock - sold;
+      entries.push(property.name + ': ' + sold + ' adet ' + product.name + ', hasılat +₺' + takings.toFixed(2) + ', gider -₺' + dailyCost.toFixed(2));
+    });
+    if (Object.keys(stockChanges).length) setStockByProperty(old => ({ ...old, ...stockChanges }));
+    return { revenue: Math.round(revenue * 100) / 100, costs: Math.round(operatingCosts * 100) / 100, entries };
+  };
+
   const sleepUntilMorning = () => {
     if (sendAction('sleepUntilMorning')) return;
     const nextDayRaw = day + 1;
     const nextDay = nextDayRaw > 30 ? 1 : nextDayRaw;
     const nextMonthRaw = month + (nextDayRaw > 30 ? 1 : 0);
     const nextMonth = nextMonthRaw > 12 ? 1 : nextMonthRaw;
-    const businessOverhead = professionId !== 'amele' && hasSuitablePremise ? profession.overhead : 0;
+    const business = settleDailyBusinesses();
     const maintenance = portfolio.reduce((sum, p) => sum + Math.max(0.01, Math.round((getMarketValue(p) * 0.003 / 365) * 100) / 100), 0);
-    const upkeep = DAILY_LIVING_COST + businessOverhead + maintenance;
+    const upkeep = DAILY_LIVING_COST + maintenance + business.costs;
     const rent = Math.round(dailyRentIncome * 100) / 100;
-    setCash(v => Math.max(0, Math.round((v - upkeep + rent) * 100) / 100));
+    const net = rent + business.revenue - upkeep;
+    setCash(v => Math.round((v + net) * 100) / 100);
     setDay(nextDay);
     setMonth(nextMonth);
     const nextYear = nextMonthRaw > 12 ? year + 1 : year;
@@ -857,7 +917,7 @@ function App() {
     if (nextMonthRaw > 12) setYear(v => v + 1);
     setHour(6);
     setWorkHours(0);
-    tell(`Geceyi geçirdin. Günlük giderler: ${upkeep.toFixed(2)}; günlük kira tahsilatı: +${rent.toFixed(2)}.`);
+    tell(`Gün kapandı. Kira +₺${rent.toFixed(2)}, işletme hasılatı +₺${business.revenue.toFixed(2)}, yaşam ve bakım giderleri -₺${(DAILY_LIVING_COST + maintenance).toFixed(2)}, işletme giderleri -₺${business.costs.toFixed(2)}. Net: ₺${net.toFixed(2)}.`);
   };
 
   const selectBusinessPlan = (plan) => {
