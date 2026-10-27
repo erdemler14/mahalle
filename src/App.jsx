@@ -502,6 +502,8 @@ function App() {
   const [workHours, setWorkHours] = useState(() => Number.isInteger(saved.workHours) && saved.workHours >= 0 ? saved.workHours : 0);
   const [shopPropertyId, setShopPropertyId] = useState(() => Number.isInteger(saved.shopPropertyId) ? saved.shopPropertyId : null);
   const [wineBottles, setWineBottles] = useState(() => Number.isInteger(saved.wineBottles) && saved.wineBottles >= 0 ? saved.wineBottles : 0);
+  const [businessPlans, setBusinessPlans] = useState(() => saved.businessPlans && typeof saved.businessPlans === 'object' ? saved.businessPlans : {});
+  const [stockByProperty, setStockByProperty] = useState(() => saved.stockByProperty && typeof saved.stockByProperty === 'object' ? saved.stockByProperty : {});
   const shopOpen = shopPropertyId === selected;
   const [log, setLog] = useState(() => Array.isArray(saved.log) && saved.log.length ? saved.log.slice(0, 5) : [{ id: 0, text: 'Beyoğlu’na geldin. Geçimini kurmak için bir meslek seç.' }]);
   const professionOptions = [
@@ -512,6 +514,13 @@ function App() {
     { id: 'kahveci', name: 'Kahveci', gross: 5.6, overhead: 10, description: 'Müşteri trafiğine ve sarf malzemesine bağlı.' },
     { id: 'amele', name: 'Gündelik işçi', gross: 3.7, overhead: 0, description: 'Dükkan gerekmez; çalıştığın saat kadar ücret.' }
   ];
+  const tradeCatalog = {
+    1: [{ id: 'kolonya', name: 'Kolonya ve koku', cost: 12, price: 2.2, units: 10 }, { id: 'sabun', name: 'Sabun ve bakım', cost: 9, price: 1.8, units: 10 }],
+    4: [{ id: 'han', name: 'Han odası kiralama', cost: 0, price: 0, units: 0 }],
+    7: [{ id: 'sarap', name: 'Şişe şarap', cost: 8, price: 4.5, units: 4 }, { id: 'erzak', name: 'Kuru erzak', cost: 10, price: 2.5, units: 8 }, { id: 'zeytin', name: 'Zeytin ve peynir', cost: 11, price: 3, units: 8 }],
+    9: [{ id: 'baski', name: 'Basılı ilan ve evrak', cost: 14, price: 4, units: 6 }, { id: 'defter', name: 'Defter ve kırtasiye', cost: 10, price: 2.8, units: 8 }],
+    12: [{ id: 'kahve', name: 'Kahve ve çay', cost: 12, price: 3.5, units: 10 }, { id: 'tatli', name: 'Şerbet ve tatlı', cost: 10, price: 3, units: 8 }]
+  };
   const profession = professionOptions.find(p => p.id === professionId) || professionOptions[5];
   const active = properties.find(p => p.id === selected) || properties[0];
   const portfolio = properties.filter(p => owned.includes(p.id));
@@ -526,12 +535,12 @@ function App() {
     try {
       window.localStorage.setItem(SAVE_KEY, JSON.stringify({
         version: 1, steps, cash, owned, rented, selected, showPortfolio, professionId,
-        hour, day, month, year, workHours, shopPropertyId, wineBottles, log: log.slice(0, 5)
+        hour, day, month, year, workHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, log: log.slice(0, 5)
       }));
     } catch {
       // The game remains playable if browser storage is disabled or full.
     }
-  }, [steps, cash, owned, rented, selected, showPortfolio, professionId, hour, day, month, year, workHours, shopPropertyId, wineBottles, log]);
+  }, [steps, cash, owned, rented, selected, showPortfolio, professionId, hour, day, month, year, workHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, log]);
 
   const tell = (text) => {
     setNotice(text);
@@ -583,18 +592,21 @@ function App() {
     } else if (work && !isWorkingHour) {
       detail = 'Bu saatte iş bulmak zor. Dinlenmeyi veya saati ilerletmeyi seçtin.';
     }
-    if (shopPropertyId !== null && owned.includes(shopPropertyId) && !rented.includes(shopPropertyId) && supportsProfessionAt(properties.find(p => p.id === shopPropertyId), professionId) && hour >= 7 && hour < 21) {
-      const shopGross = Math.round((profession.gross * (0.7 + Math.random() * 0.8)) * 100) / 100;
-      const stockCost = Math.round((profession.overhead * 0.12 + 0.6 + Math.random() * 0.8) * 100) / 100;
-      const shopNet = shopGross - stockCost;
-      net += shopNet;
-      detail += `${detail ? ' · ' : ''}Satış ${shopGross.toFixed(2)}, stok maliyeti ${stockCost.toFixed(2)}`;
-    }
-    if (shopPropertyId === 7 && owned.includes(7) && !rented.includes(7) && hour >= 7 && hour < 21 && wineBottles > 0) {
-      const wineSale = 4.5;
-      net += wineSale;
-      setWineBottles(v => Math.max(0, v - 1));
-      detail += `${detail ? ' · ' : ''}Bir şişe ev yapımı şarap satıldı (+${wineSale.toFixed(2)})`;
+    if (shopPropertyId !== null && owned.includes(shopPropertyId) && !rented.includes(shopPropertyId) && hour >= 8 && hour < 19) {
+      const property = properties.find(p => p.id === shopPropertyId);
+      const product = (tradeCatalog[property?.id] || []).find(item => item.id === businessPlans[property?.id]);
+      const stock = stockByProperty[property?.id] || 0;
+      if (product && product.price > 0 && stock > 0 && Math.random() < 0.72) {
+        const sold = Math.min(stock, Math.random() < 0.22 ? 2 : 1);
+        const revenue = Math.round(sold * product.price * 100) / 100;
+        net += revenue;
+        setStockByProperty(old => ({ ...old, [property.id]: Math.max(0, (old[property.id] || 0) - sold) }));
+        detail += `${detail ? ' · ' : ''}${product.name}: ${sold} adet satıldı, ciro +₺${revenue.toFixed(2)}`;
+      } else if (!product) {
+        detail += `${detail ? ' · ' : ''}Dükkan açık ancak satış için ürün grubu ve ilk stok gerekli`;
+      } else if (stock <= 0) {
+        detail += `${detail ? ' · ' : ''}${product.name} stoğu bitti; tedarik yapılmalı`;
+      }
     }
     setCash(v => Math.max(0, Math.round((v + net) * 100) / 100));
     const nextHour = (hour + 1) % 24;
@@ -620,6 +632,21 @@ function App() {
     setHour(6);
     setWorkHours(0);
     tell(`Geceyi geçirdin. Günlük giderler işlendi.${rent ? ` Ay sonu kira tahsilatı: +${rent} oyun lirası.` : ''}`);
+  };
+
+  const selectBusinessPlan = (plan) => {
+    setBusinessPlans(old => ({ ...old, [active.id]: plan }));
+    tell(`${active.name}: satış grubu ${(tradeCatalog[active.id] || []).find(item => item.id === plan)?.name || 'seçilmedi'} olarak ayarlandı. Satış için ayrıca stok almalısın.`);
+  };
+
+  const stockBusiness = () => {
+    const item = (tradeCatalog[active.id] || []).find(product => product.id === businessPlans[active.id]);
+    if (!owned.includes(active.id) || rented.includes(active.id)) { tell('Stok alabilmek için mülkün sahibi olmalı ve mülk kirada olmamalı.'); return; }
+    if (!item || item.units <= 0) { tell('Bu mülk için henüz tedarik edilebilir ürün grubu yok.'); return; }
+    if (cash < item.cost) { tell(`İlk stok için ₺${item.cost} gerekiyor.`); return; }
+    setCash(v => Math.round((v - item.cost) * 100) / 100);
+    setStockByProperty(old => ({ ...old, [active.id]: (old[active.id] || 0) + item.units }));
+    tell(`${item.name} tedarik edildi: ${item.units} adet stok eklendi, maliyet ₺${item.cost}.`);
   };
 
   const buy = () => {
@@ -672,7 +699,7 @@ function App() {
     if (typeof window !== 'undefined' && !window.confirm('Yeni oyun başlatılsın mı? Mevcut mahalle kaydı silinecek.')) return;
     setSteps(0); setCash(75); setOwned([]); setRented([]); setSelected(1); setShowPortfolio(false);
     setProfessionId('amele'); setHour(8); setDay(1); setMonth(1); setYear(1923);
-    setWorkHours(0); setShopPropertyId(null); setWineBottles(0);
+    setWorkHours(0); setShopPropertyId(null); setWineBottles(0); setBusinessPlans({}); setStockByProperty({});
     setLog([{ id: Date.now(), text: 'Yeni bir hikaye başladı. Gündelik işçilikle sermaye biriktir veya uygun bir dükkan edin.' }]);
     setNotice('');
     try { window.localStorage.removeItem(SAVE_KEY); } catch {}
@@ -747,12 +774,20 @@ function App() {
           <button className={owned.includes(active.id) ? 'buy-button is-owned' : 'buy-button'} onClick={buy} disabled={owned.includes(active.id)}>
             {owned.includes(active.id) ? 'MÜLK SENİN' : 'MÜLKÜ SATIN AL'} <span>{owned.includes(active.id) ? '✓' : '↗'}</span>
           </button>
-          {owned.includes(active.id) && <button className="rent-button" onClick={toggleRent}>{rented.includes(active.id) ? 'KİRACIYI ÇIKAR' : 'MÜLKÜ KİRAYA VER'}</button>}
-          {active.id === 7 && owned.includes(7) && !rented.includes(7) && <div className="wine-production">
-            <div className="wine-stock"><span>EV YAPIMI ŞARAP STOĞU</span><strong>{wineBottles} şişe</strong></div>
-            <button className="wine-button" onClick={makeWine}>ŞARAP ÜRET · ₺8 <span>+4 ŞİŞE</span></button>
-            <p>Bir üretim partisi 4 şişe verir. Dükkan açıkken mesai saatlerinde şişe başına ₺4,50 satış geliri elde edilir.</p>
+          {owned.includes(active.id) && <button className="rent-button" onClick={toggleRent}>{rented.includes(active.id) ? 'KİRACIYI ÇIKAR' : 'KİRACI BUL VE KİRAYA VER'}</button>}
+          {owned.includes(active.id) && !rented.includes(active.id) && (tradeCatalog[active.id] || []).some(item => item.price > 0) && <div className="business-plan">
+            <div className="card-label">İŞ MODELİ · TEDARİK · STOK</div>
+            <label className="business-label" htmlFor="business-plan-select">Ne satacaksın?</label>
+            <select id="business-plan-select" className="profession-select" value={businessPlans[active.id] || ''} onChange={e => selectBusinessPlan(e.target.value)}>
+              <option value="">Ürün grubu seç</option>
+              {(tradeCatalog[active.id] || []).map(item => <option key={item.id} value={item.id}>{item.name} · alış ₺{item.cost} / satış ₺{item.price}</option>)}
+            </select>
+            <div className="stock-line"><span>Mevcut stok</span><strong>{stockByProperty[active.id] || 0} adet</strong></div>
+            <div className="stock-line"><span>İlk tedarik maliyeti</span><strong>₺{((tradeCatalog[active.id] || []).find(item => item.id === businessPlans[active.id]) || {cost: 0}).cost}</strong></div>
+            <button className="stock-button" onClick={stockBusiness}>TEDARİK ET / STOK AL</button>
+            <p>Satış ancak işletme açıkken ve stok varken gerçekleşir. Ürün alımı kasadan düşer; satış geliri stok azaldıkça kaydedilir.</p>
           </div>}
+
           {owned.includes(active.id) && (rented.includes(active.id)
             ? <div className="property-note"><span>i</span> Bu mülk kirada. İşletmek için önce kiracılığı sona erdir.</div>
             : selectedVenueCompatible
