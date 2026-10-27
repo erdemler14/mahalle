@@ -676,7 +676,6 @@ function App() {
   const [portfolioDetailId, setPortfolioDetailId] = useState(null);
   const [professionId, setProfessionId] = useState(() => ['kolonyaci', 'leblebici', 'terzi', 'matbaaci', 'kahveci', 'firinci', 'kasap', 'eczaci', 'kitapci', 'marangoz', 'manav', 'lokantaci', 'demirci', 'amele'].includes(saved.professionId) ? saved.professionId : 'amele');
   const [hour, setHour] = useState(() => Number.isInteger(saved.hour) && saved.hour >= 0 && saved.hour <= 23 ? saved.hour : 8);
-  const [clockRunning, setClockRunning] = useState(true);
   const [day, setDay] = useState(() => Number.isInteger(saved.day) && saved.day >= 1 && saved.day <= 30 ? saved.day : 1);
   const [month, setMonth] = useState(() => Number.isInteger(saved.month) && saved.month >= 1 && saved.month <= 12 ? saved.month : 1);
   const [year, setYear] = useState(() => Number.isInteger(saved.year) && saved.year >= 1923 ? saved.year : 1923);
@@ -1198,10 +1197,10 @@ function App() {
   snapshotRef.current = { owners: ownerByProperty, marketValues, hostName: playerName.trim() || 'Ev sahibi' };
   actionRefs.current = { advanceHour, sleepUntilMorning, clockTick: () => advanceHour(hour >= 8 && hour < 19 && (professionId === 'amele' || selectedVenueCompatible)), selectBusinessPlan, stockBusiness, buy, toggleRent, toggleShop, makeWine, resetGame, selectProperty, changeProfession };
   useEffect(() => {
-    if (!clockRunning || multiplayerRole === 'guest') return undefined;
+    if (multiplayerRole === 'guest') return undefined;
     const timer = window.setInterval(() => actionRefs.current.clockTick?.(), 5000);
     return () => window.clearInterval(timer);
-  }, [clockRunning, multiplayerRole]);
+  }, [multiplayerRole]);
   useEffect(() => {
     if (multiplayerRole === 'host' && connectionRef.current?.open) connectionRef.current.send({ type: 'world-state', owners: ownerByProperty, marketValues, hostName: playerName.trim() || 'Ev sahibi' });
   }, [multiplayerRole, ownerByProperty, marketValues, playerName]);
@@ -1278,10 +1277,9 @@ function App() {
 
         <section className="work-card">
           <div className="section-heading"><span>03 / VARDİYA</span><span className="count-tag">{steps.toString().padStart(3, '0')}</span></div>
-          <div className="work-status"><span className={clockRunning ? "status-light active" : "status-light"} />{clockRunning ? "ZAMAN AKIYOR · 5 SN / SAAT" : "ZAMAN DURAKLATILDI"}</div>
-          <button className="work-button" onClick={() => setClockRunning(v => !v)}>{clockRunning ? "ZAMANI DURDUR" : "ZAMANI BAŞLAT"} <span>{clockRunning ? "Ⅱ" : "▶"}</span></button>
+          <div className="work-status"><span className="status-light active" />ZAMAN AKIYOR · 5 SN / SAAT</div>
           <button className="rest-button" onClick={sleepUntilMorning}>BİR GÜN İLERLET <span>↗</span></button>
-          <p className="small-note">Oyun saati her 5 gerçek saniyede bir ilerler. Mesai saatlerinde seçtiğin mesleğe göre otomatik çalışırsın; stoklu işletmeler de satış yapar. İstersen zamanı durdurabilir veya bir günü atlayabilirsin.</p>
+          <p className="small-note">Oyun saati her 5 gerçek saniyede bir ilerler. Mesai saatlerinde seçtiğin mesleğe göre otomatik çalışırsın; stoklu işletmeler de satış yapar. Zaman kesintisiz akar; istersen bir günü tek hamlede ilerletebilirsin.</p>
         </section>
 
         <section className="property-card">
