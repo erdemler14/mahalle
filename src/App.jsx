@@ -766,7 +766,7 @@ function App() {
     tell(`${active.name} kiraya verildi. Oyun takviminde ay sonuna gelince kira tahsil edilecek.`);
   };
 
-  clockAction.current = () => advanceHour(false);
+  clockAction.current = () => { if (multiplayerRole !== 'guest') advanceHour(false); };
   useEffect(() => {
     const timer = window.setInterval(() => clockAction.current?.(), 20000);
     return () => window.clearInterval(timer);
