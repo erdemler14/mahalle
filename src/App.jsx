@@ -584,6 +584,7 @@ function App() {
   const sendOffer = () => {
     if (multiplayerRole === 'solo') { setNotice('Satın alma teklifi göndermek için önce iki kişilik odaya katıl.'); return; }
     if (!ownerByProperty[active.id] || ownerByProperty[active.id].playerId === playerId) return;
+    if (cash < active.price) { setNotice(`Bu teklif için ₺${active.price} gerekiyor; mevcut sermayen yetersiz.`); return; }
     const offer = { id: `${Date.now()}-${Math.random().toString(36).slice(2,6)}`, propertyId: active.id, price: active.price, fromPlayerId: playerId, fromName: playerName.trim() || (playerId === 'host' ? 'Ev sahibi' : 'Oyuncu 2'), toName: ownerByProperty[active.id].name };
     sendPeerMessage({ type: 'offer', offer }); setMultiplayerStatus(`${active.name} için ₺${active.price} satın alma teklifi gönderildi.`); setNotice('Teklif gönderildi. Karşı oyuncunun kabul etmesini bekliyorsun.');
   };
