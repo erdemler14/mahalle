@@ -387,6 +387,42 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
       scene.add(b);
     }
 
+    // Close the gaps between landmark lots with attached late-Ottoman / early-Republic buildings.
+    // The narrow parcels and shared side walls create a continuous Beyoglu street wall.
+    const infillColors = ['#c9b8a4', '#d6c8b4', '#b9c4c0', '#c8b4a9', '#d8cbb8', '#b9c2ca', '#cdb9a5'];
+    for (const frontageX of [-8.5, 8.5, -18.5, 18.5]) {
+      const row = properties.filter(p => Math.abs(p.x - frontageX) < 2.5).sort((a, b) => a.z - b.z);
+      for (let j = 0; j < row.length - 1; j++) {
+        const gapZ = (row[j].z + row[j + 1].z) / 2;
+        const facadeWidth = 3.75 + (j % 3) * 0.12;
+        const depth = 2.15;
+        const height = 2.15 + ((j + Math.round(Math.abs(frontageX))) % 4) * 0.55;
+        const infill = new THREE.Group();
+        const wallMat = new THREE.MeshStandardMaterial({ color: infillColors[(j + Math.round(Math.abs(frontageX))) % infillColors.length], roughness: 0.96 });
+        const detailMat = new THREE.MeshStandardMaterial({ color: '#e6dac6', roughness: 0.92 });
+        const glassMat = new THREE.MeshStandardMaterial({ color: '#52666a', roughness: 0.55 });
+        const body = new THREE.Mesh(new THREE.BoxGeometry(facadeWidth, height, depth), wallMat);
+        body.position.y = height / 2; body.castShadow = true; body.receiveShadow = true; infill.add(body);
+        const cornice = new THREE.Mesh(new THREE.BoxGeometry(facadeWidth + 0.12, 0.1, depth + 0.12), detailMat);
+        cornice.position.y = height - 0.08; infill.add(cornice);
+        const floorCount = Math.max(2, Math.floor(height / 0.9));
+        for (let floor = 0; floor < floorCount; floor++) {
+          for (let col = 0; col < 2; col++) {
+            const wx = (col - 0.5) * 0.82;
+            const win = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.42, 0.04), glassMat);
+            win.position.set(wx, 0.48 + floor * 0.82, depth / 2 + 0.025); infill.add(win);
+            const frame = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.05, 0.055), detailMat);
+            frame.position.set(wx, 0.72 + floor * 0.82, depth / 2 + 0.045); infill.add(frame);
+            const sill = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.05, 0.06), detailMat);
+            sill.position.set(wx, 0.25 + floor * 0.82, depth / 2 + 0.045); infill.add(sill);
+          }
+        }
+        infill.position.set(frontageX + (frontageX < 0 ? 0.1 : -0.1), 0, gapZ);
+        infill.rotation.y = frontageX < 0 ? Math.PI / 2 : -Math.PI / 2;
+        scene.add(infill);
+      }
+    }
+
     // A small, understated period tram on the street.
     const tram = new THREE.Group();
     const tramBody = new THREE.Mesh(new THREE.BoxGeometry(1.25, 1.05, 2.6), new THREE.MeshStandardMaterial({ color: '#8b5145', roughness: 0.8 }));
