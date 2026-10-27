@@ -1503,7 +1503,7 @@ function App() {
         </section>
 
         <section className="progression-card" aria-label="Gelişim hedefi">
-          <div className="progression-top"><span className="card-label">GELİŞİM ROTASI</span><span className="progression-step">AŞAMA {Math.min(5, (workHours >= 5 ? 1 : 0) + (owned.length >= 1 ? 1 : 0) + (owned.length >= 2 ? 1 : 0) + (rented.length >= 1 ? 1 : 0) + (owned.length >= 3 ? 1 : 0) + 1).toString().padStart(2, '0')} / 06</span></div>
+          <div className="progression-top"><span className="card-label">GELİŞİM ROTASI</span><span className="progression-step">AŞAMA {Math.min(5, (workHours >= 5 ? 1 : 0) + (owned.length >= 1 ? 1 : 0) + (owned.length >= 2 ? 1 : 0) + (rented.length >= 1 ? 1 : 0) + (owned.length >= 3 ? 1 : 0) + 1).toString().padStart(2, '0')} / 05</span></div>
           {(() => {
             const goals = [
               { id: 'work', title: 'İlk sermayeni oluştur', detail: 'Toplam 5 saat çalışarak meslek ritmini öğren.', current: careerHours, target: 5, unit: 'saat', done: careerHours >= 5, reward: 'Meslek deneyimi' },
