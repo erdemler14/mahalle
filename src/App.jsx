@@ -885,83 +885,152 @@ function App() {
     setMultiplayerRole('solo'); setMultiplayerStatus('Solo oyun'); setRoomCode('');
   };
 
+  const peerErrorMessage = (error, joining = false) => {
+    const type = error?.type || 'unknown';
+    const messages = {
+      'unavailable-id': 'Bu oda kodu kullanımda. Yeni oda açmayı dene.',
+      'peer-unavailable': 'Bu oda bulunamadı. Ev sahibinden güncel kodu alıp tekrar dene.',
+      'network': 'Sinyal sunucusuna ulaşılamıyor. İnternet bağlantısını kontrol et.',
+      'server-error': 'Çoklu oyuncu sunucusu geçici olarak yanıt vermiyor.',
+      'socket-error': 'Bağlantı sunucusuyla iletişim kesildi.',
+      'socket-closed': 'Bağlantı sunucusu bağlantıyı kapattı.',
+      'webrtc': 'Tarayıcılar arasında doğrudan bağlantı kurulamadı. Farklı ağlarda veya ağ güvenlik duvarı arkasında bu sorun oluşabilir.',
+      'browser-incompatible': 'Bu tarayıcı çoklu oyuncu bağlantısını desteklemiyor.',
+      'invalid-id': 'Oda kodu geçersiz.',
+      'disconnected': 'Çoklu oyuncu sunucusuyla bağlantı kesildi.'
+    };
+    return messages[type] || (joining ? `Odaya bağlanılamadı (${type}). Oda kodunu kontrol edip tekrar dene.` : `Oda açılamadı (${type}). Tekrar dene.`);
+  };
+
   const startRoom = () => {
     closeMultiplayer();
-    const code = Math.random().toString(36).slice(2, 8).toUpperCase();
+    const code = Math.random().toString(36).slice(2, 8).toUpperCase().padEnd(6, '0');
+    const peerId = 'mahalle' + code.toLowerCase();
     const hostName = playerName.trim() || 'Ev sahibi';
     setOwnerByProperty(Object.fromEntries(owned.map(id => [id, { playerId: 'host', name: hostName }])));
-    setRoomCode(code); setMultiplayerStatus('Oda açılıyor…');
+    setRoomCode(code);
+    setMultiplayerStatus('Oda sunucuya kaydediliyor…');
     try {
-      const peer = new Peer('mahalle-' + code.toLowerCase());
+      const peer = new Peer(peerId, { debug: 1 });
       peerRef.current = peer;
-      peer.on('open', () => { setMultiplayerRole('host'); setMultiplayerStatus('Oda hazır · ikinci oyuncu bekleniyor'); });
+      peer.on('open', () => {
+        setMultiplayerRole('host');
+        setMultiplayerStatus('Oda hazır · kodu diğer oyuncuya gönder');
+      });
       peer.on('connection', conn => {
         if (connectionRef.current?.open) { conn.close(); return; }
         connectionRef.current = conn;
         conn.on('open', () => {
-          setMultiplayerStatus('İki oyuncu bağlı · sen ev sahibisin');
+          setMultiplayerStatus('Bağlantı kuruldu · oyuncu bilgisi bekleniyor');
           conn.send({ type: 'world-state', owners: snapshotRef.current?.owners || {}, hostName });
         });
         conn.on('data', message => {
           if (message?.type === 'hello') {
             setOpponentName(message.playerName || 'Oyuncu 2');
             const mergedOwners = { ...(snapshotRef.current?.owners || {}), ...(message.owners || {}) };
-            setOwnerByProperty(mergedOwners); conn.send({ type: 'world-state', owners: mergedOwners, hostName });
+            setOwnerByProperty(mergedOwners);
+            conn.send({ type: 'world-state', owners: mergedOwners, hostName });
+            setMultiplayerStatus(`İki oyuncu bağlı · ${message.playerName || 'Oyuncu 2'}`);
           }
           if (message?.type === 'world-update' && message.owners && typeof message.owners === 'object') {
-            setOwnerByProperty(message.owners); conn.send({ type: 'world-state', owners: message.owners, hostName });
+            setOwnerByProperty(message.owners);
+            conn.send({ type: 'world-state', owners: message.owners, hostName });
           }
           if (message?.type === 'offer' && message.offer) setIncomingOffer({ ...message.offer, fromName: message.offer.fromName || 'Diğer oyuncu' });
           if (message?.type === 'offer-response') {
             if (message.accepted && message.offer?.fromPlayerId === 'host') {
-              const offer = message.offer; setCash(v => Math.max(0, Math.round((v - offer.price) * 100) / 100));
-              setOwned(old => old.includes(offer.propertyId) ? old : [...old, offer.propertyId]); setRented(old => old.filter(id => id !== offer.propertyId));
-              setOwnerByProperty(message.owners || ownerByProperty); tell(`${properties.find(p => p.id === offer.propertyId)?.name || 'Mülk'} satın alındı.`);
+              const offer = message.offer;
+              setCash(v => Math.max(0, Math.round((v - offer.price) * 100) / 100));
+              setOwned(old => old.includes(offer.propertyId) ? old : [...old, offer.propertyId]);
+              setRented(old => old.filter(id => id !== offer.propertyId));
+              setOwnerByProperty(message.owners || ownerByProperty);
+              tell(`${properties.find(p => p.id === offer.propertyId)?.name || 'Mülk'} satıldı.`);
             }
-            setIncomingOffer(null); conn.send({ type: 'world-state', owners: message.owners || ownerByProperty, hostName });
+            setIncomingOffer(null);
+            conn.send({ type: 'world-state', owners: message.owners || ownerByProperty, hostName });
           }
         });
-        conn.on('close', () => { connectionRef.current = null; setMultiplayerStatus('Oyuncu ayrıldı · oda açık'); });
+        conn.on('error', error => setMultiplayerStatus('Oyuncu bağlantısı hatası: ' + (error?.type || 'bağlantı hatası')));
+        conn.on('close', () => {
+          if (connectionRef.current === conn) connectionRef.current = null;
+          setMultiplayerStatus('Oyuncu ayrıldı · oda açık, aynı kodla tekrar katılabilir');
+        });
       });
-      peer.on('error', error => { setMultiplayerStatus('Bağlantı hatası: ' + (error?.type || 'oda açılamadı')); });
-    } catch {
-      setMultiplayerStatus('Çoklu oyuncu bağlantısı başlatılamadı.');
+      peer.on('disconnected', () => setMultiplayerStatus('Oda sunucusuyla bağlantı kesildi. İnterneti kontrol et.'));
+      peer.on('error', error => setMultiplayerStatus(peerErrorMessage(error)));
+    } catch (error) {
+      setMultiplayerStatus('Oda başlatılamadı: ' + (error?.message || 'beklenmeyen hata'));
     }
   };
 
   const joinRoom = () => {
     const code = joinCode.trim().toUpperCase();
-    if (!/^[A-Z0-9]{6}$/.test(code)) { setMultiplayerStatus('Oda kodu 6 harf veya rakamdan oluşmalı.'); return; }
+    if (!/^[A-Z0-9]{6}$/.test(code)) {
+      setMultiplayerStatus('Oda kodu 6 harf veya rakamdan oluşmalı.');
+      return;
+    }
     closeMultiplayer();
-    setMultiplayerStatus('Odaya bağlanılıyor…');
+    setMultiplayerStatus('Oda aranıyor…');
     try {
-      const peer = new Peer();
+      const peer = new Peer({ debug: 1 });
       peerRef.current = peer;
       peer.on('open', () => {
-        const conn = peer.connect('mahalle-' + code.toLowerCase(), { reliable: true });
+        setMultiplayerStatus('Oda bulunduysa bağlantı kuruluyor…');
+        const conn = peer.connect('mahalle' + code.toLowerCase(), { reliable: true, serialization: 'json' });
         connectionRef.current = conn;
+        let opened = false;
+        const timeout = window.setTimeout(() => {
+          if (!opened && connectionRef.current === conn) {
+            setMultiplayerStatus('Bağlantı zaman aşımına uğradı. Oda kodunu ve ev sahibinin çevrimiçi olduğunu kontrol et.');
+            try { conn.close(); } catch {}
+          }
+        }, 15000);
         conn.on('open', () => {
-          setRoomCode(code); setMultiplayerRole('guest'); setMultiplayerStatus('Bağlandı · kendi oyun durumun korunuyor');
-          conn.send({ type: 'hello', playerName: playerName.trim() || 'Oyuncu 2', owners: Object.fromEntries(owned.map(id => [id, { playerId: 'guest', name: playerName.trim() || 'Oyuncu 2' }])) });
+          opened = true;
+          window.clearTimeout(timeout);
+          setRoomCode(code);
+          setMultiplayerRole('guest');
+          setMultiplayerStatus('Bağlandı · oda bilgisi alınıyor');
+          conn.send({
+            type: 'hello',
+            playerName: playerName.trim() || 'Oyuncu 2',
+            owners: Object.fromEntries(owned.map(id => [id, { playerId: 'guest', name: playerName.trim() || 'Oyuncu 2' }]))
+          });
         });
         conn.on('data', message => {
-          if (message?.type === 'world-state') applyWorldState(message);
+          if (message?.type === 'world-state') {
+            applyWorldState(message);
+            setMultiplayerStatus(`İki oyuncu bağlı · ev sahibi: ${message.hostName || 'Ev sahibi'}`);
+          }
           if (message?.type === 'offer' && message.offer) setIncomingOffer({ ...message.offer, fromName: message.offer.fromName || opponentName });
           if (message?.type === 'offer-response') {
             const offer = message.offer;
             if (message.accepted && offer?.fromPlayerId === 'guest') {
               setCash(v => Math.max(0, Math.round((v - offer.price) * 100) / 100));
-              setOwned(old => old.includes(offer.propertyId) ? old : [...old, offer.propertyId]); setRented(old => old.filter(id => id !== offer.propertyId));
-              setOwnerByProperty(message.owners || ownerByProperty); tell(`${properties.find(p => p.id === offer.propertyId)?.name || 'Mülk'} satın alındı.`);
+              setOwned(old => old.includes(offer.propertyId) ? old : [...old, offer.propertyId]);
+              setRented(old => old.filter(id => id !== offer.propertyId));
+              setOwnerByProperty(message.owners || ownerByProperty);
+              tell(`${properties.find(p => p.id === offer.propertyId)?.name || 'Mülk'} satın alındı.`);
             }
-            if (message.owners) setOwnerByProperty(message.owners); setIncomingOffer(null);
+            if (message.owners) setOwnerByProperty(message.owners);
+            setIncomingOffer(null);
           }
         });
-        conn.on('close', () => { connectionRef.current = null; setMultiplayerStatus('Bağlantı kapandı · yeniden katılman gerekiyor'); setMultiplayerRole('solo'); });
+        conn.on('error', error => {
+          window.clearTimeout(timeout);
+          setMultiplayerStatus(peerErrorMessage(error, true));
+        });
+        conn.on('close', () => {
+          window.clearTimeout(timeout);
+          if (connectionRef.current === conn) connectionRef.current = null;
+          setMultiplayerStatus(opened ? 'Bağlantı kapandı · yeniden katılman gerekiyor' : 'Bağlantı kurulamadı. Ev sahibinin çevrimiçi olduğunu ve oda kodunu kontrol et.');
+          setMultiplayerRole('solo');
+        });
       });
-      peer.on('error', error => { setMultiplayerStatus('Odaya bağlanılamadı: ' + (error?.type || 'bağlantı hatası')); });
-    } catch {
-      setMultiplayerStatus('Çoklu oyuncu bağlantısı başlatılamadı.');
+      peer.on('disconnected', () => setMultiplayerStatus('Oda sunucusuyla bağlantı kesildi. İnterneti kontrol et.'));
+      peer.on('error', error => setMultiplayerStatus(peerErrorMessage(error, true)));
+    } catch (error) {
+      setMultiplayerStatus('Odaya katılınamadı: ' + (error?.message || 'beklenmeyen hata'));
     }
   };
 
