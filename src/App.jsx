@@ -911,12 +911,9 @@ function App() {
       return;
     }
     const isWorkingHour = hour >= 8 && hour < 19;
-    let net = 0;
-    let detail = '';
-    // Her işletme, seçili meslekten bağımsız olarak kendi stokundan mesai saatlerinde satış yapar.
-    // Satış hasılatı anında kasaya ve stok düşüşüne yansır; gün sonunda ikinci kez eklenmez.
     const hourlySales = isWorkingHour ? processHourlyBusinessSales() : { revenue: 0, entries: [] };
-    net += hourlySales.revenue;
+    let laborNet = 0;
+    let detail = '';
     if (hourlySales.entries.length) {
       detail = 'İşletme satışları: ' + hourlySales.entries.join(' · ');
     }
@@ -924,21 +921,22 @@ function App() {
       const variance = 0.82 + Math.random() * 0.36;
       if (professionId === 'amele') {
         const wage = Math.round(profession.gross * variance * 100) / 100;
-        net = wage;
-        detail = `Gündelik işçilik: saatlik ücret ${wage.toFixed(2)} oyun lirası`;
+        laborNet = wage;
+        detail = (detail ? detail + ' · ' : '') + `Gündelik işçilik: saatlik ücret ${wage.toFixed(2)} oyun lirası`;
       } else if (!shopOpen) {
         const gross = Math.round(profession.gross * variance * 100) / 100;
         const supplies = Math.round((profession.overhead * 0.12 + 0.35) * 100) / 100;
-        net = gross - supplies;
-        detail = `${profession.name}: iş hasılatı ${gross.toFixed(2)}, malzeme ${supplies.toFixed(2)}`;
+        laborNet = gross - supplies;
+        detail = (detail ? detail + ' · ' : '') + `${profession.name}: iş hasılatı ${gross.toFixed(2)}, malzeme ${supplies.toFixed(2)}`;
       } else {
-        detail = `${profession.name}: dükkanında çalıştın; günün satışları ayrıca hesaplanacak`;
+        detail = (detail ? detail + ' · ' : '') + `${profession.name}: dükkanında çalıştın; diğer işletmelerin satışları da sürdü`;
       }
       setWorkHours(v => v + 1);
     } else if (work && !isWorkingHour) {
       detail = 'Bu saatte iş bulmak zor. Dinlenmeyi veya saati ilerletmeyi seçtin.';
     }
-    // İşletme satışları mesai saatlerinde her saat ayrı ayrı kasaya işlenir.
+    // All owned businesses add their takings independently of the player's profession income.
+    const net = hourlySales.revenue + laborNet;
     setCash(v => Math.max(0, Math.round((v + net) * 100) / 100));
     const nextHour = (hour + 1) % 24;
     setHour(nextHour);
