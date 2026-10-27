@@ -485,6 +485,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
     const raycaster = new THREE.Raycaster();
     const pointer = new THREE.Vector2();
     const target = new THREE.Vector3(0, 0, 0);
+    const targetGoal = target.clone();
     let dragging = false;
     let moved = false;
     let lastX = 0;
@@ -492,12 +493,16 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
     let theta = Math.atan2(camera.position.x, camera.position.z);
     let radius = camera.position.distanceTo(target);
     let phi = Math.acos(camera.position.y / radius);
+    let thetaGoal = theta;
+    let radiusGoal = radius;
+    let phiGoal = phi;
     let dragMode = 'pan';
+    const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
     const placeCamera = () => {
-      phi = Math.max(0.28, Math.min(1.28, phi));
-      radius = Math.max(5.5, Math.min(40, radius));
-      target.x = Math.max(-34, Math.min(34, target.x));
-      target.z = Math.max(-34, Math.min(34, target.z));
+      phi = clamp(phi, 0.28, 1.28);
+      radius = clamp(radius, 5.5, 40);
+      target.x = clamp(target.x, -34, 34);
+      target.z = clamp(target.z, -34, 34);
       camera.position.set(
         target.x + radius * Math.sin(phi) * Math.sin(theta),
         target.y + radius * Math.cos(phi),
@@ -506,18 +511,18 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
       camera.lookAt(target);
     };
     cameraControlRef.current = (action, property) => {
-      if (action === 'in') radius = Math.max(5.5, radius - Math.max(1.5, radius * 0.11));
-      else if (action === 'out') radius = Math.min(40, radius + Math.max(1.5, radius * 0.11));
+      if (action === 'in') radiusGoal = clamp(radiusGoal * 0.82, 5.5, 40);
+      else if (action === 'out') radiusGoal = clamp(radiusGoal * 1.22, 5.5, 40);
       else if (action === 'focus' && property) {
-        target.set(property.x || 0, 0, property.z || 0);
-        radius = Math.min(radius, 15);
-        phi = 0.72;
+        targetGoal.set(clamp(property.x || 0, -34, 34), 0, clamp(property.z || 0, -34, 34));
+        radiusGoal = Math.min(radiusGoal, 15);
+        phiGoal = 0.72;
       } else {
-        radius = 25; theta = Math.PI / 4; phi = 0.78; target.set(0, 0, 0);
+        radiusGoal = 25; thetaGoal = Math.PI / 4; phiGoal = 0.78; targetGoal.set(0, 0, 0);
       }
-      placeCamera();
     };
     const onPointerDown = (event) => {
+      if (event.pointerType === 'mouse' && event.button !== 0 && event.button !== 2) return;
       dragging = true; moved = false; lastX = event.clientX; lastY = event.clientY;
       dragMode = event.pointerType === 'touch' || event.button === 0 ? 'pan' : 'rotate';
       renderer.domElement.style.cursor = 'grabbing';
@@ -529,24 +534,21 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
       const dy = event.clientY - lastY;
       if (Math.abs(dx) + Math.abs(dy) > 3) moved = true;
       if (dragMode === 'rotate') {
-        theta -= dx * 0.006;
-        phi += dy * 0.004;
+        thetaGoal -= dx * 0.006;
+        phiGoal = clamp(phiGoal + dy * 0.004, 0.28, 1.28);
       } else {
-        const panScale = radius * 0.0017;
-        target.x -= dx * panScale * Math.cos(theta);
-        target.z += dx * panScale * Math.sin(theta);
-        target.x += dy * panScale * Math.sin(theta) * 0.45;
-        target.z += dy * panScale * Math.cos(theta) * 0.45;
+        const panScale = radiusGoal * 0.0017;
+        targetGoal.x = clamp(targetGoal.x - dx * panScale * Math.cos(thetaGoal) + dy * panScale * Math.sin(thetaGoal) * 0.45, -34, 34);
+        targetGoal.z = clamp(targetGoal.z + dx * panScale * Math.sin(thetaGoal) + dy * panScale * Math.cos(thetaGoal) * 0.45, -34, 34);
       }
       lastX = event.clientX; lastY = event.clientY;
-      placeCamera();
     };
     const onPointerUp = () => { dragging = false; renderer.domElement.style.cursor = 'grab'; };
     const onWheel = (event) => {
       event.preventDefault();
-      const zoomFactor = Math.exp(event.deltaY * 0.0012);
-      radius = Math.max(5.5, Math.min(40, radius * zoomFactor));
-      placeCamera();
+      // Exponential, clamped dolly input avoids large jumps on high-resolution trackpads.
+      const zoomFactor = Math.exp(clamp(event.deltaY, -120, 120) * 0.00115);
+      radiusGoal = clamp(radiusGoal * zoomFactor, 5.5, 40);
     };
     const onContextMenu = (event) => event.preventDefault();
     const onClick = (event) => {
@@ -572,10 +574,21 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
     renderer.domElement.style.cursor = 'grab';
 
     let frame;
-    const startedAt = Date.now();
+    const startedAt = performance.now();
+    let lastCameraFrame = startedAt;
     const animate = () => {
       frame = requestAnimationFrame(animate);
-      const elapsed = (Date.now() - startedAt) / 1000;
+      const now = performance.now();
+      const elapsed = (now - startedAt) / 1000;
+      // Frame-rate-independent damping makes zoom, pan, rotate and focus glide into place.
+      const delta = Math.min(0.05, Math.max(0, (now - lastCameraFrame) / 1000));
+      lastCameraFrame = now;
+      const ease = 1 - Math.exp(-delta * 10);
+      radius += (radiusGoal - radius) * ease;
+      theta += (thetaGoal - theta) * ease;
+      phi += (phiGoal - phi) * ease;
+      target.lerp(targetGoal, ease);
+      placeCamera();
       const currentHour = hourRef.current;
       const selectedProperty = properties.find(p => p.id === selectedRef.current);
       if (selectedProperty) {
