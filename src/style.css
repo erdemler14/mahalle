@@ -360,3 +360,21 @@ button,select,input{touch-action:manipulation}
   .quick-work-panel{align-items:stretch}
   .quick-work-button{min-width:92px}
 }
+
+
+/* Progression loop: clear next objective, visible progress, no punitive streaks */
+.progression-card{padding:16px 17px;background:linear-gradient(145deg,#1d302f,#182330 72%);border:1px solid #42685d;border-radius:5px;box-shadow:0 7px 22px #00000016;color:#edf5f0}
+.progression-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.progression-step{font:700 9px 'IBM Plex Mono',monospace;letter-spacing:.7px;color:#ffca58}
+.progression-title{margin-top:13px;font:700 18px 'Oxanium',sans-serif;letter-spacing:.1px;color:#f4f8f4;line-height:1.25}
+.progression-detail{margin:7px 0 13px;color:#a9c0b6;font-size:11px;line-height:1.5}
+.progression-meter{height:7px;overflow:hidden;border-radius:2px;background:#30443f;border:1px solid #3e5b50}
+.progression-meter span{display:block;height:100%;background:linear-gradient(90deg,#63e6be,#ffca58);transition:width .25s ease}
+.progression-foot{display:flex;justify-content:space-between;gap:10px;margin-top:7px;color:#b4c9c0;font:10px 'IBM Plex Mono',monospace}
+.progression-next{display:flex;flex-direction:column;gap:4px;margin-top:14px;padding-top:11px;border-top:1px solid #344d45}
+.progression-next span{font:8px 'IBM Plex Mono',monospace;letter-spacing:.9px;color:#8ed8b9}
+.progression-next strong{font:600 12px 'Space Grotesk',sans-serif;color:#ffda80}
+.progression-complete{display:flex;flex-direction:column;gap:7px;margin-top:14px;line-height:1.45}
+.progression-complete strong{font:700 15px 'Oxanium',sans-serif;color:#63e6be}
+.progression-complete span{font-size:11px;color:#a9c0b6}
+@media(max-width:760px){.progression-card{padding:15px;border-radius:12px}.progression-title{font-size:19px}.progression-detail{font-size:12px}.progression-next strong{font-size:13px}}
