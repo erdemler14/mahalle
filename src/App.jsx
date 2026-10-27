@@ -82,6 +82,10 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
   useEffect(() => { selectRef.current = onSelect; }, [onSelect]);
   useEffect(() => { selectedRef.current = selected; }, [selected]);
   useEffect(() => { hourRef.current = hour; }, [hour]);
+  useEffect(() => {
+    const property = properties.find(item => item.id === selected);
+    if (property) cameraControlRef.current?.('focus', property);
+  }, [selected]);
 
   useEffect(() => {
     const el = host.current;
@@ -501,10 +505,16 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
       );
       camera.lookAt(target);
     };
-    cameraControlRef.current = (action) => {
-      if (action === 'in') radius -= 3;
-      else if (action === 'out') radius += 3;
-      else { radius = 25; theta = Math.PI / 4; phi = 0.78; target.set(0, 0, 0); }
+    cameraControlRef.current = (action, property) => {
+      if (action === 'in') radius = Math.max(5.5, radius - Math.max(1.5, radius * 0.11));
+      else if (action === 'out') radius = Math.min(40, radius + Math.max(1.5, radius * 0.11));
+      else if (action === 'focus' && property) {
+        target.set(property.x || 0, 0, property.z || 0);
+        radius = Math.min(radius, 15);
+        phi = 0.72;
+      } else {
+        radius = 25; theta = Math.PI / 4; phi = 0.78; target.set(0, 0, 0);
+      }
       placeCamera();
     };
     const onPointerDown = (event) => {
@@ -534,7 +544,8 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
     const onPointerUp = () => { dragging = false; renderer.domElement.style.cursor = 'grab'; };
     const onWheel = (event) => {
       event.preventDefault();
-      radius += event.deltaY * 0.012;
+      const zoomFactor = Math.exp(event.deltaY * 0.0012);
+      radius = Math.max(5.5, Math.min(40, radius * zoomFactor));
       placeCamera();
     };
     const onContextMenu = (event) => event.preventDefault();
@@ -633,7 +644,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
     };
   }, [owned, ownerByProperty, playerId]);
 
-  return <div className="scene-host" ref={host} aria-label="Beyoğlu 1923 3D mahalle sahnesi"><div className="scene-building-overlay" ref={overlayRef}>{overlay}</div><div className="map-zoom-controls"><button type="button" aria-label="Yakınlaştır" title="Yakınlaştır" onClick={() => cameraControlRef.current?.('in')}>＋</button><button type="button" aria-label="Uzaklaştır" title="Uzaklaştır" onClick={() => cameraControlRef.current?.('out')}>−</button><button type="button" aria-label="Haritayı sıfırla" title="Haritayı sıfırla" onClick={() => cameraControlRef.current?.('reset')}>⌂</button></div><div className="map-hint">Sürükle: haritada ilerle · Sağ tuş: döndür · Tekerlek: yakınlaş</div></div>;
+  return <div className="scene-host" ref={host} aria-label="Beyoğlu 1923 3D mahalle sahnesi"><div className="scene-building-overlay" ref={overlayRef}>{overlay}</div><div className="map-zoom-controls"><button type="button" aria-label="Yakınlaştır" title="Yakınlaştır" onClick={() => cameraControlRef.current?.('in')}>＋</button><button type="button" aria-label="Uzaklaştır" title="Uzaklaştır" onClick={() => cameraControlRef.current?.('out')}>−</button><button type="button" aria-label="Seçili binaya git" title="Seçili binaya git" onClick={() => cameraControlRef.current?.('focus', properties.find(item => item.id === selected))}>⌖</button><button type="button" aria-label="Haritayı sıfırla" title="Haritayı sıfırla" onClick={() => cameraControlRef.current?.('reset')}>⌂</button></div><div className="map-hint">Sol tuşla sürükle: ilerle · Sağ tuş: döndür · Tekerlek: yakınlaş</div></div>;
 }
 
 function App() {
@@ -1231,7 +1242,7 @@ function App() {
 
     <section className="game-layout">
       <div className="world-panel">
-        <div className="world-topline"><span><span className="live-dot" /> BEYOĞLU MERKEZİ</span><span>OYUN DÜNYASI <i>·</i> {year}</span></div>
+        <div className="world-topline"><span><span className="live-dot" /> BEYOĞLU MERKEZİ</span><label className="property-finder"><span>⌕</span><select aria-label="Mülk bul ve haritada göster" value={selected} onChange={event => selectProperty(Number(event.target.value))}><option value="" disabled>Mülk ara...</option>{properties.map(property => <option key={property.id} value={property.id}>{property.name}{owned.includes(property.id) ? ' · SENİN' : ''}</option>)}</select><small>{properties.length} MÜLK</small></label><span className="world-year">OYUN DÜNYASI <i>·</i> {year}</span></div>
         <CityScene selected={selected} owned={owned} ownerByProperty={ownerByProperty} playerId={playerId} onSelect={selectProperty} hour={hour} overlay={<div className="scene-action-card">
           <div className="scene-action-eyebrow">SEÇİLİ BİNA · {String(active.id).padStart(2, '0')}</div><strong>{active.name}</strong>
           <span>{ownerByProperty[active.id] ? (ownerByProperty[active.id].playerId === playerId ? `Sahibi: ${ownerByProperty[active.id].name} (sen)` : `Sahibi: ${ownerByProperty[active.id].name}`) : 'Satılık'} · ₺{getMarketValue(active).toLocaleString('tr-TR')}</span>
@@ -1298,12 +1309,12 @@ function App() {
               <option value="">Ürün grubu seç</option>
               {(tradeCatalog[active.id] || []).map(item => <option key={item.id} value={item.id}>{item.name} · birim maliyet ₺{(item.units > 0 ? item.cost / item.units : 0).toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} / satış ₺{item.price.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</option>)}
             </select>
+            {selectedVenueCompatible && <div className="quick-work-panel"><div><span className="quick-work-kicker">KENDİN ÇALIŞ</span><strong>{profession.name} · 1 saat</strong><small>Ek gelir kazan, mesai saatini ilerlet.</small></div><button className="quick-work-button" onClick={workAtSelectedBusiness} disabled={hour < 8 || hour >= 19}>ÇALIŞ <span>+₺{Math.max(0, profession.gross * 2.2 - profession.overhead * 0.18 - 0.5).toFixed(2)}</span></button></div>}
             <div className="stock-line"><span>Mevcut stok</span><strong>{stockByProperty[active.id] || 0} adet</strong></div>
             <div className="stock-line"><span>Parti alış maliyeti</span><strong>{(() => { const item = (tradeCatalog[active.id] || []).find(product => product.id === businessPlans[active.id]); return item ? `₺${item.cost.toLocaleString('tr-TR')} · ${item.units} adet` : '₺0'; })()}</strong></div>
             <div className="stock-line"><span>Birim maliyet / satış</span><strong>{(() => { const item = (tradeCatalog[active.id] || []).find(product => product.id === businessPlans[active.id]); return item && item.units > 0 ? `₺${(item.cost / item.units).toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} / ₺${item.price.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : '—'; })()}</strong></div>
             <div className="stock-line"><span>Parti başına tahmini brüt fark</span><strong>₺{(() => { const item = (tradeCatalog[active.id] || []).find(product => product.id === businessPlans[active.id]); return item ? (item.price * item.units - item.cost).toLocaleString('tr-TR', {maximumFractionDigits: 2}) : '0'; })()}</strong></div>
             <button className="stock-button" onClick={stockBusiness}>{(tradeCatalog[active.id] || []).find(item => item.id === businessPlans[active.id])?.production ? "ÜRETİM YAP / STOK EKLE" : "TEDARİK ET / STOK AL"}</button>
-            {selectedVenueCompatible && <button className="work-button" onClick={workAtSelectedBusiness} disabled={hour < 8 || hour >= 19}>BU DÜKKANDA BİR SAAT ÇALIŞ <span>+₺{Math.max(0, profession.gross * 2.2 - profession.overhead * 0.18 - 0.5).toFixed(2)}</span></button>}
             <p>Stoklu otomatik satışın yanında burada bizzat bir saat çalışıp ek gelir kazanabilirsin. Çalışma saati 08.00–19.00; manuel çalışınca zaman durur, tekrar başlatabilirsin.</p>
           </div>}
 
