@@ -187,6 +187,31 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
       contact.rotation.z = Math.PI / 2; contact.position.set(1.42, 4.12, z); scene.add(contact);
     }
 
+    // Small horse-drawn carts add low-cost ambient motion to the historic streets.
+    const traffic = [];
+    const makeCart = (startZ, laneX, direction, bodyColor) => {
+      const cart = new THREE.Group();
+      const wood = new THREE.MeshStandardMaterial({ color: bodyColor, roughness: 0.9 });
+      const dark = new THREE.MeshStandardMaterial({ color: '#49392c', roughness: 0.95 });
+      const wheelMat = new THREE.MeshStandardMaterial({ color: '#4a3c30', roughness: 0.95 });
+      const body = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.28, 1.05), wood);
+      body.position.set(0, 0.55, 0); body.castShadow = true; cart.add(body);
+      const seat = new THREE.Mesh(new THREE.BoxGeometry(0.64, 0.12, 0.3), dark);
+      seat.position.set(0, 0.78, -0.28); cart.add(seat);
+      for (const side of [-1, 1]) {
+        const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.09, 10), wheelMat);
+        wheel.rotation.z = Math.PI / 2; wheel.position.set(side * 0.4, 0.34, 0.05); wheel.castShadow = true; cart.add(wheel);
+      }
+      const shaft = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.85), dark);
+      shaft.position.set(0, 0.43, direction > 0 ? 0.88 : -0.88); cart.add(shaft);
+      cart.position.set(laneX, 0, startZ);
+      cart.rotation.y = direction > 0 ? 0 : Math.PI;
+      scene.add(cart);
+      traffic.push({ cart, laneX, direction, speed: 1.15 + Math.random() * 0.45, wheels: cart.children.filter(child => child.geometry?.type === 'CylinderGeometry') });
+    };
+    makeCart(-18, -3.05, 1, '#79563b');
+    makeCart(9, 3.05, -1, '#8a6240');
+
     const buildingMeshes = [];
     const addBuilding = (p, idx, isOwned, ownerInfo, currentPlayerId) => {
       const group = new THREE.Group();
@@ -627,6 +652,12 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
       phi += (phiGoal - phi) * ease;
       target.lerp(targetGoal, ease);
       placeCamera();
+      traffic.forEach(({ cart, laneX, direction, speed, wheels }) => {
+        cart.position.z += direction * speed * delta;
+        if (cart.position.z > 25) cart.position.z = -25;
+        if (cart.position.z < -25) cart.position.z = 25;
+        wheels.forEach(wheel => { wheel.rotation.x += direction * speed * delta * 2.4; });
+      });
       const currentHour = hourRef.current;
       const selectedProperty = properties.find(p => p.id === selectedRef.current);
       if (selectedProperty) {
