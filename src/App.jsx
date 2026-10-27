@@ -654,7 +654,12 @@ function App() {
   const [joinCode, setJoinCode] = useState('');
   const [playerName, setPlayerName] = useState(() => typeof saved.playerName === 'string' ? saved.playerName : '');
   const [opponentName, setOpponentName] = useState('Diğer oyuncu');
-  const [ownerByProperty, setOwnerByProperty] = useState({});
+  const [ownerByProperty, setOwnerByProperty] = useState(() => Object.fromEntries(
+    (Array.isArray(saved.owned) ? saved.owned : []).map(id => [id, {
+      playerId: 'solo',
+      name: typeof saved.playerName === 'string' && saved.playerName.trim() ? saved.playerName.trim() : 'Ben'
+    }])
+  ));
   const [incomingOffer, setIncomingOffer] = useState(null);
   const [offerPriceInput, setOfferPriceInput] = useState('');
   const [offerComposerOpen, setOfferComposerOpen] = useState(false);
@@ -944,7 +949,7 @@ function App() {
     delete nextOwners[property.id];
     publishOwners(nextOwners);
     if (shopPropertyId === property.id) setShopPropertyId(null);
-    tell(`${property.name} satıldı. ₺${salePrice.toLocaleString('tr-TR')} tahsil edildi (piyasa bedelinin %90'ı).`);
+    tell(`${property.name} satıldı. ₺${salePrice.toLocaleString('tr-TR')} tahsil edildi (piyasa bedelinin %95'i).`);
   };
 
   const toggleRent = () => {
