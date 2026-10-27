@@ -840,27 +840,7 @@ function App() {
     } else if (work && !isWorkingHour) {
       detail = 'Bu saatte iş bulmak zor. Dinlenmeyi veya saati ilerletmeyi seçtin.';
     }
-    // Her portföy işletmesi, ürün ve stok tanımlandıktan sonra bağımsız çalışır.
-    // Oyuncunun her saat o dükkana gidip işletmeyi açması gerekmez.
-    if (hour >= 8 && hour < 19) {
-      const stockChanges = {};
-      const sales = [];
-      owned.forEach(propertyId => {
-        if (rented.includes(propertyId)) return;
-        const property = properties.find(p => p.id === propertyId);
-        const product = (tradeCatalog[propertyId] || []).find(item => item.id === businessPlans[propertyId]);
-        const stock = stockByProperty[propertyId] || 0;
-        if (!product || product.price <= 0 || stock <= 0 || Math.random() >= 0.72) return;
-        const demandMultiplier = property?.type === 'İşletme' ? 2.4 : property?.type === 'Atölye' ? 2.6 : property?.type === 'Ticaret' ? 2.0 : 1.6;
-        const sold = Math.min(stock, Math.random() < 0.18 ? 3 : Math.random() < 0.48 ? 2 : 1);
-        const revenue = Math.round(sold * product.price * demandMultiplier * 100) / 100;
-        net += revenue;
-        stockChanges[propertyId] = Math.max(0, stock - sold);
-        sales.push(`${property?.name || 'İşletme'}: ${sold} adet ${product.name}, hasılat katsayısı x${demandMultiplier}, +₺${revenue.toFixed(2)}`);
-      });
-      if (Object.keys(stockChanges).length) setStockByProperty(old => ({ ...old, ...stockChanges }));
-      if (sales.length) detail += `${detail ? ' · ' : ''}${sales.join(' · ')}`;
-    }
+    // İşletmeler günlük kapanışta settleDailyBusinesses ile hesaplanır; burada tekrar satış yazılmaz.
     setCash(v => Math.max(0, Math.round((v + net) * 100) / 100));
     const nextHour = (hour + 1) % 24;
     setHour(nextHour);
