@@ -99,8 +99,9 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
     const camera = new THREE.PerspectiveCamera(38, el.clientWidth / el.clientHeight, 0.1, 160);
     camera.position.set(12, 13, 17);
     camera.lookAt(0, 0, 0);
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    const isMobileScene = window.matchMedia('(max-width: 760px)').matches || navigator.maxTouchPoints > 0;
+    const renderer = new THREE.WebGLRenderer({ antialias: !isMobileScene, alpha: false, powerPreference: 'high-performance' });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isMobileScene ? 1.35 : 1.8));
     renderer.setSize(el.clientWidth, el.clientHeight);
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -199,15 +200,38 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
       const seat = new THREE.Mesh(new THREE.BoxGeometry(0.64, 0.12, 0.3), dark);
       seat.position.set(0, 0.78, -0.28); cart.add(seat);
       for (const side of [-1, 1]) {
-        const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.09, 10), wheelMat);
+        const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.09, 12), wheelMat);
         wheel.rotation.z = Math.PI / 2; wheel.position.set(side * 0.4, 0.34, 0.05); wheel.castShadow = true; cart.add(wheel);
+        const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 0.1, 8), dark);
+        hub.rotation.z = Math.PI / 2; hub.position.set(side * 0.4, 0.34, 0.05); cart.add(hub);
       }
       const shaft = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.85), dark);
       shaft.position.set(0, 0.43, direction > 0 ? 0.88 : -0.88); cart.add(shaft);
+      // Simple horse silhouette: torso, neck, head and four articulated-looking legs.
+      const horseMat = new THREE.MeshStandardMaterial({ color: '#65452f', roughness: 0.98 });
+      const maneMat = new THREE.MeshStandardMaterial({ color: '#30251f', roughness: 1 });
+      const horse = new THREE.Group();
+      const torso = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.48, 0.92), horseMat);
+      torso.position.y = 0.68; horse.add(torso);
+      const neck = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.62, 0.28), horseMat);
+      neck.position.set(0, 1.0, 0.47); neck.rotation.x = -0.22; horse.add(neck);
+      const head = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.32, 0.34), horseMat);
+      head.position.set(0, 1.18, 0.64); horse.add(head);
+      const mane = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.42, 0.22), maneMat);
+      mane.position.set(0, 1.1, 0.42); horse.add(mane);
+      const tail = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.36, 0.12), maneMat);
+      tail.position.set(0, 0.78, -0.48); tail.rotation.x = -0.3; horse.add(tail);
+      const legs = [];
+      for (const x of [-0.14, 0.14]) for (const z of [-0.25, 0.32]) {
+        const leg = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.48, 0.1), horseMat);
+        leg.position.set(x, 0.28, z); horse.add(leg); legs.push(leg);
+      }
+      horse.position.set(0, 0, direction > 0 ? 1.55 : -1.55);
+      cart.add(horse);
       cart.position.set(laneX, 0, startZ);
       cart.rotation.y = direction > 0 ? 0 : Math.PI;
       scene.add(cart);
-      traffic.push({ cart, laneX, direction, speed: 1.15 + Math.random() * 0.45, wheels: cart.children.filter(child => child.geometry?.type === 'CylinderGeometry') });
+      traffic.push({ cart, laneX, direction, speed: 1.15 + Math.random() * 0.45, wheels: cart.children.filter(child => child.geometry?.type === 'CylinderGeometry'), legs: horse.children.filter(child => child.geometry?.type === 'BoxGeometry' && child.position.y === 0.28) });
     };
     makeCart(-18, -3.05, 1, '#79563b');
     makeCart(9, 3.05, -1, '#8a6240');
@@ -652,11 +676,12 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
       phi += (phiGoal - phi) * ease;
       target.lerp(targetGoal, ease);
       placeCamera();
-      traffic.forEach(({ cart, laneX, direction, speed, wheels }) => {
+      traffic.forEach(({ cart, laneX, direction, speed, wheels, legs }) => {
         cart.position.z += direction * speed * delta;
         if (cart.position.z > 25) cart.position.z = -25;
         if (cart.position.z < -25) cart.position.z = 25;
         wheels.forEach(wheel => { wheel.rotation.x += direction * speed * delta * 2.4; });
+        legs.forEach((leg, index) => { leg.rotation.x = Math.sin(elapsed * 7 + index * Math.PI) * 0.22; });
       });
       const currentHour = hourRef.current;
       const selectedProperty = properties.find(p => p.id === selectedRef.current);
