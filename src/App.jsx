@@ -17,6 +17,7 @@ const properties = [
 ];
 
 const SAVE_KEY = 'mahalle-save-v1';
+const DAILY_LIVING_COST = 2.5;
 const venueTypesByProfession = {
   kolonyaci: ['Ticaret', 'Atölye'],
   leblebici: ['Ticaret', 'Depo', 'İşletme'],
@@ -29,18 +30,23 @@ function supportsProfessionAt(property, professionId) {
   return Boolean(property && venueTypesByProfession[professionId]?.includes(property.type));
 }
 
-function CityScene({ selected, owned, onSelect }) {
+function CityScene({ selected, owned, onSelect, hour }) {
   const host = useRef(null);
   const selectRef = useRef(onSelect);
   const selectedRef = useRef(selected);
+  const hourRef = useRef(hour);
   useEffect(() => { selectRef.current = onSelect; }, [onSelect]);
   useEffect(() => { selectedRef.current = selected; }, [selected]);
+  useEffect(() => { hourRef.current = hour; }, [hour]);
 
   useEffect(() => {
     const el = host.current;
     if (!el) return;
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color('#e8e6de');
+    const dayBackground = new THREE.Color('#e8e6de');
+    const duskBackground = new THREE.Color('#b9b7b0');
+    const nightBackground = new THREE.Color('#202b3b');
+    scene.background = dayBackground.clone();
     scene.fog = new THREE.Fog('#e8e6de', 22, 48);
     const camera = new THREE.PerspectiveCamera(38, el.clientWidth / el.clientHeight, 0.1, 100);
     camera.position.set(12, 13, 17);
@@ -55,7 +61,8 @@ function CityScene({ selected, owned, onSelect }) {
     renderer.toneMappingExposure = 1.15;
     el.appendChild(renderer.domElement);
 
-    scene.add(new THREE.HemisphereLight('#fffaf0', '#89877f', 2.0));
+    const hemisphere = new THREE.HemisphereLight('#fffaf0', '#89877f', 2.0);
+    scene.add(hemisphere);
     const sun = new THREE.DirectionalLight('#fff5dd', 3.0);
     sun.position.set(-7, 15, 8);
     sun.castShadow = true;
@@ -316,6 +323,15 @@ function CityScene({ selected, owned, onSelect }) {
     const animate = () => {
       frame = requestAnimationFrame(animate);
       const elapsed = (Date.now() - startedAt) / 1000;
+      const currentHour = hourRef.current;
+      const isNight = currentHour >= 19 || currentHour < 6;
+      const isDusk = !isNight && (currentHour < 8 || currentHour >= 17);
+      const lightColor = isNight ? nightBackground : isDusk ? duskBackground : dayBackground;
+      scene.background.copy(lightColor);
+      scene.fog.color.copy(lightColor);
+      hemisphere.intensity = isNight ? 0.72 : isDusk ? 1.2 : 2.0;
+      sun.intensity = isNight ? 0.28 : isDusk ? 1.35 : 3.0;
+      lampGlass.emissiveIntensity = isNight ? 1.15 : isDusk ? 0.55 : 0.18;
       tram.position.x = -0.1 + Math.sin(Date.now() * 0.00015) * 0.8;
       pedestrians.forEach((ped, i) => {
         const progress = (elapsed * ped.speed + ped.phase) % 1;
@@ -435,16 +451,17 @@ function App() {
       const nextDay = nextDayRaw > 30 ? 1 : nextDayRaw;
       const nextMonthRaw = month + (nextDayRaw > 30 ? 1 : 0);
       const nextMonth = nextMonthRaw > 12 ? 1 : nextMonthRaw;
-      const overhead = professionId !== 'amele' && hasSuitablePremise ? profession.overhead : 0;
+      const businessOverhead = professionId !== 'amele' && hasSuitablePremise ? profession.overhead : 0;
       const maintenance = portfolio.reduce((sum, p) => sum + Math.max(0.01, Math.round((p.price * 0.003 / 365) * 100) / 100), 0);
+      const dailyCost = DAILY_LIVING_COST + businessOverhead + maintenance;
       const monthlyRent = nextDayRaw > 30 ? Math.round((realizedAnnualRent / 12) * 100) / 100 : 0;
-      setCash(v => Math.max(0, Math.round((v - overhead - maintenance + monthlyRent) * 100) / 100));
+      setCash(v => Math.max(0, Math.round((v - dailyCost + monthlyRent) * 100) / 100));
       setDay(nextDay);
       setMonth(nextMonth);
       if (nextMonthRaw > 12) setYear(v => v + 1);
       setHour(6);
       setWorkHours(0);
-      tell(`Yeni gün başladı. Günlük geçim gideri: ${overhead} oyun lirası; mülk bakımı: ${maintenance}. ${monthlyRent ? `Ay sonu kira tahsilatı: +${monthlyRent}.` : ''}`);
+      tell(`Yeni gün başladı. Yaşam gideri: ${DAILY_LIVING_COST}; işletme gideri: ${businessOverhead}; mülk bakımı: ${maintenance}. ${monthlyRent ? `Ay sonu kira tahsilatı: +${monthlyRent}.` : ''}`);
       return;
     }
     const isWorkingHour = hour >= 8 && hour < 19;
@@ -488,7 +505,9 @@ function App() {
     const nextDay = nextDayRaw > 30 ? 1 : nextDayRaw;
     const nextMonthRaw = month + (nextDayRaw > 30 ? 1 : 0);
     const nextMonth = nextMonthRaw > 12 ? 1 : nextMonthRaw;
-    const upkeep = (professionId !== 'amele' && hasSuitablePremise ? profession.overhead : 0) + portfolio.reduce((sum, p) => sum + Math.max(0.01, Math.round((p.price * 0.003 / 365) * 100) / 100), 0);
+    const businessOverhead = professionId !== 'amele' && hasSuitablePremise ? profession.overhead : 0;
+    const maintenance = portfolio.reduce((sum, p) => sum + Math.max(0.01, Math.round((p.price * 0.003 / 365) * 100) / 100), 0);
+    const upkeep = DAILY_LIVING_COST + businessOverhead + maintenance;
     const rent = nextDayRaw > 30 ? Math.round((realizedAnnualRent / 12) * 100) / 100 : 0;
     setCash(v => Math.max(0, Math.round((v - upkeep + rent) * 100) / 100));
     setDay(nextDay);
@@ -569,7 +588,7 @@ function App() {
     <section className="game-layout">
       <div className="world-panel">
         <div className="world-topline"><span><span className="live-dot" /> BEYOĞLU MERKEZİ</span><span>OYUN DÜNYASI <i>·</i> {year}</span></div>
-        <CityScene selected={selected} owned={owned} onSelect={setSelected} />
+        <CityScene selected={selected} owned={owned} onSelect={setSelected} hour={hour} />
         <div className="map-legend"><span><i className="legend-dot available" /> SATILIK MÜLK</span><span><i className="legend-dot owned" /> SENİN MÜLKÜN</span><span className="map-hint">SÜRÜKLE: DÖNDÜR · KAYDIR: YAKINLAŞ · BİNAYA TIKLA</span></div>
         <div className="world-caption"><span>İSTANBUL / BEYOĞLU</span><span>GÜN {day} <i>·</i> SAAT {String(hour).padStart(2, '0')}:00</span></div>
       </div>
@@ -581,7 +600,7 @@ function App() {
             {professionOptions.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
           <p className="profession-description">{profession.description}</p>
-          <div className="profession-meta">Saatlik hasılat ≈ {profession.gross.toFixed(2)} · Günlük gider {profession.overhead} oyun lirası</div>
+          <div className="profession-meta">Saatlik hasılat ≈ {profession.gross.toFixed(2)} · Günlük işletme gideri {profession.overhead} oyun lirası</div>
           <div className="profession-meta">{professionId === 'amele' ? 'Dükkan gerekmez; ücretli iş bulup sermaye biriktirebilirsin.' : hasSuitablePremise ? 'Mesleğine uygun bir mülkün var.' : 'Bu meslek için uygun bir dükkan veya atölye edinmen gerekiyor.'}</div>
         </section>
 
