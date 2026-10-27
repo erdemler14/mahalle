@@ -338,7 +338,8 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
         pediment.rotation.y = Math.PI; pediment.position.set(0, h + 0.24, d / 2); pediment.scale.z = 0.45; group.add(pediment);
       }
       group.position.set(p.x, 0, p.z);
-      group.rotation.y = p.rotation || 0;
+      // Face each main frontage toward the street.
+      group.rotation.y = (p.x < 0 ? Math.PI / 2 : -Math.PI / 2) + (p.rotation || 0);
       group.userData.propertyId = p.id;
       scene.add(group);
       buildingMeshes.push(group);
@@ -524,7 +525,8 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
     const onPointerDown = (event) => {
       if (event.pointerType === 'mouse' && event.button !== 0 && event.button !== 2) return;
       dragging = true; moved = false; lastX = event.clientX; lastY = event.clientY;
-      dragMode = event.pointerType === 'touch' || event.button === 0 ? 'pan' : 'rotate';
+      // Left-drag orbits; right-drag or Shift + left-drag pans.
+      dragMode = event.pointerType === 'touch' ? 'rotate' : (event.button === 2 || event.shiftKey ? 'pan' : 'rotate');
       renderer.domElement.style.cursor = 'grabbing';
       renderer.domElement.setPointerCapture?.(event.pointerId);
     };
@@ -657,7 +659,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
     };
   }, [owned, ownerByProperty, playerId]);
 
-  return <div className="scene-host" ref={host} aria-label="Beyoğlu 1923 3D mahalle sahnesi"><div className="scene-building-overlay" ref={overlayRef}>{overlay}</div><div className="map-zoom-controls"><button type="button" aria-label="Yakınlaştır" title="Yakınlaştır" onClick={() => cameraControlRef.current?.('in')}>＋</button><button type="button" aria-label="Uzaklaştır" title="Uzaklaştır" onClick={() => cameraControlRef.current?.('out')}>−</button><button type="button" aria-label="Seçili binaya git" title="Seçili binaya git" onClick={() => cameraControlRef.current?.('focus', properties.find(item => item.id === selected))}>⌖</button><button type="button" aria-label="Haritayı sıfırla" title="Haritayı sıfırla" onClick={() => cameraControlRef.current?.('reset')}>⌂</button></div><div className="map-hint">Sol tuşla sürükle: ilerle · Sağ tuş: döndür · Tekerlek: yakınlaş</div></div>;
+  return <div className="scene-host" ref={host} aria-label="Beyoğlu 1923 3D mahalle sahnesi"><div className="scene-building-overlay" ref={overlayRef}>{overlay}</div><div className="map-zoom-controls"><button type="button" aria-label="Yakınlaştır" title="Yakınlaştır" onClick={() => cameraControlRef.current?.('in')}>＋</button><button type="button" aria-label="Uzaklaştır" title="Uzaklaştır" onClick={() => cameraControlRef.current?.('out')}>−</button><button type="button" aria-label="Seçili binaya git" title="Seçili binaya git" onClick={() => cameraControlRef.current?.('focus', properties.find(item => item.id === selected))}>⌖</button><button type="button" aria-label="Haritayı sıfırla" title="Haritayı sıfırla" onClick={() => cameraControlRef.current?.('reset')}>⌂</button></div><div className="map-hint">Sol sürükle: döndür · Sağ sürükle: ilerle · Shift + sol: ilerle · Tekerlek: zoom</div></div>;
 }
 
 function App() {
