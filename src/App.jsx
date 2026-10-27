@@ -601,6 +601,9 @@ function App() {
   const [opponentName, setOpponentName] = useState('Diğer oyuncu');
   const [ownerByProperty, setOwnerByProperty] = useState({});
   const [incomingOffer, setIncomingOffer] = useState(null);
+  const [offerPriceInput, setOfferPriceInput] = useState('');
+  const [offerComposerOpen, setOfferComposerOpen] = useState(false);
+  const [marketValues, setMarketValues] = useState(() => saved.marketValues && typeof saved.marketValues === 'object' ? saved.marketValues : {});
   const playerId = multiplayerRole === 'host' ? 'host' : multiplayerRole === 'guest' ? 'guest' : 'solo';
   const peerRef = useRef(null);
   const connectionRef = useRef(null);
@@ -610,24 +613,38 @@ function App() {
   const sendPeerMessage = (message) => { if (connectionRef.current?.open) connectionRef.current.send(message); };
   const sendAction = () => false;
   const publishOwners = (nextOwners) => { setOwnerByProperty(nextOwners); sendPeerMessage({ type: 'world-update', owners: nextOwners, playerName: playerName.trim() || 'Oyuncu' }); };
+  const getMarketValue = property => Math.max(1,Math.round((Number(marketValues[property.id])||property.price)*100)/100);
+  const updateMarketValues = (nextYear,nextMonth) => setMarketValues(old=>Object.fromEntries(properties.map(property=>{
+    const current=Number(old[property.id])||property.price;
+    const cycle=Math.sin((nextYear-1923)*0.38+nextMonth*0.72)*0.0035;
+    const inflation=0.004+Math.min(0.006,Math.max(-0.002,cycle));
+    const area=[1,4,10,12].includes(property.id)?0.0022:[3,17,18].includes(property.id)?-0.0008:0;
+    const demand=property.type==='Ticaret'?0.0012:property.type==='Konut'?0.0007:property.type==='Atölye'?0.0003:0;
+    const next=current*(1+inflation+area+demand-0.001+(Math.random()-0.5)*0.018);
+    return [property.id,Math.max(property.price*0.45,Math.min(property.price*3.5,Math.round(next*100)/100))];
+  })));
   const sendOffer = () => {
-    if (multiplayerRole === 'solo') { setNotice('Satın alma teklifi göndermek için önce iki kişilik odaya katıl.'); return; }
-    if (!ownerByProperty[active.id] || ownerByProperty[active.id].playerId === playerId) return;
-    if (cash < active.price) { setNotice(`Bu teklif için ₺${active.price} gerekiyor; mevcut sermayen yetersiz.`); return; }
-    const offer = { id: `${Date.now()}-${Math.random().toString(36).slice(2,6)}`, propertyId: active.id, price: active.price, fromPlayerId: playerId, fromName: playerName.trim() || (playerId === 'host' ? 'Ev sahibi' : 'Oyuncu 2'), toName: ownerByProperty[active.id].name };
-    sendPeerMessage({ type: 'offer', offer }); setMultiplayerStatus(`${active.name} için ₺${active.price} satın alma teklifi gönderildi.`); setNotice('Teklif gönderildi. Karşı oyuncunun kabul etmesini bekliyorsun.');
+    if(multiplayerRole==='solo'||!connectionRef.current?.open){setNotice('Teklifin ulaşması için iki oyuncunun da aynı odaya bağlı olması gerekir.');setMultiplayerStatus('Teklif gönderilemedi: oyuncu bağlantısı açık değil.');return;}
+    const owner=ownerByProperty[active.id]; if(!owner||owner.playerId===playerId){setNotice('Bu mülk başka oyuncuya ait olmalı.');return;}
+    const price=Math.round(Number(offerPriceInput)*100)/100;
+    if(!Number.isFinite(price)||price<=0){setNotice('Geçerli bir teklif tutarı gir.');return;}
+    if(cash<price){setNotice('Teklifin ₺'+price.toLocaleString('tr-TR')+' ama nakdin yeterli değil.');return;}
+    const offer={id:String(Date.now())+'-'+Math.random().toString(36).slice(2,6),propertyId:active.id,price,fromPlayerId:playerId,fromName:playerName.trim()||(playerId==='host'?'Ev sahibi':'Oyuncu 2'),toName:owner.name,marketValue:getMarketValue(active)};
+    sendPeerMessage({type:'offer',offer});setMultiplayerStatus(active.name+' için ₺'+price.toLocaleString('tr-TR')+' teklif gönderildi.');setNotice('Teklif gönderildi; karşı oyuncu kabul edebilir, reddedebilir veya karşı teklif verebilir.');setOfferComposerOpen(false);
   };
-  const respondToOffer = (accepted) => {
-    if (!incomingOffer) return;
-    const offer = incomingOffer; const property = properties.find(p => p.id === offer.propertyId);
-    if (accepted && property) {
-      setOwned(old => old.filter(id => id !== property.id)); setRented(old => old.filter(id => id !== property.id));
-      setCash(v => Math.round((v + offer.price) * 100) / 100);
-      const nextOwners = { ...ownerByProperty, [property.id]: { playerId: offer.fromPlayerId, name: offer.fromName } };
-      publishOwners(nextOwners); tell(`${property.name} satıldı. ₺${offer.price} tahsil edildi.`);
-    }
-    sendPeerMessage({ type: 'offer-response', accepted, offer, owners: accepted ? { ...ownerByProperty, [offer.propertyId]: { playerId: offer.fromPlayerId, name: offer.fromName } } : ownerByProperty });
-    setIncomingOffer(null);
+  const respondToOffer = (decision,counterPrice) => {
+    if(!incomingOffer)return; const offer=incomingOffer; const property=properties.find(p=>p.id===offer.propertyId);
+    if(decision==='counter'){const price=Math.round(Number(counterPrice)*100)/100;if(!Number.isFinite(price)||price<=0){setNotice('Geçerli bir karşı teklif gir.');return;}
+      sendPeerMessage({type:'offer-response',decision:'counter',accepted:false,offer:{...offer,counterPrice:price},fromName:playerName.trim()||'Mülk sahibi',owners:ownerByProperty});setIncomingOffer(null);setMultiplayerStatus('Karşı teklif gönderildi: ₺'+price.toLocaleString('tr-TR'));return;}
+    const accepted=decision==='accept';
+    if(accepted&&property){setOwned(old=>old.filter(id=>id!==property.id));setRented(old=>old.filter(id=>id!==property.id));setCash(v=>Math.round((v+offer.price)*100)/100);const nextOwners={...ownerByProperty,[property.id]:{playerId:offer.fromPlayerId,name:offer.fromName}};publishOwners(nextOwners);tell(property.name+' satıldı. ₺'+offer.price.toLocaleString('tr-TR')+' tahsil edildi.');}
+    sendPeerMessage({type:'offer-response',decision:accepted?'accept':'reject',accepted,offer,owners:accepted&&property?{...ownerByProperty,[offer.propertyId]:{playerId:offer.fromPlayerId,name:offer.fromName}}:ownerByProperty});setIncomingOffer(null);
+  };
+  const handleOfferResponse = message => {
+    const offer=message?.offer;if(!offer)return;
+    if(message.decision==='counter'&&offer.fromPlayerId===playerId){setIncomingOffer({...offer,price:offer.counterPrice,fromName:message.fromName||ownerByProperty[offer.propertyId]?.name||'Mülk sahibi',isCounter:true});setOfferPriceInput(String(offer.counterPrice));setMultiplayerStatus('Karşı teklif geldi: ₺'+Number(offer.counterPrice).toLocaleString('tr-TR'));return;}
+    if(message.accepted&&offer.fromPlayerId===playerId){const price=Number(offer.price);if(cash<price){setNotice('Teklif kabul edildi ancak nakdin artık yeterli değil.');return;}setCash(v=>Math.max(0,Math.round((v-price)*100)/100));setOwned(old=>old.includes(offer.propertyId)?old:[...old,offer.propertyId]);setRented(old=>old.filter(id=>id!==offer.propertyId));setOwnerByProperty(message.owners||ownerByProperty);tell((properties.find(p=>p.id===offer.propertyId)?.name||'Mülk')+' ₺'+price.toLocaleString('tr-TR')+' bedelle satın alındı.');setIncomingOffer(null);}
+    else if(message.decision==='reject'&&offer.fromPlayerId===playerId){setIncomingOffer(null);setNotice('Satın alma teklifin reddedildi.');}
   };
   const selectProperty = (id) => {
     if (sendAction('selectProperty', id)) return;
@@ -686,13 +703,13 @@ function App() {
   useEffect(() => {
     try {
       window.localStorage.setItem(SAVE_KEY, JSON.stringify({
-        version: 1, playerName, steps, cash, owned, rented, selected, showPortfolio, professionId,
+        version: 1, playerName, steps, cash, owned, rented, selected, showPortfolio, professionId, marketValues,
         hour, day, month, year, workHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, log: log.slice(0, 5)
       }));
     } catch {
       // The game remains playable if browser storage is disabled or full.
     }
-  }, [playerName, steps, cash, owned, rented, selected, showPortfolio, professionId, hour, day, month, year, workHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, log]);
+  }, [playerName, steps, cash, owned, rented, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, log]);
 
   const tell = (text) => {
     setNotice(text);
@@ -718,6 +735,8 @@ function App() {
       setCash(v => Math.max(0, Math.round((v - dailyCost + monthlyRent) * 100) / 100));
       setDay(nextDay);
       setMonth(nextMonth);
+      const nextYear = nextMonthRaw > 12 ? year + 1 : year;
+      if (nextDayRaw > 30) updateMarketValues(nextYear, nextMonth);
       if (nextMonthRaw > 12) setYear(v => v + 1);
       setHour(6);
       setWorkHours(0);
@@ -811,8 +830,9 @@ function App() {
 
   const buy = () => {
     if (owned.includes(active.id) || ownerByProperty[active.id]) { tell('Bu mülkün zaten bir sahibi var.'); return; }
-    if (cash < active.price) { tell('Bu mülk için yeterli sermayen yok. Önce çalışıp birikim yap.'); return; }
-    setCash(v => v - active.price);
+    const purchasePrice = getMarketValue(active);
+    if (cash < purchasePrice) { tell('Bu mülk için ₺' + purchasePrice.toLocaleString('tr-TR') + ' gerekiyor. Önce çalışıp birikim yap.'); return; }
+    setCash(v => v - purchasePrice);
     setOwned(v => [...v, active.id]);
     setRented(v => v.filter(id => id !== active.id));
     publishOwners({ ...ownerByProperty, [active.id]: { playerId, name: playerName.trim() || (playerId === 'host' ? 'Ev sahibi' : playerId === 'guest' ? 'Oyuncu 2' : 'Ben') } });
@@ -824,7 +844,7 @@ function App() {
   const sellProperty = () => {
     if (!owned.includes(active.id)) { tell('Yalnızca sahibi olduğun mülkü satabilirsin.'); return; }
     const property = active;
-    const salePrice = Math.round(property.price * 0.9 * 100) / 100;
+    const salePrice = Math.round(getMarketValue(property) * 0.95 * 100) / 100;
     if (typeof window !== 'undefined' && !window.confirm(`${property.name} mülkünü ₺${salePrice.toLocaleString('tr-TR')} bedelle satmak istiyor musun? Mevcut işletme stoğu satışa dahil değil ve sıfırlanacak.`)) return;
     setCash(v => Math.round((v + salePrice) * 100) / 100);
     setOwned(v => v.filter(id => id !== property.id));
@@ -892,6 +912,7 @@ function App() {
   const applyWorldState = (message) => {
     if (!message || typeof message !== 'object') return;
     if (message.owners && typeof message.owners === 'object') setOwnerByProperty(message.owners);
+    if (message.marketValues && typeof message.marketValues === 'object') setMarketValues(message.marketValues);
     if (message.hostName) setOpponentName(message.hostName);
   };
 
@@ -939,33 +960,22 @@ function App() {
         connectionRef.current = conn;
         conn.on('open', () => {
           setMultiplayerStatus('Bağlantı kuruldu · oyuncu bilgisi bekleniyor');
-          conn.send({ type: 'world-state', owners: snapshotRef.current?.owners || {}, hostName });
+          conn.send({ type: 'world-state', owners: snapshotRef.current?.owners || {}, marketValues: snapshotRef.current?.marketValues || {}, hostName });
         });
         conn.on('data', message => {
           if (message?.type === 'hello') {
             setOpponentName(message.playerName || 'Oyuncu 2');
             const mergedOwners = { ...(snapshotRef.current?.owners || {}), ...(message.owners || {}) };
             setOwnerByProperty(mergedOwners);
-            conn.send({ type: 'world-state', owners: mergedOwners, hostName });
+            conn.send({ type: 'world-state', owners: mergedOwners, marketValues, hostName });
             setMultiplayerStatus(`İki oyuncu bağlı · ${message.playerName || 'Oyuncu 2'}`);
           }
           if (message?.type === 'world-update' && message.owners && typeof message.owners === 'object') {
             setOwnerByProperty(message.owners);
-            conn.send({ type: 'world-state', owners: message.owners, hostName });
+            conn.send({ type: 'world-state', owners: message.owners, marketValues: message.marketValues || marketValues, hostName });
           }
-          if (message?.type === 'offer' && message.offer) setIncomingOffer({ ...message.offer, fromName: message.offer.fromName || 'Diğer oyuncu' });
-          if (message?.type === 'offer-response') {
-            if (message.accepted && message.offer?.fromPlayerId === 'host') {
-              const offer = message.offer;
-              setCash(v => Math.max(0, Math.round((v - offer.price) * 100) / 100));
-              setOwned(old => old.includes(offer.propertyId) ? old : [...old, offer.propertyId]);
-              setRented(old => old.filter(id => id !== offer.propertyId));
-              setOwnerByProperty(message.owners || ownerByProperty);
-              tell(`${properties.find(p => p.id === offer.propertyId)?.name || 'Mülk'} satıldı.`);
-            }
-            setIncomingOffer(null);
-            conn.send({ type: 'world-state', owners: message.owners || ownerByProperty, hostName });
-          }
+          if(message?.type==='offer'&&message.offer){const offer=message.offer;if(ownerByProperty[offer.propertyId]?.playerId==='host'||snapshotRef.current?.owners?.[offer.propertyId]?.playerId==='host'){setIncomingOffer({...offer,fromName:offer.fromName||'Diğer oyuncu'});setOfferPriceInput(String(offer.price));setMultiplayerStatus('Yeni teklif: '+(properties.find(p=>p.id===offer.propertyId)?.name||'mülk')+' · ₺'+Number(offer.price).toLocaleString('tr-TR'));setNotice('Yeni mülk teklifi geldi. Teklif balonundan yanıt verebilirsin.');}}
+          if(message?.type==='offer-response'){handleOfferResponse(message);conn.send({type:'world-state',owners:message.owners||ownerByProperty,marketValues,hostName});}
         });
         conn.on('error', error => setMultiplayerStatus('Oyuncu bağlantısı hatası: ' + (error?.type || 'bağlantı hatası')));
         conn.on('close', () => {
@@ -1019,19 +1029,8 @@ function App() {
             applyWorldState(message);
             setMultiplayerStatus(`İki oyuncu bağlı · ev sahibi: ${message.hostName || 'Ev sahibi'}`);
           }
-          if (message?.type === 'offer' && message.offer) setIncomingOffer({ ...message.offer, fromName: message.offer.fromName || opponentName });
-          if (message?.type === 'offer-response') {
-            const offer = message.offer;
-            if (message.accepted && offer?.fromPlayerId === 'guest') {
-              setCash(v => Math.max(0, Math.round((v - offer.price) * 100) / 100));
-              setOwned(old => old.includes(offer.propertyId) ? old : [...old, offer.propertyId]);
-              setRented(old => old.filter(id => id !== offer.propertyId));
-              setOwnerByProperty(message.owners || ownerByProperty);
-              tell(`${properties.find(p => p.id === offer.propertyId)?.name || 'Mülk'} satın alındı.`);
-            }
-            if (message.owners) setOwnerByProperty(message.owners);
-            setIncomingOffer(null);
-          }
+          if(message?.type==='offer'&&message.offer){const offer=message.offer;if(ownerByProperty[offer.propertyId]?.playerId==='guest'||snapshotRef.current?.owners?.[offer.propertyId]?.playerId==='guest'){setIncomingOffer({...offer,fromName:offer.fromName||opponentName});setOfferPriceInput(String(offer.price));setMultiplayerStatus('Yeni teklif: '+(properties.find(p=>p.id===offer.propertyId)?.name||'mülk')+' · ₺'+Number(offer.price).toLocaleString('tr-TR'));setNotice('Yeni mülk teklifi geldi. Teklif balonundan yanıt verebilirsin.');}}
+          if(message?.type==='offer-response'){handleOfferResponse(message);if(message.owners)setOwnerByProperty(message.owners);}
         });
         conn.on('error', error => {
           window.clearTimeout(timeout);
@@ -1051,11 +1050,11 @@ function App() {
     }
   };
 
-  snapshotRef.current = { owners: ownerByProperty, hostName: playerName.trim() || 'Ev sahibi' };
+  snapshotRef.current = { owners: ownerByProperty, marketValues, hostName: playerName.trim() || 'Ev sahibi' };
   actionRefs.current = { advanceHour, sleepUntilMorning, selectBusinessPlan, stockBusiness, buy, toggleRent, toggleShop, makeWine, resetGame, selectProperty, changeProfession };
   useEffect(() => {
-    if (multiplayerRole === 'host' && connectionRef.current?.open) connectionRef.current.send({ type: 'world-state', owners: ownerByProperty, hostName: playerName.trim() || 'Ev sahibi' });
-  }, [multiplayerRole, ownerByProperty, playerName]);
+    if (multiplayerRole === 'host' && connectionRef.current?.open) connectionRef.current.send({ type: 'world-state', owners: ownerByProperty, marketValues, hostName: playerName.trim() || 'Ev sahibi' });
+  }, [multiplayerRole, ownerByProperty, marketValues, playerName]);
 
   return <main className="app-shell">
     <header className="topbar">
@@ -1088,7 +1087,7 @@ function App() {
         {multiplayerRole !== 'solo' && <button className="room-leave-button" onClick={closeMultiplayer}>ODADAN AYRIL</button>}
       </div>
       <p>Herkes kendi parasını, mesleğini, stokunu ve portföyünü yönetir. Binaların sahipliği ortaktır; başka oyuncunun mülkü için satın alma teklifi gönderebilirsin. İnternet bağlantısı gerekir.</p>
-      {incomingOffer && <div className="incoming-offer"><strong>Satın alma teklifi</strong><span>{incomingOffer.fromName}, {properties.find(p => p.id === incomingOffer.propertyId)?.name || 'bir mülk'} için ₺{incomingOffer.price} teklif ediyor.</span><div><button onClick={() => respondToOffer(true)}>KABUL ET</button><button onClick={() => respondToOffer(false)}>REDDET</button></div></div>}
+      {incomingOffer && <div className="incoming-offer" role="alert"><strong>{incomingOffer.isCounter ? 'Karşı teklif geldi' : 'Yeni satın alma teklifi'}</strong><span>{incomingOffer.fromName}, {properties.find(p => p.id === incomingOffer.propertyId)?.name || 'bir mülk'} için ₺{Number(incomingOffer.price).toLocaleString('tr-TR')} teklif ediyor.</span><label>Teklif / karşı teklif (₺)<input type="number" min="1" value={offerPriceInput} onChange={e => setOfferPriceInput(e.target.value)} /></label><div><button onClick={() => respondToOffer('accept')}>KABUL ET</button><button onClick={() => respondToOffer('counter', offerPriceInput)}>KARŞI TEKLİF</button><button onClick={() => respondToOffer('reject')}>REDDET</button></div></div>}
     </section>
 
     <section className="game-layout">
@@ -1096,12 +1095,12 @@ function App() {
         <div className="world-topline"><span><span className="live-dot" /> BEYOĞLU MERKEZİ</span><span>OYUN DÜNYASI <i>·</i> {year}</span></div>
         <CityScene selected={selected} owned={owned} ownerByProperty={ownerByProperty} playerId={playerId} onSelect={selectProperty} hour={hour} overlay={<div className="scene-action-card">
           <div className="scene-action-eyebrow">SEÇİLİ BİNA · {String(active.id).padStart(2, '0')}</div><strong>{active.name}</strong>
-          <span>{ownerByProperty[active.id] ? (ownerByProperty[active.id].playerId === playerId ? `Sahibi: ${ownerByProperty[active.id].name} (sen)` : `Sahibi: ${ownerByProperty[active.id].name}`) : 'Satılık'} · ₺{active.price.toLocaleString('tr-TR')}</span>
+          <span>{ownerByProperty[active.id] ? (ownerByProperty[active.id].playerId === playerId ? `Sahibi: ${ownerByProperty[active.id].name} (sen)` : `Sahibi: ${ownerByProperty[active.id].name}`) : 'Satılık'} · ₺{getMarketValue(active).toLocaleString('tr-TR')}</span>
           <div className="scene-action-buttons">
             {!ownerByProperty[active.id] && !owned.includes(active.id) && <button onClick={buy}>SATIN AL</button>}
             {ownerByProperty[active.id]?.playerId === playerId && owned.includes(active.id) && <button onClick={toggleRent}>{rented.includes(active.id) ? 'KİRACILIĞI BİTİR' : 'KİRAYA VER'}</button>}
-            {owned.includes(active.id) && <button onClick={sellProperty}>MÜLKÜ SAT · ₺{Math.round(active.price * 0.9).toLocaleString('tr-TR')}</button>}
-            {ownerByProperty[active.id] && ownerByProperty[active.id].playerId !== playerId && <button onClick={sendOffer}>SATIN ALMA TEKLİFİ</button>}
+            {owned.includes(active.id) && <button onClick={sellProperty}>MÜLKÜ SAT · ₺{Math.round(getMarketValue(active) * 0.95).toLocaleString('tr-TR')}</button>}
+            {ownerByProperty[active.id] && ownerByProperty[active.id].playerId !== playerId && <><button onClick={() => { setOfferPriceInput(String(getMarketValue(active))); setOfferComposerOpen(v => !v); }}>SATIN ALMA TEKLİFİ</button>{offerComposerOpen && <div className="offer-composer"><label>Teklifin (₺)<input type="number" min="1" value={offerPriceInput} onChange={e => setOfferPriceInput(e.target.value)} /></label><small>Güncel piyasa değeri: ₺{getMarketValue(active).toLocaleString('tr-TR')}</small><button onClick={sendOffer}>TEKLİFİ GÖNDER</button></div>}</>}
             {owned.includes(active.id) && !rented.includes(active.id) && (tradeCatalog[active.id] || []).some(item => item.price > 0) && <span className="property-note">Ürün ve stok ayarlandığında işletme otomatik çalışır.</span>}
           </div>
         </div>} />
@@ -1142,7 +1141,7 @@ function App() {
           {ownerByProperty[active.id] && <div className="owner-chip">MÜLK SAHİBİ: {ownerByProperty[active.id].name}{ownerByProperty[active.id].playerId === playerId ? ' (SEN)' : ''}</div>}
           <p className="property-description">{active.style}. Bu taşınmazı alabilir, işletme olarak kullanabilir veya ileride kiraya verebilirsin.</p>
           <div className="property-stats">
-            <div><span>Satış bedeli</span><strong>₺{active.price.toLocaleString('tr-TR')}</strong></div>
+            <div><span>Güncel piyasa değeri</span><strong>₺{getMarketValue(active).toLocaleString('tr-TR')}</strong></div>
             <div><span>Yıllık kira</span><strong>₺{active.rent.toLocaleString('tr-TR')}</strong></div>
             <div><span>Kat sayısı</span><strong>{active.floors} kat</strong></div>
             <div><span>Durum</span><strong className={owned.includes(active.id) ? 'owned-text' : ''}>{!owned.includes(active.id) ? 'SATILIK' : rented.includes(active.id) ? 'KİRADA' : 'PORTFÖYÜNDE'}</strong></div>
@@ -1150,7 +1149,7 @@ function App() {
           {!ownerByProperty[active.id] && <button className={owned.includes(active.id) ? 'buy-button is-owned' : 'buy-button'} onClick={buy} disabled={owned.includes(active.id)}>
             {owned.includes(active.id) ? 'MÜLK SENİN' : 'MÜLKÜ SATIN AL'} <span>{owned.includes(active.id) ? '✓' : '↗'}</span>
           </button>}
-          {ownerByProperty[active.id] && ownerByProperty[active.id].playerId !== playerId && <button className="buy-button" onClick={sendOffer}>SATIN ALMA TEKLİFİ GÖNDER <span>↗</span></button>}
+          {ownerByProperty[active.id] && ownerByProperty[active.id].playerId !== playerId && <><button className="buy-button" onClick={() => { setOfferPriceInput(String(getMarketValue(active))); setOfferComposerOpen(v => !v); }}>SATIN ALMA TEKLİFİ GÖNDER <span>↗</span></button>{offerComposerOpen && <div className="offer-composer"><label>Teklifin (₺)<input type="number" min="1" value={offerPriceInput} onChange={e => setOfferPriceInput(e.target.value)} /></label><small>Piyasa değeri: ₺{getMarketValue(active).toLocaleString('tr-TR')}</small><button onClick={sendOffer}>TEKLİFİ GÖNDER</button></div>}</>}
           {owned.includes(active.id) && <button className="rent-button" onClick={toggleRent}>{rented.includes(active.id) ? 'KİRACIYI ÇIKAR' : 'KİRACI BUL VE KİRAYA VER'}</button>}
           {owned.includes(active.id) && <button className="sell-button" onClick={sellProperty}>MÜLKÜ SAT · ₺{Math.round(active.price * 0.9).toLocaleString('tr-TR')}</button>}
           {owned.includes(active.id) && !rented.includes(active.id) && (tradeCatalog[active.id] || []).some(item => item.price > 0) && <div className="business-plan">
