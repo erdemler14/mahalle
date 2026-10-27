@@ -1499,6 +1499,23 @@ function App() {
           <div className="balance-rule"><span style={{width: `${Math.min(100, cash / 500 * 100)}%`}} /></div>
         </section>
 
+        <section className="progression-card" aria-label="Gelişim hedefi">
+          <div className="progression-top"><span className="card-label">GELİŞİM ROTASI</span><span className="progression-step">AŞAMA {Math.min(5, (workHours >= 5 ? 1 : 0) + (owned.length >= 1 ? 1 : 0) + (owned.length >= 2 ? 1 : 0) + (rented.length >= 1 ? 1 : 0) + (owned.length >= 3 ? 1 : 0) + 1).toString().padStart(2, '0')} / 06</span></div>
+          {(() => {
+            const goals = [
+              { id: 'work', title: 'İlk sermayeni oluştur', detail: '5 saat çalışarak meslek ritmini öğren.', current: workHours, target: 5, unit: 'saat', done: workHours >= 5, reward: 'Meslek deneyimi' },
+              { id: 'first-property', title: 'İlk mülkünü edin', detail: 'Bir taşınmaz satın al ve portföyünü başlat.', current: owned.length, target: 1, unit: 'mülk', done: owned.length >= 1, reward: 'Gayrimenkul yatırımcısı' },
+              { id: 'second-property', title: 'Küçük bir portföy kur', detail: 'İkinci taşınmazını alarak seçeneklerini artır.', current: owned.length, target: 2, unit: 'mülk', done: owned.length >= 2, reward: 'Portföy çeşitliliği' },
+              { id: 'rental', title: 'İlk kira gelirini başlat', detail: 'Bir mülkünü kiraya ver; günlük gelirini büyüt.', current: rented.length, target: 1, unit: 'kiralık mülk', done: rented.length >= 1, reward: 'Düzenli gelir' },
+              { id: 'third-property', title: 'Mahallede yer edin', detail: 'Üç mülke ulaşarak daha geniş bir portföy kur.', current: owned.length, target: 3, unit: 'mülk', done: owned.length >= 3, reward: 'Mahalle yatırımcısı' }
+            ];
+            const goal = goals.find(item => !item.done);
+            if (!goal) return <div className="progression-complete"><strong>Mahallede güçlü bir yer edindin.</strong><span>Yeni hedefler sonraki gelişim güncellemesinde açılacak.</span></div>;
+            const ratio = Math.min(100, Math.round(goal.current / goal.target * 100));
+            return <><div className="progression-title">{goal.title}</div><p className="progression-detail">{goal.detail}</p><div className="progression-meter"><span style={{ width: ratio + '%' }} /></div><div className="progression-foot"><span>{Math.min(goal.current, goal.target)} / {goal.target} {goal.unit}</span><span>{ratio}%</span></div><div className="progression-next"><span>SONRAKİ KAZANIM</span><strong>{goal.reward}</strong></div></>;
+          })()}
+        </section>
+
         <section className="work-card">
           <div className="section-heading"><span>03 / VARDİYA</span><span className="count-tag">{steps.toString().padStart(3, '0')}</span></div>
           <div className="work-status"><span className="status-light active" />ZAMAN AKIYOR · 5 SN / SAAT</div>
