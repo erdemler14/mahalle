@@ -181,3 +181,13 @@ h1 span{color:#ffca58;font-weight:700}
 .toast{background:#202d3d;border:1px solid #52647b;border-left:4px solid #63e6be;color:#f2f6fb;border-radius:3px;font-family:'Space Grotesk',sans-serif}
 @media(max-width:900px){.app-shell{padding:0 20px}.game-layout{grid-template-columns:minmax(0,1fr) minmax(290px,.9fr)}.scene-host{height:410px}}
 @media(max-width:680px){.app-shell{padding:0 12px}.topbar{height:60px}.top-center{font-size:7px;max-width:140px}.top-actions{gap:5px}.reset-button{font-size:7px;padding:7px 6px;letter-spacing:0}.intro-row{align-items:flex-start;gap:15px;flex-wrap:wrap;padding:26px 0 18px}h1{font-size:37px;letter-spacing:-1.4px}.intro-copy{font-size:11px}.progress-control{text-align:left;min-width:0}.progress-control .year-display{font-size:26px}.game-layout{grid-template-columns:1fr}.world-panel{order:0}.scene-host{height:68vw;min-height:270px}.side-panel{order:1}.balance-number{font-size:34px}.map-legend{gap:9px}.map-hint{display:none}.footer{font-size:7px;gap:10px}.footer span:nth-child(2){order:3;width:100%}}
+
+
+/* 1920s Beyoglu shopfront and wine-production controls */
+.wine-production{margin-top:13px;padding:12px;background:#202d3d;border:1px solid #684e45;border-radius:3px}
+.wine-stock{display:flex;justify-content:space-between;align-items:center;gap:10px;font:9px 'IBM Plex Mono',monospace;color:#a9b7c8}
+.wine-stock strong{font:700 15px 'Oxanium',sans-serif;color:#ffca58;white-space:nowrap}
+.wine-button{width:100%;display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:10px;padding:11px 10px;border:1px solid #a56d57;background:#6e4639;color:#fff0dc;border-radius:3px;font:700 10px 'IBM Plex Mono',monospace;cursor:pointer}
+.wine-button:hover{background:#875440}
+.wine-button span{font-size:9px;color:#f0d4ad}
+.wine-production p{font-size:10px;line-height:1.5;color:#a9b7c8;margin:9px 0 0}
