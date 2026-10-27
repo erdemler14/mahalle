@@ -784,7 +784,7 @@ function App() {
             </select>
             <div className="stock-line"><span>Mevcut stok</span><strong>{stockByProperty[active.id] || 0} adet</strong></div>
             <div className="stock-line"><span>İlk tedarik maliyeti</span><strong>₺{((tradeCatalog[active.id] || []).find(item => item.id === businessPlans[active.id]) || {cost: 0}).cost}</strong></div>
-            <button className="stock-button" onClick={stockBusiness}>TEDARİK ET / STOK AL</button>
+            <button className="stock-button" onClick={stockBusiness}>{(tradeCatalog[active.id] || []).find(item => item.id === businessPlans[active.id])?.production ? "ÜRETİM YAP / STOK EKLE" : "TEDARİK ET / STOK AL"}</button>
             <p>Satış ancak işletme açıkken ve stok varken gerçekleşir. Ürün alımı kasadan düşer; satış geliri stok azaldıkça kaydedilir.</p>
           </div>}
 
