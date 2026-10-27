@@ -318,6 +318,35 @@ h1 span{color:#ffca58;font-weight:700}
 .quick-work-button span{font-size:11px}
 .quick-work-button:hover:not(:disabled){background:#d1f7e3}
 .quick-work-button:disabled{opacity:.4;cursor:not-allowed}
+/* Mobile-first controls: stable viewport, readable panels, generous tap targets */
+html,body,#root{max-width:100%;overflow-x:hidden}
+button,select,input{touch-action:manipulation}
+@media(max-width:760px){
+  .world-panel{padding:12px;border-radius:14px}
+  .world-topline{gap:8px;flex-wrap:wrap}
+  .property-finder{min-width:0;width:100%;font-size:14px}
+  .property-finder select{min-height:44px;width:100%;font-size:14px}
+  .scene-host{height: min(58dvh,520px);min-height:340px;border-radius:12px;overflow:hidden}
+  .scene-host canvas{touch-action:none;display:block}
+  .map-zoom-controls{display:flex;gap:8px;top:10px;right:10px}
+  .map-zoom-controls button{width:44px;height:44px;font-size:20px;border-radius:12px}
+  .map-hint{max-width:calc(100% - 20px);padding:8px 10px;font-size:11px;line-height:1.35}
+  .scene-action-card{max-width:calc(100% - 20px);width:calc(100% - 20px);padding:12px;border-radius:14px}
+  .scene-action-buttons{display:grid;grid-template-columns:1fr;gap:8px}
+  .scene-action-buttons button{min-height:44px;width:100%;font-size:12px}
+  .quick-work-panel{position:relative;display:flex;gap:10px;align-items:center;margin:8px 0 14px;padding:12px;border-radius:12px}
+  .quick-work-panel>div{flex:1;min-width:0}
+  .quick-work-panel strong{font-size:13px;line-height:1.35}
+  .quick-work-panel small{font-size:11px;line-height:1.4}
+  .quick-work-button{min-width:112px;min-height:56px;flex-shrink:0;border-radius:12px}
+  .stock-line{gap:12px;align-items:flex-start;font-size:12px}
+  .stock-line strong{text-align:right;max-width:58%;overflow-wrap:anywhere}
+}
+@media(max-width:390px){
+  .scene-host{height:48dvh;min-height:300px}
+  .quick-work-button{min-width:96px;padding:8px;font-size:12px}
+  .world-panel{padding:9px}
+}
 @media(max-width:760px){
   .world-topline{align-items:stretch}
   .world-topline>span:first-child{align-self:center}
