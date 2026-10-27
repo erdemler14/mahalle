@@ -1519,7 +1519,7 @@ function App() {
         </section>
 
         <section className="progression-card" aria-label="Gelişim hedefi">
-          <div className="progression-top"><span className="card-label">GELİŞİM ROTASI</span><span className="progression-step">AŞAMA {Math.min(5, (workHours >= 5 ? 1 : 0) + (owned.length >= 1 ? 1 : 0) + (owned.length >= 2 ? 1 : 0) + (rented.length >= 1 ? 1 : 0) + (owned.length >= 3 ? 1 : 0) + 1).toString().padStart(2, '0')} / 05</span></div>
+          <div className="progression-top"><span className="card-label">GELİŞİM ROTASI</span><span className="progression-step">{(() => { const completed = (careerHours >= 5 ? 1 : 0) + (owned.length >= 1 ? 1 : 0) + (owned.length >= 2 ? 1 : 0) + (rented.length >= 1 ? 1 : 0) + (owned.length >= 3 ? 1 : 0); return completed < 5 ? 'AŞAMA ' + String(completed + 1).padStart(2, '0') + ' / 05' : 'AŞAMA ' + String(6 + Math.floor(Math.max(0, careerHours - 5) / 5)).padStart(2, '0') + ' / ∞'; })()}</span></div>
           {(() => {
             const goals = [
               { id: 'work', title: 'İlk sermayeni oluştur', detail: 'Toplam 5 saat çalışarak meslek ritmini öğren.', current: careerHours, target: 5, unit: 'saat', done: careerHours >= 5, reward: 'Meslek deneyimi' },
@@ -1529,7 +1529,7 @@ function App() {
               { id: 'third-property', title: 'Mahallede yer edin', detail: 'Üç mülke ulaşarak daha geniş bir portföy kur.', current: owned.length, target: 3, unit: 'mülk', done: owned.length >= 3, reward: 'Mahalle yatırımcısı' }
             ];
             const goal = goals.find(item => !item.done);
-            if (!goal) return <div className="progression-complete"><strong>Mahallede güçlü bir yer edindin.</strong><span>Yeni hedefler sonraki gelişim güncellemesinde açılacak.</span></div>;
+            if (!goal) { const extraHours = Math.max(0, careerHours - 5); const loopStage = 6 + Math.floor(extraHours / 5); const progress = extraHours % 5; const nextTarget = careerHours + (5 - progress); return <div className="progression-loop"><div className="progression-loop-kicker">SONSUZ GELİŞİM DÖNGÜSÜ</div><strong>Mahallede kalıcı bir iz bırak.</strong><span>İlk beş hedef tamamlandı. Bundan sonra her 5 yeni çalışma saati yeni bir gelişim aşaması açar.</span><div className="progression-loop-meter"><span style={{width: (progress / 5 * 100) + '%'}} /></div><div className="progression-loop-foot"><span>{progress}/5 saat</span><span>Sonraki aşama: {String(loopStage + 1).padStart(2, '0')}</span></div><div className="progression-loop-reward">Sonraki hedef: toplam {nextTarget} meslek saati · Yeni unvan: {loopStage >= 20 ? 'Mahallenin duayeni ' + loopStage : ['Usta esnaf', 'Mahalle kurucusu', 'Ticaret erbabı', 'Semtin siması'][Math.max(0, (loopStage - 6) % 4)]}</div></div>; }
             const ratio = Math.min(100, Math.round(goal.current / goal.target * 100));
             return <><div className="progression-title">{goal.title}</div><p className="progression-detail">{goal.detail}</p><div className="progression-meter"><span style={{ width: ratio + '%' }} /></div><div className="progression-foot"><span>{Math.min(goal.current, goal.target)} / {goal.target} {goal.unit}</span><span>{ratio}%</span></div><div className="progression-next"><span>BU HEDEFİN KATKISI</span><strong>{goal.reward}</strong></div></>;
           })()}
