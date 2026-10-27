@@ -825,6 +825,7 @@ function App() {
     if (!owned.includes(active.id)) { tell('Yalnızca sahibi olduğun mülkü satabilirsin.'); return; }
     const property = active;
     const salePrice = Math.round(property.price * 0.9 * 100) / 100;
+    if (typeof window !== 'undefined' && !window.confirm(`${property.name} mülkünü ₺${salePrice.toLocaleString('tr-TR')} bedelle satmak istiyor musun? Mevcut işletme stoğu satışa dahil değil ve sıfırlanacak.`)) return;
     setCash(v => Math.round((v + salePrice) * 100) / 100);
     setOwned(v => v.filter(id => id !== property.id));
     setRented(v => v.filter(id => id !== property.id));
