@@ -21,9 +21,11 @@ npm run build
 ## Prototype features
 - Interactive 3D miniature of a stylized Beyoğlu street
 - Selectable buildings and property details
-- Starting capital and property purchases
-- Year advancement and simple annual rental income
-- Portfolio panel
-- Responsive, minimalist interface inspired by native Apple design principles
+- Choose a trade: kolonyacı, leblebici, terzi, matbaacı, kahveci or gündelik işçi
+- 24-hour in-game clock with automatic time progression
+- Hourly work, daily living costs, business sales, stock costs and property maintenance
+- Property purchases, business operation and monthly rent collection
+- Portfolio and neighbourhood activity log
+- Responsive arcade-style interface with geometric, block-game-inspired visual language
 
-The current map and prices are illustrative placeholders, not a historically verified reconstruction.
+The current map, wages, expenses and prices are illustrative game-balance values, not a historically verified reconstruction. The clock advances one in-game hour every 20 real seconds; actions can also advance time manually.
