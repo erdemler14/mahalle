@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
+import Peer from 'peerjs';
 
 const properties = [
   { id: 1, name: 'Galata’da küçük dükkan', type: 'Ticaret', price: 420, rent: 32, x: -4.2, z: -1.1, color: '#d9b99c', floors: 3, style: 'Galata taş cephesi' },
@@ -563,6 +564,33 @@ function App() {
   const [wineBottles, setWineBottles] = useState(() => Number.isInteger(saved.wineBottles) && saved.wineBottles >= 0 ? saved.wineBottles : 0);
   const [businessPlans, setBusinessPlans] = useState(() => saved.businessPlans && typeof saved.businessPlans === 'object' ? saved.businessPlans : {});
   const [stockByProperty, setStockByProperty] = useState(() => saved.stockByProperty && typeof saved.stockByProperty === 'object' ? saved.stockByProperty : {});
+  const [multiplayerRole, setMultiplayerRole] = useState('solo');
+  const [multiplayerStatus, setMultiplayerStatus] = useState('Solo oyun');
+  const [roomCode, setRoomCode] = useState('');
+  const [joinCode, setJoinCode] = useState('');
+  const peerRef = useRef(null);
+  const connectionRef = useRef(null);
+  const actionRefs = useRef({});
+  const snapshotRef = useRef(null);
+
+  const sendAction = (action, ...payload) => {
+    if (multiplayerRole === 'guest') {
+      if (connectionRef.current?.open) connectionRef.current.send({ type: 'action', action, payload });
+      else setMultiplayerStatus('Bağlantı koptu. Odaya yeniden katıl.');
+      return true;
+    }
+    return false;
+  };
+  const selectProperty = (id) => {
+    if (sendAction('selectProperty', id)) return;
+    setSelected(id);
+  };
+  const changeProfession = (id) => {
+    if (sendAction('changeProfession', id)) return;
+    setProfessionId(id);
+    setShopPropertyId(null);
+  };
+
   const shopOpen = shopPropertyId === selected;
   const [log, setLog] = useState(() => Array.isArray(saved.log) && saved.log.length ? saved.log.slice(0, 5) : [{ id: 0, text: 'Beyoğlu’na geldin. Geçimini kurmak için bir meslek seç.' }]);
   const professionOptions = [
@@ -609,6 +637,7 @@ function App() {
   };
 
   const advanceHour = (work = false) => {
+    if (sendAction('advanceHour', work)) return;
     if (work && professionId !== 'amele' && !selectedVenueCompatible) {
       tell(`${profession.name} olarak çalışmak için seçili mekana uygun bir iş yeri edinmelisin. Şimdilik Gündelik işçi seçerek ücret kazanabilirsin.`);
       return;
@@ -677,6 +706,7 @@ function App() {
   };
 
   const sleepUntilMorning = () => {
+    if (sendAction('sleepUntilMorning')) return;
     const nextDayRaw = day + 1;
     const nextDay = nextDayRaw > 30 ? 1 : nextDayRaw;
     const nextMonthRaw = month + (nextDayRaw > 30 ? 1 : 0);
@@ -695,11 +725,13 @@ function App() {
   };
 
   const selectBusinessPlan = (plan) => {
+    if (sendAction('selectBusinessPlan', plan)) return;
     setBusinessPlans(old => ({ ...old, [active.id]: plan }));
     tell(`${active.name}: satış grubu ${(tradeCatalog[active.id] || []).find(item => item.id === plan)?.name || 'seçilmedi'} olarak ayarlandı. Satış için ayrıca stok almalısın.`);
   };
 
   const stockBusiness = () => {
+    if (sendAction('stockBusiness')) return;
     const item = (tradeCatalog[active.id] || []).find(product => product.id === businessPlans[active.id]);
     if (!owned.includes(active.id) || rented.includes(active.id)) { tell('Stok alabilmek için mülkün sahibi olmalı ve mülk kirada olmamalı.'); return; }
     if (!item || item.units <= 0) { tell('Bu mülk için henüz tedarik edilebilir ürün grubu yok.'); return; }
@@ -710,6 +742,7 @@ function App() {
   };
 
   const buy = () => {
+    if (sendAction('buy')) return;
     if (owned.includes(active.id)) { tell('Bu mülk zaten portföyünde.'); return; }
     if (cash < active.price) { tell('Bu mülk için yeterli sermayen yok. Önce çalışıp birikim yap.'); return; }
     setCash(v => v - active.price);
@@ -721,6 +754,7 @@ function App() {
   };
 
   const toggleRent = () => {
+    if (sendAction('toggleRent')) return;
     if (!owned.includes(active.id)) { tell('Kiraya verebilmek için önce bu mülkü satın almalısın.'); return; }
     if (rented.includes(active.id)) {
       setRented(v => v.filter(id => id !== active.id));
@@ -739,6 +773,7 @@ function App() {
   }, []);
 
   const toggleShop = () => {
+    if (sendAction('toggleShop')) return;
     if (!owned.includes(selected)) { tell('İşletme açmak için önce seçili mekanı satın almalısın.'); return; }
     if (!selectedVenueCompatible) { tell('Seçtiğin meslek bu mekanla uyumlu değil. Uygun bir mülk veya meslek seç.'); return; }
     setShopPropertyId(shopOpen ? null : selected);
@@ -746,6 +781,7 @@ function App() {
   };
 
   const makeWine = () => {
+    if (sendAction('makeWine')) return;
     if (!owned.includes(7)) { tell('Şarap üretmek için önce Şarap ve erzak dükkanını satın almalısın.'); return; }
     if (rented.includes(7)) { tell('Dükkan kiradayken üretim yapamazsın. Önce kiracılığı sona erdir.'); return; }
     if (cash < 8) { tell('Bir üretim partisi için 8 oyun lirası gerekiyor.'); return; }
@@ -756,6 +792,7 @@ function App() {
   };
 
   const resetGame = () => {
+    if (sendAction('resetGame')) return;
     if (typeof window !== 'undefined' && !window.confirm('Yeni oyun başlatılsın mı? Mevcut mahalle kaydı silinecek.')) return;
     setSteps(0); setCash(75); setOwned([]); setRented([]); setSelected(1); setShowPortfolio(false);
     setProfessionId('amele'); setHour(8); setDay(1); setMonth(1); setYear(1923);
@@ -765,6 +802,92 @@ function App() {
     try { window.localStorage.removeItem(SAVE_KEY); } catch {}
     tell('Yeni oyun başladı. Kayıt sıfırlandı.');
   };
+
+
+  const applySnapshot = (state) => {
+    if (!state || typeof state !== 'object') return;
+    setSteps(state.steps ?? 0); setCash(state.cash ?? 75);
+    setOwned(Array.isArray(state.owned) ? state.owned : []);
+    setRented(Array.isArray(state.rented) ? state.rented : []);
+    setSelected(properties.some(p => p.id === state.selected) ? state.selected : 1);
+    setProfessionId(state.professionId || 'amele');
+    setHour(state.hour ?? 8); setDay(state.day ?? 1); setMonth(state.month ?? 1); setYear(state.year ?? 1923);
+    setWorkHours(state.workHours ?? 0); setShopPropertyId(state.shopPropertyId ?? null);
+    setWineBottles(state.wineBottles ?? 0);
+    setBusinessPlans(state.businessPlans || {}); setStockByProperty(state.stockByProperty || {});
+    setLog(Array.isArray(state.log) ? state.log.slice(0, 5) : []);
+  };
+
+  const closeMultiplayer = () => {
+    try { connectionRef.current?.close(); } catch {}
+    try { peerRef.current?.destroy(); } catch {}
+    connectionRef.current = null; peerRef.current = null;
+    setMultiplayerRole('solo'); setMultiplayerStatus('Solo oyun'); setRoomCode('');
+  };
+
+  const startRoom = () => {
+    closeMultiplayer();
+    const code = Math.random().toString(36).slice(2, 8).toUpperCase();
+    setRoomCode(code); setMultiplayerStatus('Oda açılıyor…');
+    try {
+      const peer = new Peer('mahalle-' + code.toLowerCase());
+      peerRef.current = peer;
+      peer.on('open', () => { setMultiplayerRole('host'); setMultiplayerStatus('Oda hazır · ikinci oyuncu bekleniyor'); });
+      peer.on('connection', conn => {
+        if (connectionRef.current?.open) { conn.close(); return; }
+        connectionRef.current = conn;
+        conn.on('open', () => {
+          setMultiplayerStatus('İki oyuncu bağlı · sen ev sahibisin');
+          conn.send({ type: 'state', state: snapshotRef.current });
+        });
+        conn.on('data', message => {
+          if (message?.type === 'hello') conn.send({ type: 'state', state: snapshotRef.current });
+          if (message?.type === 'action' && typeof message.action === 'string') {
+            const handler = actionRefs.current[message.action];
+            if (typeof handler === 'function') handler(...(Array.isArray(message.payload) ? message.payload : []));
+          }
+        });
+        conn.on('close', () => { connectionRef.current = null; setMultiplayerStatus('Oyuncu ayrıldı · oda açık'); });
+      });
+      peer.on('error', error => { setMultiplayerStatus('Bağlantı hatası: ' + (error?.type || 'oda açılamadı')); });
+    } catch {
+      setMultiplayerStatus('Çoklu oyuncu bağlantısı başlatılamadı.');
+    }
+  };
+
+  const joinRoom = () => {
+    const code = joinCode.trim().toUpperCase();
+    if (!/^[A-Z0-9]{6}$/.test(code)) { setMultiplayerStatus('Oda kodu 6 harf veya rakamdan oluşmalı.'); return; }
+    closeMultiplayer();
+    setMultiplayerStatus('Odaya bağlanılıyor…');
+    try {
+      const peer = new Peer();
+      peerRef.current = peer;
+      peer.on('open', () => {
+        const conn = peer.connect('mahalle-' + code.toLowerCase(), { reliable: true });
+        connectionRef.current = conn;
+        conn.on('open', () => {
+          setRoomCode(code); setMultiplayerRole('guest'); setMultiplayerStatus('Bağlandı · oyun ev sahibinin dünyasıyla eşitleniyor');
+          conn.send({ type: 'hello' });
+        });
+        conn.on('data', message => {
+          if (message?.type === 'state') applySnapshot(message.state);
+        });
+        conn.on('close', () => { connectionRef.current = null; setMultiplayerStatus('Bağlantı kapandı · yeniden katılman gerekiyor'); setMultiplayerRole('solo'); });
+      });
+      peer.on('error', error => { setMultiplayerStatus('Odaya bağlanılamadı: ' + (error?.type || 'bağlantı hatası')); });
+    } catch {
+      setMultiplayerStatus('Çoklu oyuncu bağlantısı başlatılamadı.');
+    }
+  };
+
+  snapshotRef.current = { steps, cash, owned, rented, selected, professionId, hour, day, month, year, workHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, log };
+  actionRefs.current = { advanceHour, sleepUntilMorning, selectBusinessPlan, stockBusiness, buy, toggleRent, toggleShop, makeWine, resetGame, selectProperty, changeProfession };
+  useEffect(() => {
+    if (multiplayerRole === 'host' && connectionRef.current?.open) {
+      connectionRef.current.send({ type: 'state', state: snapshotRef.current });
+    }
+  }, [multiplayerRole, steps, cash, owned, rented, selected, professionId, hour, day, month, year, workHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, log]);
 
   return <main className="app-shell">
     <header className="topbar">
@@ -786,10 +909,22 @@ function App() {
       </div>
     </section>
 
+    <section className="multiplayer-panel">
+      <div className="multiplayer-heading"><span className="live-dot" /> İKİ KİŞİLİK MAHALLE</div>
+      <div className="multiplayer-status">{multiplayerStatus}</div>
+      <div className="multiplayer-controls">
+        <button className="room-create-button" onClick={startRoom}>YENİ ODA AÇ</button>
+        {roomCode && multiplayerRole === 'host' && <div className="room-code"><span>ODA KODU</span><strong>{roomCode}</strong><button onClick={() => { try { navigator.clipboard?.writeText(roomCode); setMultiplayerStatus('Oda kodu kopyalandı · arkadaşına gönder.'); } catch { setMultiplayerStatus('Oda kodun: ' + roomCode); } }}>KOPYALA</button></div>}
+        <div className="room-join"><input aria-label="Oda kodu" value={joinCode} onChange={e => setJoinCode(e.target.value.toUpperCase().slice(0, 6))} placeholder="6 HANELİ KOD" maxLength={6} /><button onClick={joinRoom}>ODAYA KATIL</button></div>
+        {multiplayerRole !== 'solo' && <button className="room-leave-button" onClick={closeMultiplayer}>ODADAN AYRIL</button>}
+      </div>
+      <p>Odayı açan oyuncu ortak oyunun ev sahibidir. İkinci oyuncunun işlemleri ev sahibine gönderilir; para, mülk, saat ve stok bilgileri aynı oyun durumundan paylaşılır. İnternet bağlantısı gerekir.</p>
+    </section>
+
     <section className="game-layout">
       <div className="world-panel">
         <div className="world-topline"><span><span className="live-dot" /> BEYOĞLU MERKEZİ</span><span>OYUN DÜNYASI <i>·</i> {year}</span></div>
-        <CityScene selected={selected} owned={owned} onSelect={setSelected} hour={hour} />
+        <CityScene selected={selected} owned={owned} onSelect={selectProperty} hour={hour} />
         <div className="map-legend"><span><i className="legend-dot available" /> SATILIK MÜLK</span><span><i className="legend-dot owned" /> SENİN MÜLKÜN</span><span className="map-hint">SÜRÜKLE: DÖNDÜR · KAYDIR: YAKINLAŞ · BİNAYA TIKLA</span></div>
         <div className="world-caption"><span>İSTANBUL / BEYOĞLU</span><span>GÜN {day} <i>·</i> SAAT {String(hour).padStart(2, '0')}:00</span></div>
       </div>
@@ -797,7 +932,7 @@ function App() {
       <aside className="side-panel">
         <section className="balance-card profession-card">
           <div className="card-label">01 / MESLEK SEÇİMİ</div>
-          <select className="profession-select" value={professionId} onChange={e => { setProfessionId(e.target.value); setShopPropertyId(null); }}>
+          <select className="profession-select" value={professionId} onChange={e => changeProfession(e.target.value)}>
             {professionOptions.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
           <p className="profession-description">{profession.description}</p>
