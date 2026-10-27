@@ -97,52 +97,135 @@ function CityScene({ selected, owned, onSelect, hour }) {
     const buildingMeshes = [];
     const addBuilding = (p, idx, isOwned) => {
       const group = new THREE.Group();
-      const w = idx === 3 || idx === 9 ? 2.7 : 2.05;
-      const d = idx === 1 ? 2.4 : 1.9;
-      const h = p.floors * 0.88;
-      const mat = new THREE.MeshStandardMaterial({ color: isOwned ? '#a9b6a4' : p.color, roughness: 0.92 });
+      const shopIds = [1, 4, 7, 9, 10, 12];
+      const isShopfront = shopIds.includes(p.id);
+      const isGrandFacade = p.id === 4 || p.id === 8 || p.id === 10;
+      const isTimberHouse = p.id === 6 || p.id === 11;
+      const w = p.id === 4 || p.id === 10 ? 2.75 : p.id === 9 ? 2.45 : 2.05;
+      const d = p.id === 2 || p.id === 8 ? 2.35 : 1.9;
+      const floorHeight = p.id === 10 ? 0.94 : 0.88;
+      const h = p.floors * floorHeight;
+      const facadeColors = ['#d9c8ad', '#c6b8a4', '#c7c0b3', '#d5c4a8', '#d4cbb9', '#c9b6a2', '#d8cbb4', '#c7c2b5', '#cbbca6', '#d7c8b0', '#d0c3af', '#bfae98'];
+      const baseColor = isOwned ? '#b9c8b2' : facadeColors[idx % facadeColors.length];
+      const mat = new THREE.MeshStandardMaterial({ color: baseColor, roughness: 0.94 });
+      const trimMat = new THREE.MeshStandardMaterial({ color: isTimberHouse ? '#665044' : '#e9deca', roughness: 0.92 });
+      const darkWood = new THREE.MeshStandardMaterial({ color: '#513d31', roughness: 0.92 });
       const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
       body.position.y = h / 2;
-      body.castShadow = true;
-      body.receiveShadow = true;
-      group.add(body);
+      body.castShadow = true; body.receiveShadow = true; group.add(body);
 
-      const roof = new THREE.Mesh(new THREE.BoxGeometry(w + 0.12, 0.14, d + 0.12), new THREE.MeshStandardMaterial({ color: '#756e62', roughness: 1 }));
-      roof.position.y = h + 0.07;
-      roof.castShadow = true;
-      group.add(roof);
-
-      // Subtle cornice and pilasters inspired by late Ottoman / early 20th-century facades.
-      const trimMat = new THREE.MeshStandardMaterial({ color: '#eee3d0', roughness: 0.9 });
-      const cornice = new THREE.Mesh(new THREE.BoxGeometry(w + 0.2, 0.09, d + 0.16), trimMat);
-      cornice.position.y = h - 0.12; group.add(cornice);
-      for (const edge of [-1, 1]) {
-        const pilaster = new THREE.Mesh(new THREE.BoxGeometry(0.09, h - 0.12, 0.07), trimMat);
-        pilaster.position.set(edge * (w / 2 - 0.12), h / 2, d / 2 + 0.045); group.add(pilaster);
-      }
-      if (p.style.toLowerCase().includes('cumba')) {
-        const bay = new THREE.Mesh(new THREE.BoxGeometry(w * 0.68, 0.62, 0.52), mat);
-        bay.position.set(0, h * 0.67, d / 2 + 0.22); bay.castShadow = true; group.add(bay);
-        const bayCap = new THREE.Mesh(new THREE.BoxGeometry(w * 0.76, 0.08, 0.62), trimMat);
-        bayCap.position.set(0, h * 0.67 + 0.34, d / 2 + 0.22); group.add(bayCap);
-      }
-
-      const windowMat = new THREE.MeshStandardMaterial({ color: '#65777a', roughness: 0.55, metalness: 0.05 });
-      for (let floor = 0; floor < p.floors; floor++) {
-        for (let col = 0; col < 2; col++) {
-          const win = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.42, 0.035), windowMat);
-          win.position.set((col - 0.5) * 0.86, 0.48 + floor * 0.88, d / 2 + 0.022);
-          group.add(win);
-          const frame = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.055, 0.05), new THREE.MeshStandardMaterial({ color: '#f0e7d5' }));
-          frame.position.set((col - 0.5) * 0.86, 0.48 + floor * 0.88, d / 2 + 0.045);
-          group.add(frame);
-          const sill = new THREE.Mesh(new THREE.BoxGeometry(0.43, 0.06, 0.08), trimMat);
-          sill.position.set((col - 0.5) * 0.86, 0.25 + floor * 0.88, d / 2 + 0.05); group.add(sill);
+      // Distinct rooflines: flat masonry parapets, a tiled hipped roof, and taller commercial cornices.
+      const roofMat = new THREE.MeshStandardMaterial({ color: isTimberHouse ? '#744d3c' : isGrandFacade ? '#655e55' : '#756e62', roughness: 1 });
+      if (isTimberHouse) {
+        const roof = new THREE.Mesh(new THREE.ConeGeometry(w * 0.77, 0.72, 4), roofMat);
+        roof.rotation.y = Math.PI / 4; roof.position.y = h + 0.34; roof.scale.z = d / w; roof.castShadow = true; group.add(roof);
+      } else {
+        const parapet = new THREE.Mesh(new THREE.BoxGeometry(w + 0.18, 0.18, d + 0.16), roofMat);
+        parapet.position.y = h + 0.07; parapet.castShadow = true; group.add(parapet);
+        const cornice = new THREE.Mesh(new THREE.BoxGeometry(w + 0.25, 0.09, d + 0.19), trimMat);
+        cornice.position.y = h - 0.13; group.add(cornice);
+        if (isGrandFacade) {
+          const upperCornice = new THREE.Mesh(new THREE.BoxGeometry(w + 0.34, 0.075, d + 0.24), trimMat);
+          upperCornice.position.y = h - floorHeight * 1.1; group.add(upperCornice);
         }
       }
-      const door = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.76, 0.06), new THREE.MeshStandardMaterial({ color: '#66574a' }));
-      door.position.set(0, 0.38, d / 2 + 0.035);
-      group.add(door);
+
+      // Plaster mouldings and pilasters make the facades read as individual late-Ottoman / early-Republic buildings.
+      for (const edge of [-1, 1]) {
+        const pilaster = new THREE.Mesh(new THREE.BoxGeometry(isGrandFacade ? 0.12 : 0.075, h - 0.16, 0.075), trimMat);
+        pilaster.position.set(edge * (w / 2 - 0.1), h / 2, d / 2 + 0.035); group.add(pilaster);
+      }
+      for (let floor = 1; floor < p.floors; floor++) {
+        const belt = new THREE.Mesh(new THREE.BoxGeometry(w + 0.08, 0.045, 0.08), trimMat);
+        belt.position.set(0, floor * floorHeight, d / 2 + 0.04); group.add(belt);
+      }
+
+      const windowMat = new THREE.MeshStandardMaterial({ color: '#50666a', roughness: 0.5, metalness: 0.04 });
+      const glassGlow = new THREE.MeshStandardMaterial({ color: '#8b9b96', roughness: 0.42, metalness: 0.04 });
+      const windowCols = p.id === 10 || p.id === 4 ? 3 : 2;
+      for (let floor = 0; floor < p.floors; floor++) {
+        for (let col = 0; col < windowCols; col++) {
+          const x = (col - (windowCols - 1) / 2) * (windowCols === 3 ? 0.67 : 0.86);
+          const y = 0.48 + floor * floorHeight;
+          if (floor === 0 && isShopfront) continue;
+          const win = new THREE.Mesh(new THREE.BoxGeometry(0.34, floor === 0 ? 0.42 : 0.48, 0.04), windowMat);
+          win.position.set(x, y, d / 2 + 0.025); group.add(win);
+          const frame = new THREE.Mesh(new THREE.BoxGeometry(0.43, 0.055, 0.065), trimMat);
+          frame.position.set(x, y + 0.25, d / 2 + 0.04); group.add(frame);
+          const sill = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.06, 0.09), trimMat);
+          sill.position.set(x, y - 0.24, d / 2 + 0.05); group.add(sill);
+          const mullion = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.42, 0.055), trimMat);
+          mullion.position.set(x, y, d / 2 + 0.055); group.add(mullion);
+        }
+      }
+
+      // Cumbas project from the upper storeys, with visible brackets underneath.
+      if (p.id === 2 || p.id === 5 || p.id === 6 || p.id === 8) {
+        const bayY = Math.min(h - 0.48, floorHeight * (p.floors - 1.45));
+        const bay = new THREE.Mesh(new THREE.BoxGeometry(w * 0.72, 0.7, 0.5), mat);
+        bay.position.set(0, bayY, d / 2 + 0.2); bay.castShadow = true; group.add(bay);
+        const bayWindow = new THREE.Mesh(new THREE.BoxGeometry(w * 0.62, 0.35, 0.035), glassGlow);
+        bayWindow.position.set(0, bayY + 0.02, d / 2 + 0.47); group.add(bayWindow);
+        for (const x of [-w * 0.25, w * 0.25]) {
+          const bracket = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.26, 0.3), darkWood);
+          bracket.position.set(x, bayY - 0.48, d / 2 + 0.25); group.add(bracket);
+        }
+        const bayCap = new THREE.Mesh(new THREE.BoxGeometry(w * 0.8, 0.09, 0.62), trimMat);
+        bayCap.position.set(0, bayY + 0.39, d / 2 + 0.22); group.add(bayCap);
+      }
+
+      // Ground-floor shopfronts: timber frames, deep display windows, a recessed door and striped awning.
+      if (isShopfront) {
+        const shopGlass = new THREE.MeshStandardMaterial({ color: p.id === 7 ? '#6f493d' : '#879a98', roughness: 0.35, metalness: 0.08 });
+        const storefrontW = w * 0.66;
+        const display = new THREE.Mesh(new THREE.BoxGeometry(storefrontW, 0.62, 0.045), shopGlass);
+        display.position.set(-w * 0.12, 0.56, d / 2 + 0.055); group.add(display);
+        const displayFrame = new THREE.Mesh(new THREE.BoxGeometry(storefrontW + 0.1, 0.07, 0.09), darkWood);
+        displayFrame.position.set(-w * 0.12, 0.9, d / 2 + 0.07); group.add(displayFrame);
+        const displaySill = new THREE.Mesh(new THREE.BoxGeometry(storefrontW + 0.1, 0.08, 0.09), darkWood);
+        displaySill.position.set(-w * 0.12, 0.22, d / 2 + 0.07); group.add(displaySill);
+        for (const x of [-w * 0.12 - storefrontW / 2, -w * 0.12 + storefrontW / 2]) {
+          const post = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.78, 0.09), darkWood);
+          post.position.set(x, 0.56, d / 2 + 0.075); group.add(post);
+        }
+        const door = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.78, 0.08), darkWood);
+        door.position.set(w * 0.32, 0.4, d / 2 + 0.07); group.add(door);
+        const doorPanel = new THREE.Mesh(new THREE.BoxGeometry(0.23, 0.48, 0.025), trimMat);
+        doorPanel.position.set(w * 0.32, 0.43, d / 2 + 0.12); group.add(doorPanel);
+
+        const signCanvas = document.createElement('canvas');
+        signCanvas.width = 512; signCanvas.height = 128;
+        const ctx = signCanvas.getContext('2d');
+        ctx.fillStyle = p.id === 7 ? '#49362b' : p.id === 12 ? '#314538' : '#3d3027';
+        ctx.fillRect(0, 0, 512, 128);
+        ctx.strokeStyle = '#d5bd8c'; ctx.lineWidth = 5; ctx.strokeRect(8, 8, 496, 112);
+        ctx.fillStyle = '#f0dfb7'; ctx.font = 'bold 42px Georgia, serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        const sign = p.id === 7 ? 'SARAP & ERZAK' : p.id === 12 ? 'KAHVEHANE' : p.id === 9 ? 'MATBAA' : p.id === 10 ? 'MAGAZA' : p.id === 4 ? 'HAN' : 'TICARET';
+        ctx.fillText(sign, 256, 64, 470);
+        const signTexture = new THREE.CanvasTexture(signCanvas);
+        signTexture.colorSpace = THREE.SRGBColorSpace;
+        const signMat = new THREE.MeshStandardMaterial({ map: signTexture, roughness: 0.8 });
+        const signBoard = new THREE.Mesh(new THREE.BoxGeometry(w * 0.86, 0.28, 0.07), signMat);
+        signBoard.position.set(0, 1.16, d / 2 + 0.09); group.add(signBoard);
+
+        if ([1, 7, 10, 12].includes(p.id)) {
+          const awningColors = p.id === 7 ? ['#8b5145', '#e2c9a0'] : ['#a55f48', '#ead9b8'];
+          for (let stripe = 0; stripe < 6; stripe++) {
+            const awning = new THREE.Mesh(new THREE.BoxGeometry(w * 0.86 / 6, 0.07, 0.38), new THREE.MeshStandardMaterial({ color: awningColors[stripe % 2], roughness: 0.95 }));
+            awning.position.set(-w * 0.43 + (stripe + 0.5) * (w * 0.86 / 6), 1.0, d / 2 + 0.28);
+            awning.rotation.x = -0.1; group.add(awning);
+          }
+        }
+      } else {
+        const door = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.76, 0.07), darkWood);
+        door.position.set(0, 0.38, d / 2 + 0.045); group.add(door);
+      }
+
+      // The commercial street corner has a shallow pediment, while smaller houses retain restrained roof details.
+      if (p.id === 10) {
+        const pediment = new THREE.Mesh(new THREE.ConeGeometry(w * 0.58, 0.42, 3), trimMat);
+        pediment.rotation.y = Math.PI; pediment.position.set(0, h + 0.24, d / 2); pediment.scale.z = 0.45; group.add(pediment);
+      }
       group.position.set(p.x, 0, p.z);
       group.userData.propertyId = p.id;
       scene.add(group);
@@ -418,6 +501,7 @@ function App() {
   const clockAction = useRef(null);
   const [workHours, setWorkHours] = useState(() => Number.isInteger(saved.workHours) && saved.workHours >= 0 ? saved.workHours : 0);
   const [shopPropertyId, setShopPropertyId] = useState(() => Number.isInteger(saved.shopPropertyId) ? saved.shopPropertyId : null);
+  const [wineBottles, setWineBottles] = useState(() => Number.isInteger(saved.wineBottles) && saved.wineBottles >= 0 ? saved.wineBottles : 0);
   const shopOpen = shopPropertyId === selected;
   const [log, setLog] = useState(() => Array.isArray(saved.log) && saved.log.length ? saved.log.slice(0, 5) : [{ id: 0, text: 'Beyoğlu’na geldin. Geçimini kurmak için bir meslek seç.' }]);
   const professionOptions = [
@@ -442,12 +526,12 @@ function App() {
     try {
       window.localStorage.setItem(SAVE_KEY, JSON.stringify({
         version: 1, steps, cash, owned, rented, selected, showPortfolio, professionId,
-        hour, day, month, year, workHours, shopPropertyId, log: log.slice(0, 5)
+        hour, day, month, year, workHours, shopPropertyId, wineBottles, log: log.slice(0, 5)
       }));
     } catch {
       // The game remains playable if browser storage is disabled or full.
     }
-  }, [steps, cash, owned, rented, selected, showPortfolio, professionId, hour, day, month, year, workHours, shopPropertyId, log]);
+  }, [steps, cash, owned, rented, selected, showPortfolio, professionId, hour, day, month, year, workHours, shopPropertyId, wineBottles, log]);
 
   const tell = (text) => {
     setNotice(text);
@@ -505,6 +589,12 @@ function App() {
       const shopNet = shopGross - stockCost;
       net += shopNet;
       detail += `${detail ? ' · ' : ''}Satış ${shopGross.toFixed(2)}, stok maliyeti ${stockCost.toFixed(2)}`;
+    }
+    if (shopPropertyId === 7 && owned.includes(7) && !rented.includes(7) && hour >= 7 && hour < 21 && wineBottles > 0) {
+      const wineSale = 4.5;
+      net += wineSale;
+      setWineBottles(v => Math.max(0, v - 1));
+      detail += `${detail ? ' · ' : ''}Bir şişe ev yapımı şarap satıldı (+${wineSale.toFixed(2)})`;
     }
     setCash(v => Math.max(0, Math.round((v + net) * 100) / 100));
     const nextHour = (hour + 1) % 24;
@@ -568,11 +658,21 @@ function App() {
     tell(shopOpen ? 'İşletme kapatıldı; satış ve stok giderleri durdu.' : `${profession.name} işletmesi açıldı. Çalışma saatlerinde satışlar ve stok giderleri işleyecek.`);
   };
 
+  const makeWine = () => {
+    if (!owned.includes(7)) { tell('Şarap üretmek için önce Şarap ve erzak dükkanını satın almalısın.'); return; }
+    if (rented.includes(7)) { tell('Dükkan kiradayken üretim yapamazsın. Önce kiracılığı sona erdir.'); return; }
+    if (cash < 8) { tell('Bir üretim partisi için 8 oyun lirası gerekiyor.'); return; }
+    setCash(v => Math.round((v - 8) * 100) / 100);
+    setWineBottles(v => v + 4);
+    setSteps(v => v + 1);
+    tell('Üretim tamamlandı: 4 şişe ev yapımı şarap hazır. Dükkanını açtığında stoktan satış yapılabilir.');
+  };
+
   const resetGame = () => {
     if (typeof window !== 'undefined' && !window.confirm('Yeni oyun başlatılsın mı? Mevcut mahalle kaydı silinecek.')) return;
     setSteps(0); setCash(75); setOwned([]); setRented([]); setSelected(1); setShowPortfolio(false);
     setProfessionId('amele'); setHour(8); setDay(1); setMonth(1); setYear(1923);
-    setWorkHours(0); setShopPropertyId(null);
+    setWorkHours(0); setShopPropertyId(null); setWineBottles(0);
     setLog([{ id: Date.now(), text: 'Yeni bir hikaye başladı. Gündelik işçilikle sermaye biriktir veya uygun bir dükkan edin.' }]);
     setNotice('');
     try { window.localStorage.removeItem(SAVE_KEY); } catch {}
@@ -648,6 +748,11 @@ function App() {
             {owned.includes(active.id) ? 'MÜLK SENİN' : 'MÜLKÜ SATIN AL'} <span>{owned.includes(active.id) ? '✓' : '↗'}</span>
           </button>
           {owned.includes(active.id) && <button className="rent-button" onClick={toggleRent}>{rented.includes(active.id) ? 'KİRACIYI ÇIKAR' : 'MÜLKÜ KİRAYA VER'}</button>}
+          {active.id === 7 && owned.includes(7) && !rented.includes(7) && <div className="wine-production">
+            <div className="wine-stock"><span>EV YAPIMI ŞARAP STOĞU</span><strong>{wineBottles} şişe</strong></div>
+            <button className="wine-button" onClick={makeWine}>ŞARAP ÜRET · ₺8 <span>+4 ŞİŞE</span></button>
+            <p>Bir üretim partisi 4 şişe verir. Dükkan açıkken mesai saatlerinde şişe başına ₺4,50 satış geliri elde edilir.</p>
+          </div>}
           {owned.includes(active.id) && (rented.includes(active.id)
             ? <div className="property-note"><span>i</span> Bu mülk kirada. İşletmek için önce kiracılığı sona erdir.</div>
             : selectedVenueCompatible
