@@ -151,12 +151,13 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
       sleeper.position.set(0, 0.018, z); scene.add(sleeper);
     }
     const wireMat = new THREE.MeshStandardMaterial({ color: '#555b58', metalness: 0.55, roughness: 0.5 });
+    const wirePoleMat = new THREE.MeshStandardMaterial({ color: '#4f554f', roughness: 0.8 });
     const wire = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 48, 6), wireMat);
     wire.position.set(0, 4.15, 0); scene.add(wire);
     for (const z of [-21, -14, -7, 0, 7, 14, 21]) {
-      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.065, 4.1, 7), ironMat);
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.065, 4.1, 7), wirePoleMat);
       pole.position.set(2.85, 2.05, z); scene.add(pole);
-      const arm = new THREE.Mesh(new THREE.BoxGeometry(2.9, 0.045, 0.045), ironMat);
+      const arm = new THREE.Mesh(new THREE.BoxGeometry(2.9, 0.045, 0.045), wirePoleMat);
       arm.position.set(1.42, 4.0, z); scene.add(arm);
       const contact = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 2.9, 5), wireMat);
       contact.rotation.z = Math.PI / 2; contact.position.set(1.42, 4.12, z); scene.add(contact);
