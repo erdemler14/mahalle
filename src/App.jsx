@@ -761,6 +761,7 @@ function App() {
   };
   const profession = professionOptions.find(p => p.id === professionId) || professionOptions.find(p => p.id === 'amele');
   const active = properties.find(p => p.id === selected) || properties[0];
+  const portfolioDetail = portfolioDetailId == null ? null : properties.find(p => p.id === portfolioDetailId) || null;
   const portfolio = properties.filter(p => owned.includes(p.id));
   const rentedProperties = portfolio.filter(p => rented.includes(p.id));
   const annualRent = portfolio.reduce((sum, p) => sum + p.rent * 12, 0);
@@ -807,7 +808,7 @@ function App() {
       const dailyCost = DAILY_LIVING_COST + maintenance + business.costs;
       const dailyRent = Math.round(dailyRentIncome * 100) / 100;
       const dailyNet = dailyRent + business.revenue - dailyCost;
-      setCash(v => Math.round((v + dailyNet) * 100) / 100));
+      setCash(v => Math.round((v + dailyNet) * 100) / 100);
       setDay(nextDay);
       setMonth(nextMonth);
       const nextYear = nextMonthRaw > 12 ? year + 1 : year;
@@ -1292,9 +1293,9 @@ function App() {
         <section className="portfolio-mini">
           <div className="section-heading"><span>05 / PORTFÖYÜN</span><button onClick={() => setShowPortfolio(v => !v)}>{showPortfolio ? 'KAPAT −' : 'TÜMÜNÜ GÖR +'}</button></div>
           {portfolio.length === 0 ? <div className="empty-portfolio"><span className="empty-icon">⌂</span><span>Henüz bir mülk edinmedin.</span></div> :
-            portfolio.slice(0, 2).map(p => <div className="portfolio-row" key={p.id}><span className="portfolio-thumb">⌂</span><span className="portfolio-name">{p.name}<small>{p.type} · Günlük kira ₺{(p.rent / 30).toFixed(2)}</small></span><span className="portfolio-value">₺{getMarketValue(p).toLocaleString("tr-TR")}</span></div>)}
+            portfolio.slice(0, 2).map(p => <button type="button" className="portfolio-row portfolio-row-button" key={p.id} onClick={() => { setPortfolioDetailId(p.id); setSelected(p.id); }}><span className="portfolio-thumb">⌂</span><span className="portfolio-name">{p.name}<small>{rented.includes(p.id) ? 'Kirada' : p.type} · Günlük kira ₺{(p.rent / 30).toFixed(2)}</small></span><span className="portfolio-value">₺{getMarketValue(p).toLocaleString("tr-TR")}</span></button>)}
           {showPortfolio && <div className="portfolio-expanded">
-            {portfolio.length === 0 ? <p>İlk yatırımın burada görünecek.</p> : portfolio.map(p => <div className="portfolio-row" key={p.id}><span className="portfolio-thumb">⌂</span><span className="portfolio-name">{p.name}<small>{rented.includes(p.id) ? 'Kirada - günlük ₺' + (p.rent / 30).toFixed(2) : 'Potansiyel günlük kira: ₺' + (p.rent / 30).toFixed(2)}</small></span><span className="portfolio-value">₺{p.price}</span></div>)}
+            {portfolio.length === 0 ? <p>İlk yatırımın burada görünecek.</p> : portfolio.map(p => <button type="button" className="portfolio-row portfolio-row-button" key={p.id} onClick={() => { setPortfolioDetailId(p.id); setSelected(p.id); }}><span className="portfolio-thumb">⌂</span><span className="portfolio-name">{p.name}<small>{rented.includes(p.id) ? 'Kirada - günlük ₺' + (p.rent / 30).toFixed(2) : 'Potansiyel günlük kira: ₺' + (p.rent / 30).toFixed(2)}</small></span><span className="portfolio-value">₺{getMarketValue(p).toLocaleString("tr-TR")}</span></button>)}
             <div className="portfolio-total">POTANSİYEL GÜNLÜK KİRA <strong>₺{portfolio.reduce((sum,p)=>sum+p.rent/30,0).toFixed(2)}</strong></div><div className="portfolio-total">KİRAYA VERİLENLERİN GÜNLÜK GELİRİ <strong>₺{dailyRentIncome.toFixed(2)}</strong></div><div className="portfolio-total">KİRAYA VERİLENLERİN YILLIK GELİRİ <strong>₺{realizedAnnualRent}</strong></div>
           </div>}
         </section>
@@ -1306,6 +1307,24 @@ function App() {
       </aside>
     </section>
 
+    {portfolioDetail && <div className="property-modal-backdrop" role="presentation" onClick={(event) => { if (event.target === event.currentTarget) setPortfolioDetailId(null); }}>
+      <section className="property-modal" role="dialog" aria-modal="true" aria-label={portfolioDetail.name}>
+        <div className="property-modal-top"><span>MÜLK DOSYASI · #{String(portfolioDetail.id).padStart(2, '0')}</span><button type="button" aria-label="Kapat" onClick={() => setPortfolioDetailId(null)}>×</button></div>
+        <h2>{portfolioDetail.name}</h2>
+        <p className="property-modal-subtitle">{portfolioDetail.type} · {portfolioDetail.floors} kat · {portfolioDetail.style}</p>
+        <div className="property-modal-stats">
+          <div><small>GÜNCEL PİYASA DEĞERİ</small><strong>₺{getMarketValue(portfolioDetail).toLocaleString('tr-TR')}</strong></div>
+          <div><small>AYLIK KİRA POTANSİYELİ</small><strong>₺{portfolioDetail.rent.toLocaleString('tr-TR')}</strong></div>
+          <div><small>GÜNLÜK KİRA</small><strong>₺{(portfolioDetail.rent / 30).toFixed(2)}</strong></div>
+          <div><small>DURUM</small><strong>{rented.includes(portfolioDetail.id) ? 'Kirada' : 'Kendi kullanımında'}</strong></div>
+        </div>
+        <p className="property-modal-note">{rented.includes(portfolioDetail.id) ? 'Kira geliri her oyun günü otomatik hesaba geçer.' : 'Bu mülkü kiraya vererek günlük kira geliri elde edebilirsin. İşletme açtıysan ürün seçimi ve stok durumunu da yönetebilirsin.'}</p>
+        <div className="property-modal-actions">
+          <button type="button" onClick={() => { setSelected(portfolioDetail.id); setPortfolioDetailId(null); }}>HARİTADA GÖSTER</button>
+          <button type="button" onClick={() => setPortfolioDetailId(null)}>KAPAT</button>
+        </div>
+      </section>
+    </div>}
     <footer className="footer"><span>MAHALLE <i>©</i> 1923</span><span>GEÇMİŞİN İÇİNDE BİR GELECEK KUR.</span><span>PROTOTİP 0.4.0</span></footer>
     <div className="economy-note">Kayıt bu tarayıcıda otomatik saklanır. Ekonomi değerleri oynanabilir prototip varsayımlarıdır; doğrulanmış 1923 ücret ve fiyat verileri değildir.</div>
     {notice && <div className="toast" key={noticeId} role="status">{notice}</div>}
