@@ -97,3 +97,87 @@ h1 span{color:#9b9b90;font-weight:400}
   .world-topline{font-size:7px;letter-spacing:.45px}
   .world-caption span:last-child{white-space:nowrap}
 }
+
+
+/* GAME UI — arcade typography and geometric tile accents, inspired by classic block games */
+@import url('https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+:root{font-family:'Space Grotesk',sans-serif;color:#eef3f7;background:#10151d;--paper:#10151d;--ink:#eef3f7;--muted:#8d9baa;--line:#2a3544;--green:#6de3b0;--mono:'IBM Plex Mono',monospace}
+body{background:#10151d;color:#eef3f7}
+.app-shell{max-width:1720px;padding:0 34px;background:linear-gradient(180deg,#10151d 0%,#141d29 100%);min-height:100vh}
+.topbar{border-color:#293544}
+.wordmark{font-family:'Oxanium',sans-serif;font-size:22px;font-weight:800;letter-spacing:1px;color:#f4f7fb}
+.mark{border-radius:3px;background:#7b61ff;color:white;box-shadow:4px 4px 0 #3b2b92;font-family:'Oxanium',sans-serif}
+.top-center,.eyebrow,.date-label,.card-label,.section-heading,.world-topline,.world-caption,.footer,.property-type{font-family:'IBM Plex Mono',monospace;letter-spacing:1px}
+.top-center{color:#9aaabd}
+.live-dot{background:#63e6be;box-shadow:0 0 10px #63e6be66}
+.avatar-button{border-radius:3px;background:#202b3a;color:#e9f0f7;border-color:#3c4b60}
+.intro-row{padding-top:32px;padding-bottom:24px}
+h1{font-family:'Oxanium',sans-serif;font-weight:800;text-transform:uppercase;letter-spacing:-1.8px;color:#f1f5fa}
+h1 span{color:#ffca58;font-weight:700}
+.intro-copy{color:#9aabbe;font-size:14px}
+.progress-control .year-display{font-family:'Oxanium',sans-serif;font-size:32px;font-weight:800;color:#6de3b0;letter-spacing:0}
+.progress-control .year-display small{color:#9aaabd;font-family:'IBM Plex Mono',monospace;font-size:10px}
+.advance-button{font-family:'IBM Plex Mono',monospace;color:#ffca58;font-size:10px;letter-spacing:.7px}
+.game-layout{grid-template-columns:minmax(0,1.7fr) minmax(330px,.82fr);gap:16px}
+.world-panel{background:#182330;border:1px solid #344255;border-radius:5px;overflow:hidden;min-height:0;box-shadow:0 12px 34px #00000025}
+.world-topline{color:#a7b7c9;border-color:#344255}
+.scene-host{height:500px;background:#d8d5ca}
+.map-legend{background:#182330;color:#a9b7c8;border-color:#344255;flex-wrap:wrap}
+.legend-dot{border-radius:1px;background:#ffca58}
+.legend-dot.owned{background:#63e6be}
+.map-hint{color:#8093a8}
+.world-caption{color:#8194a8;border-color:#344255;background:#141d29}
+.side-panel{gap:10px}
+.balance-card,.property-card,.portfolio-mini,.work-card,.activity-card{background:#182330;border:1px solid #344255;border-radius:5px;color:#eaf1f8;box-shadow:0 6px 20px #00000015}
+.balance-card{padding:16px 17px}
+.card-label,.section-heading{color:#8fa2b8;font-size:10px}
+.balance-number{font-family:'Oxanium',sans-serif;font-weight:800;color:#63e6be;font-size:36px;letter-spacing:-.5px}
+.balance-number span{color:#ffca58}
+.balance-foot,.property-description,.profession-description,.profession-meta,.small-note{color:#9aadc1}
+.positive,.owned-text{color:#63e6be!important}
+.negative{color:#ff7c8b}
+.balance-rule{background:#2b394a}
+.balance-rule span{background:linear-gradient(90deg,#7b61ff,#63e6be)}
+.profession-select{display:block;width:100%;margin-top:12px;padding:11px 12px;background:#101923;border:1px solid #3a4b60;border-radius:3px;color:#f1f5fa;font:700 16px 'Oxanium',sans-serif;outline:none}
+.profession-description{font-size:12px;margin:9px 0 5px}
+.profession-meta{font-family:'IBM Plex Mono',monospace;font-size:9px;line-height:1.6}
+.work-card,.activity-card{padding:16px 17px}
+.work-status{display:flex;align-items:center;gap:8px;font:10px 'IBM Plex Mono',monospace;color:#9fb0c3;margin:15px 0 10px}
+.status-light{width:8px;height:8px;background:#7d8998;display:inline-block;border-radius:1px}
+.status-light.active{background:#63e6be;box-shadow:0 0 9px #63e6be55}
+.work-button,.rest-button,.operate-button{width:100%;min-height:42px;display:flex;align-items:center;justify-content:space-between;padding:0 13px;border:1px solid #5d4fc1;background:#7b61ff;color:#fff;font:700 11px 'IBM Plex Mono',monospace;letter-spacing:.3px;cursor:pointer;border-radius:3px;margin-top:8px}
+.work-button:hover,.operate-button:hover{background:#917dff}
+.work-button:disabled{opacity:.35;cursor:not-allowed}
+.rest-button{background:#202d3d;border-color:#3c4d63;color:#b9c9da}
+.small-note{font-size:10px;line-height:1.55;margin:10px 0 0}
+.property-card{padding:17px}
+.property-type{color:#ffca58}
+.property-card h2{font-family:'Oxanium',sans-serif;font-size:23px;letter-spacing:-.3px;color:#f1f5fa}
+.property-stats{border-color:#344255}
+.property-stats span{color:#8ea1b6}
+.property-stats strong{color:#edf3f8;font-family:'Oxanium',sans-serif;font-size:14px}
+.buy-button{background:#63e6be;color:#10221e;border-radius:3px;font-family:'IBM Plex Mono',monospace;letter-spacing:.4px}
+.buy-button:hover{background:#8bf2d0}
+.buy-button.is-owned{background:#223d39;color:#63e6be}
+.operate-button{background:#ffca58;border-color:#ffca58;color:#211b0e}
+.operate-button:hover{background:#ffda80}
+.property-note{color:#8ea1b6}
+.property-note span{border-color:#526278}
+.count-tag{color:#ffca58}
+.section-heading button{color:#63e6be;font-family:'IBM Plex Mono',monospace}
+.empty-portfolio{color:#9aadc1}
+.empty-icon,.portfolio-thumb{background:#223143;color:#63e6be;border:1px solid #35465a}
+.portfolio-row{border-color:#2b394a}
+.portfolio-name{color:#e9f0f7}
+.portfolio-name small{color:#8ea1b6}
+.portfolio-value{color:#63e6be}
+.portfolio-total{display:flex;justify-content:space-between;gap:12px;padding-top:12px;color:#8ea1b6;font:9px 'IBM Plex Mono',monospace}
+.portfolio-total strong{font-size:13px;color:#ffca58}
+.log-line{display:flex;gap:9px;align-items:flex-start;padding:9px 0;border-bottom:1px solid #2b394a;color:#9fb0c3;font-size:10px;line-height:1.5}
+.log-square{width:7px;height:7px;background:#7b61ff;box-shadow:3px 3px 0 #44369c;flex-shrink:0;margin-top:4px}
+.log-line:first-of-type .log-square{background:#63e6be;box-shadow:3px 3px 0 #267d65}
+.footer{color:#71859b;border-color:#2a3544}
+.economy-note{font:9px 'IBM Plex Mono',monospace;color:#71859b;line-height:1.6;padding:0 0 22px;letter-spacing:.2px}
+.toast{background:#202d3d;border:1px solid #52647b;border-left:4px solid #63e6be;color:#f2f6fb;border-radius:3px;font-family:'Space Grotesk',sans-serif}
+@media(max-width:900px){.app-shell{padding:0 20px}.game-layout{grid-template-columns:minmax(0,1fr) minmax(290px,.9fr)}.scene-host{height:410px}}
+@media(max-width:680px){.app-shell{padding:0 12px}.topbar{height:60px}.top-center{font-size:7px;max-width:140px}.intro-row{align-items:flex-start;gap:15px;flex-wrap:wrap;padding:26px 0 18px}h1{font-size:37px;letter-spacing:-1.4px}.intro-copy{font-size:11px}.progress-control{text-align:left;min-width:0}.progress-control .year-display{font-size:26px}.game-layout{grid-template-columns:1fr}.world-panel{order:0}.scene-host{height:68vw;min-height:270px}.side-panel{order:1}.balance-number{font-size:34px}.map-legend{gap:9px}.map-hint{display:none}.footer{font-size:7px;gap:10px}.footer span:nth-child(2){order:3;width:100%}}
