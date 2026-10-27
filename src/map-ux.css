@@ -4,21 +4,24 @@
 .world-topline>span:first-child{display:flex;align-items:center;gap:7px;color:#d9e4ef;font-weight:700;white-space:nowrap}
 .world-year{margin-left:auto;white-space:nowrap}
 .property-finder{display:flex;align-items:center;gap:8px;min-width:220px;flex:1;max-width:430px;padding:5px 8px;background:#101923;border:1px solid #3a4b60;border-radius:6px;color:#8ea1b6}
+.property-finder:focus-within{border-color:#63e6be;box-shadow:0 0 0 3px #63e6be18}
 .property-finder>span{font-size:19px;line-height:1;color:#63e6be}
 .property-finder select{min-width:0;flex:1;border:0;background:transparent;color:#edf3f8;outline:0;font:600 12px 'Space Grotesk',sans-serif;cursor:pointer}
 .property-finder small{font:700 8px 'IBM Plex Mono',monospace;color:#71859b;white-space:nowrap}
 .scene-host{height:560px;position:relative;isolation:isolate}
 .scene-host canvas{touch-action:none;display:block}
 .map-zoom-controls{position:absolute;z-index:9;top:14px;right:14px;display:flex;flex-direction:column;gap:6px;padding:5px;background:#101923d9;border:1px solid #526278;border-radius:8px;box-shadow:0 8px 24px #00000035;backdrop-filter:blur(8px)}
-.map-zoom-controls button{width:40px;height:40px;border:1px solid #3d5067;border-radius:6px;background:#1b2938;color:#edf3f8;font:700 20px 'Space Grotesk',sans-serif;cursor:pointer;display:grid;place-items:center;transition:transform .12s,background .12s,border-color .12s}
+.map-zoom-controls button{width:44px;height:44px;border:1px solid #3d5067;border-radius:6px;background:#1b2938;color:#edf3f8;font:700 20px 'Space Grotesk',sans-serif;cursor:pointer;display:grid;place-items:center;transition:transform .12s,background .12s,border-color .12s}
 .map-zoom-controls button:hover{background:#2a3b4e;border-color:#63e6be}
+.map-zoom-controls button:focus-visible{outline:2px solid #63e6be;outline-offset:2px}
 .map-zoom-controls button:active{transform:scale(.94)}
 .map-zoom-controls button:last-child{font-size:17px;color:#ffca58}
 .scene-building-overlay{max-width:min(330px,calc(100% - 24px))}
 .scene-building-overlay .scene-action-card{border-radius:9px;padding:14px 15px;background:#101923ee;border-color:#60738a;box-shadow:0 14px 35px #00000045}
 .scene-action-card>strong{font-size:17px}
 .scene-action-buttons{gap:7px}
-.scene-action-buttons button{min-height:38px;padding:0 12px;border-radius:6px;box-shadow:0 2px 0 #00000022}
+.scene-action-buttons button{min-height:42px;padding:0 12px;border-radius:6px;box-shadow:0 2px 0 #00000022}
+.scene-action-buttons button:focus-visible{outline:2px solid #ffca58;outline-offset:2px}
 .scene-action-buttons button:active{transform:translateY(1px)}
 .map-legend{min-height:48px;padding:8px 14px;gap:12px;display:flex;align-items:center}
 .map-legend>span{display:flex;align-items:center;gap:6px;min-height:30px}
@@ -29,5 +32,5 @@
 .map-legend:before{content:'HARİTA';padding:5px 7px;border:1px solid #3b4d61;border-radius:4px;color:#ffca58;font:700 8px 'IBM Plex Mono',monospace;letter-spacing:.8px}
 @media(min-width:901px){.side-panel{position:sticky;top:14px;align-self:start;max-height:calc(100vh - 28px);overflow:auto;padding-right:3px;scrollbar-width:thin}.side-panel::-webkit-scrollbar{width:5px}.side-panel::-webkit-scrollbar-thumb{background:#526278;border-radius:5px}.world-panel{min-width:0}.game-layout{align-items:start}}
 @media(max-width:900px){.scene-host{height:500px}.world-topline{gap:9px}.property-finder{order:3;flex-basis:100%;max-width:none}.world-year{margin-left:auto}}
-@media(max-width:680px){.scene-host{height:min(82vw,430px);min-height:310px}.world-topline{padding:9px 10px;min-height:92px;align-content:center}.world-year{font-size:8px}.property-finder{min-width:0;height:42px}.property-finder select{font-size:13px}.map-zoom-controls{top:10px;right:10px}.map-zoom-controls button{width:42px;height:42px}.scene-building-overlay{max-width:calc(100% - 16px)}.scene-building-overlay .scene-action-card{padding:12px}.scene-action-buttons{display:grid;grid-template-columns:1fr 1fr}.scene-action-buttons button{width:100%;min-height:40px}.map-legend{padding:7px 10px;gap:6px}.map-legend>span{font-size:8px}.map-legend .map-hint{display:block;width:100%;margin-left:0;padding:5px 0 0;border-left:0;border-top:1px solid #344255}.world-caption{padding:0 10px}}
+@media(max-width:680px){.scene-host{height:min(82vw,430px);min-height:310px}.world-topline{padding:9px 10px;min-height:92px;align-content:center}.world-year{font-size:8px}.property-finder{min-width:0;height:44px}.property-finder select{font-size:13px}.map-zoom-controls{top:10px;right:10px}.map-zoom-controls button{width:44px;height:44px}.scene-building-overlay{max-width:calc(100% - 16px)}.scene-building-overlay .scene-action-card{padding:12px}.scene-action-buttons{display:grid;grid-template-columns:1fr 1fr}.scene-action-buttons button{width:100%;min-height:44px}.map-legend{padding:7px 10px;gap:6px}.map-legend>span{font-size:8px}.map-legend .map-hint{display:block;width:100%;margin-left:0;padding:5px 0 0;border-left:0;border-top:1px solid #344255}.world-caption{padding:0 10px}}
 @media(prefers-reduced-motion:reduce){.map-zoom-controls button,.scene-action-buttons button{transition:none}}
