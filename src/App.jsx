@@ -836,7 +836,15 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
       renderer.domElement.removeEventListener('pointercancel', onPointerUp);
       renderer.domElement.removeEventListener('wheel', onWheel);
       renderer.domElement.removeEventListener('contextmenu', onContextMenu);
-      scene.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) { (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => m.dispose()); } });
+      scene.traverse(o => {
+        if (o.geometry) o.geometry.dispose();
+        if (o.material) {
+          (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => {
+            if (m.map) m.map.dispose();
+            m.dispose();
+          });
+        }
+      });
       renderer.dispose();
       renderer.domElement.remove();
     };
