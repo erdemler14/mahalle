@@ -584,6 +584,7 @@ function App() {
   const [showPortfolio, setShowPortfolio] = useState(() => Boolean(saved.showPortfolio));
   const [professionId, setProfessionId] = useState(() => ['kolonyaci', 'leblebici', 'terzi', 'matbaaci', 'kahveci', 'firinci', 'kasap', 'eczaci', 'kitapci', 'marangoz', 'manav', 'lokantaci', 'demirci', 'amele'].includes(saved.professionId) ? saved.professionId : 'amele');
   const [hour, setHour] = useState(() => Number.isInteger(saved.hour) && saved.hour >= 0 && saved.hour <= 23 ? saved.hour : 8);
+  const [clockRunning, setClockRunning] = useState(true);
   const [day, setDay] = useState(() => Number.isInteger(saved.day) && saved.day >= 1 && saved.day <= 30 ? saved.day : 1);
   const [month, setMonth] = useState(() => Number.isInteger(saved.month) && saved.month >= 1 && saved.month <= 12 ? saved.month : 1);
   const [year, setYear] = useState(() => Number.isInteger(saved.year) && saved.year >= 1923 ? saved.year : 1923);
@@ -1060,7 +1061,12 @@ function App() {
   };
 
   snapshotRef.current = { owners: ownerByProperty, marketValues, hostName: playerName.trim() || 'Ev sahibi' };
-  actionRefs.current = { advanceHour, sleepUntilMorning, selectBusinessPlan, stockBusiness, buy, toggleRent, toggleShop, makeWine, resetGame, selectProperty, changeProfession };
+  actionRefs.current = { advanceHour, sleepUntilMorning, clockTick: () => advanceHour(hour >= 8 && hour < 19 && (professionId === 'amele' || selectedVenueCompatible)), selectBusinessPlan, stockBusiness, buy, toggleRent, toggleShop, makeWine, resetGame, selectProperty, changeProfession };
+  useEffect(() => {
+    if (!clockRunning || multiplayerRole === 'guest') return undefined;
+    const timer = window.setInterval(() => actionRefs.current.clockTick?.(), 5000);
+    return () => window.clearInterval(timer);
+  }, [clockRunning, multiplayerRole]);
   useEffect(() => {
     if (multiplayerRole === 'host' && connectionRef.current?.open) connectionRef.current.send({ type: 'world-state', owners: ownerByProperty, marketValues, hostName: playerName.trim() || 'Ev sahibi' });
   }, [multiplayerRole, ownerByProperty, marketValues, playerName]);
@@ -1081,7 +1087,7 @@ function App() {
       <div className="progress-control">
         <div className="date-label">OYUN TAKVİMİ · {String(day).padStart(2, '0')}/{String(month).padStart(2, '0')}/{year}</div>
         <div className="year-display">{String(hour).padStart(2, '0')}:00 <small>/ 24 SAAT</small></div>
-        <button className="advance-button" onClick={() => advanceHour(false)}>{hour === 5 ? 'YENİ GÜNE GEÇ' : 'SAATİ İLERLET'} <span>▶</span></button>
+        <button className="advance-button" onClick={sleepUntilMorning}>BİR GÜN İLERLET <span>↗</span></button>
       </div>
     </section>
 
@@ -1137,10 +1143,10 @@ function App() {
 
         <section className="work-card">
           <div className="section-heading"><span>03 / VARDİYA</span><span className="count-tag">{steps.toString().padStart(3, '0')}</span></div>
-          <div className="work-status"><span className={hour >= 8 && hour < 19 ? 'status-light active' : 'status-light'} />{hour >= 8 && hour < 19 ? 'ÇALIŞMA SAATLERİ' : 'MESAİ DIŞI'}</div>
-          <button className="work-button" onClick={() => advanceHour(true)} disabled={hour < 8 || hour >= 19}>1 SAAT ÇALIŞ <span>＋</span></button>
-          <button className="rest-button" onClick={sleepUntilMorning}>UYU · YENİ GÜNE GEÇ <span>↗</span></button>
-          <p className="small-note">Gündelik işçi olarak dükkansız çalışabilirsin. Diğer mesleklerde seçili ve sahip olduğun mekanın mesleğe uygun olması gerekir. Açık işletmenin satışları saat ilerledikçe işler.</p>
+          <div className="work-status"><span className={clockRunning ? "status-light active" : "status-light"} />{clockRunning ? "ZAMAN AKIYOR · 5 SN / SAAT" : "ZAMAN DURAKLATILDI"}</div>
+          <button className="work-button" onClick={() => setClockRunning(v => !v)}>{clockRunning ? "ZAMANI DURDUR" : "ZAMANI BAŞLAT"} <span>{clockRunning ? "Ⅱ" : "▶"}</span></button>
+          <button className="rest-button" onClick={sleepUntilMorning}>BİR GÜN İLERLET <span>↗</span></button>
+          <p className="small-note">Oyun saati her 5 gerçek saniyede bir ilerler. Mesai saatlerinde seçtiğin mesleğe göre otomatik çalışırsın; stoklu işletmeler de satış yapar. İstersen zamanı durdurabilir veya bir günü atlayabilirsin.</p>
         </section>
 
         <section className="property-card">
