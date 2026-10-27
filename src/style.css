@@ -260,3 +260,24 @@ h1 span{color:#ffca58;font-weight:700}
 .map-hint{position:absolute;z-index:7;bottom:12px;left:12px;padding:7px 9px;background:rgba(34,43,39,.82);color:#e6e2d7;border:1px solid rgba(255,255,255,.12);border-radius:2px;font:9px 'IBM Plex Mono',monospace;letter-spacing:.2px;pointer-events:none}
 .scene-host canvas{cursor:grab}
 @media(max-width:680px){.map-zoom-controls{top:8px;right:8px}.map-zoom-controls button{width:30px;height:30px}.map-hint{bottom:7px;left:7px;font-size:8px;max-width:65%}}
+
+
+/* Portfolio property detail dialog */
+.portfolio-row-button{width:100%;font:inherit;text-align:left;cursor:pointer;color:inherit;border:0;background:transparent}
+.portfolio-row-button:hover{background:rgba(191,177,145,.12)}
+.portfolio-row-button:focus-visible{outline:2px solid #a98757;outline-offset:2px}
+.property-modal-backdrop{position:fixed;inset:0;z-index:1000;background:rgba(20,25,23,.66);display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)}
+.property-modal{width:min(520px,100%);max-height:min(82vh,720px);overflow:auto;background:#f3efe4;color:#303831;border:1px solid #c9c0ad;box-shadow:0 22px 70px rgba(0,0,0,.35);padding:24px}
+.property-modal-top{display:flex;align-items:center;justify-content:space-between;gap:16px;font:10px 'IBM Plex Mono',monospace;letter-spacing:1.2px;color:#777363}
+.property-modal-top button{width:32px;height:32px;border:1px solid #c9c0ad;background:transparent;color:#303831;font-size:23px;line-height:1;cursor:pointer}
+.property-modal h2{font:600 clamp(22px,4vw,30px) 'Space Grotesk',sans-serif;line-height:1.15;margin:18px 0 7px}
+.property-modal-subtitle{font-size:13px;color:#777363;line-height:1.5;margin:0 0 20px}
+.property-modal-stats{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:#d6cfbf;border:1px solid #d6cfbf}
+.property-modal-stats>div{display:flex;flex-direction:column;gap:7px;padding:14px;background:#faf7ee;min-width:0}
+.property-modal-stats small{font:9px 'IBM Plex Mono',monospace;letter-spacing:.45px;color:#777363}
+.property-modal-stats strong{font:600 19px 'Space Grotesk',sans-serif;overflow-wrap:anywhere}
+.property-modal-note{font-size:13px;line-height:1.65;color:#575c52;margin:18px 0}
+.property-modal-actions{display:flex;gap:8px;flex-wrap:wrap}
+.property-modal-actions button{border:1px solid #3b463d;background:#3b463d;color:#f7f2e7;padding:11px 14px;font:10px 'IBM Plex Mono',monospace;letter-spacing:.45px;cursor:pointer}
+.property-modal-actions button+button{background:transparent;color:#3b463d}
+@media(max-width:520px){.property-modal{padding:18px}.property-modal-stats strong{font-size:16px}.property-modal-actions button{flex:1}}
