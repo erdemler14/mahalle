@@ -2,18 +2,18 @@ import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 
 const properties = [
-  { id: 1, name: 'Galata’da küçük dükkan', type: 'Ticaret', price: 420, rent: 32, x: -4.2, z: -1.1, color: '#d9c8ad', floors: 3, style: 'Galata taş cephesi' },
-  { id: 2, name: 'Asmalımescit apartmanı', type: 'Konut', price: 860, rent: 58, x: 0, z: -3.2, color: '#c6b8a4', floors: 4, style: 'Cumba ve yüksek tavan' },
-  { id: 3, name: 'Arka sokakta depo', type: 'Depo', price: 290, rent: 24, x: 4.1, z: -0.7, color: '#c7c0b3', floors: 2, style: 'Sade taş yapı' },
-  { id: 4, name: 'Cadde üzeri han', type: 'Ticaret', price: 1250, rent: 94, x: -2.4, z: 4.1, color: '#d5c4a8', floors: 4, style: 'Ticaret hanı' },
-  { id: 5, name: 'Meydan evi', type: 'Konut', price: 690, rent: 46, x: 3.2, z: 4.2, color: '#d4cbb9', floors: 3, style: 'Dar cepheli şehir evi' },
-  { id: 6, name: 'Eski Rum evi', type: 'Konut', price: 740, rent: 49, x: -7.2, z: -5.2, color: '#c9b6a2', floors: 3, style: 'Ahşap cumba' },
-  { id: 7, name: 'Şarap ve erzak dükkanı', type: 'Ticaret', price: 510, rent: 38, x: 7.0, z: -5.0, color: '#d8cbb4', floors: 3, style: 'Zemin kat dükkan' },
-  { id: 8, name: 'Tünel yakınında apartman', type: 'Konut', price: 1120, rent: 76, x: -7.4, z: 2.8, color: '#c7c2b5', floors: 4, style: 'Geç Osmanlı apartmanı' },
-  { id: 9, name: 'Matbaa atölyesi', type: 'Atölye', price: 620, rent: 45, x: 7.2, z: 2.7, color: '#cbbca6', floors: 2, style: 'Zanaat atölyesi' },
-  { id: 10, name: 'İstiklal üzerinde mağaza', type: 'Ticaret', price: 1480, rent: 108, x: -5.6, z: 7.4, color: '#d7c8b0', floors: 4, style: 'Süslü ticaret cephesi' },
-  { id: 11, name: 'Avlulu aile evi', type: 'Konut', price: 570, rent: 35, x: 0.1, z: 8.0, color: '#d0c3af', floors: 2, style: 'İç avlulu konut' },
-  { id: 12, name: 'Küçük kahvehane', type: 'İşletme', price: 480, rent: 62, x: 5.5, z: 7.5, color: '#bfae98', floors: 2, style: 'Sokak kahvehanesi' }
+  { id: 1, name: 'Galata’da küçük dükkan', type: 'Ticaret', price: 420, rent: 32, x: -4.2, z: -1.1, color: '#d9b99c', floors: 3, style: 'Galata taş cephesi' },
+  { id: 2, name: 'Asmalımescit apartmanı', type: 'Konut', price: 860, rent: 58, x: 0, z: -3.2, color: '#b9c9c4', floors: 4, style: 'Cumba ve yüksek tavan' },
+  { id: 3, name: 'Arka sokakta depo', type: 'Depo', price: 290, rent: 24, x: 4.1, z: -0.7, color: '#d9c3a8', floors: 2, style: 'Sade taş yapı' },
+  { id: 4, name: 'Cadde üzeri han', type: 'Ticaret', price: 1250, rent: 94, x: -2.4, z: 4.1, color: '#c6a9a1', floors: 4, style: 'Ticaret hanı' },
+  { id: 5, name: 'Meydan evi', type: 'Konut', price: 690, rent: 46, x: 3.2, z: 4.2, color: '#d8d0b9', floors: 3, style: 'Dar cepheli şehir evi' },
+  { id: 6, name: 'Eski Rum evi', type: 'Konut', price: 740, rent: 49, x: -7.2, z: -5.2, color: '#b6c0a7', floors: 3, style: 'Ahşap cumba' },
+  { id: 7, name: 'Şarap ve erzak dükkanı', type: 'Ticaret', price: 510, rent: 38, x: 7.0, z: -5.0, color: '#d8bca5', floors: 3, style: 'Zemin kat dükkan' },
+  { id: 8, name: 'Tünel yakınında apartman', type: 'Konut', price: 1120, rent: 76, x: -7.4, z: 2.8, color: '#b7c5ce', floors: 4, style: 'Geç Osmanlı apartmanı' },
+  { id: 9, name: 'Matbaa atölyesi', type: 'Atölye', price: 620, rent: 45, x: 7.2, z: 2.7, color: '#cbb2a0', floors: 2, style: 'Zanaat atölyesi' },
+  { id: 10, name: 'İstiklal üzerinde mağaza', type: 'Ticaret', price: 1480, rent: 108, x: -5.6, z: 7.4, color: '#dfc9a3', floors: 4, style: 'Süslü ticaret cephesi' },
+  { id: 11, name: 'Avlulu aile evi', type: 'Konut', price: 570, rent: 35, x: 0.1, z: 8.0, color: '#c6b8cf', floors: 2, style: 'İç avlulu konut' },
+  { id: 12, name: 'Küçük kahvehane', type: 'İşletme', price: 480, rent: 62, x: 5.5, z: 7.5, color: '#c5b9a4', floors: 2, style: 'Sokak kahvehanesi' }
 ];
 
 const SAVE_KEY = 'mahalle-save-v1';
@@ -47,7 +47,7 @@ function CityScene({ selected, owned, onSelect, hour }) {
     const duskBackground = new THREE.Color('#b9b7b0');
     const nightBackground = new THREE.Color('#202b3b');
     scene.background = dayBackground.clone();
-    scene.fog = new THREE.Fog('#e8e6de', 22, 48);
+    scene.fog = new THREE.Fog('#e8e6de', 30, 62);
     const camera = new THREE.PerspectiveCamera(38, el.clientWidth / el.clientHeight, 0.1, 100);
     camera.position.set(12, 13, 17);
     camera.lookAt(0, 0, 0);
@@ -66,7 +66,8 @@ function CityScene({ selected, owned, onSelect, hour }) {
     const sun = new THREE.DirectionalLight('#fff5dd', 3.0);
     sun.position.set(-7, 15, 8);
     sun.castShadow = true;
-    sun.shadow.mapSize.set(1024, 1024);
+    sun.shadow.mapSize.set(2048, 2048);
+    sun.shadow.camera.left = -22; sun.shadow.camera.right = 22; sun.shadow.camera.top = 22; sun.shadow.camera.bottom = -22;
     scene.add(sun);
 
     const ground = new THREE.Mesh(new THREE.PlaneGeometry(80, 80), new THREE.MeshStandardMaterial({ color: '#d8d5ca', roughness: 1 }));
@@ -76,18 +77,37 @@ function CityScene({ selected, owned, onSelect, hour }) {
     scene.add(ground);
 
     const streetMat = new THREE.MeshStandardMaterial({ color: '#aaa79e', roughness: 1 });
-    const street = new THREE.Mesh(new THREE.PlaneGeometry(7.2, 28), streetMat);
+    const street = new THREE.Mesh(new THREE.PlaneGeometry(11.5, 38), streetMat);
     street.rotation.x = -Math.PI / 2;
     street.position.set(0, 0, 0);
     street.receiveShadow = true;
     scene.add(street);
-    const crossStreet = new THREE.Mesh(new THREE.PlaneGeometry(28, 5.8), streetMat);
+    const crossStreet = new THREE.Mesh(new THREE.PlaneGeometry(38, 9.2), streetMat);
     crossStreet.rotation.x = -Math.PI / 2;
     crossStreet.position.set(0, 0.005, 0.7);
     crossStreet.receiveShadow = true;
     scene.add(crossStreet);
 
-    const stoneMat = new THREE.MeshStandardMaterial({ color: '#efede5', roughness: 1 });
+    const stoneMat = new THREE.MeshStandardMaterial({ color: '#c7c2b6', roughness: 1 });
+    const curbMat = new THREE.MeshStandardMaterial({ color: '#d8d1c2', roughness: 0.96 });
+    const pavingMats = ['#c7c2b6', '#bcb7aa', '#d1cabc'].map(color => new THREE.MeshStandardMaterial({ color, roughness: 1 }));
+    // Continuous sidewalks and stone curbs make the road read as a street, not a floating plane.
+    for (const side of [-1, 1]) {
+      const sidewalk = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 38), pavingMats[0]);
+      sidewalk.rotation.x = -Math.PI / 2; sidewalk.position.set(side * 6.85, -0.005, 0); sidewalk.receiveShadow = true; scene.add(sidewalk);
+      const curb = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.12, 38), curbMat);
+      curb.position.set(side * 5.72, 0.035, 0); curb.receiveShadow = true; scene.add(curb);
+      for (let z = -18; z <= 18; z += 1.35) {
+        const tile = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.025, 1.22), pavingMats[Math.abs(Math.round(z * 10)) % 3]);
+        tile.position.set(side * 6.85, 0.012, z); tile.receiveShadow = true; scene.add(tile);
+      }
+    }
+    for (const side of [-1, 1]) {
+      const sidewalk = new THREE.Mesh(new THREE.PlaneGeometry(38, 1.9), pavingMats[1]);
+      sidewalk.rotation.x = -Math.PI / 2; sidewalk.position.set(0, 0.002, side * 5.55); sidewalk.receiveShadow = true; scene.add(sidewalk);
+      const curb = new THREE.Mesh(new THREE.BoxGeometry(38, 0.12, 0.14), curbMat);
+      curb.position.set(0, 0.035, side * 5.15); scene.add(curb);
+    }
     for (let i = -12; i <= 12; i += 2) {
       const dash = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.015, 0.75), stoneMat);
       dash.position.set(0, 0.02, i);
@@ -244,14 +264,34 @@ function CityScene({ selected, owned, onSelect, hour }) {
     selectionRing.position.y = 0.035;
     scene.add(selectionRing);
 
-    // Distant street frontage to frame the playable block.
-    const fillerMat = new THREE.MeshStandardMaterial({ color: '#c8c0b1', roughness: 1 });
-    for (let i = 0; i < 8; i++) {
-      const height = 2.2 + (i % 3) * 0.55;
-      const b = new THREE.Mesh(new THREE.BoxGeometry(1.65, height, 1.6), fillerMat);
+    // Background frontage has repeated window bays and cornices rather than blank cubes.
+    const fillerColors = ['#c9b7a2', '#b8c5be', '#d8c3a9', '#c7a7a0', '#d9d0b9', '#b9c4d0', '#d8bda7', '#c7b9cf'];
+    for (let i = 0; i < 10; i++) {
+      const height = 2.5 + (i % 4) * 0.58;
+      const width = 1.9 + (i % 3) * 0.22;
+      const depth = 1.75;
+      const facadeMat = new THREE.MeshStandardMaterial({ color: fillerColors[i % fillerColors.length], roughness: 0.94 });
+      const detailMat = new THREE.MeshStandardMaterial({ color: '#e8deca', roughness: 0.9 });
+      const glassMat = new THREE.MeshStandardMaterial({ color: '#526970', roughness: 0.5 });
+      const b = new THREE.Group();
+      const body = new THREE.Mesh(new THREE.BoxGeometry(width, height, depth), facadeMat);
+      body.position.y = height / 2; body.castShadow = true; body.receiveShadow = true; b.add(body);
+      const cornice = new THREE.Mesh(new THREE.BoxGeometry(width + 0.16, 0.09, depth + 0.12), detailMat);
+      cornice.position.y = height - 0.1; b.add(cornice);
+      for (let floor = 0; floor < Math.max(2, Math.floor(height / 0.9)); floor++) {
+        for (let col = 0; col < 2; col++) {
+          const x = (col - 0.5) * 0.72;
+          const win = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.42, 0.04), glassMat);
+          win.position.set(x, 0.5 + floor * 0.78, depth / 2 + 0.025); b.add(win);
+          const frame = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.05, 0.055), detailMat);
+          frame.position.set(x, 0.74 + floor * 0.78, depth / 2 + 0.045); b.add(frame);
+          const sill = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.05, 0.06), detailMat);
+          sill.position.set(x, 0.26 + floor * 0.78, depth / 2 + 0.045); b.add(sill);
+        }
+      }
       const side = i % 2 === 0 ? -1 : 1;
-      b.position.set(side * (7.2 + (i % 2) * 1.1), height / 2, -10 + i * 2.8);
-      b.castShadow = true; b.receiveShadow = true; scene.add(b);
+      b.position.set(side * (10.0 + (i % 3) * 1.0), 0, -13 + i * 2.9);
+      scene.add(b);
     }
 
     // A small, understated period tram on the street.
