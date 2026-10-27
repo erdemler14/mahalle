@@ -886,6 +886,7 @@ function App() {
   const [month, setMonth] = useState(() => Number.isInteger(saved.month) && saved.month >= 1 && saved.month <= 12 ? saved.month : 1);
   const [year, setYear] = useState(() => Number.isInteger(saved.year) && saved.year >= 1923 ? saved.year : 1923);
   const [workHours, setWorkHours] = useState(() => Number.isInteger(saved.workHours) && saved.workHours >= 0 ? saved.workHours : 0);
+  const [careerHours, setCareerHours] = useState(() => Number.isInteger(saved.careerHours) && saved.careerHours >= 0 ? saved.careerHours : 0);
   const [shopPropertyId, setShopPropertyId] = useState(() => Number.isInteger(saved.shopPropertyId) ? saved.shopPropertyId : null);
   const [wineBottles, setWineBottles] = useState(() => Number.isInteger(saved.wineBottles) && saved.wineBottles >= 0 ? saved.wineBottles : 0);
   const [businessPlans, setBusinessPlans] = useState(() => saved.businessPlans && typeof saved.businessPlans === 'object' ? saved.businessPlans : {});
@@ -1025,7 +1026,7 @@ function App() {
       }
       window.localStorage.setItem(SAVE_KEY, JSON.stringify({
         version: 2, playerName, steps, cash, owned, rented, selected, showPortfolio, professionId, marketValues,
-        hour, day, month, year, workHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, log: log.slice(0, 5)
+        hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, log: log.slice(0, 5)
       }));
     } catch {
       // The game remains playable if browser storage is disabled or full.
@@ -1087,6 +1088,7 @@ function App() {
         detail = (detail ? detail + ' · ' : '') + `${profession.name}: dükkanında çalıştın; diğer işletmelerin satışları da sürdü`;
       }
       setWorkHours(v => v + 1);
+      setCareerHours(v => v + 1);
     } else if (work && !isWorkingHour) {
       detail = 'Bu saatte iş bulmak zor. Dinlenmeyi veya saati ilerletmeyi seçtin.';
     }
@@ -1187,6 +1189,7 @@ function App() {
     setClockRunning(false);
     setCash(value => Math.round((value + net) * 100) / 100);
     setWorkHours(value => value + 1);
+    setCareerHours(value => value + 1);
     setHour(value => value >= 18 ? 19 : value + 1);
     tell(`${profession.name} olarak ${active.name} içinde bir saat çalıştın: iş geliri +₺${gross.toFixed(2)}, malzeme -₺${supplies.toFixed(2)}, net +₺${net.toFixed(2)}. Zamanı durdurdum; istersen yeniden başlatabilirsin.`);
   };
@@ -1269,7 +1272,7 @@ function App() {
     if (typeof window !== 'undefined' && !window.confirm('Yeni oyun başlatılsın mı? Mevcut mahalle kaydı silinecek.')) return;
     setSteps(0); setCash(75); setOwned([]); setRented([]); setSelected(1); setShowPortfolio(false);
     setProfessionId('amele'); setHour(8); setDay(1); setMonth(1); setYear(1923);
-    setWorkHours(0); setShopPropertyId(null); setWineBottles(0); setBusinessPlans({}); setStockByProperty({});
+    setWorkHours(0); setCareerHours(0); setShopPropertyId(null); setWineBottles(0); setBusinessPlans({}); setStockByProperty({});
     setLog([{ id: Date.now(), text: 'Yeni bir hikaye başladı. Gündelik işçilikle sermaye biriktir veya uygun bir dükkan edin.' }]);
     setNotice('');
     try { window.localStorage.removeItem(SAVE_KEY); } catch {}
@@ -1503,7 +1506,7 @@ function App() {
           <div className="progression-top"><span className="card-label">GELİŞİM ROTASI</span><span className="progression-step">AŞAMA {Math.min(5, (workHours >= 5 ? 1 : 0) + (owned.length >= 1 ? 1 : 0) + (owned.length >= 2 ? 1 : 0) + (rented.length >= 1 ? 1 : 0) + (owned.length >= 3 ? 1 : 0) + 1).toString().padStart(2, '0')} / 06</span></div>
           {(() => {
             const goals = [
-              { id: 'work', title: 'İlk sermayeni oluştur', detail: '5 saat çalışarak meslek ritmini öğren.', current: workHours, target: 5, unit: 'saat', done: workHours >= 5, reward: 'Meslek deneyimi' },
+              { id: 'work', title: 'İlk sermayeni oluştur', detail: 'Toplam 5 saat çalışarak meslek ritmini öğren.', current: careerHours, target: 5, unit: 'saat', done: careerHours >= 5, reward: 'Meslek deneyimi' },
               { id: 'first-property', title: 'İlk mülkünü edin', detail: 'Bir taşınmaz satın al ve portföyünü başlat.', current: owned.length, target: 1, unit: 'mülk', done: owned.length >= 1, reward: 'Gayrimenkul yatırımcısı' },
               { id: 'second-property', title: 'Küçük bir portföy kur', detail: 'İkinci taşınmazını alarak seçeneklerini artır.', current: owned.length, target: 2, unit: 'mülk', done: owned.length >= 2, reward: 'Portföy çeşitliliği' },
               { id: 'rental', title: 'İlk kira gelirini başlat', detail: 'Bir mülkünü kiraya ver; günlük gelirini büyüt.', current: rented.length, target: 1, unit: 'kiralık mülk', done: rented.length >= 1, reward: 'Düzenli gelir' },
@@ -1512,7 +1515,7 @@ function App() {
             const goal = goals.find(item => !item.done);
             if (!goal) return <div className="progression-complete"><strong>Mahallede güçlü bir yer edindin.</strong><span>Yeni hedefler sonraki gelişim güncellemesinde açılacak.</span></div>;
             const ratio = Math.min(100, Math.round(goal.current / goal.target * 100));
-            return <><div className="progression-title">{goal.title}</div><p className="progression-detail">{goal.detail}</p><div className="progression-meter"><span style={{ width: ratio + '%' }} /></div><div className="progression-foot"><span>{Math.min(goal.current, goal.target)} / {goal.target} {goal.unit}</span><span>{ratio}%</span></div><div className="progression-next"><span>SONRAKİ KAZANIM</span><strong>{goal.reward}</strong></div></>;
+            return <><div className="progression-title">{goal.title}</div><p className="progression-detail">{goal.detail}</p><div className="progression-meter"><span style={{ width: ratio + '%' }} /></div><div className="progression-foot"><span>{Math.min(goal.current, goal.target)} / {goal.target} {goal.unit}</span><span>{ratio}%</span></div><div className="progression-next"><span>BU HEDEFİN KATKISI</span><strong>{goal.reward}</strong></div></>;
           })()}
         </section>
 
