@@ -699,8 +699,9 @@ function App() {
   const active = properties.find(p => p.id === selected) || properties[0];
   const portfolio = properties.filter(p => owned.includes(p.id));
   const rentedProperties = portfolio.filter(p => rented.includes(p.id));
-  const annualRent = portfolio.reduce((sum, p) => sum + p.rent, 0);
-  const realizedAnnualRent = rentedProperties.reduce((sum, p) => sum + p.rent, 0);
+  const annualRent = portfolio.reduce((sum, p) => sum + p.rent * 12, 0);
+  const realizedAnnualRent = rentedProperties.reduce((sum, p) => sum + p.rent * 12, 0);
+  const dailyRentIncome = rentedProperties.reduce((sum, p) => sum + p.rent / 30, 0);
   const selectedVenueCompatible = owned.includes(active.id) && !rented.includes(active.id) && supportsProfessionAt(active, professionId);
   const hasSuitablePremise = portfolio.some(p => !rented.includes(p.id) && supportsProfessionAt(p, professionId));
   const [noticeId, setNoticeId] = useState(0);
@@ -734,10 +735,10 @@ function App() {
       const nextMonthRaw = month + (nextDayRaw > 30 ? 1 : 0);
       const nextMonth = nextMonthRaw > 12 ? 1 : nextMonthRaw;
       const businessOverhead = professionId !== 'amele' && hasSuitablePremise ? profession.overhead : 0;
-      const maintenance = portfolio.reduce((sum, p) => sum + Math.max(0.01, Math.round((p.price * 0.003 / 365) * 100) / 100), 0);
+      const maintenance = portfolio.reduce((sum, p) => sum + Math.max(0.01, Math.round((getMarketValue(p) * 0.003 / 365) * 100) / 100), 0);
       const dailyCost = DAILY_LIVING_COST + businessOverhead + maintenance;
-      const monthlyRent = nextDayRaw > 30 ? Math.round((realizedAnnualRent / 12) * 100) / 100 : 0;
-      setCash(v => Math.max(0, Math.round((v - dailyCost + monthlyRent) * 100) / 100));
+      const dailyRent = Math.round(dailyRentIncome * 100) / 100;
+      setCash(v => Math.max(0, Math.round((v - dailyCost + dailyRent) * 100) / 100));
       setDay(nextDay);
       setMonth(nextMonth);
       const nextYear = nextMonthRaw > 12 ? year + 1 : year;
@@ -745,7 +746,7 @@ function App() {
       if (nextMonthRaw > 12) setYear(v => v + 1);
       setHour(6);
       setWorkHours(0);
-      tell(`Yeni gün başladı. Yaşam gideri: ${DAILY_LIVING_COST}; işletme gideri: ${businessOverhead}; mülk bakımı: ${maintenance}. ${monthlyRent ? `Ay sonu kira tahsilatı: +${monthlyRent}.` : ''}`);
+      tell(`Yeni gün başladı. Yaşam gideri: ${DAILY_LIVING_COST}; işletme gideri: ${businessOverhead}; mülk bakımı: ${maintenance}; günlük kira geliri: +${dailyRent}.`);
       return;
     }
     const isWorkingHour = hour >= 8 && hour < 19;
@@ -780,11 +781,12 @@ function App() {
         const product = (tradeCatalog[propertyId] || []).find(item => item.id === businessPlans[propertyId]);
         const stock = stockByProperty[propertyId] || 0;
         if (!product || product.price <= 0 || stock <= 0 || Math.random() >= 0.72) return;
-        const sold = Math.min(stock, Math.random() < 0.22 ? 2 : 1);
-        const revenue = Math.round(sold * product.price * 100) / 100;
+        const demandMultiplier = property?.type === 'İşletme' ? 2.4 : property?.type === 'Atölye' ? 2.6 : property?.type === 'Ticaret' ? 2.0 : 1.6;
+        const sold = Math.min(stock, Math.random() < 0.18 ? 3 : Math.random() < 0.48 ? 2 : 1);
+        const revenue = Math.round(sold * product.price * demandMultiplier * 100) / 100;
         net += revenue;
         stockChanges[propertyId] = Math.max(0, stock - sold);
-        sales.push(`${property?.name || 'İşletme'}: ${sold} adet ${product.name}, +₺${revenue.toFixed(2)}`);
+        sales.push(`${property?.name || 'İşletme'}: ${sold} adet ${product.name}, hasılat katsayısı x${demandMultiplier}, +₺${revenue.toFixed(2)}`);
       });
       if (Object.keys(stockChanges).length) setStockByProperty(old => ({ ...old, ...stockChanges }));
       if (sales.length) detail += `${detail ? ' · ' : ''}${sales.join(' · ')}`;
@@ -806,7 +808,7 @@ function App() {
     const businessOverhead = professionId !== 'amele' && hasSuitablePremise ? profession.overhead : 0;
     const maintenance = portfolio.reduce((sum, p) => sum + Math.max(0.01, Math.round((p.price * 0.003 / 365) * 100) / 100), 0);
     const upkeep = DAILY_LIVING_COST + businessOverhead + maintenance;
-    const rent = nextDayRaw > 30 ? Math.round((realizedAnnualRent / 12) * 100) / 100 : 0;
+    const rent = Math.round(dailyRentIncome * 100) / 100;
     setCash(v => Math.max(0, Math.round((v - upkeep + rent) * 100) / 100));
     setDay(nextDay);
     setMonth(nextMonth);
@@ -815,7 +817,7 @@ function App() {
     if (nextMonthRaw > 12) setYear(v => v + 1);
     setHour(6);
     setWorkHours(0);
-    tell(`Geceyi geçirdin. Günlük giderler işlendi.${rent ? ` Ay sonu kira tahsilatı: +${rent} oyun lirası.` : ''}`);
+    tell(`Geceyi geçirdin. Günlük giderler: ${upkeep.toFixed(2)}; günlük kira tahsilatı: +${rent.toFixed(2)}.`);
   };
 
   const selectBusinessPlan = (plan) => {
@@ -875,7 +877,7 @@ function App() {
     }
     setRented(v => [...v, active.id]);
     if (shopPropertyId === active.id) setShopPropertyId(null);
-    tell(`${active.name} kiraya verildi. Oyun takviminde ay sonuna gelince kira tahsil edilecek.`);
+    tell(`${active.name} kiraya verildi. Günlük kira geliri: ${ (active.rent / 30).toFixed(2) }; her yeni günde otomatik tahsil edilir.`);
   };
 
   clockAction.current = () => { if (multiplayerRole !== 'guest') advanceHour(false); };
@@ -1185,10 +1187,10 @@ function App() {
         <section className="portfolio-mini">
           <div className="section-heading"><span>05 / PORTFÖYÜN</span><button onClick={() => setShowPortfolio(v => !v)}>{showPortfolio ? 'KAPAT −' : 'TÜMÜNÜ GÖR +'}</button></div>
           {portfolio.length === 0 ? <div className="empty-portfolio"><span className="empty-icon">⌂</span><span>Henüz bir mülk edinmedin.</span></div> :
-            portfolio.slice(0, 2).map(p => <div className="portfolio-row" key={p.id}><span className="portfolio-thumb">⌂</span><span className="portfolio-name">{p.name}<small>{p.type} · Yıllık ₺{p.rent}</small></span><span className="portfolio-value">₺{p.price}</span></div>)}
+            portfolio.slice(0, 2).map(p => <div className="portfolio-row" key={p.id}><span className="portfolio-thumb">⌂</span><span className="portfolio-name">{p.name}<small>{p.type} · Günlük kira ₺{(p.rent / 30).toFixed(2)}</small></span><span className="portfolio-value">₺{p.price}</span></div>)}
           {showPortfolio && <div className="portfolio-expanded">
-            {portfolio.length === 0 ? <p>İlk yatırımın burada görünecek.</p> : portfolio.map(p => <div className="portfolio-row" key={p.id}><span className="portfolio-thumb">⌂</span><span className="portfolio-name">{p.name}<small>Yıllık kira: ₺{p.rent}</small></span><span className="portfolio-value">₺{p.price}</span></div>)}
-            <div className="portfolio-total">POTANSİYEL YILLIK KİRA <strong>₺{annualRent}</strong></div><div className="portfolio-total">KİRAYA VERİLENLERİN YILLIK GELİRİ <strong>₺{realizedAnnualRent}</strong></div>
+            {portfolio.length === 0 ? <p>İlk yatırımın burada görünecek.</p> : portfolio.map(p => <div className="portfolio-row" key={p.id}><span className="portfolio-thumb">⌂</span><span className="portfolio-name">{p.name}<small>{rented.includes(p.id) ? 'Kirada - günlük ₺' + (p.rent / 30).toFixed(2) : 'Potansiyel günlük kira: ₺' + (p.rent / 30).toFixed(2)}</small></span><span className="portfolio-value">₺{p.price}</span></div>)}
+            <div className="portfolio-total">POTANSİYEL GÜNLÜK KİRA <strong>₺{portfolio.reduce((sum,p)=>sum+p.rent/30,0).toFixed(2)}</strong></div><div className="portfolio-total">KİRAYA VERİLENLERİN GÜNLÜK GELİRİ <strong>₺{dailyRentIncome.toFixed(2)}</strong></div><div className="portfolio-total">KİRAYA VERİLENLERİN YILLIK GELİRİ <strong>₺{realizedAnnualRent}</strong></div>
           </div>}
         </section>
 
