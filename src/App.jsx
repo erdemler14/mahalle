@@ -810,6 +810,8 @@ function App() {
     setCash(v => Math.max(0, Math.round((v - upkeep + rent) * 100) / 100));
     setDay(nextDay);
     setMonth(nextMonth);
+    const nextYear = nextMonthRaw > 12 ? year + 1 : year;
+    if (nextDayRaw > 30) updateMarketValues(nextYear, nextMonth);
     if (nextMonthRaw > 12) setYear(v => v + 1);
     setHour(6);
     setWorkHours(0);
