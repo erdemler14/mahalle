@@ -287,6 +287,8 @@ function App() {
   const [hour, setHour] = useState(8);
   const [day, setDay] = useState(1);
   const [month, setMonth] = useState(1);
+  const [year, setYear] = useState(1923);
+  const clockAction = useRef(null);
   const [workHours, setWorkHours] = useState(0);
   const [shopOpen, setShopOpen] = useState(false);
   const [log, setLog] = useState([{ id: 0, text: 'Beyoğlu’na geldin. Geçimini kurmak için bir meslek seç.' }]);
@@ -313,14 +315,16 @@ function App() {
   const advanceHour = (work = false) => {
     if (hour >= 22 || hour < 6) {
       const nextDay = day + 1;
-      const nextMonth = month + (nextDay > 30 ? 1 : 0);
+      const nextMonthRaw = month + (nextDay > 30 ? 1 : 0);
+      const nextMonth = nextMonthRaw > 12 ? 1 : nextMonthRaw;
       const resetDay = nextDay > 30 ? 1 : nextDay;
       const overhead = profession.overhead;
       const maintenance = portfolio.reduce((sum, p) => sum + Math.max(1, Math.round(p.price * 0.002)), 0);
       const monthlyRent = nextDay > 30 ? portfolio.reduce((sum, p) => sum + p.rent, 0) : 0;
       setCash(v => Math.max(0, Math.round((v - overhead - maintenance + monthlyRent) * 100) / 100));
       setDay(resetDay);
-      setMonth(nextMonth > 12 ? 1 : nextMonth);
+      setMonth(nextMonth);
+      if (nextMonthRaw > 12) setYear(v => v + 1);
       setHour(6);
       setWorkHours(0);
       tell(`Yeni gün başladı. Günlük geçim gideri: ${overhead} oyun lirası; mülk bakımı: ${maintenance}. ${monthlyRent ? `Kira tahsilatı: +${monthlyRent}.` : ''}`);
@@ -363,6 +367,12 @@ function App() {
     tell(`${active.name} satın alındı. İşletme açmak için mülk panelini kullan.`);
   };
 
+  clockAction.current = () => advanceHour(false);
+  useEffect(() => {
+    const timer = window.setInterval(() => clockAction.current?.(), 20000);
+    return () => window.clearInterval(timer);
+  }, []);
+
   const toggleShop = () => {
     if (owned.length === 0) { tell('İşletme açmak için önce bir mülk edinmelisin.'); return; }
     setShopOpen(v => !v);
@@ -379,11 +389,11 @@ function App() {
     <section className="intro-row">
       <div>
         <div className="eyebrow">SEZON 01 <span>/</span> İSTANBUL</div>
-        <h1>BEYOĞLU <span>1923</span></h1>
+        <h1>BEYOĞLU <span>{year}</span></h1>
         <p className="intro-copy">Bir meslek seç. Bir sokak kur. Kendi hikayeni yaz.</p>
       </div>
       <div className="progress-control">
-        <div className="date-label">OYUN TAKVİMİ · {String(day).padStart(2, '0')}/{String(month).padStart(2, '0')}/1923</div>
+        <div className="date-label">OYUN TAKVİMİ · {String(day).padStart(2, '0')}/{String(month).padStart(2, '0')}/{year}</div>
         <div className="year-display">{String(hour).padStart(2, '0')}:00 <small>/ 24 SAAT</small></div>
         <button className="advance-button" onClick={() => advanceHour(false)}>{hour >= 22 || hour < 6 ? 'GÜNÜ KAPAT' : 'SAATİ İLERLET'} <span>▶</span></button>
       </div>
@@ -391,7 +401,7 @@ function App() {
 
     <section className="game-layout">
       <div className="world-panel">
-        <div className="world-topline"><span><span className="live-dot" /> BEYOĞLU MERKEZİ</span><span>OYUN DÜNYASI <i>·</i> 1923</span></div>
+        <div className="world-topline"><span><span className="live-dot" /> BEYOĞLU MERKEZİ</span><span>OYUN DÜNYASI <i>·</i> {year}</span></div>
         <CityScene selected={selected} owned={owned} onSelect={setSelected} />
         <div className="map-legend"><span><i className="legend-dot available" /> SATILIK MÜLK</span><span><i className="legend-dot owned" /> SENİN MÜLKÜN</span><span className="map-hint">SÜRÜKLE: DÖNDÜR · KAYDIR: YAKINLAŞ · BİNAYA TIKLA</span></div>
         <div className="world-caption"><span>İSTANBUL / BEYOĞLU</span><span>GÜN {day} <i>·</i> SAAT {String(hour).padStart(2, '0')}:00</span></div>
