@@ -242,3 +242,12 @@ h1 span{color:#ffca58;font-weight:700}
 .incoming-offer button{min-height:32px;padding:0 12px;border:1px solid #5c9b89;border-radius:2px;background:#294e47;color:#d9f7e9;font:700 9px 'IBM Plex Mono',monospace;cursor:pointer}
 .incoming-offer button:last-child{background:#39262b;border-color:#77515a;color:#ffd4d9}
 @media(max-width:680px){.player-name-field{width:100%;justify-content:space-between}.player-name-field input{flex:1;width:0}.scene-action-card{left:8px;bottom:60px;width:min(265px,calc(100% - 16px));padding:10px 11px}.scene-action-card>strong{font-size:14px}.scene-action-buttons button{min-height:30px}}
+
+
+/* The action card follows the selected building's projected 3D position. */
+.scene-building-overlay{position:absolute;z-index:8;left:50%;top:45%;transform:translate(-50%,-100%);width:max-content;max-width:min(285px,calc(100% - 20px));pointer-events:none;visibility:hidden}
+.scene-building-overlay .scene-action-card{position:relative;left:auto;bottom:auto;width:100%;max-width:285px;pointer-events:auto;box-shadow:0 8px 24px rgba(20,25,29,.32)}
+.scene-building-overlay .scene-action-card:after{content:"";position:absolute;left:50%;bottom:-8px;width:14px;height:14px;background:rgba(19,29,38,.94);border-right:1px solid rgba(196,211,219,.32);border-bottom:1px solid rgba(196,211,219,.32);transform:translateX(-50%) rotate(45deg)}
+.scene-host canvas{position:relative;z-index:1}
+.scene-building-overlay{z-index:8}
+@media(max-width:680px){.scene-building-overlay{max-width:calc(100% - 16px)}.scene-building-overlay .scene-action-card{max-width:255px;padding:9px 10px}}
