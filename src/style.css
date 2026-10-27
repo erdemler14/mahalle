@@ -281,3 +281,38 @@ h1 span{color:#ffca58;font-weight:700}
 .property-modal-actions button{border:1px solid #3b463d;background:#3b463d;color:#f7f2e7;padding:11px 14px;font:10px 'IBM Plex Mono',monospace;letter-spacing:.45px;cursor:pointer}
 .property-modal-actions button+button{background:transparent;color:#3b463d}
 @media(max-width:520px){.property-modal{padding:18px}.property-modal-stats strong{font-size:16px}.property-modal-actions button{flex:1}}
+
+
+/* Navigation and property discovery refresh */
+.world-topline{gap:12px;min-height:52px;height:auto;padding:8px 14px;flex-wrap:wrap}
+.property-finder{display:flex;align-items:center;gap:8px;min-width:180px;max-width:360px;flex:1;padding:5px 9px;background:#f8f7f1;border:1px solid #d7d5ca;border-radius:5px;color:#73766d}
+.property-finder>span{font-size:18px;line-height:1}
+.property-finder select{width:100%;min-width:0;border:0;outline:0;background:transparent;color:#333d39;font:500 11px 'Space Grotesk',sans-serif;cursor:pointer}
+.property-finder small{white-space:nowrap;font:700 8px 'IBM Plex Mono',monospace;color:#8e9085}
+.world-year{white-space:nowrap}
+.scene-host{height:clamp(480px,58vw,680px);min-height:480px;touch-action:pan-y}
+.map-zoom-controls{position:absolute;z-index:7;top:14px;right:14px;display:flex;flex-direction:column;gap:6px;padding:6px;background:rgba(250,249,244,.88);border:1px solid rgba(66,74,68,.15);border-radius:8px;box-shadow:0 5px 20px #24282018;backdrop-filter:blur(10px)}
+.map-zoom-controls button{width:36px;height:36px;border:1px solid #deddd3;border-radius:5px;background:#fffef9;color:#33453f;font-size:19px;line-height:1;cursor:pointer;transition:background .15s,transform .15s}
+.map-zoom-controls button:hover{background:#e5eee8;transform:translateY(-1px)}
+.map-hint{position:absolute;left:14px;right:72px;bottom:14px;width:max-content;max-width:calc(100% - 100px);margin:0;padding:8px 11px;border:1px solid #ffffff70;border-radius:5px;background:rgba(24,35,44,.78);color:#f3f1e8;font:500 10px 'Space Grotesk',sans-serif;backdrop-filter:blur(8px)}
+.quick-work-panel{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:12px 0;padding:12px;background:linear-gradient(115deg,#213b36,#172a2b);border:1px solid #466d61;border-radius:5px}
+.quick-work-panel>div{display:flex;flex-direction:column;gap:4px;min-width:0}
+.quick-work-kicker{font:700 8px 'IBM Plex Mono',monospace;letter-spacing:1px;color:#8ed8b9}
+.quick-work-panel strong{font:600 13px 'Space Grotesk',sans-serif;color:#f0f5ed}
+.quick-work-panel small{font:10px 'Space Grotesk',sans-serif;color:#b4c9c0;line-height:1.4}
+.quick-work-button{flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-width:108px;min-height:47px;padding:7px 10px;border:1px solid #83d5b2;border-radius:4px;background:#b8efd4;color:#19392e;font:800 10px 'IBM Plex Mono',monospace;cursor:pointer}
+.quick-work-button span{font-size:11px}
+.quick-work-button:hover:not(:disabled){background:#d1f7e3}
+.quick-work-button:disabled{opacity:.4;cursor:not-allowed}
+@media(max-width:760px){
+  .world-topline{align-items:stretch}
+  .world-topline>span:first-child{align-self:center}
+  .property-finder{order:3;flex-basis:100%;max-width:none}
+  .world-year{margin-left:auto;align-self:center}
+  .scene-host{height:520px;min-height:420px}
+  .map-zoom-controls{top:10px;right:10px}
+  .map-zoom-controls button{width:34px;height:34px}
+  .map-hint{left:10px;bottom:10px;font-size:9px}
+  .quick-work-panel{align-items:stretch}
+  .quick-work-button{min-width:92px}
+}
