@@ -26,8 +26,8 @@
 .legend-dot{width:9px;height:9px;box-shadow:0 0 0 2px #ffffff12}
 .world-caption{min-height:38px;padding:0 14px;display:flex;align-items:center;justify-content:space-between;gap:10px}
 .world-caption span:last-child{color:#9db0c4}
-/* Make the map feel discoverable instead of requiring hidden gestures. */
 .map-legend:before{content:'HARİTA';padding:5px 7px;border:1px solid #3b4d61;border-radius:4px;color:#ffca58;font:700 8px 'IBM Plex Mono',monospace;letter-spacing:.8px}
+@media(min-width:901px){.side-panel{position:sticky;top:14px;align-self:start;max-height:calc(100vh - 28px);overflow:auto;padding-right:3px;scrollbar-width:thin}.side-panel::-webkit-scrollbar{width:5px}.side-panel::-webkit-scrollbar-thumb{background:#526278;border-radius:5px}.world-panel{min-width:0}.game-layout{align-items:start}}
 @media(max-width:900px){.scene-host{height:500px}.world-topline{gap:9px}.property-finder{order:3;flex-basis:100%;max-width:none}.world-year{margin-left:auto}}
 @media(max-width:680px){.scene-host{height:min(82vw,430px);min-height:310px}.world-topline{padding:9px 10px;min-height:92px;align-content:center}.world-year{font-size:8px}.property-finder{min-width:0;height:42px}.property-finder select{font-size:13px}.map-zoom-controls{top:10px;right:10px}.map-zoom-controls button{width:42px;height:42px}.scene-building-overlay{max-width:calc(100% - 16px)}.scene-building-overlay .scene-action-card{padding:12px}.scene-action-buttons{display:grid;grid-template-columns:1fr 1fr}.scene-action-buttons button{width:100%;min-height:40px}.map-legend{padding:7px 10px;gap:6px}.map-legend>span{font-size:8px}.map-legend .map-hint{display:block;width:100%;margin-left:0;padding:5px 0 0;border-left:0;border-top:1px solid #344255}.world-caption{padding:0 10px}}
 @media(prefers-reduced-motion:reduce){.map-zoom-controls button,.scene-action-buttons button{transition:none}}
