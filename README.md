@@ -20,12 +20,14 @@ npm run build
 
 ## Prototype features
 - Interactive 3D miniature of a stylized Beyoğlu street with animated low-poly pedestrians, a moving period tram, a selected-property marker and a day/night lighting cycle
+- Selectable buildings with varied 1920s Beyoğlu-inspired masonry, timber-house rooflines, bay windows, cornices, shopfront glazing, striped awnings and period-style signs
 - Selectable buildings, property details and ownership states
 - Choose a trade: kolonyacı, leblebici, terzi, matbaacı, kahveci or gündelik işçi
 - Trade and venue compatibility: commercial properties and workshops support different businesses
 - 24-hour in-game clock with automatic time progression
 - Hourly work, stock costs, business sales and property maintenance
 - Buy properties, operate a compatible business, or lease an owned property to earn rent at month-end
+- The wine-and-grocery shop can be rented out or run directly; make batches of four bottles for 8 game lira and sell bottles while the shop is open
 - Portfolio, neighbourhood activity log, and a one-click new-game reset
 - Game state saved in browser local storage so a refresh does not erase progress
 - Responsive arcade-style interface using gaming typography and block-game-inspired visual language
