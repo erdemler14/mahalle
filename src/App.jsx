@@ -1034,13 +1034,14 @@ function App() {
             <label className="business-label" htmlFor="business-plan-select">Ne satacaksın?</label>
             <select id="business-plan-select" className="profession-select" value={businessPlans[active.id] || ''} onChange={e => selectBusinessPlan(e.target.value)}>
               <option value="">Ürün grubu seç</option>
-              {(tradeCatalog[active.id] || []).map(item => <option key={item.id} value={item.id}>{item.name} · alış ₺{item.cost} / satış ₺{item.price}</option>)}
+              {(tradeCatalog[active.id] || []).map(item => <option key={item.id} value={item.id}>{item.name} · birim maliyet ₺{(item.units > 0 ? item.cost / item.units : 0).toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} / satış ₺{item.price.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</option>)}
             </select>
             <div className="stock-line"><span>Mevcut stok</span><strong>{stockByProperty[active.id] || 0} adet</strong></div>
-            <div className="stock-line"><span>İlk tedarik maliyeti</span><strong>₺{((tradeCatalog[active.id] || []).find(item => item.id === businessPlans[active.id]) || {cost: 0}).cost}</strong></div>
+            <div className="stock-line"><span>Parti alış maliyeti</span><strong>{(() => { const item = (tradeCatalog[active.id] || []).find(product => product.id === businessPlans[active.id]); return item ? `₺${item.cost.toLocaleString('tr-TR')} · ${item.units} adet` : '₺0'; })()}</strong></div>
+            <div className="stock-line"><span>Birim maliyet / satış</span><strong>{(() => { const item = (tradeCatalog[active.id] || []).find(product => product.id === businessPlans[active.id]); return item && item.units > 0 ? `₺${(item.cost / item.units).toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} / ₺${item.price.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : '—'; })()}</strong></div>
             <div className="stock-line"><span>Parti başına tahmini brüt fark</span><strong>₺{(() => { const item = (tradeCatalog[active.id] || []).find(product => product.id === businessPlans[active.id]); return item ? (item.price * item.units - item.cost).toLocaleString('tr-TR', {maximumFractionDigits: 2}) : '0'; })()}</strong></div>
             <button className="stock-button" onClick={stockBusiness}>{(tradeCatalog[active.id] || []).find(item => item.id === businessPlans[active.id])?.production ? "ÜRETİM YAP / STOK EKLE" : "TEDARİK ET / STOK AL"}</button>
-            <p>Satış ancak işletme açıkken ve stok varken gerçekleşir. Ürün alımı kasadan düşer; satış geliri stok azaldıkça kaydedilir.</p>
+            <p>Alış maliyeti parti içindir; satış fiyatı tek ürün içindir. Birim maliyet, parti maliyetinin adet sayısına bölünmesiyle hesaplanır. Brüt farktan günlük işletme giderleri ayrıca düşer.</p>
           </div>}
 
           {owned.includes(active.id) && (rented.includes(active.id)
