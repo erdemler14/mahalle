@@ -251,3 +251,12 @@ h1 span{color:#ffca58;font-weight:700}
 .scene-host canvas{position:relative;z-index:1}
 .scene-building-overlay{z-index:8}
 @media(max-width:680px){.scene-building-overlay{max-width:calc(100% - 16px)}.scene-building-overlay .scene-action-card{max-width:255px;padding:9px 10px}}
+
+
+/* Galata map controls and navigation hints */
+.map-zoom-controls{position:absolute;z-index:8;top:14px;right:14px;display:flex;flex-direction:column;gap:5px}
+.map-zoom-controls button{width:34px;height:34px;border:1px solid rgba(63,61,53,.35);border-radius:3px;background:rgba(247,244,234,.94);color:#343b35;font:600 20px 'Space Grotesk',sans-serif;cursor:pointer;box-shadow:0 2px 7px rgba(20,20,16,.12);transition:background .15s,transform .15s}
+.map-zoom-controls button:hover{background:#fff;transform:translateY(-1px)}
+.map-hint{position:absolute;z-index:7;bottom:12px;left:12px;padding:7px 9px;background:rgba(34,43,39,.82);color:#e6e2d7;border:1px solid rgba(255,255,255,.12);border-radius:2px;font:9px 'IBM Plex Mono',monospace;letter-spacing:.2px;pointer-events:none}
+.scene-host canvas{cursor:grab}
+@media(max-width:680px){.map-zoom-controls{top:8px;right:8px}.map-zoom-controls button{width:30px;height:30px}.map-hint{bottom:7px;left:7px;font-size:8px;max-width:65%}}
