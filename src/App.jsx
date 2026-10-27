@@ -278,98 +278,188 @@ function CityScene({ selected, owned, onSelect }) {
 
 function App() {
   const [steps, setSteps] = useState(0);
-  const [cash, setCash] = useState(1800);
+  const [cash, setCash] = useState(75);
   const [owned, setOwned] = useState([]);
   const [selected, setSelected] = useState(1);
   const [notice, setNotice] = useState('');
   const [showPortfolio, setShowPortfolio] = useState(false);
+  const [professionId, setProfessionId] = useState('leblebici');
+  const [hour, setHour] = useState(8);
+  const [day, setDay] = useState(1);
+  const [month, setMonth] = useState(1);
+  const [workHours, setWorkHours] = useState(0);
+  const [shopOpen, setShopOpen] = useState(false);
+  const [log, setLog] = useState([{ id: 0, text: 'Beyoğlu’na geldin. Geçimini kurmak için bir meslek seç.' }]);
+  const professionOptions = [
+    { id: 'kolonyaci', name: 'Kolonyacı', gross: 5.2, overhead: 7, description: 'Kolonya, koku ve kişisel bakım ürünleri.' },
+    { id: 'leblebici', name: 'Leblebici', gross: 4.2, overhead: 4, description: 'Kuruyemiş ve leblebi; düşük sermayeli ticaret.' },
+    { id: 'terzi', name: 'Terzi', gross: 6.1, overhead: 5, description: 'Siparişle çalışır; düzenli müşteri kazandırır.' },
+    { id: 'matbaaci', name: 'Matbaacı', gross: 7.3, overhead: 9, description: 'Daha yüksek gelir, daha pahalı malzeme ve bakım.' },
+    { id: 'kahveci', name: 'Kahveci', gross: 5.6, overhead: 10, description: 'Müşteri trafiğine ve sarf malzemesine bağlı.' },
+    { id: 'amele', name: 'Gündelik işçi', gross: 3.7, overhead: 0, description: 'Dükkan gerekmez; çalıştığın saat kadar ücret.' }
+  ];
+  const profession = professionOptions.find(p => p.id === professionId) || professionOptions[1];
   const active = properties.find(p => p.id === selected) || properties[0];
   const portfolio = properties.filter(p => owned.includes(p.id));
-  const totalRent = portfolio.reduce((sum, p) => sum + p.rent, 0);
+  const annualRent = portfolio.reduce((sum, p) => sum + p.rent, 0);
+  const [noticeId, setNoticeId] = useState(0);
 
-  const runBusiness = () => {
-    const earnings = 35 + Math.min(owned.length * 12, 72);
-    setCash(v => v + earnings);
-    setSteps(v => v + 1);
-    setNotice(`Mahalledeki işlerinden ${earnings} ₺ kazandın.`);
-    setTimeout(() => setNotice(''), 3000);
+  const tell = (text) => {
+    setNotice(text);
+    setNoticeId(v => v + 1);
+    setLog(old => [{ id: Date.now(), text }, ...old].slice(0, 5));
   };
+
+  const advanceHour = (work = false) => {
+    if (hour >= 22 || hour < 6) {
+      const nextDay = day + 1;
+      const nextMonth = month + (nextDay > 30 ? 1 : 0);
+      const resetDay = nextDay > 30 ? 1 : nextDay;
+      const overhead = profession.overhead;
+      const maintenance = portfolio.reduce((sum, p) => sum + Math.max(1, Math.round(p.price * 0.002)), 0);
+      const monthlyRent = nextDay > 30 ? portfolio.reduce((sum, p) => sum + p.rent, 0) : 0;
+      setCash(v => Math.max(0, Math.round((v - overhead - maintenance + monthlyRent) * 100) / 100));
+      setDay(resetDay);
+      setMonth(nextMonth > 12 ? 1 : nextMonth);
+      setHour(6);
+      setWorkHours(0);
+      tell(`Yeni gün başladı. Günlük geçim gideri: ${overhead} oyun lirası; mülk bakımı: ${maintenance}. ${monthlyRent ? `Kira tahsilatı: +${monthlyRent}.` : ''}`);
+      return;
+    }
+    const isWorkingHour = hour >= 8 && hour < 19;
+    let net = 0;
+    let detail = '';
+    if (work && isWorkingHour) {
+      const variance = 0.82 + Math.random() * 0.36;
+      const gross = Math.round(profession.gross * variance * 100) / 100;
+      const costs = profession.overhead / 8;
+      net = Math.round((gross - costs) * 100) / 100;
+      detail = `${profession.name}: brüt ${gross.toFixed(2)}, paylaştırılmış gider ${costs.toFixed(2)}`;
+      setWorkHours(v => v + 1);
+    } else if (work && !isWorkingHour) {
+      detail = 'Bu saatte iş bulmak zor. Dinlenmeyi veya saati ilerletmeyi seçtin.';
+    }
+    if (shopOpen && owned.length > 0 && hour >= 7 && hour < 21) {
+      const shopGross = Math.round((2.2 + Math.random() * 3.8) * 100) / 100;
+      const stockCost = Math.round((1.1 + Math.random() * 1.5) * 100) / 100;
+      const shopNet = shopGross - stockCost;
+      net += shopNet;
+      detail += `${detail ? ' · ' : ''}Dükkan satışı ${shopGross.toFixed(2)}, stok ${stockCost.toFixed(2)}`;
+    }
+    setCash(v => Math.max(0, Math.round((v + net) * 100) / 100));
+    const nextHour = hour + 1;
+    setHour(nextHour >= 24 ? 0 : nextHour);
+    setSteps(v => v + 1);
+    if (detail) tell(`${String(hour).padStart(2, '0')}:00 — ${detail}. Net değişim: ${net >= 0 ? '+' : ''}${net.toFixed(2)} oyun lirası.`);
+    else tell(`${String(hour).padStart(2, '0')}:00 — Sokak hareketleniyor; bu saatte düzenli bir gelir elde etmedin.`);
+  };
+
   const buy = () => {
-    if (owned.includes(active.id)) { setNotice('Bu mülk zaten portföyünde.'); return; }
-    if (cash < active.price) { setNotice('Bu mülk için yeterli paran yok.'); return; }
+    if (owned.includes(active.id)) { tell('Bu mülk zaten portföyünde.'); return; }
+    if (cash < active.price) { tell('Bu mülk için yeterli sermayen yok. Önce çalışıp birikim yap.'); return; }
     setCash(v => v - active.price);
     setOwned(v => [...v, active.id]);
     setSteps(v => v + 1);
-    setNotice(`${active.name} portföyüne eklendi.`);
-    setTimeout(() => setNotice(''), 3000);
+    tell(`${active.name} satın alındı. İşletme açmak için mülk panelini kullan.`);
+  };
+
+  const toggleShop = () => {
+    if (owned.length === 0) { tell('İşletme açmak için önce bir mülk edinmelisin.'); return; }
+    setShopOpen(v => !v);
+    tell(shopOpen ? 'Dükkan kapatıldı; satış ve stok giderleri durdu.' : 'Dükkan açıldı. Açık olduğu saatlerde satış ve stok maliyeti işleyecek.');
   };
 
   return <main className="app-shell">
     <header className="topbar">
-      <a className="wordmark" href="#" aria-label="Mahalle ana sayfa"><span className="mark">M.</span><span>mahalle</span></a>
-      <div className="top-center"><span className="live-dot" /> TARİHSEL YAŞAM SİMÜLASYONU</div>
+      <a className="wordmark" href="#" aria-label="Mahalle ana sayfa"><span className="mark">M.</span><span>MAHALLE</span></a>
+      <div className="top-center"><span className="live-dot" /> BİR BEYOĞLU YAŞAM SİMÜLASYONU</div>
       <button className="avatar-button" onClick={() => setShowPortfolio(v => !v)} aria-label="Portföyü aç">CC</button>
     </header>
 
     <section className="intro-row">
       <div>
-        <div className="eyebrow">BÖLÜM 01 <span>/</span> İSTANBUL</div>
-        <h1>Beyoğlu, <span>1923</span></h1>
-        <p className="intro-copy">Bir mahalle. Bir başlangıç. Kuracağın bir hayat.</p>
+        <div className="eyebrow">SEZON 01 <span>/</span> İSTANBUL</div>
+        <h1>BEYOĞLU <span>1923</span></h1>
+        <p className="intro-copy">Bir meslek seç. Bir sokak kur. Kendi hikayeni yaz.</p>
       </div>
       <div className="progress-control">
-        <div className="date-label">MAHALLEDEKİ İLERLEMEN</div>
-        <div className="year-display">{steps} <small>adım</small></div>
-        <button className="advance-button" onClick={runBusiness}>İşlerini yürüt <span>↗</span></button>
+        <div className="date-label">OYUN TAKVİMİ · {String(day).padStart(2, '0')}/{String(month).padStart(2, '0')}/1923</div>
+        <div className="year-display">{String(hour).padStart(2, '0')}:00 <small>/ 24 SAAT</small></div>
+        <button className="advance-button" onClick={() => advanceHour(false)}>{hour >= 22 || hour < 6 ? 'GÜNÜ KAPAT' : 'SAATİ İLERLET'} <span>▶</span></button>
       </div>
     </section>
 
     <section className="game-layout">
       <div className="world-panel">
-        <div className="world-topline"><span><span className="live-dot" /> BEYOĞLU MERKEZİ</span><span>3D MAHALLE <i>·</i> 1923</span></div>
+        <div className="world-topline"><span><span className="live-dot" /> BEYOĞLU MERKEZİ</span><span>OYUN DÜNYASI <i>·</i> 1923</span></div>
         <CityScene selected={selected} owned={owned} onSelect={setSelected} />
-        <div className="map-legend"><span><i className="legend-dot available" /> Satılık mülk</span><span><i className="legend-dot owned" /> Senin mülkün</span><span className="map-hint">Sürükle: döndür · Kaydır: yakınlaş · Binaya tıkla</span></div>
-        <div className="world-caption"><span>İSTANBUL / BEYOĞLU</span><span>41° 01′ K <i>·</i> 28° 58′ D</span></div>
+        <div className="map-legend"><span><i className="legend-dot available" /> SATILIK MÜLK</span><span><i className="legend-dot owned" /> SENİN MÜLKÜN</span><span className="map-hint">SÜRÜKLE: DÖNDÜR · KAYDIR: YAKINLAŞ · BİNAYA TIKLA</span></div>
+        <div className="world-caption"><span>İSTANBUL / BEYOĞLU</span><span>GÜN {day} <i>·</i> SAAT {String(hour).padStart(2, '0')}:00</span></div>
       </div>
 
       <aside className="side-panel">
+        <section className="balance-card profession-card">
+          <div className="card-label">01 / MESLEK SEÇİMİ</div>
+          <select className="profession-select" value={professionId} onChange={e => setProfessionId(e.target.value)}>
+            {professionOptions.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+          <p className="profession-description">{profession.description}</p>
+          <div className="profession-meta">Saatlik hasılat ≈ {profession.gross.toFixed(2)} · Günlük gider {profession.overhead} oyun lirası</div>
+        </section>
+
         <section className="balance-card">
-          <div className="card-label">KİŞİSEL VARLIK</div>
-          <div className="balance-number"><span>₺</span>{cash.toLocaleString('tr-TR')}</div>
-          <div className="balance-foot"><span>Başlangıç sermayesi</span><span className="positive">+{totalRent} ₺ / yıl</span></div>
-          <div className="balance-rule"><span style={{width: `${Math.min(100, cash / 1800 * 100)}%`}} /></div>
+          <div className="card-label">02 / CEPTEKİ SERMAYE</div>
+          <div className="balance-number"><span>₺</span>{cash.toLocaleString('tr-TR', { maximumFractionDigits: 2 })}</div>
+          <div className="balance-foot"><span>Gün {day} · {workHours} saat çalıştın</span><span className={cash > 0 ? 'positive' : 'negative'}>{cash > 0 ? 'AYAKTA' : 'SERMAYE BİTTİ'}</span></div>
+          <div className="balance-rule"><span style={{width: `${Math.min(100, cash / 500 * 100)}%`}} /></div>
+        </section>
+
+        <section className="work-card">
+          <div className="section-heading"><span>03 / VARDİYA</span><span className="count-tag">{steps.toString().padStart(3, '0')}</span></div>
+          <div className="work-status"><span className={hour >= 8 && hour < 19 ? 'status-light active' : 'status-light'} />{hour >= 8 && hour < 19 ? 'ÇALIŞMA SAATLERİ' : 'MESAİ DIŞI'}</div>
+          <button className="work-button" onClick={() => advanceHour(true)} disabled={hour >= 22 || hour < 6}>1 SAAT ÇALIŞ <span>＋</span></button>
+          <button className="rest-button" onClick={() => { setHour(6); setDay(v => v + 1); setWorkHours(0); tell('Geceyi geçirdin. Yeni gün saat 06:00’da başladı.'); }}>UYU · YENİ GÜNE GEÇ <span>↗</span></button>
+          <p className="small-note">Çalıştığın saatte gelir elde edersin. Dükkanın açıksa satışlar saat ilerledikçe işler.</p>
         </section>
 
         <section className="property-card">
-          <div className="section-heading"><span>MÜLKÜ İNCELE</span><span className="count-tag">0{active.id}</span></div>
+          <div className="section-heading"><span>04 / MÜLKÜ İNCELE</span><span className="count-tag">{String(active.id).padStart(2, '0')}</span></div>
           <div className="property-type">{active.type.toUpperCase()}</div>
           <h2>{active.name}</h2>
-          <p className="property-description">{active.style}. Mahallenin değişen hayatında kendine yer açabilecek bir taşınmaz.</p>
+          <p className="property-description">{active.style}. Bu taşınmazı alabilir, işletme olarak kullanabilir veya ileride kiraya verebilirsin.</p>
           <div className="property-stats">
             <div><span>Satış bedeli</span><strong>₺{active.price.toLocaleString('tr-TR')}</strong></div>
             <div><span>Yıllık kira</span><strong>₺{active.rent.toLocaleString('tr-TR')}</strong></div>
             <div><span>Kat sayısı</span><strong>{active.floors} kat</strong></div>
-            <div><span>Durum</span><strong className={owned.includes(active.id) ? 'owned-text' : ''}>{owned.includes(active.id) ? 'Portföyünde' : 'Satılık'}</strong></div>
+            <div><span>Durum</span><strong className={owned.includes(active.id) ? 'owned-text' : ''}>{owned.includes(active.id) ? 'PORTFÖYÜNDE' : 'SATILIK'}</strong></div>
           </div>
           <button className={owned.includes(active.id) ? 'buy-button is-owned' : 'buy-button'} onClick={buy} disabled={owned.includes(active.id)}>
-            {owned.includes(active.id) ? 'Portföyünde' : 'Mülkü satın al'} <span>{owned.includes(active.id) ? '✓' : '↗'}</span>
+            {owned.includes(active.id) ? 'MÜLK SENİN' : 'MÜLKÜ SATIN AL'} <span>{owned.includes(active.id) ? '✓' : '↗'}</span>
           </button>
-          <div className="property-note"><span>i</span> Mülk edin, işletmeni büyüt ve kazancını yeniden yatır.</div>
+          {owned.includes(active.id) && <button className="operate-button" onClick={toggleShop}>{shopOpen ? 'İŞLETMENİ KAPAT' : 'DÜKKANI İŞLETMEYE AÇ'}</button>}
+          <div className="property-note"><span>i</span> Mülk fiyatları şimdilik oyun dengesi için belirlenmiştir.</div>
         </section>
 
         <section className="portfolio-mini">
-          <div className="section-heading"><span>PORTFÖYÜN</span><button onClick={() => setShowPortfolio(v => !v)}>{showPortfolio ? 'Kapat −' : 'Tümünü gör +'}</button></div>
+          <div className="section-heading"><span>05 / PORTFÖYÜN</span><button onClick={() => setShowPortfolio(v => !v)}>{showPortfolio ? 'KAPAT −' : 'TÜMÜNÜ GÖR +'}</button></div>
           {portfolio.length === 0 ? <div className="empty-portfolio"><span className="empty-icon">⌂</span><span>Henüz bir mülk edinmedin.</span></div> :
             portfolio.slice(0, 2).map(p => <div className="portfolio-row" key={p.id}><span className="portfolio-thumb">⌂</span><span className="portfolio-name">{p.name}<small>{p.type} · Yıllık ₺{p.rent}</small></span><span className="portfolio-value">₺{p.price}</span></div>)}
           {showPortfolio && <div className="portfolio-expanded">
             {portfolio.length === 0 ? <p>İlk yatırımın burada görünecek.</p> : portfolio.map(p => <div className="portfolio-row" key={p.id}><span className="portfolio-thumb">⌂</span><span className="portfolio-name">{p.name}<small>Yıllık kira: ₺{p.rent}</small></span><span className="portfolio-value">₺{p.price}</span></div>)}
+            <div className="portfolio-total">YILLIK KİRA POTANSİYELİ <strong>₺{annualRent}</strong></div>
           </div>}
+        </section>
+
+        <section className="activity-card">
+          <div className="section-heading"><span>06 / MAHALLE GÜNLÜĞÜ</span><span className="count-tag">CANLI</span></div>
+          {log.map(item => <div className="log-line" key={item.id}><span className="log-square" />{item.text}</div>)}
         </section>
       </aside>
     </section>
 
-    <footer className="footer"><span>MAHALLE <i>©</i> 1923</span><span>GEÇMİŞİN İÇİNDE BİR GELECEK KUR.</span><span>PROTOTİP 0.2.0</span></footer>
-    {notice && <div className="toast" role="status">{notice}</div>}
+    <footer className="footer"><span>MAHALLE <i>©</i> 1923</span><span>GEÇMİŞİN İÇİNDE BİR GELECEK KUR.</span><span>PROTOTİP 0.3.0</span></footer>
+    <div className="economy-note">Ekonomi değerleri oynanabilir prototip varsayımlarıdır; doğrulanmış 1923 ücret ve fiyat verileri değildir.</div>
+    {notice && <div className="toast" key={noticeId} role="status">{notice}</div>}
   </main>;
 }
 
