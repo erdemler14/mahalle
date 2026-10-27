@@ -517,7 +517,7 @@ function App() {
   const tradeCatalog = {
     1: [{ id: 'kolonya', name: 'Kolonya ve koku', cost: 12, price: 2.2, units: 10 }, { id: 'sabun', name: 'Sabun ve bakım', cost: 9, price: 1.8, units: 10 }],
     4: [{ id: 'han', name: 'Han odası kiralama', cost: 0, price: 0, units: 0 }],
-    7: [{ id: 'sarap', name: 'Şişe şarap', cost: 8, price: 4.5, units: 4 }, { id: 'erzak', name: 'Kuru erzak', cost: 10, price: 2.5, units: 8 }, { id: 'zeytin', name: 'Zeytin ve peynir', cost: 11, price: 3, units: 8 }],
+    7: [{ id: 'sarap-uretim', name: 'Ev yapımı şarap üretimi', cost: 8, price: 4.5, units: 4, production: true }, { id: 'sarap', name: 'Toptan şişe şarap', cost: 8, price: 4.5, units: 4 }, { id: 'erzak', name: 'Kuru erzak', cost: 10, price: 2.5, units: 8 }, { id: 'zeytin', name: 'Zeytin ve peynir', cost: 11, price: 3, units: 8 }],
     9: [{ id: 'baski', name: 'Basılı ilan ve evrak', cost: 14, price: 4, units: 6 }, { id: 'defter', name: 'Defter ve kırtasiye', cost: 10, price: 2.8, units: 8 }],
     12: [{ id: 'kahve', name: 'Kahve ve çay', cost: 12, price: 3.5, units: 10 }, { id: 'tatli', name: 'Şerbet ve tatlı', cost: 10, price: 3, units: 8 }]
   };
@@ -646,7 +646,7 @@ function App() {
     if (cash < item.cost) { tell(`İlk stok için ₺${item.cost} gerekiyor.`); return; }
     setCash(v => Math.round((v - item.cost) * 100) / 100);
     setStockByProperty(old => ({ ...old, [active.id]: (old[active.id] || 0) + item.units }));
-    tell(`${item.name} tedarik edildi: ${item.units} adet stok eklendi, maliyet ₺${item.cost}.`);
+    tell(`${item.production ? 'Üretim tamamlandı' : 'Tedarik tamamlandı'}: ${item.name}, ${item.units} adet stok, maliyet ₺${item.cost}.`);
   };
 
   const buy = () => {
