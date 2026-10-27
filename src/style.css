@@ -258,7 +258,7 @@ h1 span{color:#ffca58;font-weight:700}
 .map-zoom-controls button{width:34px;height:34px;border:1px solid rgba(63,61,53,.35);border-radius:3px;background:rgba(247,244,234,.94);color:#343b35;font:600 20px 'Space Grotesk',sans-serif;cursor:pointer;box-shadow:0 2px 7px rgba(20,20,16,.12);transition:background .15s,transform .15s}
 .map-zoom-controls button:hover{background:#fff;transform:translateY(-1px)}
 .map-hint{position:absolute;z-index:7;bottom:12px;left:12px;padding:7px 9px;background:rgba(34,43,39,.82);color:#e6e2d7;border:1px solid rgba(255,255,255,.12);border-radius:2px;font:9px 'IBM Plex Mono',monospace;letter-spacing:.2px;pointer-events:none}
-.scene-host canvas{cursor:grab}
+.scene-host canvas{cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
 @media(max-width:680px){.map-zoom-controls{top:8px;right:8px}.map-zoom-controls button{width:30px;height:30px}.map-hint{bottom:7px;left:7px;font-size:8px;max-width:65%}}
 
 
