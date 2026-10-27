@@ -629,11 +629,15 @@ function App() {
     const price=Math.round(Number(offerPriceInput)*100)/100;
     if(!Number.isFinite(price)||price<=0){setNotice('Geçerli bir teklif tutarı gir.');return;}
     if(cash<price){setNotice('Teklifin ₺'+price.toLocaleString('tr-TR')+' ama nakdin yeterli değil.');return;}
-    const offer={id:String(Date.now())+'-'+Math.random().toString(36).slice(2,6),propertyId:active.id,price,fromPlayerId:playerId,fromName:playerName.trim()||(playerId==='host'?'Ev sahibi':'Oyuncu 2'),toName:owner.name,marketValue:getMarketValue(active)};
+    const offer={id:String(Date.now())+'-'+Math.random().toString(36).slice(2,6),propertyId:active.id,price,fromPlayerId:playerId,toPlayerId:owner.playerId,fromName:playerName.trim()||(playerId==='host'?'Ev sahibi':'Oyuncu 2'),toName:owner.name,marketValue:getMarketValue(active)};
     sendPeerMessage({type:'offer',offer});setMultiplayerStatus(active.name+' için ₺'+price.toLocaleString('tr-TR')+' teklif gönderildi.');setNotice('Teklif gönderildi; karşı oyuncu kabul edebilir, reddedebilir veya karşı teklif verebilir.');setOfferComposerOpen(false);
   };
   const respondToOffer = (decision,counterPrice) => {
     if(!incomingOffer)return; const offer=incomingOffer; const property=properties.find(p=>p.id===offer.propertyId);
+    if(incomingOffer.isCounter){
+      if(decision==='accept' && property){const price=Number(incomingOffer.price);if(cash<price){setNotice('Karşı teklifi kabul etmek için nakdin yeterli değil.');return;}const nextOwners={...ownerByProperty,[property.id]:{playerId,name:playerName.trim()||(playerId==='host'?'Ev sahibi':'Oyuncu 2')}};setCash(v=>Math.max(0,Math.round((v-price)*100)/100));setOwned(old=>old.includes(property.id)?old:[...old,property.id]);setRented(old=>old.filter(id=>id!==property.id));setOwnerByProperty(nextOwners);sendPeerMessage({type:'offer-response',decision:'accept',accepted:true,offer:{...offer,price},owners:nextOwners});tell('Karşı teklif kabul edildi: '+property.name+' ₺'+price.toLocaleString('tr-TR'));}
+      else sendPeerMessage({type:'offer-response',decision:'reject',accepted:false,offer,owners:ownerByProperty});setIncomingOffer(null);return;
+    }
     if(decision==='counter'){const price=Math.round(Number(counterPrice)*100)/100;if(!Number.isFinite(price)||price<=0){setNotice('Geçerli bir karşı teklif gir.');return;}
       sendPeerMessage({type:'offer-response',decision:'counter',accepted:false,offer:{...offer,counterPrice:price},fromName:playerName.trim()||'Mülk sahibi',owners:ownerByProperty});setIncomingOffer(null);setMultiplayerStatus('Karşı teklif gönderildi: ₺'+price.toLocaleString('tr-TR'));return;}
     const accepted=decision==='accept';
@@ -643,6 +647,7 @@ function App() {
   const handleOfferResponse = message => {
     const offer=message?.offer;if(!offer)return;
     if(message.decision==='counter'&&offer.fromPlayerId===playerId){setIncomingOffer({...offer,price:offer.counterPrice,fromName:message.fromName||ownerByProperty[offer.propertyId]?.name||'Mülk sahibi',isCounter:true});setOfferPriceInput(String(offer.counterPrice));setMultiplayerStatus('Karşı teklif geldi: ₺'+Number(offer.counterPrice).toLocaleString('tr-TR'));return;}
+    if(message.accepted&&offer.toPlayerId===playerId&&offer.fromPlayerId!==playerId){const property=properties.find(p=>p.id===offer.propertyId);if(property){setCash(v=>Math.round((v+Number(offer.price))*100)/100);setOwned(old=>old.filter(id=>id!==property.id));setRented(old=>old.filter(id=>id!==property.id));setOwnerByProperty(message.owners||ownerByProperty);tell(property.name+' karşı teklifle satıldı. ₺'+Number(offer.price).toLocaleString('tr-TR')+' tahsil edildi.');}setIncomingOffer(null);return;}
     if(message.accepted&&offer.fromPlayerId===playerId){const price=Number(offer.price);if(cash<price){setNotice('Teklif kabul edildi ancak nakdin artık yeterli değil.');return;}setCash(v=>Math.max(0,Math.round((v-price)*100)/100));setOwned(old=>old.includes(offer.propertyId)?old:[...old,offer.propertyId]);setRented(old=>old.filter(id=>id!==offer.propertyId));setOwnerByProperty(message.owners||ownerByProperty);tell((properties.find(p=>p.id===offer.propertyId)?.name||'Mülk')+' ₺'+price.toLocaleString('tr-TR')+' bedelle satın alındı.');setIncomingOffer(null);}
     else if(message.decision==='reject'&&offer.fromPlayerId===playerId){setIncomingOffer(null);setNotice('Satın alma teklifin reddedildi.');}
   };
