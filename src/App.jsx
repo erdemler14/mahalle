@@ -125,7 +125,45 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
     ground.receiveShadow = true;
     scene.add(ground);
 
-    const streetMat = new THREE.MeshStandardMaterial({ color: '#aaa79e', roughness: 1 });
+    // Procedural, tileable cobblestone texture adds surface detail without hundreds of extra meshes.
+    const cobbleCanvas = document.createElement('canvas');
+    cobbleCanvas.width = 512; cobbleCanvas.height = 1024;
+    const cobbleCtx = cobbleCanvas.getContext('2d');
+    cobbleCtx.fillStyle = '#8e8d86'; cobbleCtx.fillRect(0, 0, 512, 1024);
+    let cobbleSeed = 1923;
+    const seededRandom = () => { cobbleSeed = (cobbleSeed * 1664525 + 1013904223) >>> 0; return cobbleSeed / 4294967296; };
+    const stoneRows = 36;
+    for (let row = 0; row < stoneRows; row++) {
+      const y = row * (1024 / stoneRows);
+      const rowHeight = 1024 / stoneRows;
+      const offset = row % 2 ? -18 : 0;
+      for (let x = offset - 70; x < 560; ) {
+        const stoneW = 28 + seededRandom() * 24;
+        const stoneH = rowHeight * (0.72 + seededRandom() * 0.18);
+        const shade = Math.round(126 + seededRandom() * 42);
+        cobbleCtx.fillStyle = `rgb(${shade},${shade - 1},${shade - 7})`;
+        cobbleCtx.beginPath();
+        cobbleCtx.moveTo(x + 2, y + 2);
+        cobbleCtx.lineTo(x + stoneW - 3, y + seededRandom() * 4 + 2);
+        cobbleCtx.lineTo(x + stoneW - seededRandom() * 4, y + stoneH);
+        cobbleCtx.lineTo(x + seededRandom() * 5 + 2, y + stoneH - 2);
+        cobbleCtx.closePath(); cobbleCtx.fill();
+        cobbleCtx.strokeStyle = 'rgba(52,53,49,.34)'; cobbleCtx.lineWidth = 2; cobbleCtx.stroke();
+        cobbleCtx.strokeStyle = 'rgba(242,235,218,.13)'; cobbleCtx.lineWidth = 1;
+        cobbleCtx.beginPath(); cobbleCtx.moveTo(x + 4, y + 5); cobbleCtx.lineTo(x + stoneW - 6, y + 5); cobbleCtx.stroke();
+        x += stoneW;
+      }
+    }
+    for (let speck = 0; speck < 1800; speck++) {
+      const shade = Math.round(70 + seededRandom() * 100);
+      cobbleCtx.fillStyle = `rgba(${shade},${shade},${shade - 3},.16)`;
+      cobbleCtx.fillRect(seededRandom() * 512, seededRandom() * 1024, 1 + seededRandom() * 2, 1 + seededRandom() * 2);
+    }
+    const cobbleTexture = new THREE.CanvasTexture(cobbleCanvas);
+    cobbleTexture.colorSpace = THREE.SRGBColorSpace;
+    cobbleTexture.wrapS = THREE.RepeatWrapping; cobbleTexture.wrapT = THREE.RepeatWrapping;
+    cobbleTexture.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
+    const streetMat = new THREE.MeshStandardMaterial({ color: '#d1cec5', map: cobbleTexture, roughness: 1 });
     const street = new THREE.Mesh(new THREE.PlaneGeometry(11.5, 48), streetMat);
     street.rotation.x = -Math.PI / 2;
     street.position.set(0, 0, 0);
