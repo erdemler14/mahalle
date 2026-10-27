@@ -283,6 +283,20 @@ h1 span{color:#ffca58;font-weight:700}
 @media(max-width:520px){.property-modal{padding:18px}.property-modal-stats strong{font-size:16px}.property-modal-actions button{flex:1}}
 
 
+/* Clearer, higher-priority work action and immediate reward affordance */
+.quick-work-panel{margin:4px 0 12px;padding:10px 12px;box-shadow:0 5px 16px rgba(20,45,36,.12);border-color:#5b8d79}
+.quick-work-panel>div{gap:3px}
+.quick-work-kicker{font-size:9px}
+.quick-work-panel strong{font-size:14px}
+.quick-work-button{min-height:54px;min-width:118px;background:#c6f4d9;border-color:#6ac59b;box-shadow:0 2px 0 #568e75;transition:transform .12s,box-shadow .12s,background .12s}
+.quick-work-button span{font:800 13px 'Oxanium',sans-serif}
+.quick-work-button:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 4px 0 #568e75;background:#dcf9e8}
+.quick-work-button:active:not(:disabled){transform:translateY(1px);box-shadow:0 0 0 #568e75}
+.scene-host{background:linear-gradient(180deg,#c8d5d1 0%,#e2d8c5 55%,#bdb5a4 100%)}
+.world-panel{box-shadow:0 16px 38px rgba(27,35,31,.18)}
+.map-legend{border-top:1px solid #d8d1c3}
+@media(max-width:680px){.quick-work-panel{margin:3px 0 10px;padding:9px}.quick-work-button{min-width:100px;min-height:50px}}
+ 
 /* Navigation and property discovery refresh */
 .world-topline{gap:12px;min-height:52px;height:auto;padding:8px 14px;flex-wrap:wrap}
 .property-finder{display:flex;align-items:center;gap:8px;min-width:180px;max-width:360px;flex:1;padding:5px 9px;background:#f8f7f1;border:1px solid #d7d5ca;border-radius:5px;color:#73766d}
