@@ -313,21 +313,21 @@ function App() {
   };
 
   const advanceHour = (work = false) => {
-    if (hour >= 22 || hour < 6) {
-      const nextDay = day + 1;
-      const nextMonthRaw = month + (nextDay > 30 ? 1 : 0);
+    if (hour === 5) {
+      const nextDayRaw = day + 1;
+      const nextDay = nextDayRaw > 30 ? 1 : nextDayRaw;
+      const nextMonthRaw = month + (nextDayRaw > 30 ? 1 : 0);
       const nextMonth = nextMonthRaw > 12 ? 1 : nextMonthRaw;
-      const resetDay = nextDay > 30 ? 1 : nextDay;
       const overhead = profession.overhead;
       const maintenance = portfolio.reduce((sum, p) => sum + Math.max(1, Math.round(p.price * 0.002)), 0);
-      const monthlyRent = nextDay > 30 ? portfolio.reduce((sum, p) => sum + p.rent, 0) : 0;
+      const monthlyRent = nextDayRaw > 30 ? portfolio.reduce((sum, p) => sum + p.rent, 0) : 0;
       setCash(v => Math.max(0, Math.round((v - overhead - maintenance + monthlyRent) * 100) / 100));
-      setDay(resetDay);
+      setDay(nextDay);
       setMonth(nextMonth);
       if (nextMonthRaw > 12) setYear(v => v + 1);
       setHour(6);
       setWorkHours(0);
-      tell(`Yeni gün başladı. Günlük geçim gideri: ${overhead} oyun lirası; mülk bakımı: ${maintenance}. ${monthlyRent ? `Kira tahsilatı: +${monthlyRent}.` : ''}`);
+      tell(`Yeni gün başladı. Günlük geçim gideri: ${overhead} oyun lirası; mülk bakımı: ${maintenance}. ${monthlyRent ? `Ay sonu kira tahsilatı: +${monthlyRent}.` : ''}`);
       return;
     }
     const isWorkingHour = hour >= 8 && hour < 19;
@@ -351,11 +351,27 @@ function App() {
       detail += `${detail ? ' · ' : ''}Dükkan satışı ${shopGross.toFixed(2)}, stok ${stockCost.toFixed(2)}`;
     }
     setCash(v => Math.max(0, Math.round((v + net) * 100) / 100));
-    const nextHour = hour + 1;
-    setHour(nextHour >= 24 ? 0 : nextHour);
+    const nextHour = (hour + 1) % 24;
+    setHour(nextHour);
     setSteps(v => v + 1);
     if (detail) tell(`${String(hour).padStart(2, '0')}:00 — ${detail}. Net değişim: ${net >= 0 ? '+' : ''}${net.toFixed(2)} oyun lirası.`);
-    else tell(`${String(hour).padStart(2, '0')}:00 — Sokak hareketleniyor; bu saatte düzenli bir gelir elde etmedin.`);
+    else tell(`${String(hour).padStart(2, '0')}:00 — Sokak sakin. Bu saatte düzenli bir gelir elde etmedin.`);
+  };
+
+  const sleepUntilMorning = () => {
+    const nextDayRaw = day + 1;
+    const nextDay = nextDayRaw > 30 ? 1 : nextDayRaw;
+    const nextMonthRaw = month + (nextDayRaw > 30 ? 1 : 0);
+    const nextMonth = nextMonthRaw > 12 ? 1 : nextMonthRaw;
+    const upkeep = profession.overhead + portfolio.reduce((sum, p) => sum + Math.max(1, Math.round(p.price * 0.002)), 0);
+    const rent = nextDayRaw > 30 ? annualRent : 0;
+    setCash(v => Math.max(0, Math.round((v - upkeep + rent) * 100) / 100));
+    setDay(nextDay);
+    setMonth(nextMonth);
+    if (nextMonthRaw > 12) setYear(v => v + 1);
+    setHour(6);
+    setWorkHours(0);
+    tell(`Geceyi geçirdin. Günlük giderler işlendi.${rent ? ` Ay sonu kira tahsilatı: +${rent} oyun lirası.` : ''}`);
   };
 
   const buy = () => {
@@ -395,7 +411,7 @@ function App() {
       <div className="progress-control">
         <div className="date-label">OYUN TAKVİMİ · {String(day).padStart(2, '0')}/{String(month).padStart(2, '0')}/{year}</div>
         <div className="year-display">{String(hour).padStart(2, '0')}:00 <small>/ 24 SAAT</small></div>
-        <button className="advance-button" onClick={() => advanceHour(false)}>{hour >= 22 || hour < 6 ? 'GÜNÜ KAPAT' : 'SAATİ İLERLET'} <span>▶</span></button>
+        <button className="advance-button" onClick={() => advanceHour(false)}>{hour === 5 ? 'YENİ GÜNE GEÇ' : 'SAATİ İLERLET'} <span>▶</span></button>
       </div>
     </section>
 
@@ -428,7 +444,7 @@ function App() {
           <div className="section-heading"><span>03 / VARDİYA</span><span className="count-tag">{steps.toString().padStart(3, '0')}</span></div>
           <div className="work-status"><span className={hour >= 8 && hour < 19 ? 'status-light active' : 'status-light'} />{hour >= 8 && hour < 19 ? 'ÇALIŞMA SAATLERİ' : 'MESAİ DIŞI'}</div>
           <button className="work-button" onClick={() => advanceHour(true)} disabled={hour >= 22 || hour < 6}>1 SAAT ÇALIŞ <span>＋</span></button>
-          <button className="rest-button" onClick={() => { setHour(6); setDay(v => v + 1); setWorkHours(0); tell('Geceyi geçirdin. Yeni gün saat 06:00’da başladı.'); }}>UYU · YENİ GÜNE GEÇ <span>↗</span></button>
+          <button className="rest-button" onClick={sleepUntilMorning}>UYU · YENİ GÜNE GEÇ <span>↗</span></button>
           <p className="small-note">Çalıştığın saatte gelir elde edersin. Dükkanın açıksa satışlar saat ilerledikçe işler.</p>
         </section>
 
