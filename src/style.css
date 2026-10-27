@@ -145,8 +145,8 @@ h1 span{color:#ffca58;font-weight:700}
 .work-status{display:flex;align-items:center;gap:8px;font:10px 'IBM Plex Mono',monospace;color:#9fb0c3;margin:15px 0 10px}
 .status-light{width:8px;height:8px;background:#7d8998;display:inline-block;border-radius:1px}
 .status-light.active{background:#63e6be;box-shadow:0 0 9px #63e6be55}
-.work-button,.rest-button,.operate-button{width:100%;min-height:42px;display:flex;align-items:center;justify-content:space-between;padding:0 13px;border:1px solid #5d4fc1;background:#7b61ff;color:#fff;font:700 11px 'IBM Plex Mono',monospace;letter-spacing:.3px;cursor:pointer;border-radius:3px;margin-top:8px}
-.work-button:hover,.operate-button:hover{background:#917dff}
+.work-button,.rest-button,.operate-button,.rent-button{width:100%;min-height:42px;display:flex;align-items:center;justify-content:space-between;padding:0 13px;border:1px solid #5d4fc1;background:#7b61ff;color:#fff;font:700 11px 'IBM Plex Mono',monospace;letter-spacing:.3px;cursor:pointer;border-radius:3px;margin-top:8px}
+.work-button:hover,.operate-button:hover{background:#917dff}.rent-button{background:#304e48;border-color:#466b63;color:#e5f3ed}.rent-button:hover{background:#42685e}
 .work-button:disabled{opacity:.35;cursor:not-allowed}
 .rest-button{background:#202d3d;border-color:#3c4d63;color:#b9c9da}
 .small-note{font-size:10px;line-height:1.55;margin:10px 0 0}
