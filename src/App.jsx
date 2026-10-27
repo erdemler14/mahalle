@@ -122,7 +122,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
     street.position.set(0, 0, 0);
     street.receiveShadow = true;
     scene.add(street);
-    const crossStreet = new THREE.Mesh(new THREE.PlaneGeometry(48, 5.2), streetMat);
+    const crossStreet = new THREE.Mesh(new THREE.PlaneGeometry(48, 3.4), streetMat);
     crossStreet.rotation.x = -Math.PI / 2;
     crossStreet.position.set(0, 0.005, -12.8);
     crossStreet.receiveShadow = true;
@@ -626,7 +626,7 @@ function App() {
   if (typeof window !== 'undefined') {
     try { backupSaved = JSON.parse(window.localStorage.getItem(SAVE_BACKUP_KEY) || 'null') || {}; } catch { backupSaved = {}; }
   }
-  const saved = (!Array.isArray(primarySaved.owned) || primarySaved.owned.length === 0) && Array.isArray(backupSaved.owned) && backupSaved.owned.length > 0
+  const saved = !Array.isArray(primarySaved.owned) && Array.isArray(backupSaved.owned) && backupSaved.owned.length > 0
     ? backupSaved
     : primarySaved;
   const [steps, setSteps] = useState(() => Number.isFinite(saved.steps) ? saved.steps : 0);
@@ -643,7 +643,6 @@ function App() {
   const [day, setDay] = useState(() => Number.isInteger(saved.day) && saved.day >= 1 && saved.day <= 30 ? saved.day : 1);
   const [month, setMonth] = useState(() => Number.isInteger(saved.month) && saved.month >= 1 && saved.month <= 12 ? saved.month : 1);
   const [year, setYear] = useState(() => Number.isInteger(saved.year) && saved.year >= 1923 ? saved.year : 1923);
-  const clockAction = useRef(null);
   const [workHours, setWorkHours] = useState(() => Number.isInteger(saved.workHours) && saved.workHours >= 0 ? saved.workHours : 0);
   const [shopPropertyId, setShopPropertyId] = useState(() => Number.isInteger(saved.shopPropertyId) ? saved.shopPropertyId : null);
   const [wineBottles, setWineBottles] = useState(() => Number.isInteger(saved.wineBottles) && saved.wineBottles >= 0 ? saved.wineBottles : 0);
@@ -816,7 +815,7 @@ function App() {
       if (nextMonthRaw > 12) setYear(v => v + 1);
       setHour(6);
       setWorkHours(0);
-      tell(`Yeni gün başladı. Kira +₺${dailyRent.toFixed(2)}, işletme hasılatı +₺${business.revenue.toFixed(2)}, yaşam ve bakım -₺${(DAILY_LIVING_COST + maintenance).toFixed(2)}, işletme gideri -₺${business.costs.toFixed(2)}; net ₺${dailyNet.toFixed(2)}.`);
+      tell(`Yeni gün başladı. Kira +₺${dailyRent.toFixed(2)}, işletme hasılatı +₺${business.revenue.toFixed(2)}, yaşam ve bakım -₺${(DAILY_LIVING_COST + maintenance).toFixed(2)}, işletme gideri -₺${business.costs.toFixed(2)}; net ₺${dailyNet.toFixed(2)}.${business.entries.length ? ' ' + business.entries.slice(0, 3).join(' · ') : ''}`);
       return;
     }
     const isWorkingHour = hour >= 8 && hour < 19;
@@ -898,7 +897,7 @@ function App() {
     if (nextMonthRaw > 12) setYear(v => v + 1);
     setHour(6);
     setWorkHours(0);
-    tell(`Gün kapandı. Kira +₺${rent.toFixed(2)}, işletme hasılatı +₺${business.revenue.toFixed(2)}, yaşam ve bakım giderleri -₺${(DAILY_LIVING_COST + maintenance).toFixed(2)}, işletme giderleri -₺${business.costs.toFixed(2)}. Net: ₺${net.toFixed(2)}.`);
+    tell(`Gün kapandı. Kira +₺${rent.toFixed(2)}, işletme hasılatı +₺${business.revenue.toFixed(2)}, yaşam ve bakım -₺${(DAILY_LIVING_COST + maintenance).toFixed(2)}, işletme giderleri -₺${business.costs.toFixed(2)}. Net: ₺${net.toFixed(2)}.${business.entries.length ? ' ' + business.entries.slice(0, 3).join(' · ') : ''}`);
   };
 
   const selectBusinessPlan = (plan) => {
@@ -960,12 +959,6 @@ function App() {
     if (shopPropertyId === active.id) setShopPropertyId(null);
     tell(`${active.name} kiraya verildi. Günlük kira geliri: ${ (active.rent / 30).toFixed(2) }; her yeni günde otomatik tahsil edilir.`);
   };
-
-  clockAction.current = () => { if (multiplayerRole !== 'guest') advanceHour(false); };
-  useEffect(() => {
-    const timer = window.setInterval(() => clockAction.current?.(), 20000);
-    return () => window.clearInterval(timer);
-  }, []);
 
   const toggleShop = () => {
     if (sendAction('toggleShop')) return;
