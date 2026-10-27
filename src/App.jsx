@@ -319,8 +319,8 @@ function App() {
       const nextMonthRaw = month + (nextDayRaw > 30 ? 1 : 0);
       const nextMonth = nextMonthRaw > 12 ? 1 : nextMonthRaw;
       const overhead = profession.overhead;
-      const maintenance = portfolio.reduce((sum, p) => sum + Math.max(1, Math.round(p.price * 0.002)), 0);
-      const monthlyRent = nextDayRaw > 30 ? portfolio.reduce((sum, p) => sum + p.rent, 0) : 0;
+      const maintenance = portfolio.reduce((sum, p) => sum + Math.max(0.01, Math.round((p.price * 0.003 / 365) * 100) / 100), 0);
+      const monthlyRent = nextDayRaw > 30 ? Math.round((portfolio.reduce((sum, p) => sum + p.rent, 0) / 12) * 100) / 100 : 0;
       setCash(v => Math.max(0, Math.round((v - overhead - maintenance + monthlyRent) * 100) / 100));
       setDay(nextDay);
       setMonth(nextMonth);
@@ -336,9 +336,8 @@ function App() {
     if (work && isWorkingHour) {
       const variance = 0.82 + Math.random() * 0.36;
       const gross = Math.round(profession.gross * variance * 100) / 100;
-      const costs = profession.overhead / 8;
-      net = Math.round((gross - costs) * 100) / 100;
-      detail = `${profession.name}: brüt ${gross.toFixed(2)}, paylaştırılmış gider ${costs.toFixed(2)}`;
+      net = gross;
+      detail = `${profession.name}: saatlik hasılat ${gross.toFixed(2)}; günlük giderler gün sonunda hesaplanacak`;
       setWorkHours(v => v + 1);
     } else if (work && !isWorkingHour) {
       detail = 'Bu saatte iş bulmak zor. Dinlenmeyi veya saati ilerletmeyi seçtin.';
@@ -363,8 +362,8 @@ function App() {
     const nextDay = nextDayRaw > 30 ? 1 : nextDayRaw;
     const nextMonthRaw = month + (nextDayRaw > 30 ? 1 : 0);
     const nextMonth = nextMonthRaw > 12 ? 1 : nextMonthRaw;
-    const upkeep = profession.overhead + portfolio.reduce((sum, p) => sum + Math.max(1, Math.round(p.price * 0.002)), 0);
-    const rent = nextDayRaw > 30 ? annualRent : 0;
+    const upkeep = profession.overhead + portfolio.reduce((sum, p) => sum + Math.max(0.01, Math.round((p.price * 0.003 / 365) * 100) / 100), 0);
+    const rent = nextDayRaw > 30 ? Math.round((annualRent / 12) * 100) / 100 : 0;
     setCash(v => Math.max(0, Math.round((v - upkeep + rent) * 100) / 100));
     setDay(nextDay);
     setMonth(nextMonth);
