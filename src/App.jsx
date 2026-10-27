@@ -31,7 +31,7 @@ function supportsProfessionAt(property, professionId) {
   return Boolean(property && venueTypesByProfession[professionId]?.includes(property.type));
 }
 
-function CityScene({ selected, owned, onSelect, hour }) {
+function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', onSelect, hour }) {
   const host = useRef(null);
   const selectRef = useRef(onSelect);
   const selectedRef = useRef(selected);
@@ -116,7 +116,7 @@ function CityScene({ selected, owned, onSelect, hour }) {
     }
 
     const buildingMeshes = [];
-    const addBuilding = (p, idx, isOwned) => {
+    const addBuilding = (p, idx, isOwned, ownerInfo, currentPlayerId) => {
       const group = new THREE.Group();
       const shopIds = [1, 4, 7, 9, 10, 12];
       const isShopfront = shopIds.includes(p.id);
@@ -127,7 +127,7 @@ function CityScene({ selected, owned, onSelect, hour }) {
       const floorHeight = p.id === 10 ? 0.94 : 0.88;
       const h = p.floors * floorHeight;
       const facadeColors = ['#d9c8ad', '#c6b8a4', '#c7c0b3', '#d5c4a8', '#d4cbb9', '#c9b6a2', '#d8cbb4', '#c7c2b5', '#cbbca6', '#d7c8b0', '#d0c3af', '#bfae98'];
-      const baseColor = isOwned ? '#b9c8b2' : facadeColors[idx % facadeColors.length];
+      const baseColor = ownerInfo ? (ownerInfo.playerId === currentPlayerId ? '#b9c8b2' : '#b8c8d9') : (isOwned ? '#b9c8b2' : facadeColors[idx % facadeColors.length]);
       const mat = new THREE.MeshStandardMaterial({ color: baseColor, roughness: 0.94 });
       const trimMat = new THREE.MeshStandardMaterial({ color: isTimberHouse ? '#665044' : '#e9deca', roughness: 0.92 });
       const darkWood = new THREE.MeshStandardMaterial({ color: '#513d31', roughness: 0.92 });
@@ -272,7 +272,7 @@ function CityScene({ selected, owned, onSelect, hour }) {
       buildingMeshes.push(group);
     };
 
-    properties.forEach((p, i) => addBuilding(p, i, owned.includes(p.id)));
+    properties.forEach((p, i) => addBuilding(p, i, owned.includes(p.id), ownerByProperty[p.id], playerId));
 
     // A subtle pulsing ring makes the currently selected property easy to spot.
     const selectionRingMaterial = new THREE.MeshStandardMaterial({
@@ -529,7 +529,7 @@ function CityScene({ selected, owned, onSelect, hour }) {
       renderer.dispose();
       renderer.domElement.remove();
     };
-  }, [owned]);
+  }, [owned, ownerByProperty, playerId]);
 
   return <div className="scene-host" ref={host} aria-label="Beyoğlu 1923 3D mahalle sahnesi" />;
 }
@@ -568,18 +568,36 @@ function App() {
   const [multiplayerStatus, setMultiplayerStatus] = useState('Solo oyun');
   const [roomCode, setRoomCode] = useState('');
   const [joinCode, setJoinCode] = useState('');
+  const [playerName, setPlayerName] = useState(() => typeof saved.playerName === 'string' ? saved.playerName : '');
+  const [opponentName, setOpponentName] = useState('Diğer oyuncu');
+  const [ownerByProperty, setOwnerByProperty] = useState({});
+  const [incomingOffer, setIncomingOffer] = useState(null);
+  const playerId = multiplayerRole === 'host' ? 'host' : multiplayerRole === 'guest' ? 'guest' : 'solo';
   const peerRef = useRef(null);
   const connectionRef = useRef(null);
   const actionRefs = useRef({});
   const snapshotRef = useRef(null);
 
-  const sendAction = (action, ...payload) => {
-    if (multiplayerRole === 'guest') {
-      if (connectionRef.current?.open) connectionRef.current.send({ type: 'action', action, payload });
-      else setMultiplayerStatus('Bağlantı koptu. Odaya yeniden katıl.');
-      return true;
+  const sendPeerMessage = (message) => { if (connectionRef.current?.open) connectionRef.current.send(message); };
+  const sendAction = () => false;
+  const publishOwners = (nextOwners) => { setOwnerByProperty(nextOwners); sendPeerMessage({ type: 'world-update', owners: nextOwners, playerName: playerName.trim() || 'Oyuncu' }); };
+  const sendOffer = () => {
+    if (multiplayerRole === 'solo') { setNotice('Satın alma teklifi göndermek için önce iki kişilik odaya katıl.'); return; }
+    if (!ownerByProperty[active.id] || ownerByProperty[active.id].playerId === playerId) return;
+    const offer = { id: `${Date.now()}-${Math.random().toString(36).slice(2,6)}`, propertyId: active.id, price: active.price, fromPlayerId: playerId, fromName: playerName.trim() || (playerId === 'host' ? 'Ev sahibi' : 'Oyuncu 2'), toName: ownerByProperty[active.id].name };
+    sendPeerMessage({ type: 'offer', offer }); setMultiplayerStatus(`${active.name} için ₺${active.price} satın alma teklifi gönderildi.`); setNotice('Teklif gönderildi. Karşı oyuncunun kabul etmesini bekliyorsun.');
+  };
+  const respondToOffer = (accepted) => {
+    if (!incomingOffer) return;
+    const offer = incomingOffer; const property = properties.find(p => p.id === offer.propertyId);
+    if (accepted && property) {
+      setOwned(old => old.filter(id => id !== property.id)); setRented(old => old.filter(id => id !== property.id));
+      setCash(v => Math.round((v + offer.price) * 100) / 100);
+      const nextOwners = { ...ownerByProperty, [property.id]: { playerId: offer.fromPlayerId, name: offer.fromName } };
+      publishOwners(nextOwners); tell(`${property.name} satıldı. ₺${offer.price} tahsil edildi.`);
     }
-    return false;
+    sendPeerMessage({ type: 'offer-response', accepted, offer, owners: accepted ? { ...ownerByProperty, [offer.propertyId]: { playerId: offer.fromPlayerId, name: offer.fromName } } : ownerByProperty });
+    setIncomingOffer(null);
   };
   const selectProperty = (id) => {
     if (sendAction('selectProperty', id)) return;
@@ -622,13 +640,13 @@ function App() {
   useEffect(() => {
     try {
       window.localStorage.setItem(SAVE_KEY, JSON.stringify({
-        version: 1, steps, cash, owned, rented, selected, showPortfolio, professionId,
+        version: 1, playerName, steps, cash, owned, rented, selected, showPortfolio, professionId,
         hour, day, month, year, workHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, log: log.slice(0, 5)
       }));
     } catch {
       // The game remains playable if browser storage is disabled or full.
     }
-  }, [steps, cash, owned, rented, selected, showPortfolio, professionId, hour, day, month, year, workHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, log]);
+  }, [playerName, steps, cash, owned, rented, selected, showPortfolio, professionId, hour, day, month, year, workHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, log]);
 
   const tell = (text) => {
     setNotice(text);
@@ -742,12 +760,12 @@ function App() {
   };
 
   const buy = () => {
-    if (sendAction('buy')) return;
-    if (owned.includes(active.id)) { tell('Bu mülk zaten portföyünde.'); return; }
+    if (owned.includes(active.id) || ownerByProperty[active.id]) { tell('Bu mülkün zaten bir sahibi var.'); return; }
     if (cash < active.price) { tell('Bu mülk için yeterli sermayen yok. Önce çalışıp birikim yap.'); return; }
     setCash(v => v - active.price);
     setOwned(v => [...v, active.id]);
     setRented(v => v.filter(id => id !== active.id));
+    publishOwners({ ...ownerByProperty, [active.id]: { playerId, name: playerName.trim() || (playerId === 'host' ? 'Ev sahibi' : playerId === 'guest' ? 'Oyuncu 2' : 'Ben') } });
     setShopPropertyId(null);
     setSteps(v => v + 1);
     tell(`${active.name} satın alındı. Şimdi bu mekanın desteklediği işletme türlerinden birini seçebilirsin.`);
@@ -804,18 +822,10 @@ function App() {
   };
 
 
-  const applySnapshot = (state) => {
-    if (!state || typeof state !== 'object') return;
-    setSteps(state.steps ?? 0); setCash(state.cash ?? 75);
-    setOwned(Array.isArray(state.owned) ? state.owned : []);
-    setRented(Array.isArray(state.rented) ? state.rented : []);
-    setSelected(properties.some(p => p.id === state.selected) ? state.selected : 1);
-    setProfessionId(state.professionId || 'amele');
-    setHour(state.hour ?? 8); setDay(state.day ?? 1); setMonth(state.month ?? 1); setYear(state.year ?? 1923);
-    setWorkHours(state.workHours ?? 0); setShopPropertyId(state.shopPropertyId ?? null);
-    setWineBottles(state.wineBottles ?? 0);
-    setBusinessPlans(state.businessPlans || {}); setStockByProperty(state.stockByProperty || {});
-    setLog(Array.isArray(state.log) ? state.log.slice(0, 5) : []);
+  const applyWorldState = (message) => {
+    if (!message || typeof message !== 'object') return;
+    if (message.owners && typeof message.owners === 'object') setOwnerByProperty(message.owners);
+    if (message.hostName) setOpponentName(message.hostName);
   };
 
   const closeMultiplayer = () => {
@@ -828,6 +838,8 @@ function App() {
   const startRoom = () => {
     closeMultiplayer();
     const code = Math.random().toString(36).slice(2, 8).toUpperCase();
+    const hostName = playerName.trim() || 'Ev sahibi';
+    setOwnerByProperty(Object.fromEntries(owned.map(id => [id, { playerId: 'host', name: hostName }])));
     setRoomCode(code); setMultiplayerStatus('Oda açılıyor…');
     try {
       const peer = new Peer('mahalle-' + code.toLowerCase());
@@ -838,13 +850,25 @@ function App() {
         connectionRef.current = conn;
         conn.on('open', () => {
           setMultiplayerStatus('İki oyuncu bağlı · sen ev sahibisin');
-          conn.send({ type: 'state', state: snapshotRef.current });
+          conn.send({ type: 'world-state', owners: snapshotRef.current?.owners || {}, hostName });
         });
         conn.on('data', message => {
-          if (message?.type === 'hello') conn.send({ type: 'state', state: snapshotRef.current });
-          if (message?.type === 'action' && typeof message.action === 'string') {
-            const handler = actionRefs.current[message.action];
-            if (typeof handler === 'function') handler(...(Array.isArray(message.payload) ? message.payload : []));
+          if (message?.type === 'hello') {
+            setOpponentName(message.playerName || 'Oyuncu 2');
+            const mergedOwners = { ...(snapshotRef.current?.owners || {}), ...(message.owners || {}) };
+            setOwnerByProperty(mergedOwners); conn.send({ type: 'world-state', owners: mergedOwners, hostName });
+          }
+          if (message?.type === 'world-update' && message.owners && typeof message.owners === 'object') {
+            setOwnerByProperty(message.owners); conn.send({ type: 'world-state', owners: message.owners, hostName });
+          }
+          if (message?.type === 'offer' && message.offer) setIncomingOffer({ ...message.offer, fromName: message.offer.fromName || 'Diğer oyuncu' });
+          if (message?.type === 'offer-response') {
+            if (message.accepted && message.offer?.fromPlayerId === 'host') {
+              const offer = message.offer; setCash(v => Math.max(0, Math.round((v - offer.price) * 100) / 100));
+              setOwned(old => old.includes(offer.propertyId) ? old : [...old, offer.propertyId]); setRented(old => old.filter(id => id !== offer.propertyId));
+              setOwnerByProperty(message.owners || ownerByProperty); tell(`${properties.find(p => p.id === offer.propertyId)?.name || 'Mülk'} satın alındı.`);
+            }
+            setIncomingOffer(null); conn.send({ type: 'world-state', owners: message.owners || ownerByProperty, hostName });
           }
         });
         conn.on('close', () => { connectionRef.current = null; setMultiplayerStatus('Oyuncu ayrıldı · oda açık'); });
@@ -867,11 +891,21 @@ function App() {
         const conn = peer.connect('mahalle-' + code.toLowerCase(), { reliable: true });
         connectionRef.current = conn;
         conn.on('open', () => {
-          setRoomCode(code); setMultiplayerRole('guest'); setMultiplayerStatus('Bağlandı · oyun ev sahibinin dünyasıyla eşitleniyor');
-          conn.send({ type: 'hello' });
+          setRoomCode(code); setMultiplayerRole('guest'); setMultiplayerStatus('Bağlandı · kendi oyun durumun korunuyor');
+          conn.send({ type: 'hello', playerName: playerName.trim() || 'Oyuncu 2', owners: Object.fromEntries(owned.map(id => [id, { playerId: 'guest', name: playerName.trim() || 'Oyuncu 2' }])) });
         });
         conn.on('data', message => {
-          if (message?.type === 'state') applySnapshot(message.state);
+          if (message?.type === 'world-state') applyWorldState(message);
+          if (message?.type === 'offer' && message.offer) setIncomingOffer({ ...message.offer, fromName: message.offer.fromName || opponentName });
+          if (message?.type === 'offer-response') {
+            const offer = message.offer;
+            if (message.accepted && offer?.fromPlayerId === 'guest') {
+              setCash(v => Math.max(0, Math.round((v - offer.price) * 100) / 100));
+              setOwned(old => old.includes(offer.propertyId) ? old : [...old, offer.propertyId]); setRented(old => old.filter(id => id !== offer.propertyId));
+              setOwnerByProperty(message.owners || ownerByProperty); tell(`${properties.find(p => p.id === offer.propertyId)?.name || 'Mülk'} satın alındı.`);
+            }
+            if (message.owners) setOwnerByProperty(message.owners); setIncomingOffer(null);
+          }
         });
         conn.on('close', () => { connectionRef.current = null; setMultiplayerStatus('Bağlantı kapandı · yeniden katılman gerekiyor'); setMultiplayerRole('solo'); });
       });
@@ -881,13 +915,11 @@ function App() {
     }
   };
 
-  snapshotRef.current = { steps, cash, owned, rented, selected, professionId, hour, day, month, year, workHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, log };
+  snapshotRef.current = { owners: ownerByProperty, hostName: playerName.trim() || 'Ev sahibi' };
   actionRefs.current = { advanceHour, sleepUntilMorning, selectBusinessPlan, stockBusiness, buy, toggleRent, toggleShop, makeWine, resetGame, selectProperty, changeProfession };
   useEffect(() => {
-    if (multiplayerRole === 'host' && connectionRef.current?.open) {
-      connectionRef.current.send({ type: 'state', state: snapshotRef.current });
-    }
-  }, [multiplayerRole, steps, cash, owned, rented, selected, professionId, hour, day, month, year, workHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, log]);
+    if (multiplayerRole === 'host' && connectionRef.current?.open) connectionRef.current.send({ type: 'world-state', owners: ownerByProperty, hostName: playerName.trim() || 'Ev sahibi' });
+  }, [multiplayerRole, ownerByProperty, playerName]);
 
   return <main className="app-shell">
     <header className="topbar">
@@ -913,18 +945,30 @@ function App() {
       <div className="multiplayer-heading"><span className="live-dot" /> İKİ KİŞİLİK MAHALLE</div>
       <div className="multiplayer-status">{multiplayerStatus}</div>
       <div className="multiplayer-controls">
+        <label className="player-name-field">OYUNCU ADIN<input aria-label="Oyuncu adı" value={playerName} onChange={e => setPlayerName(e.target.value.slice(0, 24))} placeholder="Adını yaz" maxLength={24} /></label>
         <button className="room-create-button" onClick={startRoom}>YENİ ODA AÇ</button>
         {roomCode && multiplayerRole === 'host' && <div className="room-code"><span>ODA KODU</span><strong>{roomCode}</strong><button onClick={() => { try { navigator.clipboard?.writeText(roomCode); setMultiplayerStatus('Oda kodu kopyalandı · arkadaşına gönder.'); } catch { setMultiplayerStatus('Oda kodun: ' + roomCode); } }}>KOPYALA</button></div>}
         <div className="room-join"><input aria-label="Oda kodu" value={joinCode} onChange={e => setJoinCode(e.target.value.toUpperCase().slice(0, 6))} placeholder="6 HANELİ KOD" maxLength={6} /><button onClick={joinRoom}>ODAYA KATIL</button></div>
         {multiplayerRole !== 'solo' && <button className="room-leave-button" onClick={closeMultiplayer}>ODADAN AYRIL</button>}
       </div>
-      <p>Odayı açan oyuncu ortak oyunun ev sahibidir. İkinci oyuncunun işlemleri ev sahibine gönderilir; para, mülk, saat ve stok bilgileri aynı oyun durumundan paylaşılır. İnternet bağlantısı gerekir.</p>
+      <p>Herkes kendi parasını, mesleğini, stokunu ve portföyünü yönetir. Binaların sahipliği ortaktır; başka oyuncunun mülkü için satın alma teklifi gönderebilirsin. İnternet bağlantısı gerekir.</p>
+      {incomingOffer && <div className="incoming-offer"><strong>Satın alma teklifi</strong><span>{incomingOffer.fromName}, {properties.find(p => p.id === incomingOffer.propertyId)?.name || 'bir mülk'} için ₺{incomingOffer.price} teklif ediyor.</span><div><button onClick={() => respondToOffer(true)}>KABUL ET</button><button onClick={() => respondToOffer(false)}>REDDET</button></div></div>}
     </section>
 
     <section className="game-layout">
       <div className="world-panel">
         <div className="world-topline"><span><span className="live-dot" /> BEYOĞLU MERKEZİ</span><span>OYUN DÜNYASI <i>·</i> {year}</span></div>
-        <CityScene selected={selected} owned={owned} onSelect={selectProperty} hour={hour} />
+        <CityScene selected={selected} owned={owned} ownerByProperty={ownerByProperty} playerId={playerId} onSelect={selectProperty} hour={hour} />
+        <div className="scene-action-card">
+          <div className="scene-action-eyebrow">SEÇİLİ BİNA · {String(active.id).padStart(2, '0')}</div><strong>{active.name}</strong>
+          <span>{ownerByProperty[active.id] ? (ownerByProperty[active.id].playerId === playerId ? `Sahibi: ${ownerByProperty[active.id].name} (sen)` : `Sahibi: ${ownerByProperty[active.id].name}`) : 'Satılık'} · ₺{active.price.toLocaleString('tr-TR')}</span>
+          <div className="scene-action-buttons">
+            {!ownerByProperty[active.id] && !owned.includes(active.id) && <button onClick={buy}>SATIN AL</button>}
+            {ownerByProperty[active.id]?.playerId === playerId && owned.includes(active.id) && <button onClick={toggleRent}>{rented.includes(active.id) ? 'KİRACILIĞI BİTİR' : 'KİRAYA VER'}</button>}
+            {ownerByProperty[active.id] && ownerByProperty[active.id].playerId !== playerId && <button onClick={sendOffer}>SATIN ALMA TEKLİFİ</button>}
+            {owned.includes(active.id) && !rented.includes(active.id) && <button onClick={toggleShop}>{shopOpen ? 'İŞLETMENİ KAPAT' : 'İŞLETMEYİ AÇ'}</button>}
+          </div>
+        </div>
         <div className="map-legend"><span><i className="legend-dot available" /> SATILIK MÜLK</span><span><i className="legend-dot owned" /> SENİN MÜLKÜN</span><span className="map-hint">SÜRÜKLE: DÖNDÜR · KAYDIR: YAKINLAŞ · BİNAYA TIKLA</span></div>
         <div className="world-caption"><span>İSTANBUL / BEYOĞLU</span><span>GÜN {day} <i>·</i> SAAT {String(hour).padStart(2, '0')}:00</span></div>
       </div>
@@ -959,6 +1003,7 @@ function App() {
           <div className="section-heading"><span>04 / MÜLKÜ İNCELE</span><span className="count-tag">{String(active.id).padStart(2, '0')}</span></div>
           <div className="property-type">{active.type.toUpperCase()}</div>
           <h2>{active.name}</h2>
+          {ownerByProperty[active.id] && <div className="owner-chip">MÜLK SAHİBİ: {ownerByProperty[active.id].name}{ownerByProperty[active.id].playerId === playerId ? ' (SEN)' : ''}</div>}
           <p className="property-description">{active.style}. Bu taşınmazı alabilir, işletme olarak kullanabilir veya ileride kiraya verebilirsin.</p>
           <div className="property-stats">
             <div><span>Satış bedeli</span><strong>₺{active.price.toLocaleString('tr-TR')}</strong></div>
@@ -966,9 +1011,10 @@ function App() {
             <div><span>Kat sayısı</span><strong>{active.floors} kat</strong></div>
             <div><span>Durum</span><strong className={owned.includes(active.id) ? 'owned-text' : ''}>{!owned.includes(active.id) ? 'SATILIK' : rented.includes(active.id) ? 'KİRADA' : 'PORTFÖYÜNDE'}</strong></div>
           </div>
-          <button className={owned.includes(active.id) ? 'buy-button is-owned' : 'buy-button'} onClick={buy} disabled={owned.includes(active.id)}>
+          {!ownerByProperty[active.id] && <button className={owned.includes(active.id) ? 'buy-button is-owned' : 'buy-button'} onClick={buy} disabled={owned.includes(active.id)}>
             {owned.includes(active.id) ? 'MÜLK SENİN' : 'MÜLKÜ SATIN AL'} <span>{owned.includes(active.id) ? '✓' : '↗'}</span>
-          </button>
+          </button>}
+          {ownerByProperty[active.id] && ownerByProperty[active.id].playerId !== playerId && <button className="buy-button" onClick={sendOffer}>SATIN ALMA TEKLİFİ GÖNDER <span>↗</span></button>}
           {owned.includes(active.id) && <button className="rent-button" onClick={toggleRent}>{rented.includes(active.id) ? 'KİRACIYI ÇIKAR' : 'KİRACI BUL VE KİRAYA VER'}</button>}
           {owned.includes(active.id) && !rented.includes(active.id) && (tradeCatalog[active.id] || []).some(item => item.price > 0) && <div className="business-plan">
             <div className="card-label">İŞ MODELİ · TEDARİK · STOK</div>
