@@ -1089,6 +1089,7 @@ function App() {
       }
       setWorkHours(v => v + 1);
       setCareerHours(v => v + 1);
+      if (careerHours === 4) tell('✦ HEDEF TAMAMLANDI: İlk 5 çalışma saatini tamamladın. Sıradaki hedefin ilk mülkünü edinmek.');
     } else if (work && !isWorkingHour) {
       detail = 'Bu saatte iş bulmak zor. Dinlenmeyi veya saati ilerletmeyi seçtin.';
     }
@@ -1215,7 +1216,7 @@ function App() {
     publishOwners({ ...ownerByProperty, [active.id]: { playerId, name: playerName.trim() || (playerId === 'host' ? 'Ev sahibi' : playerId === 'guest' ? 'Oyuncu 2' : 'Ben') } });
     setShopPropertyId(null);
     setSteps(v => v + 1);
-    tell(`${active.name} satın alındı. Şimdi bu mekanın desteklediği işletme türlerinden birini seçebilirsin.`);
+    tell(`${active.name} satın alındı. ${owned.length === 0 ? '✦ HEDEF TAMAMLANDI: İlk mülkünü edindin! ' : owned.length === 1 ? '✦ HEDEF TAMAMLANDI: İkinci mülkün portföyüne katıldı! ' : owned.length === 2 ? '✦ HEDEF TAMAMLANDI: Üç mülke ulaştın; mahallede yer edinmeye başladın. ' : ''}Şimdi bu mekanın desteklediği işletme türlerinden birini seçebilirsin.`);
   };
 
   const sellProperty = () => {
@@ -1245,7 +1246,7 @@ function App() {
     }
     setRented(v => [...v, active.id]);
     if (shopPropertyId === active.id) setShopPropertyId(null);
-    tell(`${active.name} kiraya verildi. Günlük kira geliri: ${ (active.rent / 30).toFixed(2) }; her yeni günde otomatik tahsil edilir.`);
+    tell(`${active.name} kiraya verildi. ${rented.length === 0 ? '✦ HEDEF TAMAMLANDI: İlk kira gelirini başlattın! ' : ''}Günlük kira geliri: ${(active.rent / 30).toFixed(2)}; her yeni günde otomatik tahsil edilir.`);
   };
 
   const toggleShop = () => {
