@@ -16,6 +16,19 @@ const properties = [
   { id: 12, name: 'Küçük kahvehane', type: 'İşletme', price: 480, rent: 62, x: 5.5, z: 7.5, color: '#bfae98', floors: 2, style: 'Sokak kahvehanesi' }
 ];
 
+const SAVE_KEY = 'mahalle-save-v1';
+const venueTypesByProfession = {
+  kolonyaci: ['Ticaret', 'Atölye'],
+  leblebici: ['Ticaret', 'Depo', 'İşletme'],
+  terzi: ['Atölye'],
+  matbaaci: ['Atölye'],
+  kahveci: ['İşletme', 'Ticaret'],
+  amele: []
+};
+function supportsProfessionAt(property, professionId) {
+  return Boolean(property && venueTypesByProfession[professionId]?.includes(property.type));
+}
+
 function CityScene({ selected, owned, onSelect }) {
   const host = useRef(null);
   const selectRef = useRef(onSelect);
@@ -182,6 +195,61 @@ function CityScene({ selected, owned, onSelect }) {
       tree.position.set(x, 0, z); scene.add(tree);
     }
 
+    // Small, low-poly pedestrians give the street a continuous sense of life.
+    const pedestrians = [];
+    const coatColors = ['#3f5a68', '#75534a', '#65734f', '#9a794c', '#4a4c54', '#8d6661', '#53675b'];
+    const skinColors = ['#c99671', '#b77e5d', '#d3a17f', '#8f6048'];
+    const makePedestrian = (axis, lane, phase, speed, direction, coatColor, hasHat) => {
+      const person = new THREE.Group();
+      const coat = new THREE.MeshStandardMaterial({ color: coatColor, roughness: 0.96 });
+      const skin = new THREE.MeshStandardMaterial({ color: skinColors[Math.floor(Math.random() * skinColors.length)], roughness: 1 });
+      const trousers = new THREE.MeshStandardMaterial({ color: '#4b4c49', roughness: 1 });
+      const shoes = new THREE.MeshStandardMaterial({ color: '#302f2c', roughness: 1 });
+      const torso = new THREE.Mesh(new THREE.BoxGeometry(0.23, 0.38, 0.14), coat);
+      torso.position.y = 0.64;
+      person.add(torso);
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.105, 9, 7), skin);
+      head.position.y = 0.91;
+      person.add(head);
+      if (hasHat) {
+        const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.035, 8), new THREE.MeshStandardMaterial({ color: '#393a37', roughness: 1 }));
+        brim.position.y = 1.015;
+        person.add(brim);
+        const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.105, 0.11, 8), new THREE.MeshStandardMaterial({ color: '#393a37', roughness: 1 }));
+        crown.position.y = 1.08;
+        person.add(crown);
+      }
+      const makeLimb = (x, y, material, width, height, depth) => {
+        const pivot = new THREE.Group();
+        pivot.position.set(x, y, 0);
+        const limb = new THREE.Mesh(new THREE.BoxGeometry(width, height, depth), material);
+        limb.position.y = -height / 2;
+        pivot.add(limb);
+        person.add(pivot);
+        return pivot;
+      };
+      const leftLeg = makeLimb(-0.065, 0.43, trousers, 0.085, 0.28, 0.095);
+      const rightLeg = makeLimb(0.065, 0.43, trousers, 0.085, 0.28, 0.095);
+      const leftShoe = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.055, 0.15), shoes);
+      leftShoe.position.set(-0.065, 0.035, 0.025); person.add(leftShoe);
+      const rightShoe = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.055, 0.15), shoes);
+      rightShoe.position.set(0.065, 0.035, 0.025); person.add(rightShoe);
+      const leftArm = makeLimb(-0.17, 0.77, coat, 0.075, 0.29, 0.09);
+      const rightArm = makeLimb(0.17, 0.77, coat, 0.075, 0.29, 0.09);
+      person.scale.setScalar(0.92 + Math.random() * 0.13);
+      person.traverse(obj => { if (obj.isMesh) obj.castShadow = false; });
+      scene.add(person);
+      pedestrians.push({ person, axis, lane, phase, speed, direction, leftLeg, rightLeg, leftArm, rightArm });
+    };
+    const mainStreetLanes = [-2.65, -1.55, 1.25, 2.55];
+    for (let i = 0; i < 9; i++) {
+      makePedestrian('z', mainStreetLanes[i % mainStreetLanes.length], (i * 0.137) % 1, 0.022 + (i % 3) * 0.004, i % 2 === 0 ? 1 : -1, coatColors[i % coatColors.length], i % 3 !== 1);
+    }
+    const crossStreetLanes = [-1.1, 1.8, 2.65];
+    for (let i = 0; i < 6; i++) {
+      makePedestrian('x', crossStreetLanes[i % crossStreetLanes.length], (i * 0.173 + 0.09) % 1, 0.015 + (i % 2) * 0.004, i % 2 === 0 ? 1 : -1, coatColors[(i + 2) % coatColors.length], i % 3 === 0);
+    }
+
     const raycaster = new THREE.Raycaster();
     const pointer = new THREE.Vector2();
     const target = new THREE.Vector3(0, 0, 0);
@@ -244,9 +312,26 @@ function CityScene({ selected, owned, onSelect }) {
     renderer.domElement.style.cursor = 'grab';
 
     let frame;
+    const startedAt = Date.now();
     const animate = () => {
       frame = requestAnimationFrame(animate);
+      const elapsed = (Date.now() - startedAt) / 1000;
       tram.position.x = -0.1 + Math.sin(Date.now() * 0.00015) * 0.8;
+      pedestrians.forEach((ped, i) => {
+        const progress = (elapsed * ped.speed + ped.phase) % 1;
+        const stride = elapsed * ped.speed * Math.PI * 24 + i;
+        if (ped.axis === 'z') {
+          ped.person.position.set(ped.lane, 0.015 + Math.abs(Math.sin(stride)) * 0.018, ped.direction > 0 ? -11 + progress * 22 : 11 - progress * 22);
+          ped.person.rotation.y = ped.direction > 0 ? 0 : Math.PI;
+        } else {
+          ped.person.position.set(ped.direction > 0 ? -12 + progress * 24 : 12 - progress * 24, 0.015 + Math.abs(Math.sin(stride)) * 0.018, ped.lane);
+          ped.person.rotation.y = ped.direction > 0 ? Math.PI / 2 : -Math.PI / 2;
+        }
+        ped.leftLeg.rotation.x = Math.sin(stride) * 0.48;
+        ped.rightLeg.rotation.x = -Math.sin(stride) * 0.48;
+        ped.leftArm.rotation.x = -Math.sin(stride) * 0.3;
+        ped.rightArm.rotation.x = Math.sin(stride) * 0.3;
+      });
       renderer.render(scene, camera);
     };
     animate();
@@ -277,21 +362,33 @@ function CityScene({ selected, owned, onSelect }) {
 }
 
 function App() {
-  const [steps, setSteps] = useState(0);
-  const [cash, setCash] = useState(75);
-  const [owned, setOwned] = useState([]);
-  const [selected, setSelected] = useState(1);
+  const saveRef = useRef(undefined);
+  if (saveRef.current === undefined) {
+    try {
+      saveRef.current = typeof window !== 'undefined'
+        ? JSON.parse(window.localStorage.getItem(SAVE_KEY) || 'null') || {}
+        : {};
+    } catch {
+      saveRef.current = {};
+    }
+  }
+  const saved = saveRef.current || {};
+  const [steps, setSteps] = useState(() => Number.isFinite(saved.steps) ? saved.steps : 0);
+  const [cash, setCash] = useState(() => Number.isFinite(saved.cash) ? saved.cash : 75);
+  const [owned, setOwned] = useState(() => Array.isArray(saved.owned) ? saved.owned.filter(id => properties.some(p => p.id === id)) : []);
+  const [selected, setSelected] = useState(() => properties.some(p => p.id === saved.selected) ? saved.selected : 1);
   const [notice, setNotice] = useState('');
-  const [showPortfolio, setShowPortfolio] = useState(false);
-  const [professionId, setProfessionId] = useState('leblebici');
-  const [hour, setHour] = useState(8);
-  const [day, setDay] = useState(1);
-  const [month, setMonth] = useState(1);
-  const [year, setYear] = useState(1923);
+  const [showPortfolio, setShowPortfolio] = useState(() => Boolean(saved.showPortfolio));
+  const [professionId, setProfessionId] = useState(() => ['kolonyaci', 'leblebici', 'terzi', 'matbaaci', 'kahveci', 'amele'].includes(saved.professionId) ? saved.professionId : 'amele');
+  const [hour, setHour] = useState(() => Number.isInteger(saved.hour) && saved.hour >= 0 && saved.hour <= 23 ? saved.hour : 8);
+  const [day, setDay] = useState(() => Number.isInteger(saved.day) && saved.day >= 1 && saved.day <= 30 ? saved.day : 1);
+  const [month, setMonth] = useState(() => Number.isInteger(saved.month) && saved.month >= 1 && saved.month <= 12 ? saved.month : 1);
+  const [year, setYear] = useState(() => Number.isInteger(saved.year) && saved.year >= 1923 ? saved.year : 1923);
   const clockAction = useRef(null);
-  const [workHours, setWorkHours] = useState(0);
-  const [shopOpen, setShopOpen] = useState(false);
-  const [log, setLog] = useState([{ id: 0, text: 'Beyoğlu’na geldin. Geçimini kurmak için bir meslek seç.' }]);
+  const [workHours, setWorkHours] = useState(() => Number.isInteger(saved.workHours) && saved.workHours >= 0 ? saved.workHours : 0);
+  const [shopPropertyId, setShopPropertyId] = useState(() => Number.isInteger(saved.shopPropertyId) ? saved.shopPropertyId : null);
+  const shopOpen = shopPropertyId === selected;
+  const [log, setLog] = useState(() => Array.isArray(saved.log) && saved.log.length ? saved.log.slice(0, 5) : [{ id: 0, text: 'Beyoğlu’na geldin. Geçimini kurmak için bir meslek seç.' }]);
   const professionOptions = [
     { id: 'kolonyaci', name: 'Kolonyacı', gross: 5.2, overhead: 7, description: 'Kolonya, koku ve kişisel bakım ürünleri.' },
     { id: 'leblebici', name: 'Leblebici', gross: 4.2, overhead: 4, description: 'Kuruyemiş ve leblebi; düşük sermayeli ticaret.' },
@@ -300,10 +397,24 @@ function App() {
     { id: 'kahveci', name: 'Kahveci', gross: 5.6, overhead: 10, description: 'Müşteri trafiğine ve sarf malzemesine bağlı.' },
     { id: 'amele', name: 'Gündelik işçi', gross: 3.7, overhead: 0, description: 'Dükkan gerekmez; çalıştığın saat kadar ücret.' }
   ];
-  const profession = professionOptions.find(p => p.id === professionId) || professionOptions[1];
+  const profession = professionOptions.find(p => p.id === professionId) || professionOptions[5];
+  const active = properties.find(p => p.id === selected) || properties[0];
   const portfolio = properties.filter(p => owned.includes(p.id));
   const annualRent = portfolio.reduce((sum, p) => sum + p.rent, 0);
+  const selectedVenueCompatible = owned.includes(active.id) && supportsProfessionAt(active, professionId);
+  const hasSuitablePremise = portfolio.some(p => supportsProfessionAt(p, professionId));
   const [noticeId, setNoticeId] = useState(0);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(SAVE_KEY, JSON.stringify({
+        version: 1, steps, cash, owned, selected, showPortfolio, professionId,
+        hour, day, month, year, workHours, shopPropertyId, log: log.slice(0, 5)
+      }));
+    } catch {
+      // The game remains playable if browser storage is disabled or full.
+    }
+  }, [steps, cash, owned, selected, showPortfolio, professionId, hour, day, month, year, workHours, shopPropertyId, log]);
 
   const tell = (text) => {
     setNotice(text);
@@ -312,6 +423,10 @@ function App() {
   };
 
   const advanceHour = (work = false) => {
+    if (work && professionId !== 'amele' && !selectedVenueCompatible) {
+      tell(`${profession.name} olarak çalışmak için seçili mekana uygun bir iş yeri edinmelisin. Şimdilik Gündelik işçi seçerek ücret kazanabilirsin.`);
+      return;
+    }
     if (hour === 5) {
       const nextDayRaw = day + 1;
       const nextDay = nextDayRaw > 30 ? 1 : nextDayRaw;
@@ -334,19 +449,28 @@ function App() {
     let detail = '';
     if (work && isWorkingHour) {
       const variance = 0.82 + Math.random() * 0.36;
-      const gross = Math.round(profession.gross * variance * 100) / 100;
-      net = gross;
-      detail = `${profession.name}: saatlik hasılat ${gross.toFixed(2)}; günlük giderler gün sonunda hesaplanacak`;
+      if (professionId === 'amele') {
+        const wage = Math.round(profession.gross * variance * 100) / 100;
+        net = wage;
+        detail = `Gündelik işçilik: saatlik ücret ${wage.toFixed(2)} oyun lirası`;
+      } else if (!shopOpen) {
+        const gross = Math.round(profession.gross * variance * 100) / 100;
+        const supplies = Math.round((profession.overhead * 0.12 + 0.35) * 100) / 100;
+        net = gross - supplies;
+        detail = `${profession.name}: iş hasılatı ${gross.toFixed(2)}, malzeme ${supplies.toFixed(2)}`;
+      } else {
+        detail = `${profession.name}: dükkanında çalıştın; günün satışları ayrıca hesaplanacak`;
+      }
       setWorkHours(v => v + 1);
     } else if (work && !isWorkingHour) {
       detail = 'Bu saatte iş bulmak zor. Dinlenmeyi veya saati ilerletmeyi seçtin.';
     }
-    if (shopOpen && owned.length > 0 && hour >= 7 && hour < 21) {
-      const shopGross = Math.round((2.2 + Math.random() * 3.8) * 100) / 100;
-      const stockCost = Math.round((1.1 + Math.random() * 1.5) * 100) / 100;
+    if (shopOpen && selectedVenueCompatible && hour >= 7 && hour < 21) {
+      const shopGross = Math.round((profession.gross * (0.7 + Math.random() * 0.8)) * 100) / 100;
+      const stockCost = Math.round((profession.overhead * 0.12 + 0.6 + Math.random() * 0.8) * 100) / 100;
       const shopNet = shopGross - stockCost;
       net += shopNet;
-      detail += `${detail ? ' · ' : ''}Dükkan satışı ${shopGross.toFixed(2)}, stok ${stockCost.toFixed(2)}`;
+      detail += `${detail ? ' · ' : ''}Satış ${shopGross.toFixed(2)}, stok maliyeti ${stockCost.toFixed(2)}`;
     }
     setCash(v => Math.max(0, Math.round((v + net) * 100) / 100));
     const nextHour = (hour + 1) % 24;
@@ -388,23 +512,35 @@ function App() {
   }, []);
 
   const toggleShop = () => {
-    if (owned.length === 0) { tell('İşletme açmak için önce bir mülk edinmelisin.'); return; }
-    setShopOpen(v => !v);
-    tell(shopOpen ? 'Dükkan kapatıldı; satış ve stok giderleri durdu.' : 'Dükkan açıldı. Açık olduğu saatlerde satış ve stok maliyeti işleyecek.');
+    if (!owned.includes(selected)) { tell('İşletme açmak için önce seçili mekanı satın almalısın.'); return; }
+    if (!selectedVenueCompatible) { tell('Seçtiğin meslek bu mekanla uyumlu değil. Uygun bir mülk veya meslek seç.'); return; }
+    setShopPropertyId(shopOpen ? null : selected);
+    tell(shopOpen ? 'İşletme kapatıldı; satış ve stok giderleri durdu.' : `${profession.name} işletmesi açıldı. Çalışma saatlerinde satışlar ve stok giderleri işleyecek.`);
+  };
+
+  const resetGame = () => {
+    if (typeof window !== 'undefined' && !window.confirm('Yeni oyun başlatılsın mı? Mevcut mahalle kaydı silinecek.')) return;
+    setSteps(0); setCash(75); setOwned([]); setSelected(1); setShowPortfolio(false);
+    setProfessionId('amele'); setHour(8); setDay(1); setMonth(1); setYear(1923);
+    setWorkHours(0); setShopPropertyId(null);
+    setLog([{ id: Date.now(), text: 'Yeni bir hikaye başladı. Gündelik işçilikle sermaye biriktir veya uygun bir dükkan edin.' }]);
+    setNotice('');
+    try { window.localStorage.removeItem(SAVE_KEY); } catch {}
+    tell('Yeni oyun başladı. Kayıt sıfırlandı.');
   };
 
   return <main className="app-shell">
     <header className="topbar">
       <a className="wordmark" href="#" aria-label="Mahalle ana sayfa"><span className="mark">M.</span><span>MAHALLE</span></a>
       <div className="top-center"><span className="live-dot" /> BİR BEYOĞLU YAŞAM SİMÜLASYONU</div>
-      <button className="avatar-button" onClick={() => setShowPortfolio(v => !v)} aria-label="Portföyü aç">CC</button>
+      <div className="top-actions"><button className="reset-button" onClick={resetGame}>YENİ OYUN ↻</button><button className="avatar-button" onClick={() => setShowPortfolio(v => !v)} aria-label="Portföyü aç">CC</button></div>
     </header>
 
     <section className="intro-row">
       <div>
         <div className="eyebrow">SEZON 01 <span>/</span> İSTANBUL</div>
         <h1>BEYOĞLU <span>{year}</span></h1>
-        <p className="intro-copy">Bir meslek seç. Bir sokak kur. Kendi hikayeni yaz.</p>
+        <p className="intro-copy">Önce geçimini kur. Sonra dükkanını aç. Kendi hikayeni yaz.</p>
       </div>
       <div className="progress-control">
         <div className="date-label">OYUN TAKVİMİ · {String(day).padStart(2, '0')}/{String(month).padStart(2, '0')}/{year}</div>
@@ -424,11 +560,12 @@ function App() {
       <aside className="side-panel">
         <section className="balance-card profession-card">
           <div className="card-label">01 / MESLEK SEÇİMİ</div>
-          <select className="profession-select" value={professionId} onChange={e => setProfessionId(e.target.value)}>
+          <select className="profession-select" value={professionId} onChange={e => { setProfessionId(e.target.value); setShopPropertyId(null); }}>
             {professionOptions.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
           <p className="profession-description">{profession.description}</p>
           <div className="profession-meta">Saatlik hasılat ≈ {profession.gross.toFixed(2)} · Günlük gider {profession.overhead} oyun lirası</div>
+          <div className="profession-meta">{professionId === 'amele' ? 'Dükkan gerekmez; ücretli iş bulup sermaye biriktirebilirsin.' : hasSuitablePremise ? 'Mesleğine uygun bir mülkün var.' : 'Bu meslek için uygun bir dükkan veya atölye edinmen gerekiyor.'}</div>
         </section>
 
         <section className="balance-card">
@@ -443,7 +580,7 @@ function App() {
           <div className="work-status"><span className={hour >= 8 && hour < 19 ? 'status-light active' : 'status-light'} />{hour >= 8 && hour < 19 ? 'ÇALIŞMA SAATLERİ' : 'MESAİ DIŞI'}</div>
           <button className="work-button" onClick={() => advanceHour(true)} disabled={hour >= 22 || hour < 6}>1 SAAT ÇALIŞ <span>＋</span></button>
           <button className="rest-button" onClick={sleepUntilMorning}>UYU · YENİ GÜNE GEÇ <span>↗</span></button>
-          <p className="small-note">Çalıştığın saatte gelir elde edersin. Dükkanın açıksa satışlar saat ilerledikçe işler.</p>
+          <p className="small-note">Gündelik işçi olarak dükkansız çalışabilirsin. Diğer mesleklerde seçili ve sahip olduğun mekanın mesleğe uygun olması gerekir. Açık işletmenin satışları saat ilerledikçe işler.</p>
         </section>
 
         <section className="property-card">
@@ -460,7 +597,9 @@ function App() {
           <button className={owned.includes(active.id) ? 'buy-button is-owned' : 'buy-button'} onClick={buy} disabled={owned.includes(active.id)}>
             {owned.includes(active.id) ? 'MÜLK SENİN' : 'MÜLKÜ SATIN AL'} <span>{owned.includes(active.id) ? '✓' : '↗'}</span>
           </button>
-          {owned.includes(active.id) && <button className="operate-button" onClick={toggleShop}>{shopOpen ? 'İŞLETMENİ KAPAT' : 'DÜKKANI İŞLETMEYE AÇ'}</button>}
+          {owned.includes(active.id) && (selectedVenueCompatible
+            ? <button className="operate-button" onClick={toggleShop}>{shopOpen ? 'İŞLETMENİ KAPAT' : 'DÜKKANI İŞLETMEYE AÇ'}</button>
+            : <div className="property-note"><span>i</span> Bu mekanı işletmek için üstteki meslek seçiminden uygun bir iş seç.</div> )}
           <div className="property-note"><span>i</span> Mülk fiyatları şimdilik oyun dengesi için belirlenmiştir.</div>
         </section>
 
@@ -482,7 +621,7 @@ function App() {
     </section>
 
     <footer className="footer"><span>MAHALLE <i>©</i> 1923</span><span>GEÇMİŞİN İÇİNDE BİR GELECEK KUR.</span><span>PROTOTİP 0.3.0</span></footer>
-    <div className="economy-note">Ekonomi değerleri oynanabilir prototip varsayımlarıdır; doğrulanmış 1923 ücret ve fiyat verileri değildir.</div>
+    <div className="economy-note">Kayıt bu tarayıcıda otomatik saklanır. Ekonomi değerleri oynanabilir prototip varsayımlarıdır; doğrulanmış 1923 ücret ve fiyat verileri değildir.</div>
     {notice && <div className="toast" key={noticeId} role="status">{notice}</div>}
   </main>;
 }
