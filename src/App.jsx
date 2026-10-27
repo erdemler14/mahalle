@@ -37,12 +37,16 @@ const properties = [
   { id: 32, name: 'Küçük matbaa ve kırtasiye', type: 'Atölye', price: 930, rent: 68, x: 5.5, z: 17.2, color: '#b8b0a4', floors: 3, style: 'Baskı atölyesi ve kırtasiye' }
 ];
 
-// Arrange the purchasable buildings along real street frontages. The central corridor stays clear for the tram.
+// Galata-style irregular street frontages: narrow blocks, staggered facades and varied angles.
 properties.forEach((property, index) => {
   const frontage = Math.floor(index / 8);
   const slot = index % 8;
-  property.x = frontage === 0 ? -8.5 : frontage === 1 ? 8.5 : frontage === 2 ? -18.5 : 18.5;
-  property.z = -22 + slot * 6.1;
+  const baseX = [-8.5, 8.5, -18.5, 18.5][frontage];
+  const staggerX = [0.15, -0.65, 0.55, -0.25, 0.8, -0.45, 0.35, -0.1][slot];
+  const staggerZ = [0.0, 0.7, -0.45, 0.35, -0.8, 0.55, -0.2, 0.25][(index * 3) % 8];
+  property.x = baseX + staggerX * (frontage < 2 ? 0.85 : 1.35);
+  property.z = -21.2 + slot * 5.85 + staggerZ;
+  property.rotation = [0, -0.08, 0.045, 0.11, -0.055, 0.025, -0.1, 0.06][(index * 5 + 2) % 8];
 });
 
 const SAVE_KEY = 'mahalle-save-v1';
@@ -87,8 +91,8 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
     const duskBackground = new THREE.Color('#b9b7b0');
     const nightBackground = new THREE.Color('#202b3b');
     scene.background = dayBackground.clone();
-    scene.fog = new THREE.Fog('#e8e6de', 30, 62);
-    const camera = new THREE.PerspectiveCamera(38, el.clientWidth / el.clientHeight, 0.1, 100);
+    scene.fog = new THREE.Fog('#e8e6de', 42, 88);
+    const camera = new THREE.PerspectiveCamera(38, el.clientWidth / el.clientHeight, 0.1, 160);
     camera.position.set(12, 13, 17);
     camera.lookAt(0, 0, 0);
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
@@ -330,6 +334,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
         pediment.rotation.y = Math.PI; pediment.position.set(0, h + 0.24, d / 2); pediment.scale.z = 0.45; group.add(pediment);
       }
       group.position.set(p.x, 0, p.z);
+      group.rotation.y = p.rotation || 0;
       group.userData.propertyId = p.id;
       scene.add(group);
       buildingMeshes.push(group);
@@ -483,9 +488,12 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
     let theta = Math.atan2(camera.position.x, camera.position.z);
     let radius = camera.position.distanceTo(target);
     let phi = Math.acos(camera.position.y / radius);
+    let dragMode = 'pan';
     const placeCamera = () => {
-      phi = Math.max(0.28, Math.min(1.22, phi));
-      radius = Math.max(7, Math.min(42, radius));
+      phi = Math.max(0.28, Math.min(1.28, phi));
+      radius = Math.max(5.5, Math.min(40, radius));
+      target.x = Math.max(-34, Math.min(34, target.x));
+      target.z = Math.max(-34, Math.min(34, target.z));
       camera.position.set(
         target.x + radius * Math.sin(phi) * Math.sin(theta),
         target.y + radius * Math.cos(phi),
@@ -493,9 +501,16 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
       );
       camera.lookAt(target);
     };
-    cameraControlRef.current = (action) => { if (action === 'in') radius -= 3; else if (action === 'out') radius += 3; else { radius = 25; theta = Math.PI / 4; phi = 0.78; target.set(0, 0, 0); } placeCamera(); };
+    cameraControlRef.current = (action) => {
+      if (action === 'in') radius -= 3;
+      else if (action === 'out') radius += 3;
+      else { radius = 25; theta = Math.PI / 4; phi = 0.78; target.set(0, 0, 0); }
+      placeCamera();
+    };
     const onPointerDown = (event) => {
       dragging = true; moved = false; lastX = event.clientX; lastY = event.clientY;
+      dragMode = event.pointerType === 'touch' || event.button === 0 ? 'pan' : 'rotate';
+      renderer.domElement.style.cursor = 'grabbing';
       renderer.domElement.setPointerCapture?.(event.pointerId);
     };
     const onPointerMove = (event) => {
@@ -503,17 +518,26 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
       const dx = event.clientX - lastX;
       const dy = event.clientY - lastY;
       if (Math.abs(dx) + Math.abs(dy) > 3) moved = true;
-      theta -= dx * 0.006;
-      phi += dy * 0.004;
+      if (dragMode === 'rotate') {
+        theta -= dx * 0.006;
+        phi += dy * 0.004;
+      } else {
+        const panScale = radius * 0.0017;
+        target.x -= dx * panScale * Math.cos(theta);
+        target.z += dx * panScale * Math.sin(theta);
+        target.x += dy * panScale * Math.sin(theta) * 0.45;
+        target.z += dy * panScale * Math.cos(theta) * 0.45;
+      }
       lastX = event.clientX; lastY = event.clientY;
       placeCamera();
     };
-    const onPointerUp = () => { dragging = false; };
+    const onPointerUp = () => { dragging = false; renderer.domElement.style.cursor = 'grab'; };
     const onWheel = (event) => {
       event.preventDefault();
       radius += event.deltaY * 0.012;
       placeCamera();
     };
+    const onContextMenu = (event) => event.preventDefault();
     const onClick = (event) => {
       if (moved) return;
       const rect = renderer.domElement.getBoundingClientRect();
@@ -533,6 +557,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
     renderer.domElement.addEventListener('pointercancel', onPointerUp);
     renderer.domElement.addEventListener('click', onClick);
     renderer.domElement.addEventListener('wheel', onWheel, { passive: false });
+    renderer.domElement.addEventListener('contextmenu', onContextMenu);
     renderer.domElement.style.cursor = 'grab';
 
     let frame;
@@ -601,13 +626,14 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
       renderer.domElement.removeEventListener('pointerup', onPointerUp);
       renderer.domElement.removeEventListener('pointercancel', onPointerUp);
       renderer.domElement.removeEventListener('wheel', onWheel);
+      renderer.domElement.removeEventListener('contextmenu', onContextMenu);
       scene.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) { (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => m.dispose()); } });
       renderer.dispose();
       renderer.domElement.remove();
     };
   }, [owned, ownerByProperty, playerId]);
 
-  return <div className="scene-host" ref={host} aria-label="Beyoğlu 1923 3D mahalle sahnesi"><div className="scene-building-overlay" ref={overlayRef}>{overlay}</div><div className="map-zoom-controls"><button type="button" aria-label="Yakınlaştır" title="Yakınlaştır" onClick={() => cameraControlRef.current?.('in')}>＋</button><button type="button" aria-label="Uzaklaştır" title="Uzaklaştır" onClick={() => cameraControlRef.current?.('out')}>−</button><button type="button" aria-label="Haritayı sıfırla" title="Haritayı sıfırla" onClick={() => cameraControlRef.current?.('reset')}>⌂</button></div><div className="map-hint">Sürükle: döndür · Tekerlek: yakınlaş / uzaklaş</div></div>;
+  return <div className="scene-host" ref={host} aria-label="Beyoğlu 1923 3D mahalle sahnesi"><div className="scene-building-overlay" ref={overlayRef}>{overlay}</div><div className="map-zoom-controls"><button type="button" aria-label="Yakınlaştır" title="Yakınlaştır" onClick={() => cameraControlRef.current?.('in')}>＋</button><button type="button" aria-label="Uzaklaştır" title="Uzaklaştır" onClick={() => cameraControlRef.current?.('out')}>−</button><button type="button" aria-label="Haritayı sıfırla" title="Haritayı sıfırla" onClick={() => cameraControlRef.current?.('reset')}>⌂</button></div><div className="map-hint">Sürükle: haritada ilerle · Sağ tuş: döndür · Tekerlek: yakınlaş</div></div>;
 }
 
 function App() {
@@ -909,6 +935,26 @@ function App() {
     if (sendAction('selectBusinessPlan', plan)) return;
     setBusinessPlans(old => ({ ...old, [active.id]: plan }));
     tell(`${active.name}: satış grubu ${(tradeCatalog[active.id] || []).find(item => item.id === plan)?.name || 'seçilmedi'} olarak ayarlandı. Satış için ayrıca stok almalısın.`);
+  };
+
+  const workAtSelectedBusiness = () => {
+    if (!selectedVenueCompatible || rented.includes(active.id)) {
+      tell('Bizzat çalışmak için mesleğine uygun, sana ait ve kirada olmayan bir iş yeri seçmelisin.');
+      return;
+    }
+    if (hour < 8 || hour >= 19) {
+      tell('Dükkanda çalışmak için mesai saatlerini beklemelisin (08.00–19.00).');
+      return;
+    }
+    const variance = 0.9 + Math.random() * 0.3;
+    const gross = Math.round(profession.gross * variance * 2.2 * 100) / 100;
+    const supplies = Math.round((profession.overhead * 0.18 + 0.5) * 100) / 100;
+    const net = Math.round((gross - supplies) * 100) / 100;
+    setClockRunning(false);
+    setCash(value => Math.round((value + net) * 100) / 100);
+    setWorkHours(value => value + 1);
+    setHour(value => value >= 18 ? 19 : value + 1);
+    tell(`${profession.name} olarak ${active.name} içinde bir saat çalıştın: iş geliri +₺${gross.toFixed(2)}, malzeme -₺${supplies.toFixed(2)}, net +₺${net.toFixed(2)}. Zamanı durdurdum; istersen yeniden başlatabilirsin.`);
   };
 
   const stockBusiness = () => {
@@ -1257,7 +1303,8 @@ function App() {
             <div className="stock-line"><span>Birim maliyet / satış</span><strong>{(() => { const item = (tradeCatalog[active.id] || []).find(product => product.id === businessPlans[active.id]); return item && item.units > 0 ? `₺${(item.cost / item.units).toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} / ₺${item.price.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : '—'; })()}</strong></div>
             <div className="stock-line"><span>Parti başına tahmini brüt fark</span><strong>₺{(() => { const item = (tradeCatalog[active.id] || []).find(product => product.id === businessPlans[active.id]); return item ? (item.price * item.units - item.cost).toLocaleString('tr-TR', {maximumFractionDigits: 2}) : '0'; })()}</strong></div>
             <button className="stock-button" onClick={stockBusiness}>{(tradeCatalog[active.id] || []).find(item => item.id === businessPlans[active.id])?.production ? "ÜRETİM YAP / STOK EKLE" : "TEDARİK ET / STOK AL"}</button>
-            <p>Alış maliyeti parti içindir; satış fiyatı tek ürün içindir. Stok ve ürün grubu tanımlanınca bu işletme, kiraya verilmediği sürece çalışma saatlerinde otomatik satış yapar. Brüt farktan günlük işletme giderleri ayrıca düşer.</p>
+            {selectedVenueCompatible && <button className="work-button" onClick={workAtSelectedBusiness} disabled={hour < 8 || hour >= 19}>BU DÜKKANDA BİR SAAT ÇALIŞ <span>+₺{Math.max(0, profession.gross * 2.2 - profession.overhead * 0.18 - 0.5).toFixed(2)}</span></button>}
+            <p>Stoklu otomatik satışın yanında burada bizzat bir saat çalışıp ek gelir kazanabilirsin. Çalışma saati 08.00–19.00; manuel çalışınca zaman durur, tekrar başlatabilirsin.</p>
           </div>}
 
           {owned.includes(active.id) && (rented.includes(active.id)
