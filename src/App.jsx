@@ -31,8 +31,9 @@ function supportsProfessionAt(property, professionId) {
   return Boolean(property && venueTypesByProfession[professionId]?.includes(property.type));
 }
 
-function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', onSelect, hour }) {
+function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', onSelect, hour, overlay }) {
   const host = useRef(null);
+  const overlayRef = useRef(null);
   const selectRef = useRef(onSelect);
   const selectedRef = useRef(selected);
   const hourRef = useRef(hour);
@@ -478,7 +479,19 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
       const elapsed = (Date.now() - startedAt) / 1000;
       const currentHour = hourRef.current;
       const selectedProperty = properties.find(p => p.id === selectedRef.current);
-      if (selectedProperty) selectionRing.position.set(selectedProperty.x, 0.035, selectedProperty.z);
+      if (selectedProperty) {
+        selectionRing.position.set(selectedProperty.x, 0.035, selectedProperty.z);
+        if (overlayRef.current) {
+          const anchor = new THREE.Vector3(selectedProperty.x, selectedProperty.floors * 0.88 + 0.65, selectedProperty.z);
+          anchor.project(camera);
+          const x = (anchor.x * 0.5 + 0.5) * el.clientWidth;
+          const y = (-anchor.y * 0.5 + 0.5) * el.clientHeight;
+          const visible = anchor.z > -1 && anchor.z < 1 && x > 0 && x < el.clientWidth && y > 0 && y < el.clientHeight;
+          overlayRef.current.style.left = `${x}px`;
+          overlayRef.current.style.top = `${y}px`;
+          overlayRef.current.style.visibility = visible ? 'visible' : 'hidden';
+        }
+      }
       const pulse = 1 + Math.sin(elapsed * 2.4) * 0.035;
       selectionRing.scale.setScalar(pulse);
       const isNight = currentHour >= 19 || currentHour < 6;
@@ -531,7 +544,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
     };
   }, [owned, ownerByProperty, playerId]);
 
-  return <div className="scene-host" ref={host} aria-label="Beyoğlu 1923 3D mahalle sahnesi" />;
+  return <div className="scene-host" ref={host} aria-label="Beyoğlu 1923 3D mahalle sahnesi"><div className="scene-building-overlay" ref={overlayRef}>{overlay}</div></div>;
 }
 
 function App() {
@@ -959,8 +972,7 @@ function App() {
     <section className="game-layout">
       <div className="world-panel">
         <div className="world-topline"><span><span className="live-dot" /> BEYOĞLU MERKEZİ</span><span>OYUN DÜNYASI <i>·</i> {year}</span></div>
-        <CityScene selected={selected} owned={owned} ownerByProperty={ownerByProperty} playerId={playerId} onSelect={selectProperty} hour={hour} />
-        <div className="scene-action-card">
+        <CityScene selected={selected} owned={owned} ownerByProperty={ownerByProperty} playerId={playerId} onSelect={selectProperty} hour={hour} overlay={<div className="scene-action-card">
           <div className="scene-action-eyebrow">SEÇİLİ BİNA · {String(active.id).padStart(2, '0')}</div><strong>{active.name}</strong>
           <span>{ownerByProperty[active.id] ? (ownerByProperty[active.id].playerId === playerId ? `Sahibi: ${ownerByProperty[active.id].name} (sen)` : `Sahibi: ${ownerByProperty[active.id].name}`) : 'Satılık'} · ₺{active.price.toLocaleString('tr-TR')}</span>
           <div className="scene-action-buttons">
@@ -969,7 +981,7 @@ function App() {
             {ownerByProperty[active.id] && ownerByProperty[active.id].playerId !== playerId && <button onClick={sendOffer}>SATIN ALMA TEKLİFİ</button>}
             {owned.includes(active.id) && !rented.includes(active.id) && <button onClick={toggleShop}>{shopOpen ? 'İŞLETMENİ KAPAT' : 'İŞLETMEYİ AÇ'}</button>}
           </div>
-        </div>
+        </div>} />
         <div className="map-legend"><span><i className="legend-dot available" /> SATILIK MÜLK</span><span><i className="legend-dot owned" /> SENİN MÜLKÜN</span><span className="map-hint">SÜRÜKLE: DÖNDÜR · KAYDIR: YAKINLAŞ · BİNAYA TIKLA</span></div>
         <div className="world-caption"><span>İSTANBUL / BEYOĞLU</span><span>GÜN {day} <i>·</i> SAAT {String(hour).padStart(2, '0')}:00</span></div>
       </div>
