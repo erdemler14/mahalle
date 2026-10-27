@@ -301,7 +301,6 @@ function App() {
     { id: 'amele', name: 'Gündelik işçi', gross: 3.7, overhead: 0, description: 'Dükkan gerekmez; çalıştığın saat kadar ücret.' }
   ];
   const profession = professionOptions.find(p => p.id === professionId) || professionOptions[1];
-  const active = properties.find(p => p.id === selected) || properties[0];
   const portfolio = properties.filter(p => owned.includes(p.id));
   const annualRent = portfolio.reduce((sum, p) => sum + p.rent, 0);
   const [noticeId, setNoticeId] = useState(0);
@@ -379,7 +378,7 @@ function App() {
     setCash(v => v - active.price);
     setOwned(v => [...v, active.id]);
     setSteps(v => v + 1);
-    tell(`${active.name} satın alındı. İşletme açmak için mülk panelini kullan.`);
+    tell(`${active.name} satın alındı. Şimdi bu mekanın desteklediği işletme türlerinden birini seçebilirsin.`);
   };
 
   clockAction.current = () => advanceHour(false);
