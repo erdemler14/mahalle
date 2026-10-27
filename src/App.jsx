@@ -499,7 +499,7 @@ function App() {
     } else if (work && !isWorkingHour) {
       detail = 'Bu saatte iş bulmak zor. Dinlenmeyi veya saati ilerletmeyi seçtin.';
     }
-    if (shopOpen && selectedVenueCompatible && hour >= 7 && hour < 21) {
+    if (shopPropertyId !== null && owned.includes(shopPropertyId) && !rented.includes(shopPropertyId) && supportsProfessionAt(properties.find(p => p.id === shopPropertyId), professionId) && hour >= 7 && hour < 21) {
       const shopGross = Math.round((profession.gross * (0.7 + Math.random() * 0.8)) * 100) / 100;
       const stockCost = Math.round((profession.overhead * 0.12 + 0.6 + Math.random() * 0.8) * 100) / 100;
       const shopNet = shopGross - stockCost;
