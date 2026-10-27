@@ -351,11 +351,12 @@ button,select,input{touch-action:manipulation}
   .world-topline{align-items:stretch}
   .world-topline>span:first-child{align-self:center}
   .property-finder{order:3;flex-basis:100%;max-width:none}
+  .property-finder select{min-height:48px}
   .world-year{margin-left:auto;align-self:center}
-  .scene-host{height:520px;min-height:420px}
-  .map-zoom-controls{top:10px;right:10px}
-  .map-zoom-controls button{width:34px;height:34px}
-  .map-hint{left:10px;bottom:10px;font-size:9px}
+  .scene-host{height: min(64dvh, 620px);min-height:420px}
+  .map-zoom-controls{top:10px;right:10px;gap:7px}
+  .map-zoom-controls button{width:44px;height:44px;border-radius:12px}
+  .map-hint{left:10px;right:64px;bottom:10px;width:auto;max-width:none;font-size:10px;line-height:1.4}
   .quick-work-panel{align-items:stretch}
   .quick-work-button{min-width:92px}
 }
