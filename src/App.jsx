@@ -856,12 +856,19 @@ function App() {
       if (nextMonthRaw > 12) setYear(v => v + 1);
       setHour(6);
       setWorkHours(0);
-      tell(`Yeni gün başladı. Kira +₺${dailyRent.toFixed(2)}, işletme hasılatı +₺${business.revenue.toFixed(2)}, yaşam ve bakım -₺${(DAILY_LIVING_COST + maintenance).toFixed(2)}, işletme gideri -₺${business.costs.toFixed(2)}; net ₺${dailyNet.toFixed(2)}.${business.entries.length ? ' ' + business.entries.slice(0, 3).join(' · ') : ''}`);
+      tell(`Yeni gün başladı. Kira +₺${dailyRent.toFixed(2)}, gün içi işletme satışları kasaya işlendi, yaşam ve bakım -₺${(DAILY_LIVING_COST + maintenance).toFixed(2)}, işletme gideri -₺${business.costs.toFixed(2)}; net ₺${dailyNet.toFixed(2)}.${business.entries.length ? ' ' + business.entries.slice(0, 3).join(' · ') : ''}`);
       return;
     }
     const isWorkingHour = hour >= 8 && hour < 19;
     let net = 0;
     let detail = '';
+    // Her işletme, seçili meslekten bağımsız olarak kendi stokundan mesai saatlerinde satış yapar.
+    // Satış hasılatı anında kasaya ve stok düşüşüne yansır; gün sonunda ikinci kez eklenmez.
+    const hourlySales = isWorkingHour ? processHourlyBusinessSales() : { revenue: 0, entries: [] };
+    net += hourlySales.revenue;
+    if (hourlySales.entries.length) {
+      detail = 'İşletme satışları: ' + hourlySales.entries.join(' · ');
+    }
     if (work && isWorkingHour) {
       const variance = 0.82 + Math.random() * 0.36;
       if (professionId === 'amele') {
@@ -880,7 +887,7 @@ function App() {
     } else if (work && !isWorkingHour) {
       detail = 'Bu saatte iş bulmak zor. Dinlenmeyi veya saati ilerletmeyi seçtin.';
     }
-    // İşletmeler günlük kapanışta settleDailyBusinesses ile hesaplanır; burada tekrar satış yazılmaz.
+    // İşletme satışları mesai saatlerinde her saat ayrı ayrı kasaya işlenir.
     setCash(v => Math.max(0, Math.round((v + net) * 100) / 100));
     const nextHour = (hour + 1) % 24;
     setHour(nextHour);
@@ -889,34 +896,47 @@ function App() {
     else tell(`${String(hour).padStart(2, '0')}:00 — Sokak sakin. Bu saatte düzenli bir gelir elde etmedin.`);
   };
 
-  const settleDailyBusinesses = () => {
+  const processHourlyBusinessSales = () => {
     let revenue = 0;
-    let operatingCosts = 0;
     const stockChanges = {};
     const entries = [];
     owned.forEach(propertyId => {
       if (rented.includes(propertyId)) return;
       const property = properties.find(item => item.id === propertyId);
       if (!property || !['İşletme', 'Atölye', 'Ticaret'].includes(property.type)) return;
-      const planId = businessPlans[propertyId];
-      const product = (tradeCatalog[propertyId] || []).find(item => item.id === planId);
+      const product = (tradeCatalog[propertyId] || []).find(item => item.id === businessPlans[propertyId]);
       if (!product || product.price <= 0) return;
       const stock = Math.max(0, Number(stockByProperty[propertyId]) || 0);
-      const dailyCost = property.type === 'İşletme' ? 4.5 : property.type === 'Atölye' ? 3.5 : 2.5;
-      operatingCosts += dailyCost;
-      if (stock <= 0) {
-        entries.push(property.name + ': stok bitti, günlük gider -₺' + dailyCost.toFixed(2));
-        return;
-      }
-      const sold = Math.min(stock, 2 + Math.floor(Math.random() * 3));
+      if (stock <= 0 || Math.random() > 0.34) return;
+      const sold = Math.min(stock, 1 + (Math.random() > 0.72 ? 1 : 0));
       const multiplier = property.type === 'İşletme' ? 2.1 : property.type === 'Atölye' ? 2.0 : 1.7;
       const takings = Math.round(sold * product.price * multiplier * 100) / 100;
       revenue += takings;
       stockChanges[propertyId] = stock - sold;
-      entries.push(property.name + ': ' + sold + ' adet ' + product.name + ', hasılat +₺' + takings.toFixed(2) + ', gider -₺' + dailyCost.toFixed(2));
+      entries.push(property.name + ': ' + sold + ' adet ' + product.name + ' satıldı (+₺' + takings.toFixed(2) + ')');
     });
     if (Object.keys(stockChanges).length) setStockByProperty(old => ({ ...old, ...stockChanges }));
-    return { revenue: Math.round(revenue * 100) / 100, costs: Math.round(operatingCosts * 100) / 100, entries };
+    return { revenue: Math.round(revenue * 100) / 100, entries };
+  };
+
+  const settleDailyBusinesses = () => {
+    let operatingCosts = 0;
+    const entries = [];
+    owned.forEach(propertyId => {
+      if (rented.includes(propertyId)) return;
+      const property = properties.find(item => item.id === propertyId);
+      if (!property || !['İşletme', 'Atölye', 'Ticaret'].includes(property.type)) return;
+      const product = (tradeCatalog[propertyId] || []).find(item => item.id === businessPlans[propertyId]);
+      if (!product || product.price <= 0) return;
+      const dailyCost = property.type === 'İşletme' ? 4.5 : property.type === 'Atölye' ? 3.5 : 2.5;
+      operatingCosts += dailyCost;
+      if ((Number(stockByProperty[propertyId]) || 0) <= 0) {
+        entries.push(property.name + ': stok bitti, günlük gider -₺' + dailyCost.toFixed(2));
+      } else {
+        entries.push(property.name + ': günlük işletme gideri -₺' + dailyCost.toFixed(2));
+      }
+    });
+    return { revenue: 0, costs: Math.round(operatingCosts * 100) / 100, entries };
   };
 
   const sleepUntilMorning = () => {
@@ -938,7 +958,7 @@ function App() {
     if (nextMonthRaw > 12) setYear(v => v + 1);
     setHour(6);
     setWorkHours(0);
-    tell(`Gün kapandı. Kira +₺${rent.toFixed(2)}, işletme hasılatı +₺${business.revenue.toFixed(2)}, yaşam ve bakım -₺${(DAILY_LIVING_COST + maintenance).toFixed(2)}, işletme giderleri -₺${business.costs.toFixed(2)}. Net: ₺${net.toFixed(2)}.${business.entries.length ? ' ' + business.entries.slice(0, 3).join(' · ') : ''}`);
+    tell(`Gün kapandı. Kira +₺${rent.toFixed(2)}, gün içi işletme satışları kasaya işlendi, yaşam ve bakım -₺${(DAILY_LIVING_COST + maintenance).toFixed(2)}, işletme giderleri -₺${business.costs.toFixed(2)}. Net: ₺${net.toFixed(2)}.${business.entries.length ? ' ' + business.entries.slice(0, 3).join(' · ') : ''}`);
   };
 
   const selectBusinessPlan = (plan) => {
