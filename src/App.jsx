@@ -673,7 +673,7 @@ function App() {
     19: [{ id: 'yemek', name: 'Günün yemeği', cost: 16, price: 5.5, units: 5 }, { id: 'corba', name: 'Çorba ve ekmek', cost: 10, price: 3.5, units: 5 }],
     20: [{ id: 'demir', name: 'Metal eşya', cost: 20, price: 7, units: 4, production: true }, { id: 'tamirat', name: 'Demir tamiratı', cost: 12, price: 4.5, units: 4 }]
   };
-  const profession = professionOptions.find(p => p.id === professionId) || professionOptions[5];
+  const profession = professionOptions.find(p => p.id === professionId) || professionOptions.find(p => p.id === 'amele');
   const active = properties.find(p => p.id === selected) || properties[0];
   const portfolio = properties.filter(p => owned.includes(p.id));
   const rentedProperties = portfolio.filter(p => rented.includes(p.id));
@@ -1015,7 +1015,7 @@ function App() {
             {!ownerByProperty[active.id] && !owned.includes(active.id) && <button onClick={buy}>SATIN AL</button>}
             {ownerByProperty[active.id]?.playerId === playerId && owned.includes(active.id) && <button onClick={toggleRent}>{rented.includes(active.id) ? 'KİRACILIĞI BİTİR' : 'KİRAYA VER'}</button>}
             {ownerByProperty[active.id] && ownerByProperty[active.id].playerId !== playerId && <button onClick={sendOffer}>SATIN ALMA TEKLİFİ</button>}
-            {owned.includes(active.id) && !rented.includes(active.id) && <button onClick={toggleShop}>{shopOpen ? 'İŞLETMEYİ DURDUR' : 'İŞLETME AYARLARI'}</button>}
+            {owned.includes(active.id) && !rented.includes(active.id) && (tradeCatalog[active.id] || []).some(item => item.price > 0) && <span className="property-note">Ürün ve stok ayarlandığında işletme otomatik çalışır.</span>}
           </div>
         </div>} />
         <div className="map-legend"><span><i className="legend-dot available" /> SATILIK MÜLK</span><span><i className="legend-dot owned" /> SENİN MÜLKÜN</span><span className="map-hint">SÜRÜKLE: DÖNDÜR · KAYDIR: YAKINLAŞ · BİNAYA TIKLA</span></div>
@@ -1081,10 +1081,10 @@ function App() {
           </div>}
 
           {owned.includes(active.id) && (rented.includes(active.id)
-            ? <div className="property-note"><span>i</span> Bu mülk kirada. İşletmek için önce kiracılığı sona erdir.</div>
-            : selectedVenueCompatible
-              ? <button className="operate-button" onClick={toggleShop}>{shopOpen ? 'İŞLETMENİ KAPAT' : 'DÜKKANI İŞLETMEYE AÇ'}</button>
-              : <div className="property-note"><span>i</span> Bu mekanı işletmek için üstteki meslek seçiminden uygun bir iş seç.</div> )}
+            ? <div className="property-note"><span>i</span> Bu mülk kirada. İşletme satışları kiracılık bitene kadar durur.</div>
+            : (tradeCatalog[active.id] || []).some(item => item.price > 0)
+              ? <div className="property-note"><span>i</span> İşletme otomatik çalışır; ürün grubu seçip stok tedarik etmen yeterli.</div>
+              : <div className="property-note"><span>i</span> Bu mülk şu an kira geliri veya başka kullanım için değerlendirilebilir.</div> )}
           <div className="property-note"><span>i</span> Mülk fiyatları şimdilik oyun dengesi için belirlenmiştir.</div>
         </section>
 
