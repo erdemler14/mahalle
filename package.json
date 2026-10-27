@@ -13,7 +13,8 @@
     "vite": "latest",
     "react": "latest",
     "react-dom": "latest",
-    "three": "latest"
+    "three": "latest",
+    "peerjs": "^1.5.5"
   },
   "devDependencies": {}
 }
