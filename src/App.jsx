@@ -891,6 +891,7 @@ function App() {
   const [wineBottles, setWineBottles] = useState(() => Number.isInteger(saved.wineBottles) && saved.wineBottles >= 0 ? saved.wineBottles : 0);
   const [businessPlans, setBusinessPlans] = useState(() => saved.businessPlans && typeof saved.businessPlans === 'object' ? saved.businessPlans : {});
   const [stockByProperty, setStockByProperty] = useState(() => saved.stockByProperty && typeof saved.stockByProperty === 'object' ? saved.stockByProperty : {});
+  const [businessStats, setBusinessStats] = useState(() => saved.businessStats && typeof saved.businessStats === 'object' ? saved.businessStats : {});
   const [multiplayerRole, setMultiplayerRole] = useState('solo');
   const [multiplayerStatus, setMultiplayerStatus] = useState('Solo oyun');
   const [roomCode, setRoomCode] = useState('');
@@ -1026,12 +1027,12 @@ function App() {
       }
       window.localStorage.setItem(SAVE_KEY, JSON.stringify({
         version: 2, playerName, steps, cash, owned, rented, selected, showPortfolio, professionId, marketValues,
-        hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, log: log.slice(0, 5)
+        hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, log: log.slice(0, 5)
       }));
     } catch {
       // The game remains playable if browser storage is disabled or full.
     }
-  }, [playerName, steps, cash, owned, rented, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, log]);
+  }, [playerName, steps, cash, owned, rented, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, log]);
 
   const tell = (text) => {
     setNotice(text);
@@ -1067,7 +1068,17 @@ function App() {
       return;
     }
     const isWorkingHour = hour >= 8 && hour < 19;
-    const hourlySales = isWorkingHour ? processHourlyBusinessSales() : { revenue: 0, entries: [] };
+    const hourlySales = isWorkingHour ? processHourlyBusinessSales() : { revenue: 0, entries: [], salesByProperty: {} };
+    if (Object.keys(hourlySales.salesByProperty).length) {
+      setBusinessStats(old => {
+        const next = { ...old };
+        Object.entries(hourlySales.salesByProperty).forEach(([id, sale]) => {
+          const previous = next[id] || { unitsSold: 0, revenue: 0, stockInvested: 0 };
+          next[id] = { ...previous, unitsSold: previous.unitsSold + sale.units, revenue: Math.round((previous.revenue + sale.revenue) * 100) / 100 };
+        });
+        return next;
+      });
+    }
     let laborNet = 0;
     let detail = '';
     if (hourlySales.entries.length) {
@@ -1107,6 +1118,7 @@ function App() {
     let revenue = 0;
     const stockChanges = {};
     const entries = [];
+    const salesByProperty = {};
     owned.forEach(propertyId => {
       if (rented.includes(propertyId)) return;
       const property = properties.find(item => item.id === propertyId);
@@ -1119,11 +1131,12 @@ function App() {
       const multiplier = property.type === 'İşletme' ? 2.1 : property.type === 'Atölye' ? 2.0 : 1.7;
       const takings = Math.round(sold * product.price * multiplier * 100) / 100;
       revenue += takings;
+      salesByProperty[propertyId] = { units: sold, revenue: takings };
       stockChanges[propertyId] = stock - sold;
       entries.push(property.name + ': ' + sold + ' adet ' + product.name + ' satıldı (+₺' + takings.toFixed(2) + ')');
     });
     if (Object.keys(stockChanges).length) setStockByProperty(old => ({ ...old, ...stockChanges }));
-    return { revenue: Math.round(revenue * 100) / 100, entries };
+    return { revenue: Math.round(revenue * 100) / 100, entries, salesByProperty };
   };
 
   const settleDailyBusinesses = () => {
@@ -1202,6 +1215,7 @@ function App() {
     if (!item || item.units <= 0) { tell('Bu mülk için henüz tedarik edilebilir ürün grubu yok.'); return; }
     if (cash < item.cost) { tell(`İlk stok için ₺${item.cost} gerekiyor.`); return; }
     setCash(v => Math.round((v - item.cost) * 100) / 100);
+    setBusinessStats(old => { const previous = old[active.id] || { unitsSold: 0, revenue: 0, stockInvested: 0 }; return { ...old, [active.id]: { ...previous, stockInvested: Math.round((previous.stockInvested + item.cost) * 100) / 100 } }; });
     setStockByProperty(old => ({ ...old, [active.id]: (old[active.id] || 0) + item.units }));
     tell(`${item.production ? 'Üretim tamamlandı' : 'Tedarik tamamlandı'}: ${item.name}, ${item.units} adet stok, maliyet ₺${item.cost}.`);
   };
@@ -1229,6 +1243,7 @@ function App() {
     setRented(v => v.filter(id => id !== property.id));
     setBusinessPlans(v => { const next = { ...v }; delete next[property.id]; return next; });
     setStockByProperty(v => { const next = { ...v }; delete next[property.id]; return next; });
+    setBusinessStats(v => { const next = { ...v }; delete next[property.id]; return next; });
     const nextOwners = { ...ownerByProperty };
     delete nextOwners[property.id];
     publishOwners(nextOwners);
@@ -1553,6 +1568,7 @@ function App() {
               {(tradeCatalog[active.id] || []).map(item => <option key={item.id} value={item.id}>{item.name} · birim maliyet ₺{(item.units > 0 ? item.cost / item.units : 0).toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} / satış ₺{item.price.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</option>)}
             </select>
             {selectedVenueCompatible && <div className="quick-work-panel"><div><span className="quick-work-kicker">KENDİN ÇALIŞ</span><strong>{profession.name} · 1 saat</strong><small>Ek gelir kazan, mesai saatini ilerlet.</small></div><button className="quick-work-button" onClick={workAtSelectedBusiness} disabled={hour < 8 || hour >= 19}>ÇALIŞ <span>+₺{Math.max(0, profession.gross * 2.2 - profession.overhead * 0.18 - 0.5).toFixed(2)}</span></button></div>}
+            {(() => { const stats = businessStats[active.id] || { unitsSold: 0, revenue: 0, stockInvested: 0 }; const level = stats.unitsSold >= 35 ? 4 : stats.unitsSold >= 15 ? 3 : stats.unitsSold >= 5 ? 2 : 1; const thresholds = [0, 5, 15, 35, 60]; const nextTarget = thresholds[level]; const levelNames = ['Yeni açıldı', 'Mahalle esnafı', 'Tanıdık dükkan', 'Yerleşik işletme', 'Mahallenin gözdesi']; const ratio = level >= 4 ? 100 : Math.min(100, Math.round(stats.unitsSold / nextTarget * 100)); return <div className="mastery-panel"><div className="mastery-head"><span className="card-label">İŞLETME USTALIĞI</span><strong>SEV. {level}</strong></div><div className="mastery-name">{levelNames[level - 1]}</div><div className="mastery-meter"><span style={{width: ratio + '%'}} /></div><div className="mastery-foot"><span>{stats.unitsSold} ürün satıldı</span><span>{level >= 4 ? 'Ustalık seviyesi' : nextTarget + ' satışa ilerle'}</span></div><div className="mastery-stats"><div><span>Toplam hasılat</span><strong>₺{stats.revenue.toLocaleString('tr-TR', {maximumFractionDigits: 2})}</strong></div><div><span>Stok yatırımı</span><strong>₺{stats.stockInvested.toLocaleString('tr-TR', {maximumFractionDigits: 2})}</strong></div><div><span>Hasılat − stok</span><strong className={stats.revenue - stats.stockInvested >= 0 ? 'mastery-positive' : 'mastery-negative'}>₺{(stats.revenue - stats.stockInvested).toLocaleString('tr-TR', {maximumFractionDigits: 2})}</strong></div></div><p className="mastery-note">Ustalık satılan ürünlerle artar. Hasılat − stok, kira ve günlük işletme giderleri düşülmeden önceki farktır.</p></div>; })()}
             <div className="stock-line"><span>Mevcut stok</span><strong>{stockByProperty[active.id] || 0} adet</strong></div>
             <div className="stock-line"><span>Parti alış maliyeti</span><strong>{(() => { const item = (tradeCatalog[active.id] || []).find(product => product.id === businessPlans[active.id]); return item ? `₺${item.cost.toLocaleString('tr-TR')} · ${item.units} adet` : '₺0'; })()}</strong></div>
             <div className="stock-line"><span>Birim maliyet / satış</span><strong>{(() => { const item = (tradeCatalog[active.id] || []).find(product => product.id === businessPlans[active.id]); return item && item.units > 0 ? `₺${(item.cost / item.units).toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} / ₺${item.price.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : '—'; })()}</strong></div>
