@@ -194,6 +194,25 @@ function CityScene({ selected, owned, onSelect, hour }) {
         bayCap.position.set(0, bayY + 0.39, d / 2 + 0.22); group.add(bayCap);
       }
 
+      // Shallow iron balconies on larger apartment and commercial facades.
+      if ([2, 4, 8, 10].includes(p.id)) {
+        const balconyY = floorHeight * 1.72;
+        const balconyW = w * (p.id === 10 ? 0.72 : 0.58);
+        const ironRail = new THREE.MeshStandardMaterial({ color: '#343c3b', roughness: 0.72, metalness: 0.35 });
+        const stoneBalcony = new THREE.Mesh(new THREE.BoxGeometry(balconyW, 0.07, 0.42), trimMat);
+        stoneBalcony.position.set(0, balconyY - 0.12, d / 2 + 0.2); group.add(stoneBalcony);
+        const topRail = new THREE.Mesh(new THREE.BoxGeometry(balconyW, 0.045, 0.045), ironRail);
+        topRail.position.set(0, balconyY + 0.18, d / 2 + 0.4); group.add(topRail);
+        for (let rail = 0; rail <= 6; rail++) {
+          const post = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.29, 0.035), ironRail);
+          post.position.set(-balconyW / 2 + rail * balconyW / 6, balconyY + 0.02, d / 2 + 0.4); group.add(post);
+        }
+        for (const side of [-1, 1]) {
+          const returnRail = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.27, 0.32), ironRail);
+          returnRail.position.set(side * balconyW / 2, balconyY + 0.02, d / 2 + 0.24); group.add(returnRail);
+        }
+      }
+
       // Ground-floor shopfronts: timber frames, deep display windows, a recessed door and striped awning.
       if (isShopfront) {
         const shopGlass = new THREE.MeshStandardMaterial({ color: p.id === 7 ? '#6f493d' : '#879a98', roughness: 0.35, metalness: 0.08 });
