@@ -2,11 +2,18 @@ import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 
 const properties = [
-  { id: 1, name: 'Galata’da küçük dükkan', type: 'Ticaret', price: 420, rent: 32, x: -4.2, z: -1.1, color: '#d9c8ad', floors: 3, owned: false },
-  { id: 2, name: 'Asmalımescit apartmanı', type: 'Konut', price: 860, rent: 58, x: 0, z: -3.2, color: '#c6b8a4', floors: 4, owned: false },
-  { id: 3, name: 'Arka sokakta depo', type: 'Depo', price: 290, rent: 24, x: 4.1, z: -0.7, color: '#c7c0b3', floors: 2, owned: false },
-  { id: 4, name: 'Cadde üzeri han', type: 'Ticaret', price: 1250, rent: 94, x: -2.4, z: 4.1, color: '#d5c4a8', floors: 4, owned: false },
-  { id: 5, name: 'Meydan evi', type: 'Konut', price: 690, rent: 46, x: 3.2, z: 4.2, color: '#d4cbb9', floors: 3, owned: false }
+  { id: 1, name: 'Galata’da küçük dükkan', type: 'Ticaret', price: 420, rent: 32, x: -4.2, z: -1.1, color: '#d9c8ad', floors: 3, style: 'Galata taş cephesi' },
+  { id: 2, name: 'Asmalımescit apartmanı', type: 'Konut', price: 860, rent: 58, x: 0, z: -3.2, color: '#c6b8a4', floors: 4, style: 'Cumba ve yüksek tavan' },
+  { id: 3, name: 'Arka sokakta depo', type: 'Depo', price: 290, rent: 24, x: 4.1, z: -0.7, color: '#c7c0b3', floors: 2, style: 'Sade taş yapı' },
+  { id: 4, name: 'Cadde üzeri han', type: 'Ticaret', price: 1250, rent: 94, x: -2.4, z: 4.1, color: '#d5c4a8', floors: 4, style: 'Ticaret hanı' },
+  { id: 5, name: 'Meydan evi', type: 'Konut', price: 690, rent: 46, x: 3.2, z: 4.2, color: '#d4cbb9', floors: 3, style: 'Dar cepheli şehir evi' },
+  { id: 6, name: 'Eski Rum evi', type: 'Konut', price: 740, rent: 49, x: -7.2, z: -5.2, color: '#c9b6a2', floors: 3, style: 'Ahşap cumba' },
+  { id: 7, name: 'Şarap ve erzak dükkanı', type: 'Ticaret', price: 510, rent: 38, x: 7.0, z: -5.0, color: '#d8cbb4', floors: 3, style: 'Zemin kat dükkan' },
+  { id: 8, name: 'Tünel yakınında apartman', type: 'Konut', price: 1120, rent: 76, x: -7.4, z: 2.8, color: '#c7c2b5', floors: 4, style: 'Geç Osmanlı apartmanı' },
+  { id: 9, name: 'Matbaa atölyesi', type: 'Atölye', price: 620, rent: 45, x: 7.2, z: 2.7, color: '#cbbca6', floors: 2, style: 'Zanaat atölyesi' },
+  { id: 10, name: 'İstiklal üzerinde mağaza', type: 'Ticaret', price: 1480, rent: 108, x: -5.6, z: 7.4, color: '#d7c8b0', floors: 4, style: 'Süslü ticaret cephesi' },
+  { id: 11, name: 'Avlulu aile evi', type: 'Konut', price: 570, rent: 35, x: 0.1, z: 8.0, color: '#d0c3af', floors: 2, style: 'İç avlulu konut' },
+  { id: 12, name: 'Küçük kahvehane', type: 'İşletme', price: 480, rent: 62, x: 5.5, z: 7.5, color: '#bfae98', floors: 2, style: 'Sokak kahvehanesi' }
 ];
 
 function CityScene({ selected, owned, onSelect }) {
@@ -70,8 +77,8 @@ function CityScene({ selected, owned, onSelect }) {
     const buildingMeshes = [];
     const addBuilding = (p, idx, isOwned) => {
       const group = new THREE.Group();
-      const w = idx === 3 ? 2.7 : 2.25;
-      const d = idx === 1 ? 2.4 : 2.05;
+      const w = idx === 3 || idx === 9 ? 2.7 : 2.05;
+      const d = idx === 1 ? 2.4 : 1.9;
       const h = p.floors * 0.88;
       const mat = new THREE.MeshStandardMaterial({ color: isOwned ? '#a9b6a4' : p.color, roughness: 0.92 });
       const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
@@ -85,6 +92,21 @@ function CityScene({ selected, owned, onSelect }) {
       roof.castShadow = true;
       group.add(roof);
 
+      // Subtle cornice and pilasters inspired by late Ottoman / early 20th-century facades.
+      const trimMat = new THREE.MeshStandardMaterial({ color: '#eee3d0', roughness: 0.9 });
+      const cornice = new THREE.Mesh(new THREE.BoxGeometry(w + 0.2, 0.09, d + 0.16), trimMat);
+      cornice.position.y = h - 0.12; group.add(cornice);
+      for (const edge of [-1, 1]) {
+        const pilaster = new THREE.Mesh(new THREE.BoxGeometry(0.09, h - 0.12, 0.07), trimMat);
+        pilaster.position.set(edge * (w / 2 - 0.12), h / 2, d / 2 + 0.045); group.add(pilaster);
+      }
+      if (p.style.toLowerCase().includes('cumba')) {
+        const bay = new THREE.Mesh(new THREE.BoxGeometry(w * 0.68, 0.62, 0.52), mat);
+        bay.position.set(0, h * 0.67, d / 2 + 0.22); bay.castShadow = true; group.add(bay);
+        const bayCap = new THREE.Mesh(new THREE.BoxGeometry(w * 0.76, 0.08, 0.62), trimMat);
+        bayCap.position.set(0, h * 0.67 + 0.34, d / 2 + 0.22); group.add(bayCap);
+      }
+
       const windowMat = new THREE.MeshStandardMaterial({ color: '#65777a', roughness: 0.55, metalness: 0.05 });
       for (let floor = 0; floor < p.floors; floor++) {
         for (let col = 0; col < 2; col++) {
@@ -94,6 +116,8 @@ function CityScene({ selected, owned, onSelect }) {
           const frame = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.055, 0.05), new THREE.MeshStandardMaterial({ color: '#f0e7d5' }));
           frame.position.set((col - 0.5) * 0.86, 0.48 + floor * 0.88, d / 2 + 0.045);
           group.add(frame);
+          const sill = new THREE.Mesh(new THREE.BoxGeometry(0.43, 0.06, 0.08), trimMat);
+          sill.position.set((col - 0.5) * 0.86, 0.25 + floor * 0.88, d / 2 + 0.05); group.add(sill);
         }
       }
       const door = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.76, 0.06), new THREE.MeshStandardMaterial({ color: '#66574a' }));
@@ -177,31 +201,29 @@ function CityScene({ selected, owned, onSelect }) {
 }
 
 function App() {
-  const [year, setYear] = useState(1923);
+  const [steps, setSteps] = useState(0);
   const [cash, setCash] = useState(1800);
   const [owned, setOwned] = useState([]);
   const [selected, setSelected] = useState(1);
   const [notice, setNotice] = useState('');
-  const [speed, setSpeed] = useState(false);
   const [showPortfolio, setShowPortfolio] = useState(false);
   const active = properties.find(p => p.id === selected) || properties[0];
   const portfolio = properties.filter(p => owned.includes(p.id));
   const totalRent = portfolio.reduce((sum, p) => sum + p.rent, 0);
 
-  const advanceYear = () => {
-    const next = year + 1;
-    const income = totalRent;
-    const inflation = 1 + (next - 1923) * 0.018;
-    setCash(v => v + income);
-    setYear(next);
-    setNotice(income ? `${next} yılı başladı. ${income} ₺ kira geliri hesabına eklendi.` : `${next} yılı başladı. Henüz kira getiren bir mülkün yok.`);
-    setTimeout(() => setNotice(''), 3800);
+  const runBusiness = () => {
+    const earnings = 35 + Math.min(owned.length * 12, 72);
+    setCash(v => v + earnings);
+    setSteps(v => v + 1);
+    setNotice(`Mahalledeki işlerinden ${earnings} ₺ kazandın.`);
+    setTimeout(() => setNotice(''), 3000);
   };
   const buy = () => {
     if (owned.includes(active.id)) { setNotice('Bu mülk zaten portföyünde.'); return; }
     if (cash < active.price) { setNotice('Bu mülk için yeterli paran yok.'); return; }
     setCash(v => v - active.price);
     setOwned(v => [...v, active.id]);
+    setSteps(v => v + 1);
     setNotice(`${active.name} portföyüne eklendi.`);
     setTimeout(() => setNotice(''), 3000);
   };
@@ -216,19 +238,19 @@ function App() {
     <section className="intro-row">
       <div>
         <div className="eyebrow">BÖLÜM 01 <span>/</span> İSTANBUL</div>
-        <h1>Beyoğlu, <span>{year}</span></h1>
+        <h1>Beyoğlu, <span>1923</span></h1>
         <p className="intro-copy">Bir mahalle. Bir başlangıç. Kuracağın bir hayat.</p>
       </div>
-      <div className="date-control">
-        <div className="date-label">TAKVİM</div>
-        <div className="year-display">{year}</div>
-        <button className="advance-button" onClick={advanceYear}>Yılı ilerlet <span>↗</span></button>
+      <div className="progress-control">
+        <div className="date-label">MAHALLEDEKİ İLERLEMEN</div>
+        <div className="year-display">{steps} <small>adım</small></div>
+        <button className="advance-button" onClick={runBusiness}>İşlerini yürüt <span>↗</span></button>
       </div>
     </section>
 
     <section className="game-layout">
       <div className="world-panel">
-        <div className="world-topline"><span><span className="live-dot" /> BEYOĞLU MERKEZİ</span><span>3D TASLAK <i>·</i> {year}</span></div>
+        <div className="world-topline"><span><span className="live-dot" /> BEYOĞLU MERKEZİ</span><span>3D MAHALLE <i>·</i> 1923</span></div>
         <CityScene selected={selected} owned={owned} onSelect={setSelected} />
         <div className="map-legend"><span><i className="legend-dot available" /> Satılık mülk</span><span><i className="legend-dot owned" /> Senin mülkün</span><span className="map-hint">Binaları seçerek incele</span></div>
         <div className="world-caption"><span>İSTANBUL / BEYOĞLU</span><span>41° 01′ K <i>·</i> 28° 58′ D</span></div>
@@ -246,7 +268,7 @@ function App() {
           <div className="section-heading"><span>MÜLKÜ İNCELE</span><span className="count-tag">0{active.id}</span></div>
           <div className="property-type">{active.type.toUpperCase()}</div>
           <h2>{active.name}</h2>
-          <p className="property-description">Beyoğlu'nun gelişen sokaklarında, gelecekte değer kazanabilecek bir taşınmaz.</p>
+          <p className="property-description">{active.style}. Mahallenin değişen hayatında kendine yer açabilecek bir taşınmaz.</p>
           <div className="property-stats">
             <div><span>Satış bedeli</span><strong>₺{active.price.toLocaleString('tr-TR')}</strong></div>
             <div><span>Yıllık kira</span><strong>₺{active.rent.toLocaleString('tr-TR')}</strong></div>
@@ -256,7 +278,7 @@ function App() {
           <button className={owned.includes(active.id) ? 'buy-button is-owned' : 'buy-button'} onClick={buy} disabled={owned.includes(active.id)}>
             {owned.includes(active.id) ? 'Portföyünde' : 'Mülkü satın al'} <span>{owned.includes(active.id) ? '✓' : '↗'}</span>
           </button>
-          <div className="property-note"><span>i</span> Satın aldığın mülkler her yıl kira geliri sağlar.</div>
+          <div className="property-note"><span>i</span> Mülk edin, işletmeni büyüt ve kazancını yeniden yatır.</div>
         </section>
 
         <section className="portfolio-mini">
@@ -270,7 +292,7 @@ function App() {
       </aside>
     </section>
 
-    <footer className="footer"><span>MAHALLE <i>©</i> 2026</span><span>GEÇMİŞİN İÇİNDE BİR GELECEK KUR.</span><span>PROTOTİP 0.1.0</span></footer>
+    <footer className="footer"><span>MAHALLE <i>©</i> 1923</span><span>GEÇMİŞİN İÇİNDE BİR GELECEK KUR.</span><span>PROTOTİP 0.2.0</span></footer>
     {notice && <div className="toast" role="status">{notice}</div>}
   </main>;
 }
