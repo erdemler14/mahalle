@@ -155,9 +155,75 @@ function CityScene({ selected, owned, onSelect }) {
     tram.position.set(-0.1, 0, -7.4);
     scene.add(tram);
 
+    // Street furniture: period-style lamps, small trees and pavement edges.
+    const ironMat = new THREE.MeshStandardMaterial({ color: '#4f554f', roughness: 0.8 });
+    const lampGlass = new THREE.MeshStandardMaterial({ color: '#e6dfc9', emissive: '#b8a77b', emissiveIntensity: 0.28 });
+    for (const z of [-8, -3.5, 3.5, 8]) {
+      for (const side of [-1, 1]) {
+        const lamp = new THREE.Group();
+        const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.07, 1.65, 8), ironMat);
+        pole.position.y = 0.82; lamp.add(pole);
+        const arm = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.05, 0.05), ironMat);
+        arm.position.set(side * 0.13, 1.55, 0); lamp.add(arm);
+        const lantern = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.22, 0.2), lampGlass);
+        lantern.position.set(side * 0.27, 1.42, 0); lamp.add(lantern);
+        lamp.position.set(side * 3.65, 0, z);
+        scene.add(lamp);
+      }
+    }
+    const trunkMat = new THREE.MeshStandardMaterial({ color: '#7b6b57', roughness: 1 });
+    const leafMat = new THREE.MeshStandardMaterial({ color: '#7e8c70', roughness: 1 });
+    for (const [x, z] of [[-5.1,-7.2],[5.2,-7.1],[-5.4,6.2],[5.3,6.1]]) {
+      const tree = new THREE.Group();
+      const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.17, 1.0, 7), trunkMat);
+      trunk.position.y = 0.5; tree.add(trunk);
+      const crown = new THREE.Mesh(new THREE.IcosahedronGeometry(0.62, 1), leafMat);
+      crown.position.y = 1.38; crown.scale.set(1, 1.15, 0.95); crown.castShadow = true; tree.add(crown);
+      tree.position.set(x, 0, z); scene.add(tree);
+    }
+
     const raycaster = new THREE.Raycaster();
     const pointer = new THREE.Vector2();
+    const target = new THREE.Vector3(0, 0, 0);
+    let dragging = false;
+    let moved = false;
+    let lastX = 0;
+    let lastY = 0;
+    let theta = Math.atan2(camera.position.x, camera.position.z);
+    let radius = camera.position.distanceTo(target);
+    let phi = Math.acos(camera.position.y / radius);
+    const placeCamera = () => {
+      phi = Math.max(0.35, Math.min(1.18, phi));
+      radius = Math.max(12, Math.min(30, radius));
+      camera.position.set(
+        target.x + radius * Math.sin(phi) * Math.sin(theta),
+        target.y + radius * Math.cos(phi),
+        target.z + radius * Math.sin(phi) * Math.cos(theta)
+      );
+      camera.lookAt(target);
+    };
+    const onPointerDown = (event) => {
+      dragging = true; moved = false; lastX = event.clientX; lastY = event.clientY;
+      renderer.domElement.setPointerCapture?.(event.pointerId);
+    };
+    const onPointerMove = (event) => {
+      if (!dragging) return;
+      const dx = event.clientX - lastX;
+      const dy = event.clientY - lastY;
+      if (Math.abs(dx) + Math.abs(dy) > 3) moved = true;
+      theta -= dx * 0.006;
+      phi += dy * 0.004;
+      lastX = event.clientX; lastY = event.clientY;
+      placeCamera();
+    };
+    const onPointerUp = () => { dragging = false; };
+    const onWheel = (event) => {
+      event.preventDefault();
+      radius += event.deltaY * 0.018;
+      placeCamera();
+    };
     const onClick = (event) => {
+      if (moved) return;
       const rect = renderer.domElement.getBoundingClientRect();
       pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
       pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
@@ -169,8 +235,13 @@ function CityScene({ selected, owned, onSelect }) {
         if (obj?.userData.propertyId != null) { selectRef.current(obj.userData.propertyId); break; }
       }
     };
+    renderer.domElement.addEventListener('pointerdown', onPointerDown);
+    renderer.domElement.addEventListener('pointermove', onPointerMove);
+    renderer.domElement.addEventListener('pointerup', onPointerUp);
+    renderer.domElement.addEventListener('pointercancel', onPointerUp);
     renderer.domElement.addEventListener('click', onClick);
-    renderer.domElement.style.cursor = 'pointer';
+    renderer.domElement.addEventListener('wheel', onWheel, { passive: false });
+    renderer.domElement.style.cursor = 'grab';
 
     let frame;
     const animate = () => {
@@ -191,6 +262,11 @@ function CityScene({ selected, owned, onSelect }) {
       cancelAnimationFrame(frame);
       observer.disconnect();
       renderer.domElement.removeEventListener('click', onClick);
+      renderer.domElement.removeEventListener('pointerdown', onPointerDown);
+      renderer.domElement.removeEventListener('pointermove', onPointerMove);
+      renderer.domElement.removeEventListener('pointerup', onPointerUp);
+      renderer.domElement.removeEventListener('pointercancel', onPointerUp);
+      renderer.domElement.removeEventListener('wheel', onWheel);
       scene.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) { (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => m.dispose()); } });
       renderer.dispose();
       renderer.domElement.remove();
@@ -252,7 +328,7 @@ function App() {
       <div className="world-panel">
         <div className="world-topline"><span><span className="live-dot" /> BEYOĞLU MERKEZİ</span><span>3D MAHALLE <i>·</i> 1923</span></div>
         <CityScene selected={selected} owned={owned} onSelect={setSelected} />
-        <div className="map-legend"><span><i className="legend-dot available" /> Satılık mülk</span><span><i className="legend-dot owned" /> Senin mülkün</span><span className="map-hint">Binaları seçerek incele</span></div>
+        <div className="map-legend"><span><i className="legend-dot available" /> Satılık mülk</span><span><i className="legend-dot owned" /> Senin mülkün</span><span className="map-hint">Sürükle: döndür · Kaydır: yakınlaş · Binaya tıkla</span></div>
         <div className="world-caption"><span>İSTANBUL / BEYOĞLU</span><span>41° 01′ K <i>·</i> 28° 58′ D</span></div>
       </div>
 
