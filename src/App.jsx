@@ -821,6 +821,22 @@ function App() {
     tell(`${active.name} satın alındı. Şimdi bu mekanın desteklediği işletme türlerinden birini seçebilirsin.`);
   };
 
+  const sellProperty = () => {
+    if (!owned.includes(active.id)) { tell('Yalnızca sahibi olduğun mülkü satabilirsin.'); return; }
+    const property = active;
+    const salePrice = Math.round(property.price * 0.9 * 100) / 100;
+    setCash(v => Math.round((v + salePrice) * 100) / 100);
+    setOwned(v => v.filter(id => id !== property.id));
+    setRented(v => v.filter(id => id !== property.id));
+    setBusinessPlans(v => { const next = { ...v }; delete next[property.id]; return next; });
+    setStockByProperty(v => { const next = { ...v }; delete next[property.id]; return next; });
+    const nextOwners = { ...ownerByProperty };
+    delete nextOwners[property.id];
+    publishOwners(nextOwners);
+    if (shopPropertyId === property.id) setShopPropertyId(null);
+    tell(`${property.name} satıldı. ₺${salePrice.toLocaleString('tr-TR')} tahsil edildi (piyasa bedelinin %90'ı).`);
+  };
+
   const toggleRent = () => {
     if (sendAction('toggleRent')) return;
     if (!owned.includes(active.id)) { tell('Kiraya verebilmek için önce bu mülkü satın almalısın.'); return; }
@@ -1083,6 +1099,7 @@ function App() {
           <div className="scene-action-buttons">
             {!ownerByProperty[active.id] && !owned.includes(active.id) && <button onClick={buy}>SATIN AL</button>}
             {ownerByProperty[active.id]?.playerId === playerId && owned.includes(active.id) && <button onClick={toggleRent}>{rented.includes(active.id) ? 'KİRACILIĞI BİTİR' : 'KİRAYA VER'}</button>}
+            {owned.includes(active.id) && <button onClick={sellProperty}>MÜLKÜ SAT · ₺{Math.round(active.price * 0.9).toLocaleString('tr-TR')}</button>}
             {ownerByProperty[active.id] && ownerByProperty[active.id].playerId !== playerId && <button onClick={sendOffer}>SATIN ALMA TEKLİFİ</button>}
             {owned.includes(active.id) && !rented.includes(active.id) && (tradeCatalog[active.id] || []).some(item => item.price > 0) && <span className="property-note">Ürün ve stok ayarlandığında işletme otomatik çalışır.</span>}
           </div>
@@ -1134,6 +1151,7 @@ function App() {
           </button>}
           {ownerByProperty[active.id] && ownerByProperty[active.id].playerId !== playerId && <button className="buy-button" onClick={sendOffer}>SATIN ALMA TEKLİFİ GÖNDER <span>↗</span></button>}
           {owned.includes(active.id) && <button className="rent-button" onClick={toggleRent}>{rented.includes(active.id) ? 'KİRACIYI ÇIKAR' : 'KİRACI BUL VE KİRAYA VER'}</button>}
+          {owned.includes(active.id) && <button className="sell-button" onClick={sellProperty}>MÜLKÜ SAT · ₺{Math.round(active.price * 0.9).toLocaleString('tr-TR')}</button>}
           {owned.includes(active.id) && !rented.includes(active.id) && (tradeCatalog[active.id] || []).some(item => item.price > 0) && <div className="business-plan">
             <div className="card-label">İŞ MODELİ · TEDARİK · STOK</div>
             <label className="business-label" htmlFor="business-plan-select">Ne satacaksın?</label>
