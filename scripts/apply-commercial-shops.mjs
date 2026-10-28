@@ -211,4 +211,15 @@ s = s.replace("      stockChanges[propertyId] = stock - sold;", "      if (!serv
 s = s.replace("      entries.push(property.name + ': ' + sold + ' adet ' + product.name + ' satıldı (+₺' + takings.toFixed(2) + ')');",
 "      entries.push(property.name + ': ' + (serviceSale ? product.name + ' hizmeti' : sold + ' adet ' + product.name) + ' satıldı (+₺' + takings.toFixed(2) + ')');");
 
+// Retail price is the actual sale price; remove the old 1.7x-2.1x hidden revenue multiplier.
+s = s.replace(
+  /      const baseMultiplier = property\.type === 'İşletme' \? 2\.1 : property\.type === 'Atölye' \? 2\.0 : 1\.7;\n      const masteryLevel = soldBefore >= 60 \? 5 : soldBefore >= 35 \? 4 : soldBefore >= 15 \? 3 : soldBefore >= 5 \? 2 : 1;\n      const masteryBonus = \(masteryLevel - 1\) \* 0\.03;\n      const multiplier = baseMultiplier \* \(1 \+ masteryBonus\);\n      const takings = Math\.round\(sold \* product\.price \* multiplier \* 100\) \/ 100;/,
+  "      const masteryLevel = soldBefore >= 60 ? 5 : soldBefore >= 35 ? 4 : soldBefore >= 15 ? 3 : soldBefore >= 5 ? 2 : 1;\\n      const masteryBonus = (masteryLevel - 1) * 0.03;\\n      const takings = Math.round(sold * product.price * (1 + masteryBonus) * 100) / 100;"
+);
+
+// The cost field is per unit. A batch purchase must pay for every unit in that batch.
+s = s.replace(
+  /    if \(cash < item\.cost\) \{ tell\(`İlk stok için ₺\$\{item\.cost\} gerekiyor\.`\); return; \}\n    setCash\(v => Math\.round\(\(v - item\.cost\) \* 100\) \/ 100\);\n    setBusinessStats\(old => \{ const previous = old\[active\.id\] \|\| \{ unitsSold: 0, revenue: 0, stockInvested: 0 \}; return \{ \.\.\.old, \[active\.id\]: \{ \.\.\.previous, stockInvested: Math\.round\(\(previous\.stockInvested \+ item\.cost\) \* 100\) \/ 100 \} \}; \}\);/s,
+  "    const batchCost = Math.round(item.cost * item.units * 100) / 100;\\n    if (cash < batchCost) { tell('İlk stok için ₺' + batchCost.toLocaleString('tr-TR') + ' gerekiyor (' + item.units + ' adet).'); return; }\\n    setCash(v => Math.round((v - batchCost) * 100) / 100);\\n    setBusinessStats(old => { const previous = old[active.id] || { unitsSold: 0, revenue: 0, stockInvested: 0 }; return { ...old, [active.id]: { ...previous, stockInvested: Math.round((previous.stockInvested + batchCost) * 100) / 100 } }; });"
+);
 fs.writeFileSync(path, s, 'utf8');
