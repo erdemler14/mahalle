@@ -563,3 +563,13 @@ button,select,input{touch-action:manipulation}
 .storage-upgrade-panel>div{flex:1 1 170px;min-width:0;overflow-wrap:anywhere}
 .storage-upgrade-panel .stock-button{width:auto;max-width:100%;white-space:normal}
 @media(max-width:520px){.shoe-workshop .stock-line>strong,.product-inventory-row>strong{max-width:100%;text-align:left}.shoe-workshop .stock-button,.shoe-product-row .stock-button,.storage-upgrade-panel .stock-button{flex:1 1 100%}}
+
+
+.material-stock-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px 12px;align-items:center;width:100%;max-width:100%;min-width:0;padding:10px 0;border-bottom:1px solid rgba(120,110,95,.2);box-sizing:border-box}
+.material-stock-head{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}
+.material-stock-head span{min-width:0;overflow-wrap:anywhere;font-size:12px}
+.material-stock-head strong{flex:0 0 auto;font-size:11px;white-space:nowrap}
+.material-stock-meter{grid-column:1/-1;width:100%;height:7px;min-width:0;overflow:hidden;border-radius:999px;background:rgba(120,110,95,.18);box-sizing:border-box}
+.material-stock-meter>span{display:block;height:100%;max-width:100%;border-radius:inherit;background:#63e6be;transition:width .25s ease}
+.material-stock-card .stock-button{grid-column:1/-1;width:auto;justify-self:start;max-width:100%;margin-top:0;white-space:normal}
+.material-stock-card .stock-button:disabled{opacity:.4;cursor:not-allowed}
