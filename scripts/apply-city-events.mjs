@@ -145,14 +145,14 @@ const soldAnchor = '      const sold = Math.min(stock, 1 + (Math.random() > 0.72
 const soldReplacement = '      const secondUnitThreshold = Math.min(0.95, 0.72 / Math.max(0.5, eventMultiplier));\n      const sold = Math.min(stock, 1 + (Math.random() > secondUnitThreshold ? 1 : 0));';
 if (s.includes(soldAnchor)) s = s.replace(soldAnchor, soldReplacement);
 
-const dailyAnchor = '      const business = settleDailyBusinesses();';
+const dailyPattern = /^(\\s*)const business = settleDailyBusinesses\\(\\);$/m;
 if (!s.includes('const cityEventMessage = advanceCityEvents();')) {
-  const occurrences = s.split(dailyAnchor).length - 1;
-  if (occurrences < 2) throw new Error('Expected both daily rollover paths.');
-  s = s.replace(dailyAnchor, '      const cityEventMessage = advanceCityEvents();\n' + dailyAnchor);
-  // The second path has different indentation.
-  s = s.replace('    const business = settleDailyBusinesses();', '    const cityEventMessage = advanceCityEvents();\n    const business = settleDailyBusinesses();');
+  const dailyMatch = s.match(dailyPattern);
+  if (!dailyMatch) throw new Error('Could not locate the daily rollover path for city events.');
+  const indent = dailyMatch[1];
+  s = s.replace(dailyPattern, indent + 'const cityEventMessage = advanceCityEvents();\\n' + dailyMatch[0]);
 }
+
 const tell1 = "      tell(`Yeni gün başladı. Kira +₺${dailyRent.toFixed(2)}, gün içi işletme satışları kasaya işlendi, yaşam ve bakım -₺${(DAILY_LIVING_COST + maintenance).toFixed(2)}, işletme gideri -₺${business.costs.toFixed(2)}; net ₺${dailyNet.toFixed(2)}.${business.entries.length ? ' ' + business.entries.slice(0, 3).join(' · ') : ''}`);";
 if (s.includes(tell1)) {
  s = s.replace(tell1, "      tell(`Yeni gün başladı. Kira +₺${dailyRent.toFixed(2)}, gün içi işletme satışları kasaya işlendi, yaşam ve bakım -₺${(DAILY_LIVING_COST + maintenance).toFixed(2)}, işletme gideri -₺${business.costs.toFixed(2)}; net ₺${dailyNet.toFixed(2)}.${business.entries.length ? ' ' + business.entries.slice(0, 3).join(' · ') : ''}${cityEventMessage ? ' ' + cityEventMessage : ''}`);");
