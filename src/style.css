@@ -700,3 +700,72 @@ body{overflow:hidden}
 .business-recipe-panel strong{color:#f0d7a0}
 .business-recipe-panel span,.business-recipe-panel small{color:#b5c1ca;overflow-wrap:anywhere}
 @media(max-width:680px){.business-material-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.business-material-card{padding:7px}.business-material-card .material-stock-head{font-size:9px}}
+
+
+/* Fix business HUD: the panel is a vertical form, not a horizontal flex row. */
+.hud-panel-business .hud-side-panel>.property-card .business-plan{
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:stretch!important;
+  justify-content:flex-start!important;
+  gap:10px;
+  width:100%;
+  min-width:0;
+  max-width:100%;
+}
+.hud-panel-business .hud-side-panel>.property-card .business-plan>*{
+  width:100%;
+  min-width:0;
+  max-width:100%;
+  flex:0 0 auto;
+  box-sizing:border-box;
+}
+.hud-panel-business .hud-side-panel>.property-card .business-plan .business-material-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  width:100%;
+  min-width:0;
+}
+.hud-panel-business .hud-side-panel>.property-card .business-plan .mastery-head,
+.hud-panel-business .hud-side-panel>.property-card .business-plan .mastery-foot,
+.hud-panel-business .hud-side-panel>.property-card .business-plan .reputation-row{
+  display:flex;
+  flex-direction:row;
+  flex-wrap:wrap;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:8px;
+  min-width:0;
+}
+.hud-panel-business .hud-side-panel>.property-card .business-plan .mastery-head>*,
+.hud-panel-business .hud-side-panel>.property-card .business-plan .reputation-row>*{
+  min-width:0;
+  max-width:100%;
+  overflow-wrap:anywhere;
+}
+.hud-panel-business .hud-side-panel>.property-card .business-plan .stock-line{
+  display:flex;
+  flex-direction:row;
+  flex-wrap:wrap;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:8px;
+  width:100%;
+  min-width:0;
+}
+.hud-panel-business .hud-side-panel>.property-card .business-plan .stock-line>span{
+  flex:1 1 150px;
+  min-width:0;
+  overflow-wrap:anywhere;
+}
+.hud-panel-business .hud-side-panel>.property-card .business-plan .stock-line>strong{
+  flex:0 1 auto;
+  max-width:100%;
+  overflow-wrap:anywhere;
+  text-align:right;
+}
+.hud-panel-business .hud-side-panel>.property-card .business-plan .profession-select{
+  display:block;
+  width:100%;
+  min-width:0;
+}
