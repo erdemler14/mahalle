@@ -1497,15 +1497,17 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   const buyShoeMaterial = (materialId) => {
     if (!owned.includes(37) || rented.includes(37)) { tell('Hammadde almak için kunduracı sana ait olmalı ve kirada olmamalı.'); return; }
     const material = SHOE_MATERIALS.find(item => item.id === materialId); if (!material) return;
-    if (cash < material.cost) { tell(material.name + ' için ₺' + material.cost + ' gerekiyor.'); return; }
     const shoeState = stockByProperty[37] && typeof stockByProperty[37] === 'object' ? stockByProperty[37] : { materials: {}, products: {} };
-    const materialStock = Number(shoeState.materials?.[material.id]) || 0;
+    const materialStock = Math.max(0, Number(shoeState.materials?.[material.id]) || 0);
     const capacity = getStockCapacity(37);
-    if (materialStock + material.batch > capacity) { tell('Depo dolu: ' + material.name + ' için kapasite ' + capacity + ', mevcut stok ' + materialStock + '. Önce üretim yap veya depo genişlet.'); return; }
-    setCash(v => Math.round((v - material.cost) * 100) / 100);
-    setStockByProperty(old => { const state = old[37] && typeof old[37] === 'object' ? old[37] : { materials: {}, products: {} }; return { ...old, 37: { materials: { ...(state.materials || {}), [material.id]: (Number(state.materials?.[material.id]) || 0) + material.batch }, products: state.products || {} } }; });
-    setBusinessStats(old => { const prev = old[37] || { unitsSold: 0, revenue: 0, stockInvested: 0 }; return { ...old, 37: { ...prev, stockInvested: Math.round((prev.stockInvested + material.cost) * 100) / 100 } }; });
-    tell('Tedarik tamamlandı: ' + material.name + ' +' + material.batch + ' birim. Maliyet ₺' + material.cost + '.');
+    const quantity = Math.min(material.batch, Math.max(0, capacity - materialStock));
+    if (quantity <= 0) { tell('Hammadde deposu dolu: ' + material.name + ' ' + materialStock + '/' + capacity + '. Önce üretim yaparak hammadde tüket.'); return; }
+    const cost = Math.round(material.cost * quantity / material.batch * 100) / 100;
+    if (cash < cost) { tell(material.name + ' için ₺' + cost + ' gerekiyor.'); return; }
+    setCash(v => Math.round((v - cost) * 100) / 100);
+    setStockByProperty(old => { const state = old[37] && typeof old[37] === 'object' ? old[37] : { materials: {}, products: {} }; return { ...old, 37: { materials: { ...(state.materials || {}), [material.id]: (Number(state.materials?.[material.id]) || 0) + quantity }, products: state.products || {} } }; });
+    setBusinessStats(old => { const prev = old[37] || { unitsSold: 0, revenue: 0, stockInvested: 0 }; return { ...old, 37: { ...prev, stockInvested: Math.round((prev.stockInvested + cost) * 100) / 100 } }; });
+    tell('Tedarik tamamlandı: ' + material.name + ' +' + quantity + ' birim. Maliyet ₺' + cost + '.');
   };
   const craftShoe = (shoeId) => {
     if (!owned.includes(37) || rented.includes(37)) { tell('Üretim için kunduracı sana ait olmalı ve kirada olmamalı.'); return; }
@@ -1977,7 +1979,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
               <h3>1 · Hammadde deposu</h3>
               {SHOE_MATERIALS.map(m => { const amount = Number(materials[m.id]) || 0; const cap = getStockCapacity(37); const ratio = Math.min(100, Math.round(amount / cap * 100)); return <div className="material-stock-card" key={m.id}><div className="material-stock-head"><span>{m.name}</span><strong>{amount} / {cap}</strong></div><div className="material-stock-meter" role="img" aria-label={m.name + ' stok kapasitesi yüzde ' + ratio}><span style={{width: ratio + '%'}} /></div><button className="stock-button" onClick={() => buyShoeMaterial(m.id)} disabled={amount + m.batch > cap}>+{m.batch} · ₺{m.cost}</button></div>; })}
               <h3>2 · Üretim tezgâhı</h3>
-              {SHOE_RECIPES.map(shoe => { const job = pendingProductions['37:' + shoe.id]; const sold = Number(businessStats[37]?.productUnitsSold?.[shoe.id]?.units) || 0; return <div className="shoe-product-row" key={shoe.id}><div><strong>{shoe.name}</strong><small>Reçete: {Object.entries(shoe.recipe).map(([id, qty]) => (SHOE_MATERIALS.find(m => m.id === id)?.name || id) + ' ×' + qty).join(' · ')}</small><small>Satış fiyatı: ₺{shoe.price} / çift · Satılan toplam: {sold}</small>{job && <small className="production-pending">Üretimde: {job.units} çift · yaklaşık {Math.max(0, Math.ceil((job.readyAt - productionNow) / 1000))} sn kaldı</small>}</div><button className="stock-button" onClick={() => craftShoe(shoe.id)} disabled={Boolean(job)}> {job ? 'ÜRETİLİYOR…' : '1 ÇİFT ÜRET'} </button></div>; })}
+              {SHOE_RECIPES.map(shoe => { const job = pendingProductions['37:' + shoe.id]; const sold = Number(businessStats[37]?.productUnitsSold?.[shoe.id]?.units) || 0; const missing = Object.entries(shoe.recipe).filter(([id, qty]) => (Number(materials[id]) || 0) < qty); return <div className="shoe-product-row" key={shoe.id}><div><strong>{shoe.name}</strong><small>Reçete: {Object.entries(shoe.recipe).map(([id, qty]) => (SHOE_MATERIALS.find(m => m.id === id)?.name || id) + ' ×' + qty).join(' · ')}</small><small>Satış fiyatı: ₺{shoe.price} / çift · Satılan toplam: {sold}</small><small className={missing.length ? 'production-requirements' : 'production-ready'}>{missing.length ? 'Eksik hammadde: ' + missing.map(([id, qty]) => (SHOE_MATERIALS.find(m => m.id === id)?.name || id) + ' ' + Math.max(0, qty - (Number(materials[id]) || 0))).join(', ') : 'Üretime hazır · gerekli hammaddeler mevcut'}</small>{job && <small className="production-pending">Üretimde: {job.units} çift · yaklaşık {Math.max(0, Math.ceil((job.readyAt - productionNow) / 1000))} sn kaldı</small>}</div><button className="stock-button" onClick={() => craftShoe(shoe.id)} disabled={Boolean(job) || missing.length > 0}> {job ? 'ÜRETİLİYOR…' : missing.length ? 'HAMMADDE EKSİK' : '1 ÇİFT ÜRET'} </button></div>; })}
               <h3>3 · Vitrin stokları</h3>
               {SHOE_RECIPES.map(shoe => <div className="stock-line" key={shoe.id}><span>{shoe.name}</span><strong>{Number(products[shoe.id]) || 0} çift</strong></div>)}
             </div>;
