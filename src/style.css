@@ -593,3 +593,89 @@ button,select,input{touch-action:manipulation}
 .unit-action>span{flex:1 1 140px;min-width:0}
 .building-upgrade{margin-top:14px;padding-top:12px;border-top:1px solid rgba(180,165,135,.25)}
 @media(max-width:420px){.unit-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.unit-action .buy-button,.unit-action .rent-button{width:100%}}
+
+
+/* FULL-SCREEN SIMULATION HUD */
+html,body,#root{width:100%;height:100%;margin:0}
+body{overflow:hidden}
+.fullscreen-game{position:fixed;inset:0;width:100%;height:100dvh;max-width:none!important;margin:0!important;padding:0!important;overflow:hidden;background:#10151d!important;box-sizing:border-box}
+.fullscreen-game .hud-topbar{position:absolute;z-index:30;top:0;left:0;right:0;height:48px;padding:0 18px;border:0;background:linear-gradient(180deg,rgba(9,13,18,.88),rgba(9,13,18,0));pointer-events:none}
+.fullscreen-game .hud-topbar>*{pointer-events:auto}
+.fullscreen-game .wordmark{font-size:15px;gap:8px}
+.fullscreen-game .wordmark .mark{width:25px;height:25px;font-size:14px}
+.fullscreen-game .top-center{font-size:9px;color:#aebac7}
+.fullscreen-game .top-actions{gap:7px}
+.fullscreen-game .reset-button{font-size:8px;padding:7px 9px}
+.fullscreen-game .avatar-button{width:29px;height:29px}
+.fullscreen-game .intro-row,.fullscreen-game>.multiplayer-panel,.fullscreen-game>.footer,.fullscreen-game>.economy-note{display:none!important}
+.fullscreen-game .fullscreen-layout{position:absolute;inset:0;display:block!important;margin:0!important;padding:0!important;width:100%;height:100%;min-height:0}
+.fullscreen-game .world-panel{position:absolute;inset:0;width:100%;height:100%;min-height:0!important;border:0!important;border-radius:0!important;box-shadow:none!important;padding:0!important;overflow:hidden;background:#17212b}
+.fullscreen-game .world-topline{position:absolute;z-index:8;top:50px;left:12px;right:12px;height:auto;min-height:34px;padding:6px 10px;background:rgba(14,20,27,.72);border:1px solid rgba(180,195,205,.16);border-radius:8px;backdrop-filter:blur(10px);font-size:8px}
+.fullscreen-game .world-topline .world-year{display:none}
+.fullscreen-game .scene-host{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;min-height:0!important;max-height:none!important;border:0!important}
+.fullscreen-game .scene-host canvas{display:block;width:100%!important;height:100%!important}
+.fullscreen-game .map-legend{position:absolute;z-index:7;bottom:12px;left:12px;right:12px;padding:7px 10px;background:rgba(14,20,27,.72);border:1px solid rgba(180,195,205,.14);border-radius:8px;backdrop-filter:blur(10px);font-size:8px}
+.fullscreen-game .world-caption{position:absolute;z-index:7;bottom:48px;left:14px;right:14px;padding:0;background:transparent;color:#d6dce0;font-size:8px;pointer-events:none}
+.fullscreen-game .economic-event-banner{z-index:10;left:50%;transform:translateX(-50%);bottom:78px;width:max-content;max-width:min(430px,calc(100% - 24px))}
+.hud-cash{position:absolute;z-index:40;top:58px;right:16px;display:flex;align-items:baseline;gap:3px;padding:9px 12px;border:1px solid rgba(215,180,105,.55);border-radius:10px;background:rgba(13,19,25,.88);color:#f1f0e8;box-shadow:0 8px 28px #0003;cursor:pointer;font-family:'IBM Plex Mono',monospace}
+.hud-cash>span{font-size:12px;color:#e7c06e}
+.hud-cash>strong{font-size:19px;font-weight:800;letter-spacing:-.7px}
+.hud-cash>small{margin-left:5px;font-size:7px;letter-spacing:.9px;color:#9caebd}
+.hud-dock{position:absolute;z-index:40;left:50%;bottom:16px;transform:translateX(-50%);display:flex;align-items:stretch;gap:5px;padding:7px;border:1px solid rgba(180,195,205,.18);border-radius:15px;background:rgba(12,17,23,.92);box-shadow:0 10px 35px #0005;backdrop-filter:blur(16px);max-width:calc(100% - 18px)}
+.hud-dock button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-width:55px;min-height:49px;padding:5px 7px;border:1px solid transparent;border-radius:9px;background:transparent;color:#c1ccd5;cursor:pointer}
+.hud-dock button>span{font-size:21px;line-height:1;font-family:system-ui,sans-serif}
+.hud-dock button>small{font-size:7px;letter-spacing:.6px;font-family:'IBM Plex Mono',monospace}
+.hud-dock button:hover,.hud-dock button.active{background:#283542;border-color:#536578;color:#f2cc78}
+.hud-dismiss{position:absolute;z-index:61;top:59px;right:14px;width:34px;height:34px;border:1px solid #465665;border-radius:9px;background:#17222d;color:#f2f0e8;font-size:24px;cursor:pointer}
+.hud-side-panel{display:none!important}
+.hud-panel-open .hud-side-panel{position:absolute;z-index:55;top:104px;right:14px;bottom:88px;display:flex!important;flex-direction:column;gap:10px;width:min(420px,calc(100% - 28px));max-width:none;overflow:auto;padding:13px;border:1px solid #3c4b5b;border-radius:14px;background:rgba(17,25,34,.97);box-shadow:0 18px 55px #0008;backdrop-filter:blur(18px);box-sizing:border-box}
+.hud-side-panel>section{display:none!important}
+.hud-panel-cash .hud-side-panel>.balance-card{display:block!important}
+.hud-panel-goals .hud-side-panel>.progression-card{display:block!important}
+.hud-panel-time .hud-side-panel>.work-card{display:block!important}
+.hud-panel-property .hud-side-panel>.property-card,.hud-panel-business .hud-side-panel>.property-card{display:block!important}
+.hud-panel-portfolio .hud-side-panel>.portfolio-mini{display:block!important}
+.hud-panel-log .hud-side-panel>.activity-card{display:block!important}
+.hud-panel-property .hud-side-panel>.property-card .business-plan{display:none!important}
+.hud-panel-business .hud-side-panel>.property-card .property-note{display:none!important}
+.hud-panel-business .hud-side-panel>.property-card .business-plan{display:flex!important}
+.hud-panel-business .hud-side-panel>.property-card .shoe-workshop{display:flex!important}
+.hud-panel-business .hud-side-panel>.property-card .section-heading{display:none!important}
+.hud-panel-property .hud-side-panel>.property-card .section-heading{display:flex!important}
+.hud-panel-property .hud-side-panel>.property-card .business-plan{display:none!important}
+.hud-panel-social .hud-side-panel{display:none!important}
+.hud-multiplayer-panel{display:none!important}
+.hud-social .hud-multiplayer-panel{position:absolute;z-index:55;display:block!important;top:92px;left:50%;transform:translateX(-50%);width:min(620px,calc(100% - 28px));max-height:calc(100dvh - 180px);overflow:auto;margin:0;padding:18px;border:1px solid #435466;border-radius:14px;background:rgba(17,25,34,.98);box-shadow:0 18px 55px #0009;box-sizing:border-box}
+.hud-social .hud-multiplayer-panel .multiplayer-heading{margin-bottom:8px}
+.hud-social .hud-multiplayer-panel>p{max-width:none}
+.hud-panel-open .hud-cash{right:58px}
+.hud-social .hud-cash{right:58px}
+.hud-side-panel .balance-number{font-size:32px}
+.hud-side-panel .property-card,.hud-side-panel .portfolio-mini,.hud-side-panel .progression-card,.hud-side-panel .work-card,.hud-side-panel .activity-card{border-radius:9px}
+.hud-side-panel .property-card{max-height:100%;overflow:auto}
+.hud-side-panel .portfolio-expanded{max-height:55vh;overflow:auto}
+.hud-side-panel .section-heading{display:flex}
+.hud-side-panel .business-plan{max-width:100%;min-width:0}
+@media(max-width:680px){
+ .fullscreen-game .hud-topbar{height:43px;padding:0 9px}
+ .fullscreen-game .top-center{display:none}
+ .fullscreen-game .reset-button{font-size:7px}
+ .fullscreen-game .world-topline{top:46px;left:7px;right:7px;padding:5px 7px}
+ .fullscreen-game .world-topline .property-finder{max-width:58%}
+ .fullscreen-game .map-legend{left:7px;right:7px;bottom:7px;padding:6px 7px}
+ .fullscreen-game .map-legend>span:not(:first-child){display:none}
+ .fullscreen-game .world-caption{bottom:43px;left:8px;right:8px}
+ .hud-cash{top:88px;right:8px;padding:7px 9px;gap:2px}
+ .hud-cash>strong{font-size:16px}
+ .hud-cash>small{font-size:6px}
+ .hud-dock{bottom:7px;gap:2px;padding:5px;border-radius:12px;max-width:calc(100% - 10px)}
+ .hud-dock button{min-width:0;flex:1 1 0;min-height:47px;padding:4px 6px}
+ .hud-dock button>span{font-size:19px}
+ .hud-dock button>small{font-size:6px;letter-spacing:0}
+ .hud-panel-open .hud-side-panel{top:133px;right:7px;bottom:69px;width:calc(100% - 14px);padding:9px}
+ .hud-dismiss{top:89px;right:8px}
+ .hud-panel-open .hud-cash,.hud-social .hud-cash{right:49px}
+ .hud-social .hud-multiplayer-panel{top:128px;max-height:calc(100dvh - 190px);padding:12px}
+ .fullscreen-game .economic-event-banner{bottom:68px}
+}
+@media(min-width:681px){.fullscreen-game .scene-host{min-height:100dvh!important}}
