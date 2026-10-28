@@ -14,7 +14,8 @@
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "three": "0.176.0",
-    "peerjs": "1.5.5"
+    "peerjs": "1.5.5",
+    "@supabase/supabase-js": "^2.57.0"
   },
   "devDependencies": {}
 }
