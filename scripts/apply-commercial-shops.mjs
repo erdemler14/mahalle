@@ -66,6 +66,46 @@ const EXTRA_TRADE_CATALOG = {
     { id: 'sabun', name: 'Kalıp sabun', cost: 3, price: 9, units: 8 },
     { id: 'lavanta-sabun', name: 'Lavanta sabunu', cost: 4, price: 12, units: 8 },
     { id: 'guzel-koku', name: 'Güzel koku', cost: 6, price: 16, units: 8 }
+  ],
+  45: [
+    { id: 'sahaf-roman', name: 'Eski baskı roman', cost: 10, price: 24, units: 6 },
+    { id: 'sahaf-gazete', name: 'Eski gazete ve mecmua', cost: 5, price: 13, units: 8 },
+    { id: 'sahaf-harita', name: 'Şehir haritası', cost: 8, price: 19, units: 6 }
+  ],
+  46: [
+    { id: 'serkuteri-peynir', name: 'Beyaz peynir', cost: 8, price: 19, units: 8 },
+    { id: 'serkuteri-zeytin', name: 'Zeytin', cost: 6, price: 15, units: 8 },
+    { id: 'serkuteri-pastirma', name: 'Pastırma', cost: 14, price: 32, units: 6 }
+  ],
+  47: [
+    { id: 'bakir-cezve', name: 'Bakır cezve', cost: 12, price: 29, units: 6 },
+    { id: 'bakir-tepsi', name: 'Bakır tepsi', cost: 16, price: 38, units: 6 },
+    { id: 'kalay-tamir', name: 'Kalaylama hizmeti', cost: 0, price: 12, units: 0, service: true }
+  ],
+  48: [
+    { id: 'oyuncak-at', name: 'Ahşap at', cost: 8, price: 21, units: 6 },
+    { id: 'oyuncak-bebek', name: 'Bez bebek', cost: 6, price: 16, units: 8 },
+    { id: 'oyuncak-top', name: 'Deri top', cost: 7, price: 18, units: 6 }
+  ],
+  49: [
+    { id: 'saat-tamir', name: 'Saat tamiri', cost: 0, price: 16, units: 0, service: true },
+    { id: 'cep-saati', name: 'Cep saati', cost: 22, price: 49, units: 4 },
+    { id: 'duvar-saati', name: 'Duvar saati', cost: 28, price: 62, units: 4 }
+  ],
+  50: [
+    { id: 'kavrulmus-kahve', name: 'Kavrulmuş kahve', cost: 9, price: 23, units: 8 },
+    { id: 'kahve-cekirdegi', name: 'Yeşil kahve çekirdeği', cost: 12, price: 28, units: 8 },
+    { id: 'kahve-fincan', name: 'Kahve fincanı', cost: 7, price: 17, units: 6 }
+  ],
+  51: [
+    { id: 'perde', name: 'Perde kumaşı', cost: 14, price: 32, units: 6 },
+    { id: 'masa-ortusu', name: 'Masa örtüsü', cost: 9, price: 22, units: 8 },
+    { id: 'yatak-ortu', name: 'Yatak örtüsü', cost: 18, price: 41, units: 6 }
+  ],
+  52: [
+    { id: 'tabela', name: 'Dükkan tabelası', cost: 11, price: 27, units: 6 },
+    { id: 'boya', name: 'Duvar boyası', cost: 7, price: 18, units: 8 },
+    { id: 'yazi-tabela', name: 'El yazısı tabela hizmeti', cost: 0, price: 14, units: 0, service: true }
   ]
 };
 
