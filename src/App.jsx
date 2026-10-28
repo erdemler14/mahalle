@@ -617,13 +617,15 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
 
     // Small, low-poly pedestrians give the street a continuous sense of life.
     const pedestrians = [];
-    const coatColors = ['#3f5a68', '#75534a', '#65734f', '#9a794c', '#4a4c54', '#8d6661', '#53675b'];
+    const coatColors = ['#303943', '#51413b', '#555b48', '#796044', '#393b42', '#765b58', '#46584e', '#6d6b63', '#343d49'];
+    const trouserColors = ['#343638', '#484641', '#575148', '#3b4146'];
+    const hatColors = ['#292c30', '#494137', '#5a5145'];
     const skinColors = ['#c99671', '#b77e5d', '#d3a17f', '#8f6048'];
-    const makePedestrian = (axis, lane, phase, speed, direction, coatColor, hasHat) => {
+    const makePedestrian = (axis, lane, phase, speed, direction, coatColor, hasHat, outfit = 0) => {
       const person = new THREE.Group();
       const coat = new THREE.MeshStandardMaterial({ color: coatColor, roughness: 0.96 });
       const skin = new THREE.MeshStandardMaterial({ color: skinColors[Math.floor(Math.random() * skinColors.length)], roughness: 1 });
-      const trousers = new THREE.MeshStandardMaterial({ color: '#4b4c49', roughness: 1 });
+      const trousers = new THREE.MeshStandardMaterial({ color: trouserColors[outfit % trouserColors.length], roughness: 1 });
       const shoes = new THREE.MeshStandardMaterial({ color: '#302f2c', roughness: 1 });
       const torso = new THREE.Mesh(new THREE.BoxGeometry(0.23, 0.38, 0.14), coat);
       torso.position.y = 0.64;
@@ -632,10 +634,11 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
       head.position.y = 0.91;
       person.add(head);
       if (hasHat) {
-        const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.035, 8), new THREE.MeshStandardMaterial({ color: '#393a37', roughness: 1 }));
+        const hatMaterial = new THREE.MeshStandardMaterial({ color: hatColors[outfit % hatColors.length], roughness: 1 });
+        const brim = new THREE.Mesh(new THREE.CylinderGeometry(outfit % 4 === 0 ? 0.155 : 0.14, outfit % 4 === 0 ? 0.155 : 0.14, 0.035, 8), hatMaterial);
         brim.position.y = 1.015;
         person.add(brim);
-        const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.105, 0.11, 8), new THREE.MeshStandardMaterial({ color: '#393a37', roughness: 1 }));
+        const crown = new THREE.Mesh(new THREE.CylinderGeometry(outfit % 4 === 0 ? 0.105 : 0.09, 0.105, outfit % 4 === 0 ? 0.085 : 0.11, 8), hatMaterial);
         crown.position.y = 1.08;
         person.add(crown);
       }
@@ -659,15 +662,15 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
       person.scale.setScalar(0.92 + Math.random() * 0.13);
       person.traverse(obj => { if (obj.isMesh) obj.castShadow = false; });
       scene.add(person);
-      pedestrians.push({ person, axis, lane, phase, speed, direction, leftLeg, rightLeg, leftArm, rightArm });
+      pedestrians.push({ person, axis, lane, phase, speed, direction, leftLeg, rightLeg, leftArm, rightArm, crowdIndex: pedestrians.length });
     };
     const mainStreetLanes = [-2.65, -1.55, 1.25, 2.55];
-    for (let i = 0; i < 9; i++) {
-      makePedestrian('z', mainStreetLanes[i % mainStreetLanes.length], (i * 0.137) % 1, 0.022 + (i % 3) * 0.004, i % 2 === 0 ? 1 : -1, coatColors[i % coatColors.length], i % 3 !== 1);
+    for (let i = 0; i < 18; i++) {
+      makePedestrian('z', mainStreetLanes[i % mainStreetLanes.length], (i * 0.137) % 1, 0.022 + (i % 3) * 0.004, i % 2 === 0 ? 1 : -1, coatColors[i % coatColors.length], i % 4 !== 1, i);
     }
     const crossStreetLanes = [-1.1, 1.8, 2.65];
-    for (let i = 0; i < 6; i++) {
-      makePedestrian('x', crossStreetLanes[i % crossStreetLanes.length], (i * 0.173 + 0.09) % 1, 0.015 + (i % 2) * 0.004, i % 2 === 0 ? 1 : -1, coatColors[(i + 2) % coatColors.length], i % 3 === 0);
+    for (let i = 0; i < 12; i++) {
+      makePedestrian('x', crossStreetLanes[i % crossStreetLanes.length], (i * 0.173 + 0.09) % 1, 0.015 + (i % 2) * 0.004, i % 2 === 0 ? 1 : -1, coatColors[(i + 2) % coatColors.length], i % 3 !== 1, i + 2);
     }
 
     const raycaster = new THREE.Raycaster();
@@ -845,7 +848,10 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
       sun.intensity = isNight ? 0.28 : isDusk ? 1.35 : 3.0;
       lampGlass.emissiveIntensity = isNight ? 1.15 : isDusk ? 0.55 : 0.18;
       tram.position.z = -23 + ((elapsed * 1.45) % 46);
+      const currentHour = hourRef.current ?? 12;
+      const peakCrowd = currentHour >= 7 && currentHour < 9 ? 22 : currentHour >= 12 && currentHour < 14 ? 26 : currentHour >= 17 && currentHour < 20 ? 30 : currentHour >= 9 && currentHour < 17 ? 18 : currentHour >= 20 && currentHour < 22 ? 11 : 6;
       pedestrians.forEach((ped, i) => {
+        ped.person.visible = ped.crowdIndex < peakCrowd;
         const progress = (elapsed * ped.speed + ped.phase) % 1;
         const stride = elapsed * ped.speed * Math.PI * 24 + i;
         if (ped.axis === 'z') {
@@ -1860,7 +1866,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   actionRefs.current = { advanceHour, sleepUntilMorning, clockTick: () => advanceHour(hour >= 8 && hour < 19), selectBusinessPlan, stockBusiness, buy, toggleRent, toggleShop, makeWine, resetGame, selectProperty, changeProfession };
   useEffect(() => {
     if (multiplayerRole === 'guest') return undefined;
-    const timer = window.setInterval(() => actionRefs.current.clockTick?.(), 5000);
+    const timer = window.setInterval(() => actionRefs.current.clockTick?.(), 4000);
     return () => window.clearInterval(timer);
   }, [multiplayerRole]);
   useEffect(() => {
