@@ -214,7 +214,7 @@ s = s.replace("      entries.push(property.name + ': ' + sold + ' adet ' + produ
 // Retail price is the actual sale price; remove the old 1.7x-2.1x hidden revenue multiplier.
 s = s.replace(
   /      const baseMultiplier = property\.type === 'İşletme' \? 2\.1 : property\.type === 'Atölye' \? 2\.0 : 1\.7;\n      const masteryLevel = soldBefore >= 60 \? 5 : soldBefore >= 35 \? 4 : soldBefore >= 15 \? 3 : soldBefore >= 5 \? 2 : 1;\n      const masteryBonus = \(masteryLevel - 1\) \* 0\.03;\n      const multiplier = baseMultiplier \* \(1 \+ masteryBonus\);\n      const takings = Math\.round\(sold \* product\.price \* multiplier \* 100\) \/ 100;/,
-  "      const masteryLevel = soldBefore >= 60 ? 5 : soldBefore >= 35 ? 4 : soldBefore >= 15 ? 3 : soldBefore >= 5 ? 2 : 1;\\n      const masteryBonus = (masteryLevel - 1) * 0.03;\n      const takings = Math.round(sold * product.price * (1 + masteryBonus) * 100) / 100;"
+  "      const masteryLevel = soldBefore >= 60 ? 5 : soldBefore >= 35 ? 4 : soldBefore >= 15 ? 3 : soldBefore >= 5 ? 2 : 1;\n      const masteryBonus = (masteryLevel - 1) * 0.03;\n      const takings = Math.round(sold * product.price * (1 + masteryBonus) * 100) / 100;"
 );
 
 // item.cost is already the total for the stock batch. Charge it once; never multiply by units.
