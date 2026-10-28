@@ -50,6 +50,13 @@ const CITY_EVENTS = [
   { id: 'holiday', title: 'Bayram hazırlığı', days: 3, effects: { 'Ticaret': 0.28, 'Atölye': 0.22, 'İşletme': 0.12 }, text: 'Bayram hazırlıkları başladı: alışveriş ve siparişler arttı.' }
 ];';
 const constants = `const DAILY_LIVING_COST = 2.5;
+const CITY_EVENTS = [
+  { id: 'festival', title: 'Mahalle şenliği', days: 3, effects: { 'İşletme': 0.35, 'Ticaret': 0.15 }, text: 'Mahalle şenliği başladı: yeme-içme ve çarşı satışları arttı.' },
+  { id: 'flu', title: 'Grip salgını', days: 4, effects: { 'İşletme': -0.22, 'Ticaret': -0.10 }, text: 'Grip salgını: müşteri trafiği azaldı, şehirde harcamalar yavaşladı.' },
+  { id: 'tram', title: 'Tramvay hattı yoğunluğu', days: 3, effects: { 'Ticaret': 0.24, 'Atölye': 0.08 }, text: 'Tramvay hattı yoğun: durak çevresindeki ticari hareketlilik arttı.' },
+  { id: 'rain', title: 'Uzun yağış', days: 2, effects: { 'İşletme': -0.15, 'Ticaret': -0.08 }, text: 'Uzun yağış: sokaklardaki müşteri trafiği düştü.' },
+  { id: 'holiday', title: 'Bayram hazırlığı', days: 3, effects: { 'Ticaret': 0.28, 'Atölye': 0.22, 'İşletme': 0.12 }, text: 'Bayram hazırlıkları başladı: alışveriş ve siparişler arttı.' }
+];
 const PROPERTY_TAX_RATES = {
   Konut: 0.0010,
   Depo: 0.0015,
