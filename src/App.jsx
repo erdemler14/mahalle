@@ -1331,7 +1331,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     return sold >= 60 ? 5 : sold >= 35 ? 4 : sold >= 15 ? 3 : sold >= 5 ? 2 : 1;
   };
   const STOCK_CAPACITY_BY_LEVEL = [0, 12, 24, 40, 60, 90];
-  const STOCK_UPGRADE_COST_BY_LEVEL = [0, 35, 80, 160, 300];
+  const STOCK_UPGRADE_COST_BY_LEVEL = [0, 0, 35, 80, 160, 300];
   const getStockCapacity = (propertyId) => {
     const level = Math.max(1, Math.min(5, Number(businessStats[propertyId]?.stockCapacityLevel) || 1));
     return STOCK_CAPACITY_BY_LEVEL[level];
