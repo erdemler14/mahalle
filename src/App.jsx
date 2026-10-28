@@ -1660,7 +1660,19 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     setStockByProperty(old => { const state=getInventoryState(propertyId,old[propertyId]); return { ...old, [propertyId]: { materials: nextMaterials, products: state.products } }; });
     setPendingProductions(old => ({ ...old, [pendingKey]: { units: (Number(old[pendingKey]?.units)||0)+1, readyAt: Date.now()+duration, name:item.name, propertyId, productId:item.id } }));
     setTimeout(() => {
-      setStockByProperty(old => { const state=getInventoryState(propertyId,old[propertyId]); return { ...old, [propertyId]: { materials: state.materials, products: { ...state.products, [item.id]: (Number(state.products?.[item.id])||0)+1 } }; });
+      setStockByProperty(old => {
+        const state = getInventoryState(propertyId, old[propertyId]);
+        return {
+          ...old,
+          [propertyId]: {
+            materials: state.materials,
+            products: {
+              ...state.products,
+              [item.id]: (Number(state.products?.[item.id]) || 0) + 1
+            }
+          }
+        };
+      });
       setPendingProductions(old => { const current=old[pendingKey]; if(!current)return old; const remaining=Math.max(0,(Number(current.units)||0)-1); if(remaining>0)return { ...old,[pendingKey]:{...current,units:remaining,readyAt:Date.now()+duration} }; const next={...old}; delete next[pendingKey]; return next; });
       tell('Üretim tamamlandı: ' + item.name + '. Vitrin stoğuna 1 birim eklendi.');
     }, duration);
