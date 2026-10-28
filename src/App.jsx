@@ -1411,7 +1411,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   const STOCK_CAPACITY_BY_LEVEL = [0, 12, 24, 40, 60, 90];
   const STOCK_UPGRADE_COST_BY_LEVEL = [0, 0, 35, 80, 160, 300];
   const getInventoryState = (propertyId, value = stockByProperty[propertyId]) => {
-    if (value && typeof value === 'object') return propertyId === 37 ? { materials: value.materials || {}, products: value.products || {} } : { products: value.products || {} };
+    if (value && typeof value === 'object') return { materials: value.materials || {}, products: value.products || {} };
     const qty = Math.max(0, Number(value) || 0);
     const legacyProduct = businessPlans[propertyId] || (tradeCatalog[propertyId] || []).find(item => item.price > 0)?.id;
     return { products: legacyProduct && qty ? { [legacyProduct]: qty } : {} };
@@ -1543,29 +1543,15 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   };
 
   const workAtSelectedBusiness = () => {
-    if (!selectedVenueCompatible || rented.includes(active.id)) {
-      tell('Bizzat çalışmak için mesleğine uygun, sana ait ve kirada olmayan bir iş yeri seçmelisin.');
+    if (!owned.includes(active.id) || rented.includes(active.id)) {
+      tell('Bir işletmeyi bizzat yönetmek için sahibi olmalı ve kiraya vermemiş olmalısın.');
       return;
     }
-    if (hour < 8 || hour >= 19) {
-      tell('Dükkanda çalışmak için mesai saatlerini beklemelisin (08.00–19.00).');
-      return;
-    }
+    if (hour < 8 || hour >= 19) { tell('Dükkanda çalışmak için mesai saatlerini beklemelisin (08.00–19.00).'); return; }
     const item = (tradeCatalog[active.id] || []).find(product => product.id === businessPlans[active.id]);
-    if (!item) {
-      tell('Önce iş yerinde satacağın ürünü seç. Ardından stok alabilir veya üretim yapabilirsin.');
-      return;
-    }
-    setClockRunning(false);
-    if (item.production || !item.service) {
-      const produced = 2;
-      setStockByProperty(old => ({ ...old, [active.id]: (Number(old[active.id]) || 0) + produced }));
-      tell(`${active.name} içinde bir saat üretim yaptın: ${item.name} için ${produced} adet stok hazırladın. Üretim stokunu artırdı; satış için oyunu ilerlet.`);
-    } else {
-      tell(`${active.name} içinde satışla ilgilendin. Bu saat ücret değil, stoktaki ürünlerin satış geliri kazandıracak.`);
-    }
-    advanceHour(true);
-    setClockRunning(false);
+    if (!item || item.price <= 0) { tell('Önce işletmenin ürün veya hizmet grubunu seç.'); return; }
+    tell(`${active.name}: ${item.name} işine bizzat odaklandın. Gelirin stoklu satışlardan ve müşteri talebinden oluşur; meslek seçimin işletme sahipliğini sınırlamaz.`);
+    setClockRunning(false); advanceHour(true); setClockRunning(false);
   };
 
   const buyShoeMaterial = (materialId) => {
@@ -1624,34 +1610,50 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     tell('Depo genişletildi: seviye ' + nextLevel + ', kapasite ' + STOCK_CAPACITY_BY_LEVEL[nextLevel] + ' birim. Ödenen: ₺' + cost + '.');
   };
 
+  const buyBusinessMaterial = (propertyId, materialId) => {
+    if (!owned.includes(propertyId) || rented.includes(propertyId)) { tell('Hammadde tedariki için işletmenin sahibi olmalı ve kiraya vermemiş olmalısın.'); return; }
+    const profile = getBusinessProfile(propertyId);
+    const material = profile.materials.find(item => item.id === materialId);
+    if (!material) return;
+    const inventory = getInventoryState(propertyId);
+    const current = Math.max(0, Number(inventory.materials?.[materialId]) || 0);
+    const capacity = getStockCapacity(propertyId);
+    const quantity = Math.min(material.batch, Math.max(0, capacity - Object.values(inventory.materials || {}).reduce((sum,n)=>sum+(Number(n)||0),0)));
+    if (quantity <= 0) { tell('Hammadde deposu dolu. Depoyu genişlet veya üretim yap.'); return; }
+    const cost = Math.round(material.cost * quantity / material.batch * 100) / 100;
+    if (cash < cost) { tell(material.name + ' tedariki için ₺' + cost + ' gerekiyor.'); return; }
+    setCash(value => Math.round((value - cost) * 100) / 100);
+    setStockByProperty(old => { const state = getInventoryState(propertyId, old[propertyId]); return { ...old, [propertyId]: { materials: { ...state.materials, [materialId]: current + quantity }, products: state.products } }; });
+    setBusinessStats(old => { const previous = old[propertyId] || { unitsSold: 0, revenue: 0, stockInvested: 0 }; return { ...old, [propertyId]: { ...previous, stockInvested: Math.round(((Number(previous.stockInvested)||0) + cost)*100)/100 } }; });
+    tell('Tedarik tamamlandı: ' + material.name + ' +' + quantity + ' birim, ₺' + cost + '.');
+  };
   const stockBusiness = () => {
     if (sendAction('stockBusiness')) return;
-    const item = (tradeCatalog[active.id] || []).find(product => product.id === businessPlans[active.id]);
-    if (!owned.includes(active.id) || rented.includes(active.id)) { tell('Stok alabilmek için mülkün sahibi olmalı ve mülk kirada olmamalı.'); return; }
-    if (!item || item.units <= 0) { tell('Bu mülk için henüz tedarik edilebilir ürün grubu yok.'); return; }
-    if (cash < item.cost) { tell(`İlk stok için ₺${item.cost} gerekiyor.`); return; }
-    const currentStock = getProductStock(active.id, item.id);
-    const capacity = getStockCapacity(active.id);
-    const pendingUnits = Number(pendingProductions[active.id + ':' + item.id]?.units) || 0;
-    if (getTotalStock(active.id) + getPendingUnits(active.id) + item.units > capacity) { tell(`Depo dolu: kapasite ${capacity} adet, toplam stok ${getTotalStock(active.id)}, üretimde ${getPendingUnits(active.id)}. Önce satış bekle veya depo genişlet.`); return; }
-    setCash(v => Math.round((v - item.cost) * 100) / 100);
-    setBusinessStats(old => { const previous = old[active.id] || { unitsSold: 0, revenue: 0, stockInvested: 0 }; return { ...old, [active.id]: { ...previous, stockInvested: Math.round((previous.stockInvested + item.cost) * 100) / 100 } }; });
-    if (item.production || !item.service) {
-      const pendingKey = active.id + ':' + item.id;
-      const duration = getProductionDuration(active.id, item.id);
-      setPendingProductions(old => ({ ...old, [pendingKey]: { units: (Number(old[pendingKey]?.units) || 0) + item.units, readyAt: Date.now() + duration, name: item.name, propertyId: active.id, productId: item.id } }));
-      setTimeout(() => {
-        setStockByProperty(old => { const inventory = getInventoryState(active.id, old[active.id]); return { ...old, [active.id]: { ...inventory, products: { ...inventory.products, [item.id]: getProductStock(active.id, item.id, old[active.id]) + item.units } } }; });
-        setPendingProductions(old => { const current = old[pendingKey]; if (!current) return old; const remaining = Math.max(0, (Number(current.units) || 0) - item.units); if (remaining > 0) return { ...old, [pendingKey]: { ...current, units: remaining, readyAt: Date.now() + duration } }; const next = { ...old }; delete next[pendingKey]; return next; });
-        tell('Üretim tamamlandı: ' + item.name + ', ' + item.units + ' adet hazır. Vitrin stoğuna eklendi.');
-      }, duration);
-      tell(item.name + ' üretime alındı. Tahmini süre: ' + (duration / 1000).toFixed(0) + ' saniye. Tamamlanınca stok otomatik eklenecek.');
-      return;
-    }
-    setStockByProperty(old => { const inventory = getInventoryState(active.id, old[active.id]); return { ...old, [active.id]: { ...inventory, products: { ...inventory.products, [item.id]: currentStock + item.units } } }; });
-    tell('Tedarik tamamlandı: ' + item.name + ', ' + item.units + ' adet stok, maliyet ₺' + item.cost + '.');
+    const propertyId = active.id;
+    const item = (tradeCatalog[propertyId] || []).find(product => product.id === businessPlans[propertyId]);
+    if (!owned.includes(propertyId) || rented.includes(propertyId)) { tell('İşletmeyi yönetmek için sahibi olmalı ve kiraya vermemiş olmalısın.'); return; }
+    if (!item || item.price <= 0) { tell('Önce satışa sunacağın ürün veya hizmeti seç.'); return; }
+    const level = getBusinessSalesLevel(propertyId);
+    if ((item.unlockLevel || 1) > level) { tell(item.name + ' için işletme seviyesi ' + item.unlockLevel + ' gerekli. Şu an seviye ' + level + '.'); return; }
+    const inventory = getInventoryState(propertyId);
+    const recipe = getBusinessRecipe(propertyId, item);
+    const missing = recipe.filter(part => (Number(inventory.materials?.[part.id])||0) < part.qty);
+    if (missing.length) { tell('Hammadde eksik: ' + missing.map(part => { const material=getBusinessProfile(propertyId).materials.find(m=>m.id===part.id); return (material?.name||part.id)+' '+Math.max(0,part.qty-(Number(inventory.materials?.[part.id])||0)); }).join(', ') + '. Önce tedarik et.'); return; }
+    const capacity = getStockCapacity(propertyId);
+    if (getTotalStock(propertyId) + getPendingUnits(propertyId) + 1 > capacity) { tell('Vitrin deposu dolu. Kapasite ' + capacity + ' adet; satış bekle veya depoyu genişlet.'); return; }
+    const nextMaterials = { ...inventory.materials };
+    recipe.forEach(part => { nextMaterials[part.id] = (Number(nextMaterials[part.id])||0)-part.qty; });
+    const pendingKey = propertyId + ':' + item.id;
+    const duration = getProductionDuration(propertyId, item.id);
+    setStockByProperty(old => { const state=getInventoryState(propertyId,old[propertyId]); return { ...old, [propertyId]: { materials: nextMaterials, products: state.products } }; });
+    setPendingProductions(old => ({ ...old, [pendingKey]: { units: (Number(old[pendingKey]?.units)||0)+1, readyAt: Date.now()+duration, name:item.name, propertyId, productId:item.id } }));
+    setTimeout(() => {
+      setStockByProperty(old => { const state=getInventoryState(propertyId,old[propertyId]); return { ...old, [propertyId]: { materials: state.materials, products: { ...state.products, [item.id]: (Number(state.products?.[item.id])||0)+1 } }; });
+      setPendingProductions(old => { const current=old[pendingKey]; if(!current)return old; const remaining=Math.max(0,(Number(current.units)||0)-1); if(remaining>0)return { ...old,[pendingKey]:{...current,units:remaining,readyAt:Date.now()+duration} }; const next={...old}; delete next[pendingKey]; return next; });
+      tell('Üretim tamamlandı: ' + item.name + '. Vitrin stoğuna 1 birim eklendi.');
+    }, duration);
+    tell('Üretim başladı: ' + item.name + '. Gerekli hammaddeler tüketildi; yaklaşık ' + (duration/1000).toFixed(0) + ' saniye sonra vitrine çıkacak.');
   };
-
   const buy = async () => {
     if (active.type === 'Konut' && active.units) {
       const key = active.id + ':' + selectedUnit;
