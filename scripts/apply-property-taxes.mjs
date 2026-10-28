@@ -32,11 +32,11 @@ const periodShops = `  { id: 32, name: 'Küçük matbaa ve kırtasiye', type: 'A
   { id: 53, name: 'Galata meyhanesi', type: 'İşletme', price: 890, rent: 72, x: 0, z: 0, color: '#a78368', floors: 2, style: 'Meze, balık ve akşam sofrası' },
   { id: 54, name: 'Galata şarap imalathanesi', type: 'Atölye', price: 1420, rent: 105, x: 0, z: 0, color: '#98705f', floors: 3, style: 'Meşe fıçılı küçük şarap mahzeni ve üzüm işleme atölyesi' }
 ];`;
-const additionalShops = periodShops.slice(periodShops.indexOf(',\\n') + 2, periodShops.lastIndexOf('\\n];'));
+const additionalShops = periodShops.slice(periodShops.indexOf(',\n') + 2, periodShops.lastIndexOf('\n];'));
 if (!s.includes("id: 54, name: 'Galata şarap imalathanesi'")) {
-  const lastBaseProperty = /(\\s*\\{ id: 32, name: 'Küçük matbaa ve kırtasiye'[^\\n]*\\})\\s*\\n\\];/;
+  const lastBaseProperty = /(\s*\{ id: 32, name: 'Küçük matbaa ve kırtasiye'[^\n]*\})\s*\n\];/;
   if (!lastBaseProperty.test(s)) throw new Error('Could not find final base property to append new shops');
-  s = s.replace(lastBaseProperty, '$1,\\n' + additionalShops + '\\n];');
+  s = s.replace(lastBaseProperty, '$1,\n' + additionalShops + '\n];');
 }
 
 // Keep the procedural street layout working after the expansion from 32 to 44 properties.
