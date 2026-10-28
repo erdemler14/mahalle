@@ -44,7 +44,8 @@ if (!s.includes('const developmentLevel = (id) =>')) {
   else if (!s.includes('const developmentLevel = (id) =>')) {
     const fallback = '  const updateMarketValues = (nextYear,nextMonth) =>';
     if (!s.includes(fallback)) throw new Error('Could not find a safe insertion point for property development helpers');
-    s = s.replace(fallback, helpers + '\n  const updateMarketValues = (nextYear,nextMonth) =>');
+    const fallbackHelpers = helpers.replace(/^  const getMarketValue = property => .*?;\n/, '');
+    s = s.replace(fallback, fallbackHelpers + '\n  const updateMarketValues = (nextYear,nextMonth) =>');
   }
 }
 
@@ -106,7 +107,7 @@ if (!s.includes('className="development-panel"')) {
 if (!s.includes('.development-panel')) {
   const cssPath = 'src/style.css';
   let css = fs.readFileSync(cssPath, 'utf8');
-  css += `\n.development-panel{margin:12px 0;padding:12px;background:#17212b;border:1px solid #465263;border-radius:10px}.development-heading{display:flex;justify-content:space-between;gap:8px;align-items:center;margin:8px 0;font-size:10px}.development-heading strong{color:#f0c875}.development-heading span{color:#a9b8c6;font-size:8px}.development-meter{height:5px;background:#303d49;border-radius:6px;overflow:hidden;margin-bottom:10px}.development-meter span{display:block;height:100%;background:#d0a95f}.development-benefits{display:flex;justify-content:space-between;gap:8px;padding:5px 0;font-size:10px}.development-benefits span{color:#a9b8c6}.development-benefits strong{color:#e2e9ee}.development-button{width:100%;margin-top:9px;padding:11px;background:#b58a46;color:#171b1e;border:0;border-radius:6px;font-weight:800;font-size:10px;cursor:pointer}.development-button:disabled{opacity:.45;cursor:not-allowed}\n`;
+  if (!css.includes('.development-panel')) css += `\n.development-panel{margin:12px 0;padding:12px;background:#17212b;border:1px solid #465263;border-radius:10px}.development-heading{display:flex;justify-content:space-between;gap:8px;align-items:center;margin:8px 0;font-size:10px}.development-heading strong{color:#f0c875}.development-heading span{color:#a9b8c6;font-size:8px}.development-meter{height:5px;background:#303d49;border-radius:6px;overflow:hidden;margin-bottom:10px}.development-meter span{display:block;height:100%;background:#d0a95f}.development-benefits{display:flex;justify-content:space-between;gap:8px;padding:5px 0;font-size:10px}.development-benefits span{color:#a9b8c6}.development-benefits strong{color:#e2e9ee}.development-button{width:100%;margin-top:9px;padding:11px;background:#b58a46;color:#171b1e;border:0;border-radius:6px;font-weight:800;font-size:10px;cursor:pointer}.development-button:disabled{opacity:.45;cursor:not-allowed}\n`;
   fs.writeFileSync(cssPath, css, 'utf8');
 }
 
