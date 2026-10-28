@@ -517,3 +517,8 @@ button,select,input{touch-action:manipulation}
 .auth-footer,.auth-bottomline{display:none}
 .auth-loading{font-family:'IBM Plex Mono',monospace;letter-spacing:2px}
 @media(max-width:520px){.auth-screen{padding:16px 12px}.auth-card{padding:24px 19px}.auth-intro{padding:19px 0 16px}.auth-tabs button{font-size:9px}.auth-form input{min-height:46px}}
+
+.economic-event-banner{position:absolute;left:16px;bottom:52px;z-index:8;display:flex;flex-direction:column;gap:4px;max-width:min(430px,calc(100% - 32px));padding:10px 13px;border:1px solid #d0b16d;background:rgba(14,14,14,.94);color:#f4f0e5;box-shadow:0 6px 24px #0005;font-family:'IBM Plex Mono','SFMono-Regular',Consolas,monospace}
+.economic-event-banner strong{font-size:10px;letter-spacing:1px;line-height:1.5}
+.economic-event-banner span{font-size:11px;line-height:1.5;color:#d4d0c7}
+@media(max-width:700px){.economic-event-banner{left:8px;bottom:44px;padding:8px 10px}.economic-event-banner strong{font-size:9px}.economic-event-banner span{font-size:10px}}
