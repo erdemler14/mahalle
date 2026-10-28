@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "node scripts/apply-property-taxes.mjs && node scripts/apply-commercial-shops.mjs && node scripts/apply-multiplayer-ownership.mjs && vite build",
+    "build": "node scripts/apply-property-taxes.mjs && node scripts/apply-commercial-shops.mjs && node scripts/apply-multiplayer-ownership.mjs && node scripts/apply-city-events.mjs && vite build",
     "preview": "vite preview"
   },
   "dependencies": {
