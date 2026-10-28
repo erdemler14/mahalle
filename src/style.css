@@ -796,3 +796,44 @@ body{overflow:hidden}
 .shoe-product-row .production-requirements{color:#f0c17d}
 .shoe-product-row .production-pending{color:#f0d7a0;padding:6px 8px;background:#2b2a20;border-radius:6px}
 @media(max-width:520px){.shoe-inventory-summary{grid-template-columns:1fr}.shoe-inventory-summary>div{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center}.shoe-inventory-summary small{grid-column:1/-1}.shoe-product-row{flex-direction:column}.shoe-product-row>button{max-width:none;width:100%}}
+
+
+/* Compact, task-first production console */
+.production-console{padding:14px!important;max-width:100%;overflow:hidden}
+.production-console-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:12px}
+.production-console-head h3{font-size:16px;margin:4px 0}
+.production-console-head p{font-size:11px;line-height:1.45;color:#9fb0bd;margin:0}
+.production-level-chip{flex:0 0 auto;display:flex;flex-direction:column;gap:4px;padding:8px 10px;border-radius:9px;background:#20332f;border:1px solid #3e6659;text-align:right}
+.production-level-chip strong{font:800 11px 'IBM Plex Mono',monospace;color:#9de0c1}
+.production-level-chip small{font-size:9px;color:#b7c9c4;max-width:110px}
+.production-quick-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:10px 0 14px}
+.production-quick-stats>div{min-width:0;background:#101b25;border:1px solid #344352;border-radius:8px;padding:9px 7px;display:flex;flex-direction:column;gap:4px}
+.production-quick-stats span{font:800 8px 'IBM Plex Mono',monospace;letter-spacing:.03em;color:#9eb0bd}
+.production-quick-stats strong{font:700 14px 'IBM Plex Mono',monospace;color:#f1d9a4;overflow-wrap:anywhere}
+.production-product-select{width:100%;margin:6px 0 10px}
+.production-recipe-compact{padding:11px;border:1px solid #354757;border-radius:9px;background:#121e29;margin:0 0 14px}
+.production-recipe-compact>div{display:flex;flex-direction:column;gap:4px}
+.production-recipe-compact>div strong{font-size:13px;color:#edf3f5}
+.production-recipe-compact>div span{font-size:10px;color:#9fd9bc}
+.production-recipe-compact p{font-size:10px;line-height:1.6;color:#c5d0d7;margin:8px 0 0;overflow-wrap:anywhere}
+.production-recipe-compact small{display:block;font-size:10px;line-height:1.5;margin-top:7px;overflow-wrap:anywhere}
+.production-missing{color:#ffc17b}
+.production-queue-note{color:#a9e2cb}
+.production-materials-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:12px 0 7px}
+.production-materials-head strong{font-size:12px}
+.production-materials-head span{font-size:9px;color:#a4b5c1}
+.production-materials-list{display:flex;flex-direction:column;gap:6px}
+.production-material-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px;border:1px solid #2e3e4c;background:rgba(14,24,33,.72);border-radius:8px;min-width:0}
+.production-material-row>div{display:flex;flex-direction:column;gap:4px;min-width:0}
+.production-material-row strong{font-size:11px;line-height:1.35;overflow-wrap:anywhere}
+.production-material-row small{font-size:9px;color:#a8b7c1;line-height:1.4}
+.production-material-row button{flex:0 0 auto;min-width:86px;font-size:9px;padding:8px}
+.production-primary-action{width:100%;margin-top:12px;padding:13px!important;font-size:11px!important;letter-spacing:.04em}
+.production-action-hint{font-size:10px;line-height:1.45;color:#f0c17d;margin:7px 0 0}
+.production-details{margin-top:12px;border-top:1px solid #344352;padding-top:9px}
+.production-details summary{cursor:pointer;font-size:10px;font-weight:700;color:#aabac6;list-style:none;display:flex;justify-content:space-between;gap:8px}
+.production-details summary::-webkit-details-marker{display:none}
+.production-details summary:after{content:'+';font-size:14px;color:#d5c08f}
+.production-details[open] summary:after{content:'−'}
+.production-detail-body{padding-top:10px;display:flex;flex-direction:column;gap:10px}
+@media(max-width:520px){.production-console-head{flex-direction:column}.production-level-chip{align-self:stretch;text-align:left}.production-quick-stats strong{font-size:12px}.production-material-row{align-items:flex-start}.production-material-row button{min-width:76px}}
