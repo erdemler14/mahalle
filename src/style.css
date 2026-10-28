@@ -769,3 +769,13 @@ body{overflow:hidden}
   width:100%;
   min-width:0;
 }
+
+
+/* Explicit stock accounting for raw materials, queued production and finished goods. */
+.business-inventory-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:10px 0 12px;min-width:0}
+.business-inventory-summary>div{display:flex;flex-direction:column;gap:4px;min-width:0;padding:9px 8px;border:1px solid #354453;border-radius:8px;background:#111b24}
+.business-inventory-summary span{font:800 8px/1.4 'IBM Plex Mono',monospace;letter-spacing:.04em;color:#9eafbd;overflow-wrap:anywhere}
+.business-inventory-summary strong{font:700 14px 'IBM Plex Mono',monospace;color:#f0d7a0;overflow-wrap:anywhere}
+.business-inventory-summary small{font-size:9px;line-height:1.35;color:#9eafbd}
+.business-material-card .material-stock-head strong{white-space:normal;text-align:right}
+@media(max-width:420px){.business-inventory-summary{grid-template-columns:1fr}.business-inventory-summary>div{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center}.business-inventory-summary small{grid-column:1/-1}}
