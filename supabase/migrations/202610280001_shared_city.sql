@@ -196,3 +196,27 @@ begin
   alter publication supabase_realtime add table public.world_properties;
 exception when duplicate_object then null;
 end $$;
+
+
+create or replace function public.set_property_rented(p_property_id integer, p_rented boolean)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_user uuid := auth.uid();
+  v_property public.world_properties%rowtype;
+begin
+  if v_user is null then raise exception 'Giriş yapmalısın.'; end if;
+  select * into v_property from public.world_properties where property_id = p_property_id for update;
+  if not found or v_property.owner_user_id is distinct from v_user then
+    raise exception 'Yalnızca sahibi olduğun mülkün kira durumunu değiştirebilirsin.';
+  end if;
+  update public.world_properties set rented = p_rented, updated_at = now()
+    where property_id = p_property_id;
+  return jsonb_build_object('property_id', p_property_id, 'rented', p_rented);
+end;
+$$;
+revoke all on function public.set_property_rented(integer, boolean) from public, anon;
+grant execute on function public.set_property_rented(integer, boolean) to authenticated;
