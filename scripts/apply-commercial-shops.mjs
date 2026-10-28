@@ -224,7 +224,7 @@ const rentNormalization = `properties.forEach(property => {
 if (!s.includes('property.price * 0.15 / 12')) {
   const saveAnchor = "const SAVE_KEY = 'mahalle-save-v1';";
   if (!s.includes(saveAnchor)) throw new Error('Could not locate rent normalization anchor');
-  s = s.replace(saveAnchor, rentNormalization + '\\n\\n' + saveAnchor);
+  s = s.replace(saveAnchor, rentNormalization + '\n\n' + saveAnchor);
 }
 
 // item.cost is already the total for the stock batch. Charge it once; never multiply by units.
