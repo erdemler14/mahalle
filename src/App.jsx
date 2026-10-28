@@ -1606,7 +1606,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const material = SHOE_MATERIALS.find(item => item.id === materialId); if (!material) return;
     const shoeState = stockByProperty[37] && typeof stockByProperty[37] === 'object' ? stockByProperty[37] : { materials: {}, products: {} };
     const materialStock = Math.max(0, Number(shoeState.materials?.[material.id]) || 0);
-    const capacity = getStockCapacity(37);
+    const capacity = getMaterialCapacity(37);
     const totalRawStock = SHOE_MATERIALS.reduce((sum, item) => sum + Math.max(0, Number(shoeState.materials?.[item.id]) || 0), 0);
     const freeCapacity = Math.max(0, capacity - totalRawStock);
     const quantity = Math.min(material.batch, freeCapacity);
@@ -1626,7 +1626,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const state = stockByProperty[37] && typeof stockByProperty[37] === 'object' ? stockByProperty[37] : { materials: {}, products: {} };
     const materials = state.materials || {};
     const productStock = Number(state.products?.[shoe.id]) || 0;
-    const capacity = getStockCapacity(37);
+    const capacity = getMaterialCapacity(37);
     if (getTotalStock(37) + getPendingUnits(37) + 1 > capacity) { tell('Vitrin deposu dolu: kapasite ' + capacity + ' çift. Üretim kuyruğu dahil stok sınırına ulaşıldı.'); return; }
     const missing = Object.entries(shoe.recipe).filter(([id, qty]) => (Number(materials[id]) || 0) < qty);
     if (missing.length) { tell('Hammadde eksik: ' + missing.map(([id, qty]) => (SHOE_MATERIALS.find(m => m.id === id)?.name || id) + ' ' + qty).join(', ') + '. Önce tedarik et.'); return; }
@@ -1685,7 +1685,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     if (!material) return;
     const inventory = getInventoryState(propertyId);
     const current = Math.max(0, Number(inventory.materials?.[materialId]) || 0);
-    const capacity = getStockCapacity(propertyId);
+    const capacity = getMaterialCapacity(propertyId);
     const quantity = Math.min(material.batch, Math.max(0, capacity - Object.values(inventory.materials || {}).reduce((sum,n)=>sum+(Number(n)||0),0)));
     if (quantity <= 0) { tell('Hammadde deposu dolu. Depoyu genişlet veya üretim yap.'); return; }
     const cost = Math.round(material.cost * quantity / material.batch * 100) / 100;
@@ -2165,7 +2165,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
               <p className="production-helper">Bu kunduracının kendi hammade deposudur. Kapasite diğer işletmelerle paylaşılmaz; farklı hammaddeler aynı depo alanını kullanır. Üretime bastığında reçetedeki hammaddeler hemen düşer.</p>
               {SHOE_MATERIALS.filter(m => SHOE_RECIPES.filter(shoe => (shoe.unlockLevel || 1) <= getBusinessSalesLevel(37)).some(shoe => Object.prototype.hasOwnProperty.call(shoe.recipe, m.id))).map(m => {
                 const amount = Number(materials[m.id]) || 0;
-                const cap = getStockCapacity(37);
+                const cap = getMaterialCapacity(37);
                 const totalRaw = SHOE_MATERIALS.reduce((sum,item)=>sum+(Number(materials[item.id])||0),0);
                 const quantity = Math.min(m.batch, Math.max(0, cap-totalRaw));
                 const cost = Math.round(m.cost*quantity/m.batch*100)/100;
@@ -2194,7 +2194,8 @@ function App({ session = null, supabase = null, authConfigured = false }) {
               const missing = recipe.filter(part => (Number(inventory.materials?.[part.id]) || 0) < part.qty);
               const unlockedMaterials = getUnlockedBusinessMaterials(active.id, level);
               const totalRaw = profile.materials.reduce((sum, material) => sum + (Number(inventory.materials?.[material.id]) || 0), 0);
-              const freeCapacity = Math.max(0, getStockCapacity(active.id) - totalRaw);
+              const materialCapacity = getMaterialCapacity(active.id);
+              const freeCapacity = Math.max(0, materialCapacity - totalRaw);
               const pending = selectedProduct ? pendingProductions[active.id + ':' + selectedProduct.id] : null;
               const canProduce = !!selectedProduct && !missing.length && getTotalStock(active.id) + getPendingUnits(active.id) < getStockCapacity(active.id);
               const sold = Number(businessStats[active.id]?.unitsSold) || 0;
