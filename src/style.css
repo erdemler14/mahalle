@@ -679,3 +679,8 @@ body{overflow:hidden}
  .fullscreen-game .economic-event-banner{bottom:68px}
 }
 @media(min-width:681px){.fullscreen-game .scene-host{min-height:100dvh!important}}
+
+.hud-panel-property .hud-side-panel .shoe-workshop{display:none!important}
+.hud-panel-property .hud-side-panel .business-plan{display:none!important}
+.hud-panel-business .hud-side-panel .shoe-workshop{display:flex!important}
+.hud-panel-business .hud-side-panel .product-sales-panel{display:block!important}
