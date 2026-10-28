@@ -437,7 +437,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
         ctx.fillStyle = '#f0dfb7'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         // Storefronts use their actual in-world business names, not generic category labels.
         const displayName = String(p.name || 'Mahalle Dükkanı').normalize('NFC').toLocaleUpperCase('tr-TR');
-        const words = displayName.split(/\\s+/);
+        const words = displayName.split(/\s+/);
         const lines = [];
         let line = '';
         for (const word of words) {
