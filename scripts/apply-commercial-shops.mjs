@@ -141,7 +141,7 @@ const getTradeCatalog = (catalog, propertyId) => {
     const units = Math.max(1, Number(item.units) || 1);
     const unitCost = batchCost / units;
     const luxury = /altın|gümüş|ipek|kuyum|cep saati|deri ayakkabı/i.test(item.name);
-    const markup = luxury ? 1.42 : 1.32;
+    const markup = luxury ? 1.65 : 1.55;
     const price = Math.max(0.25, Math.round(unitCost * markup * 100) / 100);
     return { ...item, cost: batchCost, price };
   });
@@ -216,6 +216,16 @@ s = s.replace(
   /      const baseMultiplier = property\.type === 'İşletme' \? 2\.1 : property\.type === 'Atölye' \? 2\.0 : 1\.7;\n      const masteryLevel = soldBefore >= 60 \? 5 : soldBefore >= 35 \? 4 : soldBefore >= 15 \? 3 : soldBefore >= 5 \? 2 : 1;\n      const masteryBonus = \(masteryLevel - 1\) \* 0\.03;\n      const multiplier = baseMultiplier \* \(1 \+ masteryBonus\);\n      const takings = Math\.round\(sold \* product\.price \* multiplier \* 100\) \/ 100;/,
   "      const masteryLevel = soldBefore >= 60 ? 5 : soldBefore >= 35 ? 4 : soldBefore >= 15 ? 3 : soldBefore >= 5 ? 2 : 1;\n      const masteryBonus = (masteryLevel - 1) * 0.03;\n      const takings = Math.round(sold * product.price * (1 + masteryBonus) * 100) / 100;"
 );
+
+// Normalize monthly rent to a 15% annual gross yield on each property's purchase price.
+const rentNormalization = `properties.forEach(property => {
+  property.rent = Math.max(1, Math.round(property.price * 0.15 / 12));
+});`;
+if (!s.includes('property.price * 0.15 / 12')) {
+  const saveAnchor = "const SAVE_KEY = 'mahalle-save-v1';";
+  if (!s.includes(saveAnchor)) throw new Error('Could not locate rent normalization anchor');
+  s = s.replace(saveAnchor, rentNormalization + '\\n\\n' + saveAnchor);
+}
 
 // item.cost is already the total for the stock batch. Charge it once; never multiply by units.
 fs.writeFileSync(path, s, 'utf8');
