@@ -101,18 +101,36 @@ if (!s.includes('settlePeriodicTaxes')) s = s.replace(marketAnchor, taxHelpers);
 const old = /  const settleDailyBusinesses = \(\) => \{.*?\n  \};\n\n  const sleepUntilMorning = \(\) => \{.*?\n  \};/s;
 const replacement = `  const settleDailyBusinesses = () => {
     let operatingCosts = 0;
+    let revenue = 0;
     const entries = [];
+    const stockChanges = {};
     owned.forEach(propertyId => {
       if (rented.includes(propertyId)) return;
       const property = properties.find(item => item.id === propertyId);
       if (!property || !['İşletme', 'Atölye', 'Ticaret'].includes(property.type)) return;
-      const product = (tradeCatalog[propertyId] || []).find(item => item.id === businessPlans[propertyId]);
+      const catalog = typeof getTradeCatalog === 'function'
+        ? getTradeCatalog(tradeCatalog, propertyId)
+        : (tradeCatalog[propertyId] || []);
+      const product = catalog.find(item => item.id === businessPlans[propertyId]);
       if (!product || product.price <= 0) return;
       const dailyCost = property.type === 'İşletme' ? 4.5 : property.type === 'Atölye' ? 3.5 : 2.5;
       operatingCosts += dailyCost;
-      entries.push(property.name + ': ' + (Number(stockByProperty[propertyId]) || 0) + ' stok, günlük işletme gideri -₺' + dailyCost.toFixed(2));
+      const serviceSale = Boolean(product.service);
+      const stock = serviceSale ? 1 : Math.max(0, Number(stockByProperty[propertyId]) || 0);
+      const eventEffect = cityEvent && cityEvent.daysLeft > 0 ? (cityEvent.effects?.[property.type] || 0) : 0;
+      const salesChance = Math.max(0.08, Math.min(0.9, (0.34 + (reputation / 100) * 0.12) * (1 + eventEffect)));
+      if ((!serviceSale && stock <= 0) || Math.random() > salesChance) {
+        entries.push(property.name + ': ' + (serviceSale ? 'hizmet hazır' : stock + ' stok') + ', günlük gider -₺' + dailyCost.toFixed(2));
+        continue;
+      }
+      const sold = serviceSale ? 1 : Math.min(stock, Math.random() > 0.72 ? 2 : 1);
+      const takings = sold * product.price;
+      revenue += takings;
+      if (!serviceSale) stockChanges[propertyId] = stock - sold;
+      entries.push(property.name + ': ' + (serviceSale ? product.name + ' hizmeti' : sold + ' adet ' + product.name) + ' satıldı (+₺' + takings.toFixed(2) + ')');
     });
-    return { revenue: 0, costs: Math.round(operatingCosts * 100) / 100, entries };
+    if (Object.keys(stockChanges).length) setStockByProperty(previous => ({ ...previous, ...stockChanges }));
+    return { revenue: Math.round(revenue * 100) / 100, costs: Math.round(operatingCosts * 100) / 100, entries };
   };
 
   const sleepUntilMorning = () => {
