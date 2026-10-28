@@ -532,3 +532,12 @@ button,select,input{touch-action:manipulation}
 .shoe-product-row strong{font-size:13px}
 .shoe-product-row small{font-size:11px;line-height:1.45;color:var(--muted,#777)}
 .shoe-product-row .stock-button{flex:0 0 auto;max-width:125px}
+
+
+.storage-upgrade-panel{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:10px 0;padding:12px;border:1px solid rgba(120,110,95,.28);border-radius:8px;background:rgba(120,110,95,.06)}
+.storage-upgrade-panel>div{display:flex;flex-direction:column;gap:4px;min-width:0}
+.storage-upgrade-panel span{font-size:10px;letter-spacing:.08em;font-weight:800}
+.storage-upgrade-panel strong{font-size:12px}
+.storage-upgrade-panel small{font-size:10px;line-height:1.45;color:var(--muted,#777)}
+.storage-upgrade-panel .stock-button{flex:0 0 auto;max-width:135px}
+.storage-upgrade-panel .stock-button:disabled{opacity:.45;cursor:not-allowed}
