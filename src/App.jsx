@@ -1461,18 +1461,18 @@ function App({ session = null, supabase = null, authConfigured = false }) {
         const inventory = getInventoryState(propertyId, localStocks[propertyId]);
         const products = { ...(inventory.products || {}) };
         (tradeCatalog[propertyId] || []).filter(item => item.price > 0).forEach(product => {
-          const serviceSale = Boolean(product.service);
-          const stock = serviceSale ? 1 : Math.max(0, Number(products[product.id]) || 0);
+          const serviceSale = false;
+          const stock = Math.max(0, Number(products[product.id]) || 0);
           const soldBefore = Number(businessStats[propertyId]?.productUnitsSold?.[product.id]?.units) || 0;
           const reputation = Math.min(100, Math.floor(soldBefore * 1.5));
           const eventEffect = getEconomicEventEffect(property, product);
           const salesChance = Math.min(0.92, (0.34 + (reputation / 100) * 0.12) * eventEffect.chance);
           if ((!serviceSale && stock <= 0) || Math.random() > salesChance) return;
-          const sold = serviceSale ? 1 : Math.min(stock, 1 + (Math.random() > 0.72 ? 1 : 0));
+          const sold = Math.min(stock, 1 + (Math.random() > 0.72 ? 1 : 0));
           const baseMultiplier = property.type === 'İşletme' ? 2.1 : property.type === 'Atölye' ? 2.0 : 1.7;
           const masteryLevel = soldBefore >= 60 ? 5 : soldBefore >= 35 ? 4 : soldBefore >= 15 ? 3 : soldBefore >= 5 ? 2 : 1;
           const takings = Math.round(sold * product.price * baseMultiplier * (1 + (masteryLevel - 1) * 0.03) * eventEffect.sales * 100) / 100;
-          if (!serviceSale) products[product.id] = stock - sold;
+          products[product.id] = stock - sold;
           addSale(propertyId, product.id, sold, takings, property.name + ': ' + sold + ' adet ' + product.name + ' satıldı (+₺' + takings.toFixed(2) + ')');
         });
         localStocks[propertyId] = { ...inventory, products };
@@ -2078,8 +2078,36 @@ function App({ session = null, supabase = null, authConfigured = false }) {
             <label className="business-label" htmlFor="business-plan-select">Ne satacaksın?</label>
             <select id="business-plan-select" className="profession-select" value={businessPlans[active.id] || ''} onChange={e => selectBusinessPlan(e.target.value)}>
               <option value="">Ürün grubu seç</option>
-              {(tradeCatalog[active.id] || []).map(item => <option key={item.id} value={item.id}>{item.name} · birim maliyet ₺{(item.units > 0 ? item.cost / item.units : 0).toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} / satış ₺{item.price.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</option>)}
+              {(tradeCatalog[active.id] || []).map(item => { const locked = (item.unlockLevel || 1) > getBusinessSalesLevel(active.id); return <option key={item.id} value={item.id} disabled={locked}>{locked ? '🔒 Seviye ' + item.unlockLevel + ' · ' : ''}{item.name} · maliyet ₺{(item.units > 0 ? item.cost / item.units : 0).toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} / satış ₺{item.price.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</option>; })}
             </select>
+            {(() => {
+              const profile = getBusinessProfile(active.id);
+              const inventory = getInventoryState(active.id);
+              const product = (tradeCatalog[active.id] || []).find(item => item.id === businessPlans[active.id]);
+              const recipe = product ? getBusinessRecipe(active.id, product) : [];
+              const locked = product && (product.unlockLevel || 1) > getBusinessSalesLevel(active.id);
+              const missing = recipe.filter(part => (Number(inventory.materials?.[part.id]) || 0) < part.qty);
+              return <div className="business-materials-panel">
+                <div className="card-label">TEDARİK / HAMMADDE DEPOSU · {profile.name.toLocaleUpperCase('tr-TR')}</div>
+                <p className="material-help">İşletme senin; meslek seçimine bağlı değilsin. Hammaddeleri al, ürününü üret, vitrine koy ve satış gelirini topla.</p>
+                <div className="business-material-grid">{profile.materials.map(material => {
+                  const amount = Number(inventory.materials?.[material.id]) || 0;
+                  const cap = getStockCapacity(active.id);
+                  const ratio = Math.min(100, Math.round(amount / cap * 100));
+                  return <div className="business-material-card" key={material.id}>
+                    <div className="material-stock-head"><span>{material.name}</span><strong>{amount}/{cap}</strong></div>
+                    <div className="material-stock-meter"><span style={{width:ratio+'%'}} /></div>
+                    <button className="stock-button" onClick={() => buyBusinessMaterial(active.id, material.id)} disabled={amount >= cap || cash < material.cost}>+{Math.min(material.batch,cap-amount)} · ₺{Math.round(material.cost*Math.min(material.batch,cap-amount)/material.batch*100)/100}</button>
+                  </div>;
+                })}</div>
+                {product && product.price > 0 && <div className="business-recipe-panel">
+                  <strong>{product.name} · üretim reçetesi</strong>
+                  <span>{recipe.map(part => { const material=profile.materials.find(m=>m.id===part.id); return (material?.name||part.id)+' × '+part.qty+' (stok '+(Number(inventory.materials?.[part.id])||0)+')'; }).join(' · ')}</span>
+                  {locked && <small>Bu ürün için işletme seviyesi {product.unlockLevel} gerekli. Mevcut seviye: {getBusinessSalesLevel(active.id)}.</small>}
+                  {!locked && missing.length > 0 && <small>Üretim için eksik: {missing.map(part => { const material=profile.materials.find(m=>m.id===part.id); return (material?.name||part.id)+' '+(part.qty-(Number(inventory.materials?.[part.id])||0)); }).join(', ')}</small>}
+                </div>}
+              </div>;
+            })()}
             <div className="storage-upgrade-panel"><div><span>DEPO SEVİYESİ {Number(businessStats[active.id]?.stockCapacityLevel) || 1}/5</span><strong>Ürün başına {getStockCapacity(active.id)} adet kapasite</strong><small>İşletme seviyesi {getBusinessSalesLevel(active.id)} · sonraki kademe için satış yap.</small></div><button className="stock-button" onClick={() => upgradeBusinessStorage(active.id)} disabled={(Number(businessStats[active.id]?.stockCapacityLevel) || 1) >= 5 || getBusinessSalesLevel(active.id) < (Number(businessStats[active.id]?.stockCapacityLevel) || 1) + 1}>GENİŞLET · ₺{STOCK_UPGRADE_COST_BY_LEVEL[(Number(businessStats[active.id]?.stockCapacityLevel) || 1) + 1] || '—'}</button></div>
 
             {(() => { const stats = businessStats[active.id] || { unitsSold: 0, revenue: 0, stockInvested: 0 }; const level = stats.unitsSold >= 60 ? 5 : stats.unitsSold >= 35 ? 4 : stats.unitsSold >= 15 ? 3 : stats.unitsSold >= 5 ? 2 : 1; const thresholds = [0, 5, 15, 35, 60]; const nextTarget = thresholds[level]; const levelNames = ['Yeni açıldı', 'Mahalle esnafı', 'Tanıdık dükkan', 'Yerleşik işletme', 'Mahallenin gözdesi']; const ratio = level >= 5 ? 100 : Math.min(100, Math.round(stats.unitsSold / nextTarget * 100)); const masteryBonus = (level - 1) * 3; const reputation = Math.min(100, Math.floor(stats.unitsSold * 1.5)); const reputationLabel = reputation >= 75 ? 'Mahallenin sevilen yeri' : reputation >= 40 ? 'Düzenli müşteri kitlesi' : reputation >= 10 ? 'Adı duyulmaya başladı' : 'Müşteri kazanıyor'; return <div className="mastery-panel"><div className="mastery-head"><span className="card-label">İŞLETME USTALIĞI</span><strong>SEV. {level} · +%{masteryBonus} SATIŞ</strong></div><div className="mastery-name">{levelNames[level - 1]}</div><div className="mastery-meter"><span style={{width: ratio + '%'}} /></div><div className="mastery-foot"><span>{stats.unitsSold} ürün satıldı</span><span>{level >= 5 ? 'En yüksek ustalık' : nextTarget + ' satışa ilerle'}</span></div><div className="reputation-row"><div><span>MAHALLE İTİBARI</span><strong>{reputation}/100 · {reputationLabel}</strong></div><b>+{Math.round(reputation * 0.12)} puan satış fırsatı</b></div><div className="reputation-meter"><span style={{width: reputation + '%'}} /></div><div className="mastery-stats"><div><span>Toplam hasılat</span><strong>₺{stats.revenue.toLocaleString('tr-TR', {maximumFractionDigits: 2})}</strong></div><div><span>Stok yatırımı</span><strong>₺{stats.stockInvested.toLocaleString('tr-TR', {maximumFractionDigits: 2})}</strong></div><div><span>Hasılat − stok</span><strong className={stats.revenue - stats.stockInvested >= 0 ? 'mastery-positive' : 'mastery-negative'}>₺{(stats.revenue - stats.stockInvested).toLocaleString('tr-TR', {maximumFractionDigits: 2})}</strong></div></div><p className="mastery-note">Ustalık satılan ürünlerle artar. Hasılat − stok, kira ve günlük işletme giderleri düşülmeden önceki farktır.</p></div>; })()}
@@ -2088,7 +2116,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
             <div className="stock-line"><span>Parti alış maliyeti</span><strong>{(() => { const item = (tradeCatalog[active.id] || []).find(product => product.id === businessPlans[active.id]); return item ? `₺${item.cost.toLocaleString('tr-TR')} · ${item.units} adet` : '₺0'; })()}</strong></div>
             <div className="stock-line"><span>Birim maliyet / satış</span><strong>{(() => { const item = (tradeCatalog[active.id] || []).find(product => product.id === businessPlans[active.id]); return item && item.units > 0 ? `₺${(item.cost / item.units).toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} / ₺${item.price.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : '—'; })()}</strong></div>
             <div className="stock-line"><span>Parti başına tahmini brüt fark</span><strong>₺{(() => { const item = (tradeCatalog[active.id] || []).find(product => product.id === businessPlans[active.id]); return item ? (item.price * item.units - item.cost).toLocaleString('tr-TR', {maximumFractionDigits: 2}) : '0'; })()}</strong></div>
-            <button className="stock-button" onClick={stockBusiness}>{(tradeCatalog[active.id] || []).find(item => item.id === businessPlans[active.id])?.service ? "HİZMETİ AÇ" : "ÜRETİM SİPARİŞİ VER"}</button>
+            <button className="stock-button" onClick={stockBusiness}>ÜRETİMİ BAŞLAT</button>
             <p>Stoklu otomatik satışın yanında burada bizzat bir saat çalışıp ek gelir kazanabilirsin. Çalışma saati 08.00–19.00; manuel çalışınca zaman durur, tekrar başlatabilirsin.</p>
           </div>}
 
