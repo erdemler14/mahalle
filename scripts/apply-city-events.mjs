@@ -103,7 +103,7 @@ const eventHelpers = `  const getCityEventMultiplier = (property) => activeEvent
     const definition = CITY_EVENT_CATALOG.find(item => item.id === event.id);
     if (!definition) return multiplier;
     const propertyFactor = Number(definition.propertyMultipliers?.[property.id]) || 1;
-    const typeFactor = Number(definition.typeMultipliers?.[property.type]) || 1;
+    const typeFactor = propertyFactor !== 1 ? 1 : (Number(definition.typeMultipliers?.[property.type]) || 1);
     return multiplier * propertyFactor * typeFactor;
   }, 1);
 
