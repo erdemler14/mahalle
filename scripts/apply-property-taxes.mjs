@@ -3,6 +3,35 @@ import fs from 'node:fs';
 const path = 'src/App.jsx';
 let s = fs.readFileSync(path, 'utf8');
 
+// Expand the neighborhood with period-appropriate commercial premises.
+// These are deliberately properties, not automatic professions: they make the
+// street feel like a real 1920s Beyoglu commercial district and leave room for
+// future profession-specific gameplay.
+const shopAnchor = "  { id: 32, name: 'Küçük matbaa ve kırtasiye', type: 'Atölye', price: 930, rent: 68, x: 5.5, z: 17.2, color: '#b8b0a4', floors: 3, style: 'Baskı atölyesi ve kırtasiye' }\n];";
+const periodShops = `  { id: 32, name: 'Küçük matbaa ve kırtasiye', type: 'Atölye', price: 930, rent: 68, x: 5.5, z: 17.2, color: '#b8b0a4', floors: 3, style: 'Baskı atölyesi ve kırtasiye' },
+  { id: 33, name: 'Galata kumaşçı dükkanı', type: 'Ticaret', price: 780, rent: 61, x: 0, z: 0, color: '#c9b39d', floors: 2, style: 'Top kumaş ve manifatura mağazası' },
+  { id: 34, name: 'Kolonya ve koku dükkanı', type: 'Ticaret', price: 730, rent: 57, x: 0, z: 0, color: '#c7c9ad', floors: 2, style: 'Cam şişeli koku ve kolonya dükkânı' },
+  { id: 35, name: 'Lokumcu ve şekerci', type: 'Ticaret', price: 690, rent: 54, x: 0, z: 0, color: '#d7b9a7', floors: 2, style: 'Akide, lokum ve şekerleme vitrini' },
+  { id: 36, name: 'Leblebici dükkanı', type: 'Ticaret', price: 520, rent: 43, x: 0, z: 0, color: '#cbb78f', floors: 1, style: 'Kavrulmuş leblebi ve kuruyemiş dükkânı' },
+  { id: 37, name: 'Kunduracı dükkanı', type: 'Atölye', price: 610, rent: 48, x: 0, z: 0, color: '#a98d75', floors: 2, style: 'Ayakkabı ve kundura ustasının dükkânı' },
+  { id: 38, name: 'Kuyumcu', type: 'Ticaret', price: 1180, rent: 86, x: 0, z: 0, color: '#d0b987', floors: 2, style: 'Dar vitrinli kuyumcu mağazası' },
+  { id: 39, name: 'Berber dükkanı', type: 'İşletme', price: 560, rent: 52, x: 0, z: 0, color: '#b8a998', floors: 2, style: 'Aynalı mahalle berberi' },
+  { id: 40, name: 'Pera pastanesi', type: 'İşletme', price: 1040, rent: 82, x: 0, z: 0, color: '#d1b79d', floors: 2, style: 'Alafranga pastane ve tatlıcı' },
+  { id: 41, name: 'Şapkacı mağazası', type: 'Ticaret', price: 820, rent: 65, x: 0, z: 0, color: '#b8a99d', floors: 2, style: 'Şapka ve şehir giyimi mağazası' },
+  { id: 42, name: 'Çiçekçi dükkanı', type: 'Ticaret', price: 590, rent: 47, x: 0, z: 0, color: '#b5c0a4', floors: 1, style: 'Sokak cepheli çiçekçi' },
+  { id: 43, name: 'Fotoğrafçı stüdyosu', type: 'Ticaret', price: 980, rent: 76, x: 0, z: 0, color: '#aeb8bd', floors: 3, style: 'Portre fotoğrafı ve stüdyo mağazası' },
+  { id: 44, name: 'Sabuncu ve güzel koku imalathanesi', type: 'Atölye', price: 900, rent: 64, x: 0, z: 0, color: '#b9b39e', floors: 2, style: 'Küçük sabun ve koku imalathanesi' }
+];`;
+if (s.includes(shopAnchor) && !s.includes("id: 33, name: 'Galata kumaşçı dükkanı'")) {
+  s = s.replace(shopAnchor, periodShops);
+}
+
+// Keep the procedural street layout working after the expansion from 32 to 44 properties.
+s = s.replace(
+  "  const baseX = [-8.5, 8.5, -18.5, 18.5][frontage];",
+  "  const baseX = [-8.5, 8.5, -18.5, 18.5, 0, 25.5][frontage] ?? 0;"
+);
+
 const marker = 'const DAILY_LIVING_COST = 2.5;';
 const constants = `const DAILY_LIVING_COST = 2.5;
 const PROPERTY_TAX_RATES = {
@@ -29,7 +58,7 @@ const taxHelpers = `  const getMarketValue = property => Math.max(1,Math.round((
   const getBusinessFee = property => {
     if (!property || !['Ticaret', 'Atölye', 'İşletme'].includes(property.type)) return 0;
     const licence = property.type === 'İşletme' ? 1.25 : property.type === 'Atölye' ? 1.0 : 0.75;
-    const frontage = [13, 19, 25, 31].includes(property.id) ? 1.25 : 0;
+    const frontage = [13, 19, 25, 31, 40].includes(property.id) ? 1.25 : 0;
     return licence + frontage;
   };
   const calculateMonthlyBusinessFees = () => owned.reduce((total, propertyId) => {
