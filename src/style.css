@@ -522,3 +522,13 @@ button,select,input{touch-action:manipulation}
 .economic-event-banner strong{font-size:10px;letter-spacing:1px;line-height:1.5}
 .economic-event-banner span{font-size:11px;line-height:1.5;color:#d4d0c7}
 @media(max-width:700px){.economic-event-banner{left:8px;bottom:44px;padding:8px 10px}.economic-event-banner strong{font-size:9px}.economic-event-banner span{font-size:10px}}
+
+.shoe-workshop{display:flex;flex-direction:column;gap:10px}
+.shoe-workshop h3{margin:8px 0 2px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink,#222)}
+.shoe-workshop .stock-line{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.shoe-workshop .stock-button{flex:0 0 auto;white-space:nowrap}
+.shoe-product-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid rgba(120,110,95,.2)}
+.shoe-product-row>div{display:flex;flex-direction:column;gap:4px;min-width:0}
+.shoe-product-row strong{font-size:13px}
+.shoe-product-row small{font-size:11px;line-height:1.45;color:var(--muted,#777)}
+.shoe-product-row .stock-button{flex:0 0 auto;max-width:125px}
