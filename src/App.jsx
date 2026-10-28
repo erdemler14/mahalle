@@ -52,7 +52,8 @@ properties.forEach((property, index) => {
 const SAVE_KEY = 'mahalle-save-v1';
 const SAVE_BACKUP_KEY = 'mahalle-save-v1-backup';
 const DAILY_LIVING_COST = 2.5;
-const STARTING_CASH = 600;
+const STARTING_CASH = 800;
+const STARTER_ECONOMY_VERSION = 2;
 const venueTypesByProfession = {
   kolonyaci: ['Ticaret', 'Atölye'],
   leblebici: ['Ticaret', 'Depo', 'İşletme'],
@@ -881,7 +882,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   const [cash, setCash] = useState(() => {
     const hasProperty = Array.isArray(saved.owned) && saved.owned.length > 0;
     // Upgrade legacy fresh saves from the old ₺75 start to the new starter fund.
-    if (!hasProperty && (!Number.isFinite(saved.cash) || saved.cash <= 75)) return STARTING_CASH;
+    if (!hasProperty && Number(saved.economyVersion || 0) < STARTER_ECONOMY_VERSION && (!Number.isFinite(saved.cash) || saved.cash <= 75)) return STARTING_CASH;
     return Number.isFinite(saved.cash) ? saved.cash : STARTING_CASH;
   });
   const [owned, setOwned] = useState(() => Array.isArray(saved.owned) ? saved.owned.filter(id => properties.some(p => p.id === id)) : []);
@@ -1038,7 +1039,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
         window.localStorage.setItem(saveBackupKey, JSON.stringify(previousSave));
       }
       window.localStorage.setItem(saveKey, JSON.stringify({
-        version: 2, playerName, steps, cash, owned, rented, selected, showPortfolio, professionId, marketValues,
+        version: 2, economyVersion: STARTER_ECONOMY_VERSION, playerName, steps, cash, owned, rented, selected, showPortfolio, professionId, marketValues,
         hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, log: log.slice(0, 5)
       }));
     } catch {
@@ -1079,10 +1080,17 @@ function App({ session = null, supabase = null, authConfigured = false }) {
         const { data: cloudSave, error: saveError } = await supabase.from('player_saves').select('state').eq('user_id', userId).maybeSingle();
         if (saveError) throw saveError;
         if (cloudSave?.state && Object.keys(cloudSave.state).length) {
-          const state = cloudSave.state;
+          let state = cloudSave.state;
+          const hasCloudProperty = Array.isArray(state.owned) && state.owned.length > 0;
+          const needsStarterGrant = !hasCloudProperty && Number(state.economyVersion || 0) < STARTER_ECONOMY_VERSION && (!Number.isFinite(state.cash) || state.cash <= 75);
+          if (needsStarterGrant) {
+            state = { ...state, cash: STARTING_CASH, economyVersion: STARTER_ECONOMY_VERSION };
+            const { error: migrationError } = await supabase.from('player_saves').upsert({ user_id: userId, state, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
+            if (migrationError) throw migrationError;
+          }
           if (typeof state.playerName === 'string') setPlayerName(state.playerName || displayName);
           if (Number.isFinite(state.steps)) setSteps(state.steps);
-          if (Number.isFinite(state.cash)) setCash((!Array.isArray(state.owned) || state.owned.length === 0) && state.cash <= 75 ? STARTING_CASH : state.cash);
+          if (Number.isFinite(state.cash)) setCash(state.cash);
           if (Array.isArray(state.rented)) setRented(state.rented.filter(id => properties.some(p => p.id === id)));
           if (properties.some(p => p.id === state.selected)) setSelected(state.selected);
           if (typeof state.showPortfolio === 'boolean') setShowPortfolio(state.showPortfolio);
@@ -1102,7 +1110,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
           if (Array.isArray(state.log)) setLog(state.log.slice(0, 5));
           if (state.developments && typeof state.developments === 'object') setDevelopments(state.developments);
         } else {
-          const initialState = { version: 2, playerName: displayName, steps, cash, owned: [], rented, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, log: log.slice(0, 5), developments };
+          const initialState = { version: 2, economyVersion: STARTER_ECONOMY_VERSION, playerName: displayName, steps, cash: STARTING_CASH, owned: [], rented, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, log: log.slice(0, 5), developments };
           const { error } = await supabase.from('player_saves').upsert({ user_id: userId, state: initialState, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
           if (error) throw error;
           setPlayerName(displayName);
@@ -1131,7 +1139,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   useEffect(() => {
     if (!session || !supabase || !cloudReady) return;
     const state = {
-      version: 2, playerName, steps, cash, owned, rented, selected, showPortfolio, professionId, marketValues,
+      version: 2, economyVersion: STARTER_ECONOMY_VERSION, playerName, steps, cash, owned, rented, selected, showPortfolio, professionId, marketValues,
       hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty,
       businessStats, log: log.slice(0, 5), developments
     };
