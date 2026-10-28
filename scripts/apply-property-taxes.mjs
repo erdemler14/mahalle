@@ -41,10 +41,20 @@ const periodShops = `  { id: 32, name: 'Küçük matbaa ve kırtasiye', type: 'A
   { id: 62, name: 'Arka Sokak Meyhanesi', type: 'İşletme', price: 980, rent: 74, x: 0, z: 0, color: '#a78368', floors: 2, style: 'Dar sokakta küçük meyhane ve meze tezgahı' }
 ];`;
 const additionalShops = periodShops.slice(periodShops.indexOf(',\n') + 2, periodShops.lastIndexOf('\n];'));
-if (!s.includes("id: 54, name: 'Galata şarap imalathanesi'")) {
-  const lastBaseProperty = /(\s*\{ id: 32, name: '[^']+'[^\n]*\})\s*\n\];/;
-  if (!lastBaseProperty.test(s)) throw new Error('Could not find final base property to append new shops');
-  s = s.replace(lastBaseProperty, '$1,\n' + additionalShops + '\n];');
+{
+  // Append only premises whose IDs are not already in the source. This remains
+  // safe when a later change adds a named property (for example the barber at ID 33).
+  const missingShops = additionalShops.split('\n')
+    .filter(line => {
+      const match = line.match(/\{ id: (\d+),/);
+      return match && !new RegExp('\\\\{ id: ' + match[1] + ',').test(s);
+    })
+    .join('\n');
+  if (missingShops) {
+    const lastProperty = /(\s*\{ id: \d+, name: '[^']+'[^\n]*\})\s*\n\];/;
+    if (!lastProperty.test(s)) throw new Error('Could not find final property to append missing shops');
+    s = s.replace(lastProperty, '$1,\n' + missingShops + '\n];');
+  }
 }
 
 // Keep the procedural street layout working after the expansion from 32 to 44 properties.
