@@ -129,21 +129,21 @@ const EXTRA_TRADE_CATALOG = {
   ]
 };
 
-// Economy is anchored to the neighborhood property scale (roughly ₺520-₺1,180).
-// Goods are priced from their acquisition/production cost, not arbitrary retail labels:
-// everyday goods use a 28% markup, luxury goods 18%. This keeps 20 ordinary sales
-// meaningfully below a shop/property purchase price while preserving operating profit.
+// Catalog cost is the total purchase price for the whole stock batch, not a per-unit cost.
+// Derive the shelf price from cost / units, so batch economics remain consistent with property prices.
 // Services are labor fees, so they do not require stock or merchandise cost.
 const getTradeCatalog = (catalog, propertyId) => {
   const items = catalog[propertyId] || EXTRA_TRADE_CATALOG[propertyId] || [];
   return items.map(item => {
     const listedPrice = Math.max(0, Number(item.price) || 0);
     if (item.service) return { ...item, cost: 0, price: listedPrice };
-    const cost = Math.max(1, Number(item.cost) || 1);
+    const batchCost = Math.max(0, Number(item.cost) || 0);
+    const units = Math.max(1, Number(item.units) || 1);
+    const unitCost = batchCost / units;
     const luxury = /altın|gümüş|ipek|kuyum|cep saati|deri ayakkabı/i.test(item.name);
-    const markup = luxury ? 1.18 : 1.28;
-    const price = Math.max(cost + 1, Math.round(cost * markup * 100) / 100);
-    return { ...item, cost, price };
+    const markup = luxury ? 1.55 : 1.45;
+    const price = Math.max(0.25, Math.round(unitCost * markup * 100) / 100);
+    return { ...item, cost: batchCost, price };
   });
 };
 `;
@@ -217,9 +217,5 @@ s = s.replace(
   "      const masteryLevel = soldBefore >= 60 ? 5 : soldBefore >= 35 ? 4 : soldBefore >= 15 ? 3 : soldBefore >= 5 ? 2 : 1;\\n      const masteryBonus = (masteryLevel - 1) * 0.03;\n      const takings = Math.round(sold * product.price * (1 + masteryBonus) * 100) / 100;"
 );
 
-// The cost field is per unit. A batch purchase must pay for every unit in that batch.
-s = s.replace(
-  /    if \(cash < item\.cost\) \{ tell\(`İlk stok için ₺\$\{item\.cost\} gerekiyor\.`\); return; \}\n    setCash\(v => Math\.round\(\(v - item\.cost\) \* 100\) \/ 100\);\n    setBusinessStats\(old => \{ const previous = old\[active\.id\] \|\| \{ unitsSold: 0, revenue: 0, stockInvested: 0 \}; return \{ \.\.\.old, \[active\.id\]: \{ \.\.\.previous, stockInvested: Math\.round\(\(previous\.stockInvested \+ item\.cost\) \* 100\) \/ 100 \} \}; \}\);/s,
-  "    const batchCost = Math.round(item.cost * item.units * 100) / 100;\n    if (cash < batchCost) { tell('İlk stok için ₺' + batchCost.toLocaleString('tr-TR') + ' gerekiyor (' + item.units + ' adet).'); return; }\\n    setCash(v => Math.round((v - batchCost) * 100) / 100);\n    setBusinessStats(old => { const previous = old[active.id] || { unitsSold: 0, revenue: 0, stockInvested: 0 }; return { ...old, [active.id]: { ...previous, stockInvested: Math.round((previous.stockInvested + batchCost) * 100) / 100 } }; });"
-);
+// item.cost is already the total for the stock batch. Charge it once; never multiply by units.
 fs.writeFileSync(path, s, 'utf8');
