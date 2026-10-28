@@ -13,6 +13,8 @@ const EXTRA_TRADE_CATALOG = {
   34: [
     { id: 'kolonya-limon', name: 'Limon kolonyası', cost: 4, price: 11, units: 8 },
     { id: 'kolonya-gul', name: 'Gül kolonyası', cost: 5, price: 13, units: 8 },
+    { id: 'kolonya-lavanta', name: 'Lavanta kolonyası', cost: 6, price: 16, units: 8 },
+    { id: 'kolonya-yasemin', name: 'Yasemin kolonyası', cost: 8, price: 21, units: 6 },
     { id: 'koku-sisesi', name: 'Koku şişesi', cost: 7, price: 18, units: 8 }
   ],
   35: [
