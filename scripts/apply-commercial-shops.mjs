@@ -8,7 +8,12 @@ const EXTRA_TRADE_CATALOG = {
   33: [
     { id: 'kumas-bez', name: 'Pamuklu kumaş', cost: 8, price: 18, units: 8 },
     { id: 'kumas-yun', name: 'Yün kumaş', cost: 14, price: 31, units: 8 },
-    { id: 'ipek-kumas', name: 'İpek kumaş', cost: 28, price: 58, units: 8 }
+    { id: 'ipek-kumas', name: 'İpek kumaş', cost: 28, price: 58, units: 8 },
+    { id: 'terzi-gomlek', name: 'Hazır gömlek', cost: 12, price: 29, units: 6 },
+    { id: 'terzi-pantolon', name: 'Pantolon', cost: 16, price: 37, units: 6 },
+    { id: 'terzi-yelek', name: 'Yelek', cost: 13, price: 31, units: 6 },
+    { id: 'terzi-ceket', name: 'Ceket', cost: 26, price: 58, units: 4 },
+    { id: 'terzi-tamir', name: 'Giysi tamiri', cost: 3, price: 12, units: 0, service: true }
   ],
   34: [
     { id: 'kolonya-limon', name: 'Limon kolonyası', cost: 4, price: 11, units: 8 },
@@ -44,8 +49,14 @@ const EXTRA_TRADE_CATALOG = {
     { id: 'berber-sac', name: 'Saç kesimi', cost: 0, price: 10, units: 0, service: true }
   ],
   40: [
+    { id: 'pastane-limonata', name: 'Ev yapımı limonata', cost: 3, price: 10, units: 8 },
+    { id: 'pastane-profiterol', name: 'Profiterol', cost: 5, price: 18, units: 6 },
+    { id: 'pastane-ekler', name: 'Ekler', cost: 4, price: 15, units: 6 },
     { id: 'pastane-pasta', name: 'Yaş pasta dilimi', cost: 4, price: 12, units: 8 },
     { id: 'pastane-kurabiye', name: 'Kurabiye', cost: 2, price: 7, units: 8 },
+    { id: 'pastane-tart', name: 'Meyveli tart', cost: 4, price: 13, units: 6 },
+    { id: 'pastane-kek', name: 'Kek dilimi', cost: 3, price: 9, units: 8 },
+    { id: 'pastane-sutlu', name: 'Sütlü tatlı', cost: 3, price: 10, units: 6 },
     { id: 'pastane-tatli', name: 'Şerbetli tatlı', cost: 3, price: 9, units: 8 },
     { id: 'pastane-kahve', name: 'Kahve ve tatlı', cost: 4, price: 12, units: 8 }
   ],
@@ -108,6 +119,13 @@ const EXTRA_TRADE_CATALOG = {
     { id: 'tabela', name: 'Dükkan tabelası', cost: 11, price: 27, units: 6 },
     { id: 'boya', name: 'Duvar boyası', cost: 7, price: 18, units: 8 },
     { id: 'yazi-tabela', name: 'El yazısı tabela hizmeti', cost: 0, price: 14, units: 0, service: true }
+  ],
+  53: [
+    { id: 'meyhane-meze', name: 'Meze tabağı', cost: 6, price: 18, units: 8 },
+    { id: 'meyhane-peynir', name: 'Peynir ve zeytin', cost: 5, price: 15, units: 8 },
+    { id: 'meyhane-balik', name: 'Günün balığı', cost: 12, price: 32, units: 5 },
+    { id: 'meyhane-ekmek', name: 'Ekmek ve sıcak meze', cost: 3, price: 11, units: 8 },
+    { id: 'meyhane-sarap', name: 'Kadeh şarap', cost: 7, price: 22, units: 6 }
   ]
 };
 
