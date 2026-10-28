@@ -579,3 +579,17 @@ button,select,input{touch-action:manipulation}
 .production-requirements{color:#e0a15b!important}
 .production-ready{color:#63c9a5!important}
 .shoe-product-row .stock-button:disabled{opacity:.5;cursor:not-allowed}
+
+
+.unit-market{margin:14px 0;padding:14px;border:1px solid rgba(180,165,135,.35);border-radius:12px;background:rgba(20,22,24,.45);min-width:0;box-sizing:border-box}
+.unit-market>p,.building-upgrade p{font-size:12px;line-height:1.5;color:var(--muted,#aaa)}
+.unit-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:12px 0}
+.unit-tile{display:flex;flex-direction:column;gap:4px;align-items:flex-start;min-width:0;padding:10px 8px;border:1px solid rgba(180,165,135,.3);border-radius:8px;background:#17191c;color:#f2eee5;text-align:left;overflow-wrap:anywhere}
+.unit-tile small{font-size:10px;line-height:1.35;color:#c4bdaF}
+.unit-tile span{font-size:9px;letter-spacing:.08em;color:#d8b66c}
+.unit-tile.unit-mine{border-color:#6ebc98;background:rgba(50,110,82,.2)}
+.unit-tile.unit-taken{opacity:.62}
+.unit-action{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;font-size:11px;line-height:1.5}
+.unit-action>span{flex:1 1 140px;min-width:0}
+.building-upgrade{margin-top:14px;padding-top:12px;border-top:1px solid rgba(180,165,135,.25)}
+@media(max-width:420px){.unit-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.unit-action .buy-button,.unit-action .rent-button{width:100%}}
