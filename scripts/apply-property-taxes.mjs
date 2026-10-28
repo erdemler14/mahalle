@@ -30,7 +30,15 @@ const periodShops = `  { id: 32, name: 'Küçük matbaa ve kırtasiye', type: 'A
   { id: 51, name: 'Mefruşatçı dükkanı', type: 'Ticaret', price: 910, rent: 70, x: 0, z: 0, color: '#c5b2a2', floors: 2, style: 'Perde, örtü ve ev kumaşları' },
   { id: 52, name: 'Tabelacı ve boyacı', type: 'Atölye', price: 620, rent: 46, x: 0, z: 0, color: '#b9a28d', floors: 2, style: 'El yazısı tabela ve boya atölyesi' },
   { id: 53, name: 'Galata meyhanesi', type: 'İşletme', price: 890, rent: 72, x: 0, z: 0, color: '#a78368', floors: 2, style: 'Meze, balık ve akşam sofrası' },
-  { id: 54, name: 'Galata şarap imalathanesi', type: 'Atölye', price: 1420, rent: 105, x: 0, z: 0, color: '#98705f', floors: 3, style: 'Meşe fıçılı küçük şarap mahzeni ve üzüm işleme atölyesi' }
+  { id: 54, name: 'Galata şarap imalathanesi', type: 'Atölye', price: 1420, rent: 105, x: 0, z: 0, color: '#98705f', floors: 3, style: 'Meşe fıçılı küçük şarap mahzeni ve üzüm işleme atölyesi' },
+  { id: 55, name: 'Pera Palas Pansiyonu', type: 'İşletme', price: 1850, rent: 138, x: 0, z: 0, color: '#b8a58e', floors: 3, style: 'Avlulu, aile işletmesi şehir pansiyonu' },
+  { id: 56, name: 'Grand Haliç Oteli', type: 'İşletme', price: 3650, rent: 270, x: 0, z: 0, color: '#bba58b', floors: 5, style: 'Büyük şehir oteli, resepsiyon ve konaklama katları' },
+  { id: 57, name: 'Majestic Sineması', type: 'İşletme', price: 2900, rent: 210, x: 0, z: 0, color: '#a78e79', floors: 3, style: 'Afiş panolu mahalle sineması ve bilet gişesi' },
+  { id: 58, name: 'Haliç Gazinosu', type: 'İşletme', price: 3350, rent: 245, x: 0, z: 0, color: '#a88c73', floors: 2, style: 'Sahne, canlı musiki ve geniş yemek salonu' },
+  { id: 59, name: 'Arka Sokak Kahvesi', type: 'İşletme', price: 720, rent: 54, x: 0, z: 0, color: '#a98d75', floors: 2, style: 'Arka sokakta küçük mahalle kahvesi' },
+  { id: 60, name: 'Hamam ve Tellaklar', type: 'İşletme', price: 2150, rent: 160, x: 0, z: 0, color: '#b8aa93', floors: 2, style: 'Kubbeli mahalle hamamı ve sıcaklık bölümü' },
+  { id: 61, name: 'Avlulu Han', type: 'Ticaret', price: 2450, rent: 180, x: 0, z: 0, color: '#b9a58e', floors: 4, style: 'Esnaf odaları, avlu ve yükleme girişi' },
+  { id: 62, name: 'Arka Sokak Meyhanesi', type: 'İşletme', price: 980, rent: 74, x: 0, z: 0, color: '#a78368', floors: 2, style: 'Dar sokakta küçük meyhane ve meze tezgahı' }
 ];`;
 const additionalShops = periodShops.slice(periodShops.indexOf(',\n') + 2, periodShops.lastIndexOf('\n];'));
 if (!s.includes("id: 54, name: 'Galata şarap imalathanesi'")) {
