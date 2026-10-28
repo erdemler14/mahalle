@@ -52,6 +52,7 @@ properties.forEach((property, index) => {
 const SAVE_KEY = 'mahalle-save-v1';
 const SAVE_BACKUP_KEY = 'mahalle-save-v1-backup';
 const DAILY_LIVING_COST = 2.5;
+const STARTING_CASH = 600;
 const venueTypesByProfession = {
   kolonyaci: ['Ticaret', 'Atölye'],
   leblebici: ['Ticaret', 'Depo', 'İşletme'],
@@ -877,7 +878,12 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     ? backupSaved
     : primarySaved;
   const [steps, setSteps] = useState(() => Number.isFinite(saved.steps) ? saved.steps : 0);
-  const [cash, setCash] = useState(() => Number.isFinite(saved.cash) ? saved.cash : 75);
+  const [cash, setCash] = useState(() => {
+    const hasProperty = Array.isArray(saved.owned) && saved.owned.length > 0;
+    // Upgrade legacy fresh saves from the old ₺75 start to the new starter fund.
+    if (!hasProperty && (!Number.isFinite(saved.cash) || saved.cash <= 75)) return STARTING_CASH;
+    return Number.isFinite(saved.cash) ? saved.cash : STARTING_CASH;
+  });
   const [owned, setOwned] = useState(() => Array.isArray(saved.owned) ? saved.owned.filter(id => properties.some(p => p.id === id)) : []);
   const [rented, setRented] = useState(() => Array.isArray(saved.rented) ? saved.rented.filter(id => properties.some(p => p.id === id)) : []);
   const [selected, setSelected] = useState(() => properties.some(p => p.id === saved.selected) ? saved.selected : 1);
@@ -974,20 +980,20 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   const shopOpen = shopPropertyId === selected;
   const [log, setLog] = useState(() => Array.isArray(saved.log) && saved.log.length ? saved.log.slice(0, 5) : [{ id: 0, text: 'Beyoğlu’na geldin. Geçimini kurmak için bir meslek seç.' }]);
   const professionOptions = [
-    { id: 'kolonyaci', name: 'Kolonyacı', gross: 5.2, overhead: 7, description: 'Kolonya, koku ve kişisel bakım ürünleri.' },
-    { id: 'leblebici', name: 'Leblebici', gross: 4.2, overhead: 4, description: 'Kuruyemiş ve leblebi; düşük sermayeli ticaret.' },
-    { id: 'terzi', name: 'Terzi', gross: 6.1, overhead: 5, description: 'Siparişle çalışır; düzenli müşteri kazandırır.' },
-    { id: 'matbaaci', name: 'Matbaacı', gross: 7.3, overhead: 9, description: 'Daha yüksek gelir, daha pahalı malzeme ve bakım.' },
-    { id: 'kahveci', name: 'Kahveci', gross: 5.6, overhead: 10, description: 'Müşteri trafiğine ve sarf malzemesine bağlı.' },
-    { id: 'firinci', name: 'Fırıncı', gross: 6.4, overhead: 11, description: 'Un, yakıt ve günlük üretim maliyeti.' },
-    { id: 'kasap', name: 'Kasap', gross: 6.8, overhead: 12, description: 'Soğuk zincir yok; günlük taze ürün ve fire riski.' },
-    { id: 'eczaci', name: 'Eczacı', gross: 7.2, overhead: 8, description: 'Daha pahalı stok, daha düşük satış hacmi.' },
-    { id: 'kitapci', name: 'Kitapçı ve kırtasiyeci', gross: 5.3, overhead: 5, description: 'Kitap, defter ve yazı malzemeleri.' },
-    { id: 'marangoz', name: 'Marangoz', gross: 7.0, overhead: 9, description: 'Sipariş, kereste ve atölye giderleri.' },
-    { id: 'manav', name: 'Manav', gross: 5.1, overhead: 7, description: 'Günlük tedarik, hızlı satış ve bozulma riski.' },
-    { id: 'lokantaci', name: 'Lokantacı', gross: 6.2, overhead: 13, description: 'Yemek satışı, malzeme ve günlük mutfak gideri.' },
-    { id: 'demirci', name: 'Demirci', gross: 7.4, overhead: 10, description: 'Metal, kömür ve sipariş bazlı üretim.' },
-    { id: 'amele', name: 'Gündelik işçi', gross: 3.7, overhead: 0, description: 'Dükkan gerekmez; çalıştığın saat kadar ücret.' }
+    { id: 'kolonyaci', name: 'Kolonyacı', gross: 15, overhead: 7, description: 'Kolonya, koku ve kişisel bakım ürünleri.' },
+    { id: 'leblebici', name: 'Leblebici', gross: 13, overhead: 4, description: 'Kuruyemiş ve leblebi; düşük sermayeli ticaret.' },
+    { id: 'terzi', name: 'Terzi', gross: 16, overhead: 5, description: 'Siparişle çalışır; düzenli müşteri kazandırır.' },
+    { id: 'matbaaci', name: 'Matbaacı', gross: 19, overhead: 9, description: 'Daha yüksek gelir, daha pahalı malzeme ve bakım.' },
+    { id: 'kahveci', name: 'Kahveci', gross: 15, overhead: 10, description: 'Müşteri trafiğine ve sarf malzemesine bağlı.' },
+    { id: 'firinci', name: 'Fırıncı', gross: 17, overhead: 11, description: 'Un, yakıt ve günlük üretim maliyeti.' },
+    { id: 'kasap', name: 'Kasap', gross: 18, overhead: 12, description: 'Soğuk zincir yok; günlük taze ürün ve fire riski.' },
+    { id: 'eczaci', name: 'Eczacı', gross: 18, overhead: 8, description: 'Daha pahalı stok, daha düşük satış hacmi.' },
+    { id: 'kitapci', name: 'Kitapçı ve kırtasiyeci', gross: 14, overhead: 5, description: 'Kitap, defter ve yazı malzemeleri.' },
+    { id: 'marangoz', name: 'Marangoz', gross: 18, overhead: 9, description: 'Sipariş, kereste ve atölye giderleri.' },
+    { id: 'manav', name: 'Manav', gross: 14, overhead: 7, description: 'Günlük tedarik, hızlı satış ve bozulma riski.' },
+    { id: 'lokantaci', name: 'Lokantacı', gross: 16, overhead: 13, description: 'Yemek satışı, malzeme ve günlük mutfak gideri.' },
+    { id: 'demirci', name: 'Demirci', gross: 19, overhead: 10, description: 'Metal, kömür ve sipariş bazlı üretim.' },
+    { id: 'amele', name: 'Gündelik işçi', gross: 13, overhead: 0, description: 'Dükkan gerekmez; çalıştığın saat kadar ücret.' }
   ];
   const tradeCatalog = {
     1: [{ id: 'kolonya', name: 'Kolonya ve koku', cost: 12, price: 2.2, units: 10 }, { id: 'sabun', name: 'Sabun ve bakım', cost: 9, price: 1.8, units: 10 }],
@@ -1076,7 +1082,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
           const state = cloudSave.state;
           if (typeof state.playerName === 'string') setPlayerName(state.playerName || displayName);
           if (Number.isFinite(state.steps)) setSteps(state.steps);
-          if (Number.isFinite(state.cash)) setCash(state.cash);
+          if (Number.isFinite(state.cash)) setCash((!Array.isArray(state.owned) || state.owned.length === 0) && state.cash <= 75 ? STARTING_CASH : state.cash);
           if (Array.isArray(state.rented)) setRented(state.rented.filter(id => properties.some(p => p.id === id)));
           if (properties.some(p => p.id === state.selected)) setSelected(state.selected);
           if (typeof state.showPortfolio === 'boolean') setShowPortfolio(state.showPortfolio);
@@ -1186,17 +1192,20 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     }
     if (work && isWorkingHour) {
       const variance = 0.82 + Math.random() * 0.36;
-      if (professionId === 'amele') {
+      if (owned.length > 0 && !shopOpen) {
+        laborNet = 0;
+        detail = (detail ? detail + ' · ' : '') + 'Artık ücretli gündelik iş yerine mülküne odaklanmalısın; kendi iş yerini açıp stok hazırlayarak ve satış yaparak kazanabilirsin.';
+      } else if (professionId === 'amele' && owned.length === 0) {
         const wage = Math.round(profession.gross * variance * 100) / 100;
         laborNet = wage;
         detail = (detail ? detail + ' · ' : '') + `Gündelik işçilik: saatlik ücret ${wage.toFixed(2)} oyun lirası`;
-      } else if (!shopOpen) {
+      } else if (!shopOpen && owned.length === 0) {
         const gross = Math.round(profession.gross * variance * 100) / 100;
         const supplies = Math.round((profession.overhead * 0.12 + 0.35) * 100) / 100;
         laborNet = gross - supplies;
         detail = (detail ? detail + ' · ' : '') + `${profession.name}: iş hasılatı ${gross.toFixed(2)}, malzeme ${supplies.toFixed(2)}`;
       } else {
-        detail = (detail ? detail + ' · ' : '') + `${profession.name}: dükkanında çalıştın; diğer işletmelerin satışları da sürdü`;
+        detail = (detail ? detail + ' · ' : '') + `${profession.name}: kendi iş yerindeki satışlar sürdü; ücret yerine işletme geliri kazandın`;
       }
       setWorkHours(v => v + 1);
       setCareerHours(v => v + 1);
@@ -1302,16 +1311,21 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       tell('Dükkanda çalışmak için mesai saatlerini beklemelisin (08.00–19.00).');
       return;
     }
-    const variance = 0.9 + Math.random() * 0.3;
-    const gross = Math.round(profession.gross * variance * 2.2 * 100) / 100;
-    const supplies = Math.round((profession.overhead * 0.18 + 0.5) * 100) / 100;
-    const net = Math.round((gross - supplies) * 100) / 100;
+    const item = (tradeCatalog[active.id] || []).find(product => product.id === businessPlans[active.id]);
+    if (!item) {
+      tell('Önce iş yerinde satacağın ürünü seç. Ardından stok alabilir veya üretim yapabilirsin.');
+      return;
+    }
     setClockRunning(false);
-    setCash(value => Math.round((value + net) * 100) / 100);
-    setWorkHours(value => value + 1);
-    setCareerHours(value => value + 1);
-    setHour(value => value >= 18 ? 19 : value + 1);
-    tell(`${profession.name} olarak ${active.name} içinde bir saat çalıştın: iş geliri +₺${gross.toFixed(2)}, malzeme -₺${supplies.toFixed(2)}, net +₺${net.toFixed(2)}. Zamanı durdurdum; istersen yeniden başlatabilirsin.`);
+    if (item.production) {
+      const produced = 2;
+      setStockByProperty(old => ({ ...old, [active.id]: (Number(old[active.id]) || 0) + produced }));
+      tell(`${active.name} içinde bir saat üretim yaptın: ${item.name} için ${produced} adet stok hazırladın. Üretim stokunu artırdı; satış için oyunu ilerlet.`);
+    } else {
+      tell(`${active.name} içinde satışla ilgilendin. Bu saat ücret değil, stoktaki ürünlerin satış geliri kazandıracak.`);
+    }
+    advanceHour(true);
+    setClockRunning(false);
   };
 
   const stockBusiness = () => {
@@ -1441,7 +1455,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     if (session && supabase) { tell('Ortak şehirde yeni oyun sıfırlaması şimdilik kapalı; mülk sahipliğinin kaybolmaması için.'); return; }
     if (sendAction('resetGame')) return;
     if (typeof window !== 'undefined' && !window.confirm('Yeni oyun başlatılsın mı? Mevcut mahalle kaydı silinecek.')) return;
-    setSteps(0); setCash(75); setOwned([]); setRented([]); setSelected(1); setShowPortfolio(false);
+    setSteps(0); setCash(STARTING_CASH); setOwned([]); setRented([]); setSelected(1); setShowPortfolio(false);
     setProfessionId('amele'); setHour(8); setDay(1); setMonth(1); setYear(1923);
     setWorkHours(0); setCareerHours(0); setShopPropertyId(null); setWineBottles(0); setBusinessPlans({}); setStockByProperty({}); setBusinessStats({});
     setLog([{ id: Date.now(), text: 'Yeni bir hikaye başladı. Gündelik işçilikle sermaye biriktir veya uygun bir dükkan edin.' }]);
