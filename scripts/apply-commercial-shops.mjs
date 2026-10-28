@@ -126,6 +126,12 @@ const EXTRA_TRADE_CATALOG = {
     { id: 'meyhane-balik', name: 'Günün balığı', cost: 12, price: 32, units: 5 },
     { id: 'meyhane-ekmek', name: 'Ekmek ve sıcak meze', cost: 3, price: 11, units: 8 },
     { id: 'meyhane-sarap', name: 'Kadeh şarap', cost: 7, price: 22, units: 6 }
+  ],
+  54: [
+    { id: 'mahzen-sarap-uretim', name: 'Galata mahzen şarabı üretimi', cost: 72, price: 18, units: 8, production: true },
+    { id: 'sarap-sise', name: 'Şişelenmiş kırmızı şarap', cost: 88, price: 22, units: 8 },
+    { id: 'sarap-fici', name: 'Meşe fıçıda yıllanmış şarap', cost: 128, price: 32, units: 8 },
+    { id: 'uzum-sirkesi', name: 'Üzüm sirkesi', cost: 40, price: 10, units: 8 }
   ]
 };
 
