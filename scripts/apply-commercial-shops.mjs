@@ -129,17 +129,20 @@ const EXTRA_TRADE_CATALOG = {
   ]
 };
 
-// Shared economy model: prices are retail prices, costs are acquisition/production costs.
- // Ordinary goods target a 35-45% gross margin; luxury/precious goods a tighter
- // turnover-adjusted margin. Service prices remain labor fees and never consume stock.
+// Economy is anchored to the neighborhood property scale (roughly ₺520-₺1,180).
+// Goods are priced from their acquisition/production cost, not arbitrary retail labels:
+// everyday goods use a 28% markup, luxury goods 18%. This keeps 20 ordinary sales
+// meaningfully below a shop/property purchase price while preserving operating profit.
+// Services are labor fees, so they do not require stock or merchandise cost.
 const getTradeCatalog = (catalog, propertyId) => {
   const items = catalog[propertyId] || EXTRA_TRADE_CATALOG[propertyId] || [];
   return items.map(item => {
-    if (item.service) return { ...item, cost: Math.max(0, Math.round(item.price * 0.28)) };
+    const listedPrice = Math.max(0, Number(item.price) || 0);
+    if (item.service) return { ...item, cost: 0, price: listedPrice };
     const cost = Math.max(1, Number(item.cost) || 1);
     const luxury = /altın|gümüş|ipek|kuyum|cep saati|deri ayakkabı/i.test(item.name);
-    const markup = luxury ? 1.32 : 1.42;
-    const price = Math.max(cost + 1, Math.round(cost * markup));
+    const markup = luxury ? 1.18 : 1.28;
+    const price = Math.max(cost + 1, Math.round(cost * markup * 100) / 100);
     return { ...item, cost, price };
   });
 };
