@@ -853,7 +853,6 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
       sun.intensity = isNight ? 0.28 : isDusk ? 1.35 : 3.0;
       lampGlass.emissiveIntensity = isNight ? 1.15 : isDusk ? 0.55 : 0.18;
       tram.position.z = -23 + ((elapsed * 1.45) % 46);
-      const currentHour = hourRef.current ?? 12;
       const peakCrowd = currentHour >= 7 && currentHour < 9 ? 22 : currentHour >= 12 && currentHour < 14 ? 26 : currentHour >= 17 && currentHour < 20 ? 30 : currentHour >= 9 && currentHour < 17 ? 18 : currentHour >= 20 && currentHour < 22 ? 11 : 6;
       pedestrians.forEach((ped, i) => {
         ped.person.visible = ped.crowdIndex < peakCrowd;
