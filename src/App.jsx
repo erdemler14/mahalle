@@ -1660,6 +1660,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     setStockByProperty(old => { const state=getInventoryState(propertyId,old[propertyId]); return { ...old, [propertyId]: { materials: nextMaterials, products: state.products } }; });
     setPendingProductions(old => ({ ...old, [pendingKey]: { units: (Number(old[pendingKey]?.units)||0)+1, readyAt: Date.now()+duration, name:item.name, propertyId, productId:item.id } }));
     setTimeout(() => {
+      // Merge completed units into the existing inventory without dropping material stock.
       setStockByProperty(old => {
         const state = getInventoryState(propertyId, old[propertyId]);
         return {
