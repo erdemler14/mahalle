@@ -52,6 +52,17 @@ properties.forEach((property, index) => {
 const SAVE_KEY = 'mahalle-save-v1';
 const SAVE_BACKUP_KEY = 'mahalle-save-v1-backup';
 const DAILY_LIVING_COST = 2.5;
+const SHOE_MATERIALS = [
+  { id: 'deri', name: 'İşlenmiş deri', batch: 6, cost: 18 },
+  { id: 'taban', name: 'Ayakkabı tabanı', batch: 6, cost: 12 },
+  { id: 'iplik', name: 'Sağlam iplik', batch: 12, cost: 8 },
+  { id: 'civi', name: 'Kunduracı çivisi', batch: 12, cost: 6 }
+];
+const SHOE_RECIPES = [
+  { id: 'kundura', name: 'Günlük kundura', price: 18, recipe: { deri: 1, taban: 1, iplik: 2, civi: 2 } },
+  { id: 'deri-ayakkabi', name: 'Kaliteli deri ayakkabı', price: 29, recipe: { deri: 2, taban: 1, iplik: 2, civi: 2 } },
+  { id: 'ayakkabi-taban', name: 'Tamirlik tabanlı ayakkabı', price: 12, recipe: { deri: 1, taban: 2, iplik: 1, civi: 3 } }
+];
 const STARTING_CASH = 800;
 const STARTER_ECONOMY_VERSION = 2;
 const venueTypesByProfession = {
@@ -1323,6 +1334,27 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       if (rented.includes(propertyId)) return;
       const property = properties.find(item => item.id === propertyId);
       if (!property || !['İşletme', 'Atölye', 'Ticaret'].includes(property.type)) return;
+      if (propertyId === 37) {
+        const state = stockByProperty[37] && typeof stockByProperty[37] === 'object' ? stockByProperty[37] : { materials: {}, products: {} };
+        const products = { ...(state.products || {}) };
+        let total = 0; const soldItems = [];
+        SHOE_RECIPES.forEach(shoe => {
+          const stock = Math.max(0, Number(products[shoe.id]) || 0);
+          if (!stock || Math.random() > 0.46) return;
+          const eventEffect = getEconomicEventEffect(property, { id: shoe.id, name: shoe.name });
+          const sold = Math.min(stock, Math.random() > 0.78 ? 2 : 1);
+          const amount = Math.round(sold * shoe.price * eventEffect.sales * 100) / 100;
+          products[shoe.id] = stock - sold; total += amount; soldItems.push({ name: shoe.name, sold, amount });
+          entries.push(property.name + ': ' + sold + ' çift ' + shoe.name + ' satıldı (+₺' + amount.toFixed(2) + ')');
+        });
+        if (soldItems.length) {
+          stockChanges[37] = { ...state, materials: state.materials || {}, products };
+          revenue += total;
+          salesByProperty[37] = { units: soldItems.reduce((n, item) => n + item.sold, 0), revenue: total, items: soldItems };
+          setBusinessStats(old => { const prev = old[37] || { unitsSold: 0, revenue: 0, stockInvested: 0 }; return { ...old, 37: { ...prev, unitsSold: prev.unitsSold + soldItems.reduce((n, item) => n + item.sold, 0), revenue: Math.round((prev.revenue + total) * 100) / 100 } }; });
+        }
+        return;
+      }
       const product = (tradeCatalog[propertyId] || []).find(item => item.id === businessPlans[propertyId]);
       if (!product || product.price <= 0) return;
       const stock = Math.max(0, Number(stockByProperty[propertyId]) || 0);
@@ -1418,6 +1450,27 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     }
     advanceHour(true);
     setClockRunning(false);
+  };
+
+  const buyShoeMaterial = (materialId) => {
+    if (!owned.includes(37) || rented.includes(37)) { tell('Hammadde almak için kunduracı sana ait olmalı ve kirada olmamalı.'); return; }
+    const material = SHOE_MATERIALS.find(item => item.id === materialId); if (!material) return;
+    if (cash < material.cost) { tell(material.name + ' için ₺' + material.cost + ' gerekiyor.'); return; }
+    setCash(v => Math.round((v - material.cost) * 100) / 100);
+    setStockByProperty(old => { const state = old[37] && typeof old[37] === 'object' ? old[37] : { materials: {}, products: {} }; return { ...old, 37: { materials: { ...(state.materials || {}), [material.id]: (Number(state.materials?.[material.id]) || 0) + material.batch }, products: state.products || {} } }; });
+    setBusinessStats(old => { const prev = old[37] || { unitsSold: 0, revenue: 0, stockInvested: 0 }; return { ...old, 37: { ...prev, stockInvested: Math.round((prev.stockInvested + material.cost) * 100) / 100 } }; });
+    tell('Tedarik tamamlandı: ' + material.name + ' +' + material.batch + ' birim. Maliyet ₺' + material.cost + '.');
+  };
+  const craftShoe = (shoeId) => {
+    if (!owned.includes(37) || rented.includes(37)) { tell('Üretim için kunduracı sana ait olmalı ve kirada olmamalı.'); return; }
+    const shoe = SHOE_RECIPES.find(item => item.id === shoeId); if (!shoe) return;
+    const state = stockByProperty[37] && typeof stockByProperty[37] === 'object' ? stockByProperty[37] : { materials: {}, products: {} };
+    const materials = state.materials || {};
+    const missing = Object.entries(shoe.recipe).filter(([id, qty]) => (Number(materials[id]) || 0) < qty);
+    if (missing.length) { tell('Hammadde eksik: ' + missing.map(([id, qty]) => (SHOE_MATERIALS.find(m => m.id === id)?.name || id) + ' ' + qty).join(', ') + '. Önce tedarik et.'); return; }
+    const next = { ...materials }; Object.entries(shoe.recipe).forEach(([id, qty]) => { next[id] = (Number(next[id]) || 0) - qty; });
+    setStockByProperty(old => { const current = old[37] && typeof old[37] === 'object' ? old[37] : { materials: {}, products: {} }; return { ...old, 37: { materials: next, products: { ...(current.products || {}), [shoe.id]: (Number(current.products?.[shoe.id]) || 0) + 1 } } }; });
+    tell('Üretim tamamlandı: 1 çift ' + shoe.name + '. Hammaddeler düşüldü; ürün vitrinde satışa hazır.');
   };
 
   const stockBusiness = () => {
@@ -1826,7 +1879,20 @@ function App({ session = null, supabase = null, authConfigured = false }) {
           {ownerByProperty[active.id] && ownerByProperty[active.id].playerId !== playerId && <><button className="buy-button" onClick={() => { setOfferPriceInput(String(getMarketValue(active))); setOfferComposerOpen(v => !v); }}>SATIN ALMA TEKLİFİ GÖNDER <span>↗</span></button>{offerComposerOpen && <div className="offer-composer"><label>Teklifin (₺)<input type="number" min="1" value={offerPriceInput} onChange={e => setOfferPriceInput(e.target.value)} /></label><small>Piyasa değeri: ₺{getMarketValue(active).toLocaleString('tr-TR')}</small><button onClick={sendOffer}>TEKLİFİ GÖNDER</button></div>}</>}
           {owned.includes(active.id) && <button className="rent-button" onClick={toggleRent}>{rented.includes(active.id) ? 'KİRACIYI ÇIKAR' : 'KİRACI BUL VE KİRAYA VER'}</button>}
           {owned.includes(active.id) && <button className="sell-button" onClick={sellProperty}>MÜLKÜ SAT · ₺{Math.round(active.price * 0.9).toLocaleString('tr-TR')}</button>}
-          {owned.includes(active.id) && !rented.includes(active.id) && (tradeCatalog[active.id] || []).some(item => item.price > 0) && <div className="business-plan">
+          {active.id === 37 && owned.includes(37) && !rented.includes(37) && (() => {
+            const state = stockByProperty[37] && typeof stockByProperty[37] === 'object' ? stockByProperty[37] : { materials: {}, products: {} };
+            const materials = state.materials || {}; const products = state.products || {};
+            return <div className="business-plan shoe-workshop"><div className="card-label">KUNDURACI · TEDARİK / ÜRETİM / VİTRİN</div>
+              <p className="profession-meta">Hammaddeleri tedarik et, reçeteye göre üret ve her ürünün stokunu ayrı izle.</p>
+              <h3>1 · Hammadde deposu</h3>
+              {SHOE_MATERIALS.map(m => <div className="stock-line" key={m.id}><span>{m.name} · stok <strong>{Number(materials[m.id]) || 0}</strong></span><button className="stock-button" onClick={() => buyShoeMaterial(m.id)}>+{m.batch} · ₺{m.cost}</button></div>)}
+              <h3>2 · Üretim tezgâhı</h3>
+              {SHOE_RECIPES.map(shoe => <div className="shoe-product-row" key={shoe.id}><div><strong>{shoe.name}</strong><small>Reçete: {Object.entries(shoe.recipe).map(([id, qty]) => (SHOE_MATERIALS.find(m => m.id === id)?.name || id) + ' ×' + qty).join(' · ')}</small><small>Satış fiyatı: ₺{shoe.price} / çift</small></div><button className="stock-button" onClick={() => craftShoe(shoe.id)}>1 ÇİFT ÜRET</button></div>)}
+              <h3>3 · Vitrin stokları</h3>
+              {SHOE_RECIPES.map(shoe => <div className="stock-line" key={shoe.id}><span>{shoe.name}</span><strong>{Number(products[shoe.id]) || 0} çift</strong></div>)}
+            </div>;
+          })()}
+          {owned.includes(active.id) && !rented.includes(active.id) && active.id !== 37 && (tradeCatalog[active.id] || []).some(item => item.price > 0) && <div className="business-plan">
             <div className="card-label">İŞ MODELİ · TEDARİK · STOK</div>
             <label className="business-label" htmlFor="business-plan-select">Ne satacaksın?</label>
             <select id="business-plan-select" className="profession-select" value={businessPlans[active.id] || ''} onChange={e => selectBusinessPlan(e.target.value)}>
