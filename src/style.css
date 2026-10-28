@@ -302,6 +302,7 @@ h1 span{color:#ffca58;font-weight:700}
 .property-finder{display:flex;align-items:center;gap:8px;min-width:180px;max-width:360px;flex:1;padding:5px 9px;background:#f8f7f1;border:1px solid #d7d5ca;border-radius:5px;color:#73766d}
 .property-finder>span{font-size:18px;line-height:1}
 .property-finder select{width:100%;min-width:0;border:0;outline:0;background:transparent;color:#333d39;font:500 11px 'Space Grotesk',sans-serif;cursor:pointer}
+.property-finder input{width:100%;min-width:0;border:0;outline:0;background:transparent;color:#333d39;font:500 12px 'Space Grotesk',sans-serif}.property-finder input::placeholder{color:#8e9085}.property-finder:focus-within{border-color:#7d9278;box-shadow:0 0 0 3px rgba(125,146,120,.14)}
 .property-finder small{white-space:nowrap;font:700 8px 'IBM Plex Mono',monospace;color:#8e9085}
 .world-year{white-space:nowrap}
 .scene-host{height:clamp(480px,58vw,680px);min-height:480px;touch-action:pan-y}
@@ -426,3 +427,18 @@ button,select,input{touch-action:manipulation}
 .reputation-meter span{display:block;height:100%;background:linear-gradient(90deg,#63e6be,#a5e8ff);transition:width .25s ease}
 @media(max-width:680px){.reputation-row{align-items:flex-start;flex-direction:column}.reputation-row>b{text-align:left}.reputation-row strong{font-size:12px}}
 @media(prefers-reduced-motion:reduce){.reputation-meter span{transition:none}}
+
+
+/* Clearer, more forgiving neighborhood navigation */
+.scene-host{background:#e8e6de}
+.map-zoom-controls{gap:7px;padding:7px;border-radius:11px}
+.map-zoom-controls button{width:42px;height:42px;border-radius:8px;font-size:21px}
+.map-zoom-controls button:focus-visible{outline:3px solid #6d8d79;outline-offset:2px}
+.map-hint{max-width:min(440px,calc(100% - 90px));line-height:1.45;font-size:11px;border-radius:8px;box-shadow:0 4px 14px #0000001a}
+@media(max-width:760px){
+  .property-finder{min-width:0;max-width:none;flex:1}
+  .property-finder small{font-size:8px}
+  .map-zoom-controls{gap:6px;padding:5px}
+  .map-zoom-controls button{width:40px;height:40px}
+  .map-hint{max-width:calc(100% - 82px);font-size:10px;left:9px;bottom:9px}
+}
