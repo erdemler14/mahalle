@@ -3,38 +3,38 @@ import * as THREE from 'three';
 import Peer from 'peerjs';
 
 const properties = [
-  { id: 1, name: 'Limon Kardeşler Bakkaliyesi', type: 'Ticaret', price: 1890, rent: 26, x: -4.2, z: -1.1, color: '#d9b99c', floors: 3, style: 'Galata taş cephesi' },
-  { id: 2, name: 'Asmalımescit apartmanı', type: 'Konut', price: 3870, rent: 46, x: 0, z: -3.2, color: '#b9c9c4', floors: 4, style: 'Cumba ve yüksek tavan' },
-  { id: 3, name: 'Karaköy Ticaret Deposu', type: 'Depo', price: 1305, rent: 19, x: 4.1, z: -0.7, color: '#d9c3a8', floors: 2, style: 'Sade taş yapı' },
-  { id: 4, name: 'Şahin Hanı', type: 'Ticaret', price: 5625, rent: 75, x: -2.4, z: 4.1, color: '#c6a9a1', floors: 4, style: 'Ticaret hanı' },
-  { id: 5, name: 'Meydan evi', type: 'Konut', price: 3105, rent: 37, x: 3.2, z: 4.2, color: '#d8d0b9', floors: 3, style: 'Dar cepheli şehir evi' },
-  { id: 6, name: 'Eski Rum evi', type: 'Konut', price: 3330, rent: 39, x: -7.2, z: -5.2, color: '#b6c0a7', floors: 3, style: 'Ahşap cumba' },
-  { id: 7, name: 'Mahzen Şarap ve Erzak', type: 'Ticaret', price: 2295, rent: 30, x: 7.0, z: -5.0, color: '#d8bca5', floors: 3, style: 'Zemin kat dükkan' },
-  { id: 8, name: 'Tünel yakınında apartman', type: 'Konut', price: 5040, rent: 61, x: -7.4, z: 2.8, color: '#b7c5ce', floors: 4, style: 'Geç Osmanlı apartmanı' },
-  { id: 9, name: 'Nuri Efendi Matbaası', type: 'Atölye', price: 2790, rent: 36, x: 7.2, z: 2.7, color: '#cbb2a0', floors: 2, style: 'Zanaat atölyesi' },
-  { id: 10, name: 'Şıkır Şıkır Galata Mağazası', type: 'Ticaret', price: 6660, rent: 86, x: -5.6, z: 7.4, color: '#dfc9a3', floors: 4, style: 'Süslü ticaret cephesi' },
-  { id: 11, name: 'Avlulu aile evi', type: 'Konut', price: 2565, rent: 28, x: 0.1, z: 8.0, color: '#c6b8cf', floors: 2, style: 'İç avlulu konut' },
-  { id: 12, name: 'Hakkı’nın Kahvesi', type: 'İşletme', price: 2160, rent: 50, x: 5.5, z: 7.5, color: '#c5b9a4', floors: 2, style: 'Sokak kahvehanesi' },
-  { id: 13, name: 'Sıcak Somun Fırını', type: 'İşletme', price: 2520, rent: 54, x: -10.5, z: -1.0, color: '#d9b28a', floors: 2, style: 'Taş fırın cephesi' },
-  { id: 14, name: 'Kurban Kasap', type: 'Ticaret', price: 2655, rent: 56, x: 10.5, z: -1.0, color: '#b9a39a', floors: 2, style: 'Dar vitrinli dükkan' },
-  { id: 15, name: 'Faruk Eczanesi', type: 'Ticaret', price: 3690, rent: 70, x: -10.5, z: 5.5, color: '#c2cbb6', floors: 3, style: 'Eski şehir eczanesi' },
-  { id: 16, name: 'Mürekkep Kitabevi', type: 'Ticaret', price: 2880, rent: 58, x: 10.5, z: 5.5, color: '#c6b69f', floors: 2, style: 'Ahşap raflı mağaza' },
-  { id: 17, name: 'Çınar Marangozhanesi', type: 'Atölye', price: 2340, rent: 38, x: -10.5, z: 10.5, color: '#b99a7d', floors: 2, style: 'Avlulu ahşap atölye' },
-  { id: 18, name: 'Bereket Manavı', type: 'Ticaret', price: 1755, rent: 34, x: 10.5, z: 10.5, color: '#aebc91', floors: 1, style: 'Sokak manavı' },
-  { id: 19, name: 'Hacı Salih Lokantası', type: 'İşletme', price: 3420, rent: 67, x: -3.5, z: 12.5, color: '#c9a58d', floors: 2, style: 'Esnaf lokantası' },
-  { id: 20, name: 'Kara Çekiç Demirci', type: 'Atölye', price: 2745, rent: 43, x: 3.5, z: 12.5, color: '#9d9b9a', floors: 2, style: 'Küçük demirci ocağı' },
-  { id: 21, name: 'Bereket Hanı', type: 'Ticaret', price: 7560, rent: 94, x: -15.3, z: -10.2, color: '#c5b6a0', floors: 4, style: 'Yüksek tavanlı, kemerli girişli Galata hanı' },
-  { id: 22, name: 'Galata yokuşu evi', type: 'Konut', price: 4230, rent: 51, x: 15.2, z: -10.1, color: '#b8c5bd', floors: 4, style: 'Dar cepheli, ahşap cumbalı şehir evi' },
-  { id: 23, name: 'Şifa Aktarı', type: 'Ticaret', price: 3195, rent: 44, x: -15.3, z: -4.8, color: '#d7c09d', floors: 2, style: 'Ahşap vitrinli mahalle aktarı' },
-  { id: 24, name: 'Galata apartmanı', type: 'Konut', price: 6030, rent: 74, x: 15.2, z: -4.7, color: '#c7b9b0', floors: 5, style: 'Taş cepheli, kat silmeli apartman' },
-  { id: 25, name: 'Tünel Kahvehanesi', type: 'İşletme', price: 4455, rent: 62, x: -15.3, z: 1.2, color: '#c7b89e', floors: 3, style: 'Köşe kahvesi ve açık oturma alanı' },
-  { id: 26, name: 'İnci Terzihanesi', type: 'Atölye', price: 3060, rent: 39, x: 15.2, z: 1.2, color: '#c4b2a5', floors: 3, style: 'Dar cepheli zanaat dükkanı' },
-  { id: 27, name: 'Levanten aile apartmanı', type: 'Konut', price: 7020, rent: 84, x: -15.3, z: 7.1, color: '#b8c3c9', floors: 5, style: 'Konsollu cumba ve dökme demir balkonlar' },
+  { id: 1, name: 'Madam Eleni’nin Bakkal ve Şarküterisi', type: 'Ticaret', price: 1890, rent: 26, x: -4.2, z: -1.1, color: '#d9b99c', floors: 3, style: 'Galata taş cephesi' },
+  { id: 2, name: 'Chryssoverghi Apartmanı', type: 'Konut', price: 3870, rent: 46, x: 0, z: -3.2, color: '#b9c9c4', floors: 4, style: 'Cumba ve yüksek tavan', units: 6 },
+  { id: 3, name: 'Karaköy Levazımat Ambarı', type: 'Depo', price: 1305, rent: 19, x: 4.1, z: -0.7, color: '#d9c3a8', floors: 2, style: 'Sade taş yapı' },
+  { id: 4, name: 'Şahin Bey Ticaret Hanı', type: 'Ticaret', price: 5625, rent: 75, x: -2.4, z: 4.1, color: '#c6a9a1', floors: 4, style: 'Ticaret hanı' },
+  { id: 5, name: 'Meydancık’taki Ali Rıza Bey Evi', type: 'Konut', price: 3105, rent: 37, x: 3.2, z: 4.2, color: '#d8d0b9', floors: 3, style: 'Dar cepheli şehir evi', units: 4 },
+  { id: 6, name: 'Petraki Kalfa Evi', type: 'Konut', price: 3330, rent: 39, x: -7.2, z: -5.2, color: '#b6c0a7', floors: 3, style: 'Ahşap cumba', units: 4 },
+  { id: 7, name: 'Maison Vuccino Şarap ve Erzak', type: 'Ticaret', price: 2295, rent: 30, x: 7.0, z: -5.0, color: '#d8bca5', floors: 3, style: 'Zemin kat dükkan' },
+  { id: 8, name: 'Apostolidis Apartmanı', type: 'Konut', price: 5040, rent: 61, x: -7.4, z: 2.8, color: '#b7c5ce', floors: 4, style: 'Geç Osmanlı apartmanı', units: 6 },
+  { id: 9, name: 'Nuri Efendi Matbaa ve Mücellithanesi', type: 'Atölye', price: 2790, rent: 36, x: 7.2, z: 2.7, color: '#cbb2a0', floors: 2, style: 'Zanaat atölyesi' },
+  { id: 10, name: 'Au Paon Konfeksiyon Mağazası', type: 'Ticaret', price: 6660, rent: 86, x: -5.6, z: 7.4, color: '#dfc9a3', floors: 4, style: 'Süslü ticaret cephesi' },
+  { id: 11, name: 'Avlulu Hacı İsmail Efendi Evi', type: 'Konut', price: 2565, rent: 28, x: 0.1, z: 8.0, color: '#c6b8cf', floors: 2, style: 'İç avlulu konut', units: 4 },
+  { id: 12, name: 'Hakkı Efendi’nin Kıraathanesi', type: 'İşletme', price: 2160, rent: 50, x: 5.5, z: 7.5, color: '#c5b9a4', floors: 2, style: 'Sokak kahvehanesi' },
+  { id: 13, name: 'Schumacher’in Ekmek Fırını', type: 'İşletme', price: 2520, rent: 54, x: -10.5, z: -1.0, color: '#d9b28a', floors: 2, style: 'Taş fırın cephesi' },
+  { id: 14, name: 'Kurban Usta’nın Kasap Dükkânı', type: 'Ticaret', price: 2655, rent: 56, x: 10.5, z: -1.0, color: '#b9a39a', floors: 2, style: 'Dar vitrinli dükkan' },
+  { id: 15, name: 'Canzuch Eczahanesi', type: 'Ticaret', price: 3690, rent: 70, x: -10.5, z: 5.5, color: '#c2cbb6', floors: 3, style: 'Eski şehir eczanesi' },
+  { id: 16, name: 'Narlıyan Kitap ve Kırtasiye', type: 'Ticaret', price: 2880, rent: 58, x: 10.5, z: 5.5, color: '#c6b69f', floors: 2, style: 'Ahşap raflı mağaza' },
+  { id: 17, name: 'Hakkı Usta’nın Marangozhanesi', type: 'Atölye', price: 2340, rent: 38, x: -10.5, z: 10.5, color: '#b99a7d', floors: 2, style: 'Avlulu ahşap atölye' },
+  { id: 18, name: 'Yorgo’nun Meyve ve Sebze Dükkânı', type: 'Ticaret', price: 1755, rent: 34, x: 10.5, z: 10.5, color: '#aebc91', floors: 1, style: 'Sokak manavı' },
+  { id: 19, name: 'Hacı Salih’in Esnaf Lokantası', type: 'İşletme', price: 3420, rent: 67, x: -3.5, z: 12.5, color: '#c9a58d', floors: 2, style: 'Esnaf lokantası' },
+  { id: 20, name: 'Karabet Usta’nın Demirci Ocağı', type: 'Atölye', price: 2745, rent: 43, x: 3.5, z: 12.5, color: '#9d9b9a', floors: 2, style: 'Küçük demirci ocağı' },
+  { id: 21, name: 'Hacı Arif Paşa Hanı', type: 'Ticaret', price: 7560, rent: 94, x: -15.3, z: -10.2, color: '#c5b6a0', floors: 4, style: 'Yüksek tavanlı, kemerli girişli Galata hanı' },
+  { id: 22, name: 'Galata Yokuşu’nda Zeki Bey Apartmanı', type: 'Konut', price: 4230, rent: 51, x: 15.2, z: -10.1, color: '#b8c5bd', floors: 4, style: 'Dar cepheli, ahşap cumbalı şehir evi', units: 6 },
+  { id: 23, name: 'Madam Mari’nin Baharat ve Nebatat Dükkânı', type: 'Ticaret', price: 3195, rent: 44, x: -15.3, z: -4.8, color: '#d7c09d', floors: 2, style: 'Ahşap vitrinli mahalle aktarı' },
+  { id: 24, name: 'Frej Apartmanı', type: 'Konut', price: 6030, rent: 74, x: 15.2, z: -4.7, color: '#c7b9b0', floors: 5, style: 'Taş cepheli, kat silmeli apartman', units: 8 },
+  { id: 25, name: 'Café de Péra', type: 'İşletme', price: 4455, rent: 62, x: -15.3, z: 1.2, color: '#c7b89e', floors: 3, style: 'Köşe kahvesi ve açık oturma alanı' },
+  { id: 26, name: 'Madam İfigenia’nın Terzihanesi', type: 'Atölye', price: 3060, rent: 39, x: 15.2, z: 1.2, color: '#c4b2a5', floors: 3, style: 'Dar cepheli zanaat dükkanı' },
+  { id: 27, name: 'Rizzo Apartmanı', type: 'Konut', price: 7020, rent: 84, x: -15.3, z: 7.1, color: '#b8c3c9', floors: 5, style: 'Konsollu cumba ve dökme demir balkonlar', units: 8 },
   { id: 28, name: 'Limon Kardeşler Bakkaliyesi', type: 'Ticaret', price: 3420, rent: 47, x: 15.2, z: 7.1, color: '#d6c3a8', floors: 2, style: 'Kepenkli, dar vitrinli bakkal' },
-  { id: 29, name: 'Mis Kokulu Sabun İmalathanesi', type: 'Atölye', price: 3870, rent: 49, x: -15.3, z: 12.8, color: '#b9b3a6', floors: 2, style: 'Arka avlulu küçük imalathane' },
-  { id: 30, name: 'Cumba altı kiralık daireler', type: 'Konut', price: 5355, rent: 66, x: 15.2, z: 12.8, color: '#c8b8c2', floors: 4, style: 'Üst katlarda kiralık daireleri olan apartman' },
-  { id: 31, name: 'Şeref Usta’nın Sofrası', type: 'İşletme', price: 5670, rent: 77, x: -5.5, z: 17.2, color: '#c7a18e', floors: 2, style: 'Sokak köşesinde eski usul lokanta' },
-  { id: 32, name: 'Nokta Matbaa ve Kırtasiye', type: 'Atölye', price: 4185, rent: 54, x: 5.5, z: 17.2, color: '#b8b0a4', floors: 3, style: 'Baskı atölyesi ve kırtasiye' }
+  { id: 29, name: 'Mavridis Biraderler Sabun İmalathanesi', type: 'Atölye', price: 3870, rent: 49, x: -15.3, z: 12.8, color: '#b9b3a6', floors: 2, style: 'Arka avlulu küçük imalathane' },
+  { id: 30, name: 'Sıraselviler’de Crespi Apartmanı', type: 'Konut', price: 5355, rent: 66, x: 15.2, z: 12.8, color: '#c8b8c2', floors: 4, style: 'Üst katlarda kiralık daireleri olan apartman', units: 6 },
+  { id: 31, name: 'Şeref Usta’nın Lokantası', type: 'İşletme', price: 5670, rent: 77, x: -5.5, z: 17.2, color: '#c7a18e', floors: 2, style: 'Sokak köşesinde eski usul lokanta' },
+  { id: 32, name: 'Papadopulos Matbaa ve Kırtasiyesi', type: 'Atölye', price: 4185, rent: 54, x: 5.5, z: 17.2, color: '#b8b0a4', floors: 3, style: 'Baskı atölyesi ve kırtasiye' }
 ];
 
 // Galata-style irregular street frontages: narrow blocks, staggered facades and varied angles.
@@ -930,6 +930,10 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   });
   const [owned, setOwned] = useState(() => Array.isArray(saved.owned) ? saved.owned.filter(id => properties.some(p => p.id === id)) : []);
   const [rented, setRented] = useState(() => Array.isArray(saved.rented) ? saved.rented.filter(id => properties.some(p => p.id === id)) : []);
+  const [unitOwners, setUnitOwners] = useState(() => saved.unitOwners && typeof saved.unitOwners === 'object' ? saved.unitOwners : {});
+  const [unitRented, setUnitRented] = useState(() => saved.unitRented && typeof saved.unitRented === 'object' ? saved.unitRented : {});
+  const [buildingLevels, setBuildingLevels] = useState(() => saved.buildingLevels && typeof saved.buildingLevels === 'object' ? saved.buildingLevels : {});
+  const [selectedUnit, setSelectedUnit] = useState(1);
   const [selected, setSelected] = useState(() => properties.some(p => p.id === saved.selected) ? saved.selected : 1);
   const [mapSearch, setMapSearch] = useState(() => properties.find(p => p.id === saved.selected)?.name || properties[0].name);
   useEffect(() => { const property = properties.find(p => p.id === selected); if (property) setMapSearch(property.name); }, [selected]);
@@ -1086,13 +1090,13 @@ function App({ session = null, supabase = null, authConfigured = false }) {
         window.localStorage.setItem(saveBackupKey, JSON.stringify(previousSave));
       }
       window.localStorage.setItem(saveKey, JSON.stringify({
-        version: 2, economyVersion: STARTER_ECONOMY_VERSION, playerName, steps, cash, owned, rented, selected, showPortfolio, professionId, marketValues,
+        version: 3, economyVersion: STARTER_ECONOMY_VERSION, playerName, steps, cash, owned, rented, unitOwners, unitRented, buildingLevels, selected, showPortfolio, professionId, marketValues,
         hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, log: log.slice(0, 5)
       }));
     } catch {
       // The game remains playable if browser storage is disabled or full.
     }
-  }, [playerName, steps, cash, owned, rented, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, log]);
+  }, [playerName, steps, cash, owned, rented, unitOwners, unitRented, buildingLevels, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, log]);
 
   useEffect(() => {
     if (!session || !supabase) { setCloudReady(true); return undefined; }
@@ -1574,6 +1578,17 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   };
 
   const buy = async () => {
+    if (active.type === 'Konut' && active.units) {
+      const key = active.id + ':' + selectedUnit;
+      if (unitOwners[key]) { tell('Bu daire zaten satın alınmış.'); return; }
+      const price = Math.round(getMarketValue(active) * 1.18 / active.units);
+      if (cash < price) { tell('Bu daire için ₺' + price.toLocaleString('tr-TR') + ' gerekiyor.'); return; }
+      const next = { ...unitOwners, [key]: { playerId, name: playerName.trim() || 'Mahalle sakini', price } };
+      setCash(v => Math.round((v - price) * 100) / 100); setUnitOwners(next);
+      sendPeerMessage({type:'world-update', owners:ownerByProperty, unitOwners:next, playerName:playerName.trim() || 'Mahalle sakini'});
+      tell(active.name + ' · ' + selectedUnit + '. daire satın alındı. Günlük kira potansiyeli ₺' + (active.rent / active.units / 30).toFixed(2) + '.');
+      return;
+    }
     if (session && supabase) {
       if (ownerByProperty[active.id] || owned.includes(active.id)) { tell('Bu mülkün zaten bir sahibi var.'); return; }
       try {
@@ -1760,6 +1775,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
             setMultiplayerStatus(`İki oyuncu bağlı · ${message.playerName || 'Oyuncu 2'}`);
           }
           if (message?.type === 'world-update' && message.owners && typeof message.owners === 'object') {
+            if(message.unitOwners)setUnitOwners(message.unitOwners);
             setOwnerByProperty(message.owners);
             conn.send({ type: 'world-state', owners: message.owners, marketValues: message.marketValues || marketValues, hostName });
           }
@@ -1815,7 +1831,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
         });
         conn.on('data', message => {
           if (message?.type === 'world-state') {
-            applyWorldState(message);
+            applyWorldState(message); if(message.unitOwners)setUnitOwners(message.unitOwners);
             setMultiplayerStatus(`İki oyuncu bağlı · ev sahibi: ${message.hostName || 'Ev sahibi'}`);
           }
           if(message?.type==='offer'&&message.offer){const offer=message.offer;if(offer.toPlayerId==='guest'||ownerByProperty[offer.propertyId]?.playerId==='guest'||snapshotRef.current?.owners?.[offer.propertyId]?.playerId==='guest'){setIncomingOffer({...offer,fromName:offer.fromName||opponentName});setOfferPriceInput(String(offer.price));setMultiplayerStatus('Yeni teklif: '+(properties.find(p=>p.id===offer.propertyId)?.name||'mülk')+' · ₺'+Number(offer.price).toLocaleString('tr-TR'));setNotice('Yeni mülk teklifi geldi. Teklif balonundan yanıt verebilirsin.');}}
@@ -1951,9 +1967,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
             <div><span>Kat sayısı</span><strong>{active.floors} kat</strong></div>
             <div><span>Durum</span><strong className={owned.includes(active.id) ? 'owned-text' : ''}>{!owned.includes(active.id) ? 'SATILIK' : rented.includes(active.id) ? 'KİRADA' : 'PORTFÖYÜNDE'}</strong></div>
           </div>
-          {!ownerByProperty[active.id] && <button className={owned.includes(active.id) ? 'buy-button is-owned' : 'buy-button'} onClick={buy} disabled={owned.includes(active.id)}>
-            {owned.includes(active.id) ? 'MÜLK SENİN' : 'MÜLKÜ SATIN AL'} <span>{owned.includes(active.id) ? '✓' : '↗'}</span>
-          </button>}
+          {active.type === 'Konut' && active.units ? <div className="unit-market"><div className="card-label">DAİRELER · {active.units} BAĞIMSIZ BÖLÜM</div><p>Bir daireyle başla. Binadaki tüm daireleri toplarsan binayı yenileyip kira potansiyelini artırabilirsin.</p><div className="unit-grid">{Array.from({length:active.units},(_,i)=>{const n=i+1,key=active.id+':'+n,o=unitOwners[key],mine=o?.playerId===playerId,price=Math.round(getMarketValue(active)*1.18/active.units);return <button key={key} className={'unit-tile '+(mine?'unit-mine':o?'unit-taken':'')} onClick={()=>setSelectedUnit(n)}><strong>{n}. daire</strong><small>{o?(o.name+(mine?' · SENİN':' · SATILDI')):'₺'+price.toLocaleString('tr-TR')}</small>{selectedUnit===n?<span>SEÇİLİ</span>:null}</button>})}</div><div className="unit-action"><span>Seçili daire: {selectedUnit} · Günlük kira potansiyeli ₺{(active.rent/active.units/30).toFixed(2)}</span>{!unitOwners[active.id+':'+selectedUnit] ? <button className="buy-button" onClick={buy}>DAİREYİ SATIN AL</button> : unitOwners[active.id+':'+selectedUnit].playerId===playerId ? <button className="rent-button" onClick={()=>{const k=active.id+':'+selectedUnit;setUnitRented(old=>({...old,[k]:!old[k]}));tell(unitRented[k]?'Dairenin kiralaması durduruldu.':'Daire kiraya verildi. Kira geliri göstergesi güncellendi.');}}>{unitRented[active.id+':'+selectedUnit]?'KİRAYI DURDUR':'DAİREYİ KİRAYA VER'}</button>:null}</div>{Array.from({length:active.units},(_,i)=>i+1).every(n=>unitOwners[active.id+':'+n]?.playerId===playerId)&&<div className="building-upgrade"><strong>BİNANIN TAMAMI SENİN</strong><p>Seviye {Number(buildingLevels[active.id])||1} · tüm dairelerin sahibi olduğun için binayı yenileyebilirsin.</p><button className="buy-button" onClick={()=>{const lv=Number(buildingLevels[active.id])||1,cost=Math.round(getMarketValue(active)*(0.2+lv*0.12));if(lv>=5){tell('Bina en yüksek seviyede.');return;}if(cash<cost){tell('Yenileme için ₺'+cost.toLocaleString('tr-TR')+' gerekiyor.');return;}setCash(v=>v-cost);setBuildingLevels(old=>({...old,[active.id]:lv+1}));setMarketValues(old=>({...old,[active.id]:Math.round(getMarketValue(active)*1.15*100)/100}));tell('Bina yenilendi: seviye '+(lv+1)+'. Değeri yükseldi.');}}>BİNAYI YENİLE · ₺{Math.round(getMarketValue(active)*((Number(buildingLevels[active.id])||1)*0.12+0.2)).toLocaleString('tr-TR')}</button></div>}</div> : !ownerByProperty[active.id] && <button className={owned.includes(active.id) ? 'buy-button is-owned' : 'buy-button'} onClick={buy} disabled={owned.includes(active.id)}>{owned.includes(active.id) ? 'MÜLK SENİN' : 'MÜLKÜ SATIN AL'} <span>{owned.includes(active.id) ? '✓' : '↗'}</span></button>}
           {ownerByProperty[active.id] && ownerByProperty[active.id].playerId !== playerId && <><button className="buy-button" onClick={() => { setOfferPriceInput(String(getMarketValue(active))); setOfferComposerOpen(v => !v); }}>SATIN ALMA TEKLİFİ GÖNDER <span>↗</span></button>{offerComposerOpen && <div className="offer-composer"><label>Teklifin (₺)<input type="number" min="1" value={offerPriceInput} onChange={e => setOfferPriceInput(e.target.value)} /></label><small>Piyasa değeri: ₺{getMarketValue(active).toLocaleString('tr-TR')}</small><button onClick={sendOffer}>TEKLİFİ GÖNDER</button></div>}</>}
           {owned.includes(active.id) && <button className="rent-button" onClick={toggleRent}>{rented.includes(active.id) ? 'KİRACIYI ÇIKAR' : 'KİRACI BUL VE KİRAYA VER'}</button>}
           {owned.includes(active.id) && <button className="sell-button" onClick={sellProperty}>MÜLKÜ SAT · ₺{Math.round(active.price * 0.9).toLocaleString('tr-TR')}</button>}
