@@ -41,11 +41,13 @@ s = s.replace(
   "  const baseX = [-8.5, 8.5, -18.5, 18.5, 0, 25.5][frontage] ?? 0;"
 );
 
-// Scale property purchase prices and moderate rents to prevent instant, low-cost accumulation.
-const propertyScaleAnchor = "const DAILY_LIVING_COST = 2.5;";
-if (!s.includes('const PROPERTY_ECONOMY_SCALE = 4.5;')) {
-  s = s.replace(propertyScaleAnchor, "const PROPERTY_ECONOMY_SCALE = 4.5;\nproperties.forEach(property => {\n  property.price = Math.round(property.price * PROPERTY_ECONOMY_SCALE);\n  property.rent = Math.max(8, Math.round(property.rent * 0.8));\n});\n\n" + propertyScaleAnchor);
-}
+// Scale the newly injected shop properties in the source itself, matching the base properties.
+const addedPropertyBlock = /\{ id: (\d+), name: '[^']+', type: '[^']+', price: (\d+), rent: (\d+),/g;
+s = s.replace(addedPropertyBlock, (match, id, price, rent) => {
+  if (Number(id) < 33) return match;
+  return match.replace('price: ' + price + ', rent: ' + rent + ',', 'price: ' + Math.round(Number(price) * 4.5) + ', rent: ' + Math.max(8, Math.round(Number(rent) * 0.8)) + ',');
+});
+
 
 const marker = 'const DAILY_LIVING_COST = 2.5;
 const CITY_EVENTS = [
