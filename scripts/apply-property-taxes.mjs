@@ -124,7 +124,7 @@ const replacement = `  const settleDailyBusinesses = () => {
       operatingCosts += dailyCost;
       const serviceSale = Boolean(product.service);
       const stock = serviceSale ? 1 : Math.max(0, Number(stockByProperty[propertyId]) || 0);
-      const eventEffect = cityEvent && cityEvent.daysLeft > 0 ? (cityEvent.effects?.[property.type] || 0) : 0;
+      const eventEffect = 0; // City events are disabled until their state is wired into App.jsx.
       const salesChance = Math.max(0.08, Math.min(0.9, (0.34 + (reputation / 100) * 0.12) * (1 + eventEffect)));
       if ((!serviceSale && stock <= 0) || Math.random() > salesChance) {
         entries.push(property.name + ': ' + (serviceSale ? 'hizmet hazır' : stock + ' stok') + ', günlük gider -₺' + dailyCost.toFixed(2));
@@ -155,15 +155,6 @@ const replacement = `  const settleDailyBusinesses = () => {
     setCash(v => Math.max(0, Math.round((v + net) * 100) / 100));
     setDay(nextDay);
     setMonth(nextMonth);
-    setCityEvent(previous => {
-      if (previous && previous.daysLeft > 1) return { ...previous, daysLeft: previous.daysLeft - 1 };
-      if (Math.random() < 0.32) {
-        const event = CITY_EVENTS[Math.floor(Math.random() * CITY_EVENTS.length)];
-        tell('ŞEHİR HABERİ: ' + event.text + ' Etki ' + event.days + ' gün sürecek.');
-        return { ...event, daysLeft: event.days };
-      }
-      return null;
-    });
     const nextYear = nextMonthRaw > 12 ? year + 1 : year;
     if (nextDayRaw > 30) updateMarketValues(nextYear, nextMonth);
     if (nextMonthRaw > 12) setYear(v => v + 1);
