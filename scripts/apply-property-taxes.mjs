@@ -28,7 +28,8 @@ const periodShops = `  { id: 32, name: 'Küçük matbaa ve kırtasiye', type: 'A
   { id: 49, name: 'Saat tamircisi', type: 'Atölye', price: 760, rent: 58, x: 0, z: 0, color: '#aaa99f', floors: 2, style: 'Duvar ve cep saati tamiri' },
   { id: 50, name: 'Kahve kavurucusu', type: 'İşletme', price: 830, rent: 66, x: 0, z: 0, color: '#b79b80', floors: 2, style: 'Kahve çekirdeği kavurma ve satış' },
   { id: 51, name: 'Mefruşatçı dükkanı', type: 'Ticaret', price: 910, rent: 70, x: 0, z: 0, color: '#c5b2a2', floors: 2, style: 'Perde, örtü ve ev kumaşları' },
-  { id: 52, name: 'Tabelacı ve boyacı', type: 'Atölye', price: 620, rent: 46, x: 0, z: 0, color: '#b9a28d', floors: 2, style: 'El yazısı tabela ve boya atölyesi' }
+  { id: 52, name: 'Tabelacı ve boyacı', type: 'Atölye', price: 620, rent: 46, x: 0, z: 0, color: '#b9a28d', floors: 2, style: 'El yazısı tabela ve boya atölyesi' },
+  { id: 53, name: 'Galata meyhanesi', type: 'İşletme', price: 890, rent: 72, x: 0, z: 0, color: '#a78368', floors: 2, style: 'Meze, balık ve akşam sofrası' }
 ];`;
 if (s.includes(shopAnchor) && !s.includes("id: 33, name: 'Galata kumaşçı dükkanı'")) {
   s = s.replace(shopAnchor, periodShops);
