@@ -120,6 +120,7 @@ if (!s.includes('const EXTRA_TRADE_CATALOG')) {
 
 // New shops must participate in the same product/stock UI as the original businesses.
 s = s.replace(/tradeCatalog\[([^\]]+)\]/g, 'getTradeCatalog(tradeCatalog, $1)');
+s = s.replace('?.production ? "ÜRETİM YAP / STOK EKLE" : "TEDARİK ET / STOK AL"', '?.service ? "HİZMETİ SEÇ" : (getTradeCatalog(tradeCatalog, active.id) || []).find(item => item.id === businessPlans[active.id])?.production ? "ÜRETİM YAP / STOK EKLE" : "TEDARİK ET / STOK AL"');
 
 // Service businesses do not consume inventory. Their capacity is customer time, not stock.
 s = s.replace(/\bstock > 0\b/g, '(product?.service || stock > 0)');
