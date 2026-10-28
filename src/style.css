@@ -547,3 +547,19 @@ button,select,input{touch-action:manipulation}
 .product-sales-panel .card-label{margin-bottom:5px}
 .production-pending{display:block;margin-top:3px;color:#d8a94f;font-size:10px;line-height:1.4}
 .shoe-product-row .production-pending{max-width:240px}
+
+
+/* Inventory layout: keep stock labels, quantities and actions inside the panel. */
+.shoe-workshop,.business-plan,.product-sales-panel{min-width:0;max-width:100%;box-sizing:border-box}
+.shoe-workshop .stock-line,.product-inventory-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;min-width:0;max-width:100%;box-sizing:border-box}
+.shoe-workshop .stock-line>span,.product-inventory-row>span{flex:1 1 145px;min-width:0;overflow-wrap:anywhere;word-break:normal}
+.shoe-workshop .stock-line>strong,.product-inventory-row>strong{flex:0 1 auto;max-width:42%;overflow-wrap:anywhere;text-align:right}
+.shoe-workshop .stock-button{width:auto;max-width:100%;min-width:0;white-space:normal;overflow-wrap:anywhere;padding:8px 10px}
+.shoe-product-row{display:flex;flex-wrap:wrap;align-items:flex-start;gap:10px;min-width:0;max-width:100%;box-sizing:border-box}
+.shoe-product-row>div{flex:1 1 180px;min-width:0;overflow-wrap:anywhere}
+.shoe-product-row .stock-button{width:auto;max-width:100%;min-width:0;white-space:normal;flex:0 1 auto}
+.product-stock-meta{display:block;margin-top:4px;font-size:10px;line-height:1.5;color:var(--muted,#777);overflow-wrap:anywhere}
+.storage-upgrade-panel{min-width:0;max-width:100%;box-sizing:border-box;flex-wrap:wrap}
+.storage-upgrade-panel>div{flex:1 1 170px;min-width:0;overflow-wrap:anywhere}
+.storage-upgrade-panel .stock-button{width:auto;max-width:100%;white-space:normal}
+@media(max-width:520px){.shoe-workshop .stock-line>strong,.product-inventory-row>strong{max-width:100%;text-align:left}.shoe-workshop .stock-button,.shoe-product-row .stock-button,.storage-upgrade-panel .stock-button{flex:1 1 100%}}
