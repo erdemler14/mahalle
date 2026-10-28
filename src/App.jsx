@@ -418,9 +418,25 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
         ctx.fillStyle = p.id === 7 ? '#49362b' : p.id === 12 ? '#314538' : '#3d3027';
         ctx.fillRect(0, 0, 512, 128);
         ctx.strokeStyle = '#d5bd8c'; ctx.lineWidth = 5; ctx.strokeRect(8, 8, 496, 112);
-        ctx.fillStyle = '#f0dfb7'; ctx.font = 'bold 42px Georgia, serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        const sign = p.id === 7 ? 'SARAP & ERZAK' : p.id === 12 || p.id === 25 ? 'KAHVEHANE' : p.id === 9 || p.id === 32 ? 'MATBAA' : p.id === 10 || p.id === 28 ? 'MAGAZA' : p.id === 4 || p.id === 21 ? 'HAN' : p.id === 23 ? 'AKTAR' : p.id === 31 ? 'LOKANTA' : p.id === 26 ? 'TERZI' : 'TICARET';
-        ctx.fillText(sign, 256, 64, 470);
+        ctx.fillStyle = '#f0dfb7'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        // Storefronts use their actual in-world business names, not generic category labels.
+        const displayName = String(p.name || 'Mahalle Dükkanı').normalize('NFC').toLocaleUpperCase('tr-TR');
+        const words = displayName.split(/\\s+/);
+        const lines = [];
+        let line = '';
+        for (const word of words) {
+          const candidate = line ? line + ' ' + word : word;
+          if (ctx.measureText(candidate).width > 440 && line) { lines.push(line); line = word; }
+          else line = candidate;
+        }
+        if (line) lines.push(line);
+        const signLines = lines.slice(0, 2);
+        ctx.font = 'bold ' + (signLines.some(text => text.length > 16) ? '25px' : signLines.some(text => text.length > 11) ? '30px' : '36px') + ' Georgia, serif';
+        if (signLines.length === 1) ctx.fillText(signLines[0], 256, 64, 470);
+        else {
+          ctx.fillText(signLines[0], 256, 43, 470);
+          ctx.fillText(signLines[1], 256, 84, 470);
+        }
         const signTexture = new THREE.CanvasTexture(signCanvas);
         signTexture.colorSpace = THREE.SRGBColorSpace;
         const signMat = new THREE.MeshStandardMaterial({ map: signTexture, roughness: 0.8 });
