@@ -853,12 +853,15 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
   return <div className="scene-host" ref={host} aria-label="Beyoğlu 1923 3D mahalle sahnesi"><div className="scene-building-overlay" ref={overlayRef}>{overlay}</div><div className="map-zoom-controls"><button type="button" aria-label="Yakınlaştır" title="Yakınlaştır" onClick={() => cameraControlRef.current?.('in')}>＋</button><button type="button" aria-label="Uzaklaştır" title="Uzaklaştır" onClick={() => cameraControlRef.current?.('out')}>−</button><button type="button" aria-label="Seçili binaya git" title="Seçili binaya git" onClick={() => cameraControlRef.current?.('focus', properties.find(item => item.id === selected))}>⌖</button><button type="button" aria-label="Haritayı sıfırla" title="Haritayı sıfırla" onClick={() => cameraControlRef.current?.('reset')}>⌂</button></div><div className="map-hint">Binaya tıkla: seç · Ara: mülk bul · Sürükle: haritayı döndür · Sağ tuş: taşı</div></div>;
 }
 
-function App() {
+function App({ session = null, supabase = null, authConfigured = false }) {
+  const saveKey = session?.user?.id ? `${SAVE_KEY}:${session.user.id}` : SAVE_KEY;
+  const saveBackupKey = session?.user?.id ? `${SAVE_BACKUP_KEY}:${session.user.id}` : SAVE_BACKUP_KEY;
+  const [cloudReady, setCloudReady] = useState(!session || !supabase);
   const saveRef = useRef(undefined);
   if (saveRef.current === undefined) {
     try {
       saveRef.current = typeof window !== 'undefined'
-        ? JSON.parse(window.localStorage.getItem(SAVE_KEY) || 'null') || {}
+        ? JSON.parse(window.localStorage.getItem(saveKey) || 'null') || {}
         : {};
     } catch {
       saveRef.current = {};
@@ -867,7 +870,7 @@ function App() {
   const primarySaved = saveRef.current || {};
   let backupSaved = {};
   if (typeof window !== 'undefined') {
-    try { backupSaved = JSON.parse(window.localStorage.getItem(SAVE_BACKUP_KEY) || 'null') || {}; } catch { backupSaved = {}; }
+    try { backupSaved = JSON.parse(window.localStorage.getItem(saveBackupKey) || 'null') || {}; } catch { backupSaved = {}; }
   }
   const saved = !Array.isArray(primarySaved.owned) && Array.isArray(backupSaved.owned) && backupSaved.owned.length > 0
     ? backupSaved
@@ -910,7 +913,7 @@ function App() {
   const [offerPriceInput, setOfferPriceInput] = useState('');
   const [offerComposerOpen, setOfferComposerOpen] = useState(false);
   const [marketValues, setMarketValues] = useState(() => saved.marketValues && typeof saved.marketValues === 'object' ? saved.marketValues : {});
-  const playerId = multiplayerRole === 'host' ? 'host' : multiplayerRole === 'guest' ? 'guest' : 'solo';
+  const playerId = session?.user?.id || (multiplayerRole === 'host' ? 'host' : multiplayerRole === 'guest' ? 'guest' : 'solo');
   const peerRef = useRef(null);
   const connectionRef = useRef(null);
   const actionRefs = useRef({});
@@ -1025,9 +1028,9 @@ function App() {
     try {
       const previousSave = JSON.parse(window.localStorage.getItem(SAVE_KEY) || 'null');
       if (previousSave && Array.isArray(previousSave.owned) && previousSave.owned.length > 0) {
-        window.localStorage.setItem(SAVE_BACKUP_KEY, JSON.stringify(previousSave));
+        window.localStorage.setItem(saveBackupKey, JSON.stringify(previousSave));
       }
-      window.localStorage.setItem(SAVE_KEY, JSON.stringify({
+      window.localStorage.setItem(saveKey, JSON.stringify({
         version: 2, playerName, steps, cash, owned, rented, selected, showPortfolio, professionId, marketValues,
         hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, log: log.slice(0, 5)
       }));
@@ -1035,6 +1038,97 @@ function App() {
       // The game remains playable if browser storage is disabled or full.
     }
   }, [playerName, steps, cash, owned, rented, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, log]);
+
+  useEffect(() => {
+    if (!session || !supabase) { setCloudReady(true); return undefined; }
+    let active = true;
+    const userId = session.user.id;
+    const displayName = String(session.user.user_metadata?.display_name || session.user.email?.split('@')[0] || 'Mahalle sakini').slice(0, 24);
+    const refreshWorld = async () => {
+      const { data, error } = await supabase.from('world_properties').select('property_id,market_value,owner_user_id,owner_name,rented');
+      if (error) throw error;
+      if (!active || !Array.isArray(data)) return;
+      const owners = {};
+      const values = {};
+      const mine = [];
+      for (const row of data) {
+        if (row.owner_user_id) owners[row.property_id] = { playerId: row.owner_user_id, name: row.owner_name || 'Mahalle sakini' };
+        if (row.owner_user_id === userId) mine.push(Number(row.property_id));
+        if (Number.isFinite(Number(row.market_value))) values[row.property_id] = Number(row.market_value);
+      }
+      setOwnerByProperty(owners);
+      setMarketValues(old => ({ ...old, ...values }));
+      setOwned(mine);
+    };
+    const hydrate = async () => {
+      try {
+        const { error: profileError } = await supabase.from('player_profiles').upsert({
+          user_id: userId, display_name: displayName, updated_at: new Date().toISOString()
+        }, { onConflict: 'user_id' });
+        if (profileError) throw profileError;
+        const { data: cloudSave, error: saveError } = await supabase.from('player_saves').select('state').eq('user_id', userId).maybeSingle();
+        if (saveError) throw saveError;
+        if (cloudSave?.state && Object.keys(cloudSave.state).length) {
+          const state = cloudSave.state;
+          if (typeof state.playerName === 'string') setPlayerName(state.playerName || displayName);
+          if (Number.isFinite(state.steps)) setSteps(state.steps);
+          if (Number.isFinite(state.cash)) setCash(state.cash);
+          if (Array.isArray(state.rented)) setRented(state.rented.filter(id => properties.some(p => p.id === id)));
+          if (properties.some(p => p.id === state.selected)) setSelected(state.selected);
+          if (typeof state.showPortfolio === 'boolean') setShowPortfolio(state.showPortfolio);
+          if (['kolonyaci','leblebici','terzi','matbaaci','kahveci','firinci','kasap','eczaci','kitapci','marangoz','manav','lokantaci','demirci','amele'].includes(state.professionId)) setProfessionId(state.professionId);
+          if (state.marketValues && typeof state.marketValues === 'object') setMarketValues(state.marketValues);
+          if (Number.isFinite(state.hour)) setHour(state.hour);
+          if (Number.isFinite(state.day)) setDay(state.day);
+          if (Number.isFinite(state.month)) setMonth(state.month);
+          if (Number.isFinite(state.year)) setYear(state.year);
+          if (Number.isFinite(state.workHours)) setWorkHours(state.workHours);
+          if (Number.isFinite(state.careerHours)) setCareerHours(state.careerHours);
+          if (state.shopPropertyId == null || properties.some(p => p.id === state.shopPropertyId)) setShopPropertyId(state.shopPropertyId ?? null);
+          if (Number.isFinite(state.wineBottles)) setWineBottles(state.wineBottles);
+          if (state.businessPlans && typeof state.businessPlans === 'object') setBusinessPlans(state.businessPlans);
+          if (state.stockByProperty && typeof state.stockByProperty === 'object') setStockByProperty(state.stockByProperty);
+          if (state.businessStats && typeof state.businessStats === 'object') setBusinessStats(state.businessStats);
+          if (Array.isArray(state.log)) setLog(state.log.slice(0, 5));
+          if (state.developments && typeof state.developments === 'object') setDevelopments(state.developments);
+        } else {
+          const initialState = { version: 2, playerName: displayName, steps, cash, owned: [], rented, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, log: log.slice(0, 5), developments };
+          const { error } = await supabase.from('player_saves').upsert({ user_id: userId, state: initialState, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
+          if (error) throw error;
+          setPlayerName(displayName);
+        }
+        await refreshWorld();
+        if (!active) return;
+        setMultiplayerStatus('Ortak şehir bağlı · herkesin mülkleri aynı haritada');
+        setCloudReady(true);
+      } catch (error) {
+        if (!active) return;
+        setMultiplayerStatus('Ortak şehir bağlantı hatası · ' + (error?.message || 'veritabanı ayarlarını kontrol et'));
+        setNotice('Ortak şehir açılamadı. Supabase migration ve erişim ayarlarını kontrol et.');
+        setCloudReady(true);
+      }
+    };
+    setCloudReady(false);
+    hydrate();
+    const channel = supabase.channel('mahalle-shared-city')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'world_properties' }, () => {
+        refreshWorld().catch(error => { if (active) setMultiplayerStatus('Şehir güncellenemedi · ' + (error?.message || 'bağlantı hatası')); });
+      })
+      .subscribe();
+    return () => { active = false; supabase.removeChannel(channel); };
+  }, [session?.user?.id, supabase]);
+
+  useEffect(() => {
+    if (!session || !supabase || !cloudReady) return;
+    const state = {
+      version: 2, playerName, steps, cash, owned, rented, selected, showPortfolio, professionId, marketValues,
+      hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty,
+      businessStats, log: log.slice(0, 5), developments
+    };
+    supabase.from('player_saves').upsert({ user_id: session.user.id, state, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
+      .then(({ error }) => { if (error) setMultiplayerStatus('Kayıt eşitlenemedi · ' + error.message); });
+  }, [session?.user?.id, supabase, cloudReady, playerName, steps, cash, owned, rented, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, log, developments]);
+
 
   const tell = (text) => {
     setNotice(text);
@@ -1228,7 +1322,24 @@ function App() {
     tell(`${item.production ? 'Üretim tamamlandı' : 'Tedarik tamamlandı'}: ${item.name}, ${item.units} adet stok, maliyet ₺${item.cost}.`);
   };
 
-  const buy = () => {
+  const buy = async () => {
+    if (session && supabase) {
+      if (ownerByProperty[active.id] || owned.includes(active.id)) { tell('Bu mülkün zaten bir sahibi var.'); return; }
+      try {
+        const { data, error } = await supabase.rpc('claim_property', { p_property_id: active.id });
+        if (error) throw error;
+        const result = Array.isArray(data) ? data[0] : data;
+        if (!result || !Number.isFinite(Number(result.cash))) throw new Error('Sunucudan geçerli satın alma sonucu alınamadı.');
+        setCash(Number(result.cash));
+        setOwned(old => old.includes(active.id) ? old : [...old, active.id]);
+        setRented(old => old.filter(id => id !== active.id));
+        setOwnerByProperty(old => ({ ...old, [active.id]: { playerId: session.user.id, name: result.owner_name || playerName.trim() || 'Mahalle sakini' } }));
+        setShopPropertyId(null);
+        setSteps(v => v + 1);
+        tell(active.name + ' ortak şehirde satın alındı. Mülkiyet sunucuda güvenceye alındı.');
+      } catch (error) { tell(error?.message || 'Mülk satın alınamadı. Bağlantını kontrol edip tekrar dene.'); }
+      return;
+    }
     if (owned.includes(active.id) || ownerByProperty[active.id]) { tell('Bu mülkün zaten bir sahibi var.'); return; }
     const purchasePrice = getMarketValue(active);
     if (cash < purchasePrice) { tell('Bu mülk için ₺' + purchasePrice.toLocaleString('tr-TR') + ' gerekiyor. Önce çalışıp birikim yap.'); return; }
@@ -1241,11 +1352,29 @@ function App() {
     tell(`${active.name} satın alındı. ${owned.length === 0 ? '✦ HEDEF TAMAMLANDI: İlk mülkünü edindin! ' : owned.length === 1 ? '✦ HEDEF TAMAMLANDI: İkinci mülkün portföyüne katıldı! ' : owned.length === 2 ? '✦ HEDEF TAMAMLANDI: Üç mülke ulaştın; mahallede yer edinmeye başladın. ' : ''}Şimdi bu mekanın desteklediği işletme türlerinden birini seçebilirsin.`);
   };
 
-  const sellProperty = () => {
+  const sellProperty = async () => {
     if (!owned.includes(active.id)) { tell('Yalnızca sahibi olduğun mülkü satabilirsin.'); return; }
     const property = active;
     const salePrice = Math.round(getMarketValue(property) * 0.95 * 100) / 100;
     if (typeof window !== 'undefined' && !window.confirm(`${property.name} mülkünü ₺${salePrice.toLocaleString('tr-TR')} bedelle satmak istiyor musun? Mevcut işletme stoğu satışa dahil değil ve sıfırlanacak.`)) return;
+    if (session && supabase) {
+      try {
+        const { data, error } = await supabase.rpc('release_property', { p_property_id: property.id });
+        if (error) throw error;
+        const result = Array.isArray(data) ? data[0] : data;
+        if (!result || !Number.isFinite(Number(result.cash))) throw new Error('Sunucudan geçerli satış sonucu alınamadı.');
+        setCash(Number(result.cash));
+        setOwned(v => v.filter(id => id !== property.id));
+        setRented(v => v.filter(id => id !== property.id));
+        setBusinessPlans(v => { const next = { ...v }; delete next[property.id]; return next; });
+        setStockByProperty(v => { const next = { ...v }; delete next[property.id]; return next; });
+        setBusinessStats(v => { const next = { ...v }; delete next[property.id]; return next; });
+        setOwnerByProperty(v => { const next = { ...v }; delete next[property.id]; return next; });
+        if (shopPropertyId === property.id) setShopPropertyId(null);
+        tell(property.name + ' ortak şehirde satıldı. ₺' + Number(result.sale_price).toLocaleString('tr-TR') + ' tahsil edildi.');
+      } catch (error) { tell(error?.message || 'Mülk satılamadı. Bağlantını kontrol edip tekrar dene.'); }
+      return;
+    }
     setCash(v => Math.round((v + salePrice) * 100) / 100);
     setOwned(v => v.filter(id => id !== property.id));
     setRented(v => v.filter(id => id !== property.id));
@@ -1299,7 +1428,7 @@ function App() {
     setWorkHours(0); setCareerHours(0); setShopPropertyId(null); setWineBottles(0); setBusinessPlans({}); setStockByProperty({}); setBusinessStats({});
     setLog([{ id: Date.now(), text: 'Yeni bir hikaye başladı. Gündelik işçilikle sermaye biriktir veya uygun bir dükkan edin.' }]);
     setNotice('');
-    try { window.localStorage.removeItem(SAVE_KEY); } catch {}
+    try { window.localStorage.removeItem(saveKey); } catch {}
     tell('Yeni oyun başladı. Kayıt sıfırlandı.');
   };
 
@@ -1477,16 +1606,19 @@ function App() {
     </section>
 
     <section className="multiplayer-panel">
-      <div className="multiplayer-heading"><span className="live-dot" /> İKİ KİŞİLİK MAHALLE</div>
-      <div className="multiplayer-status">{multiplayerStatus}</div>
-      <div className="multiplayer-controls">
+      <div className="multiplayer-heading"><span className="live-dot" /> {session ? 'ORTAK BEYOĞLU · ÇEVRİMİÇİ ŞEHİR' : 'İKİ KİŞİLİK MAHALLE'}</div>
+      <div className="multiplayer-status">{session ? (multiplayerStatus || 'Ortak şehir hazırlanıyor…') : multiplayerStatus}</div>
+      {session ? <div className="multiplayer-controls">
+        <div className="player-name-field">OYUNCU HESABI<input aria-label="Hesap e-postası" value={session.user.email || ''} readOnly /></div>
+        <button className="room-leave-button" onClick={async () => { await supabase?.auth.signOut(); }}>ÇIKIŞ YAP</button>
+      </div> : <div className="multiplayer-controls">
         <label className="player-name-field">OYUNCU ADIN<input aria-label="Oyuncu adı" value={playerName} onChange={e => setPlayerName(e.target.value.slice(0, 24))} placeholder="Adını yaz" maxLength={24} /></label>
         <button className="room-create-button" onClick={startRoom}>YENİ ODA AÇ</button>
         {roomCode && multiplayerRole === 'host' && <div className="room-code"><span>ODA KODU</span><strong>{roomCode}</strong><button onClick={() => { try { navigator.clipboard?.writeText(roomCode); setMultiplayerStatus('Oda kodu kopyalandı · arkadaşına gönder.'); } catch { setMultiplayerStatus('Oda kodun: ' + roomCode); } }}>KOPYALA</button></div>}
         <div className="room-join"><input aria-label="Oda kodu" value={joinCode} onChange={e => setJoinCode(e.target.value.toUpperCase().slice(0, 6))} placeholder="6 HANELİ KOD" maxLength={6} /><button onClick={joinRoom}>ODAYA KATIL</button></div>
         {multiplayerRole !== 'solo' && <button className="room-leave-button" onClick={closeMultiplayer}>ODADAN AYRIL</button>}
-      </div>
-      <p>Herkes kendi parasını, mesleğini, stokunu ve portföyünü yönetir. Binaların sahipliği ortaktır; başka oyuncunun mülkü için satın alma teklifi gönderebilirsin. İnternet bağlantısı gerekir.</p>
+      </div>}
+      <p>{session ? 'Tek bir ortak şehirdesiniz. Mülk sahipliği herkes için ortaktır; paran, mesleğin, stokun ve oyun saatin yalnızca sana aittir.' : 'Herkes kendi parasını, mesleğini, stokunu ve portföyünü yönetir. Binaların sahipliği ortaktır; başka oyuncunun mülkü için satın alma teklifi gönderebilirsin. İnternet bağlantısı gerekir.'}</p>
       {incomingOffer && <div className="incoming-offer" role="alert"><strong>{incomingOffer.isCounter ? 'Karşı teklif geldi' : 'Yeni satın alma teklifi'}</strong><span>{incomingOffer.fromName}, {properties.find(p => p.id === incomingOffer.propertyId)?.name || 'bir mülk'} için ₺{Number(incomingOffer.price).toLocaleString('tr-TR')} teklif ediyor.</span><label>Teklif / karşı teklif (₺)<input type="number" min="1" value={offerPriceInput} onChange={e => setOfferPriceInput(e.target.value)} /></label><div><button onClick={() => respondToOffer('accept')}>KABUL ET</button><button onClick={() => respondToOffer('counter', offerPriceInput)}>KARŞI TEKLİF</button><button onClick={() => respondToOffer('reject')}>REDDET</button></div></div>}
     </section>
 
