@@ -857,6 +857,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   const saveKey = session?.user?.id ? `${SAVE_KEY}:${session.user.id}` : SAVE_KEY;
   const saveBackupKey = session?.user?.id ? `${SAVE_BACKUP_KEY}:${session.user.id}` : SAVE_BACKUP_KEY;
   const [cloudReady, setCloudReady] = useState(!session || !supabase);
+  const [sharedRentByProperty, setSharedRentByProperty] = useState({});
   const saveRef = useRef(undefined);
   if (saveRef.current === undefined) {
     try {
@@ -1051,12 +1052,15 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       const owners = {};
       const values = {};
       const mine = [];
+      const rentState = {};
       for (const row of data) {
         if (row.owner_user_id) owners[row.property_id] = { playerId: row.owner_user_id, name: row.owner_name || 'Mahalle sakini' };
         if (row.owner_user_id === userId) mine.push(Number(row.property_id));
+        rentState[row.property_id] = Boolean(row.rented);
         if (Number.isFinite(Number(row.market_value))) values[row.property_id] = Number(row.market_value);
       }
       setOwnerByProperty(owners);
+      setSharedRentByProperty(rentState);
       setMarketValues(old => ({ ...old, ...values }));
       setOwned(mine);
     };
@@ -1388,8 +1392,21 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     tell(`${property.name} satıldı. ₺${salePrice.toLocaleString('tr-TR')} tahsil edildi (piyasa bedelinin %95'i).`);
   };
 
-  const toggleRent = () => {
+  const toggleRent = async () => {
     if (sendAction('toggleRent')) return;
+    if (session && supabase) {
+      if (!owned.includes(active.id)) { tell('Kiraya verebilmek için önce bu mülkü satın almalısın.'); return; }
+      const nextRented = !rented.includes(active.id);
+      try {
+        const { error } = await supabase.rpc('set_property_rented', { p_property_id: active.id, p_rented: nextRented });
+        if (error) throw error;
+        setRented(old => nextRented ? (old.includes(active.id) ? old : [...old, active.id]) : old.filter(id => id !== active.id));
+        setSharedRentByProperty(old => ({ ...old, [active.id]: nextRented }));
+        if (nextRented && shopPropertyId === active.id) setShopPropertyId(null);
+        tell(nextRented ? active.name + ' ortak şehirde kiraya verildi.' : active.name + ' için kiracılık sona erdi.');
+      } catch (error) { tell(error?.message || 'Kira durumu güncellenemedi.'); }
+      return;
+    }
     if (!owned.includes(active.id)) { tell('Kiraya verebilmek için önce bu mülkü satın almalısın.'); return; }
     if (rented.includes(active.id)) {
       setRented(v => v.filter(id => id !== active.id));
@@ -1421,6 +1438,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   };
 
   const resetGame = () => {
+    if (session && supabase) { tell('Ortak şehirde yeni oyun sıfırlaması şimdilik kapalı; mülk sahipliğinin kaybolmaması için.'); return; }
     if (sendAction('resetGame')) return;
     if (typeof window !== 'undefined' && !window.confirm('Yeni oyun başlatılsın mı? Mevcut mahalle kaydı silinecek.')) return;
     setSteps(0); setCash(75); setOwned([]); setRented([]); setSelected(1); setShowPortfolio(false);
@@ -1608,6 +1626,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     <section className="multiplayer-panel">
       <div className="multiplayer-heading"><span className="live-dot" /> {session ? 'ORTAK BEYOĞLU · ÇEVRİMİÇİ ŞEHİR' : 'İKİ KİŞİLİK MAHALLE'}</div>
       <div className="multiplayer-status">{session ? (multiplayerStatus || 'Ortak şehir hazırlanıyor…') : multiplayerStatus}</div>
+      {!authConfigured && <p className="small-note">Ortak şehir hesabı henüz yapılandırılmadı. Supabase projesi, migration ve Vercel ortam değişkenleri eklendiğinde hesapla giriş ve kalıcı ortak mülkiyet açılacak.</p>}
       {session ? <div className="multiplayer-controls">
         <div className="player-name-field">OYUNCU HESABI<input aria-label="Hesap e-postası" value={session.user.email || ''} readOnly /></div>
         <button className="room-leave-button" onClick={async () => { await supabase?.auth.signOut(); }}>ÇIKIŞ YAP</button>
