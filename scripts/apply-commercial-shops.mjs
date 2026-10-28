@@ -128,23 +128,50 @@ s = s.replace(/Math\.max\(0, stock - sold\)/g, 'product?.service ? stock : Math.
 // Put the expanded premises into streets rather than extending the old rail-side rows.
 const oldLayout = /\/\/ Galata-style irregular street frontages: narrow blocks, staggered facades and varied angles\.\nproperties\.forEach\(\(property, index\) => \{.*?\n\}\);/s;
 const streetLayout = `// Street-based placement: storefronts sit on alternating sides of several pedestrian/vehicle streets.
-const streetSlots = [
-  [-16, -18.5], [-9, -18.0], [-2, -18.5], [6, -18.0], [13, -18.5],
-  [-14, -11.0], [-6, -10.5], [2, -11.0], [10, -10.5], [17, -11.0],
-  [-17, -3.5], [-9, -3.0], [-1, -3.5], [7, -3.0], [15, -3.5],
-  [-15, 4.5], [-7, 4.0], [1, 4.5], [9, 4.0], [17, 4.5],
-  [-16, 12.0], [-8, 11.5], [0, 12.0], [8, 11.5], [16, 12.0],
-  [-14, 19.0], [-6, 18.5], [2, 19.0], [10, 18.5], [17, 19.0],
-  [-18, 26.0], [-10, 25.5], [-2, 26.0], [6, 25.5], [14, 26.0],
-  [-15, -25.0], [-7, -24.5], [1, -25.0], [9, -24.5], [17, -25.0],
-  [-20, 7.5], [20, 7.5], [-20, 16.5], [20, 16.5]
-];
 properties.forEach((property, index) => {
-  const slot = streetSlots[index % streetSlots.length];
-  property.x = slot[0];
-  property.z = slot[1];
-  property.rotation = [0, -0.06, 0.045, 0.08, -0.04][index % 5];
+  if (property.id <= 32) {
+    const frontage = Math.floor(index / 8);
+    const slot = index % 8;
+    const baseX = [-8.5, 8.5, -18.5, 18.5][frontage];
+    const staggerX = [0.15, -0.65, 0.55, -0.25, 0.8, -0.45, 0.35, -0.1][slot];
+    const staggerZ = [0.0, 0.7, -0.45, 0.35, -0.8, 0.55, -0.2, 0.25][(index * 3) % 8];
+    property.x = baseX + staggerX * (frontage < 2 ? 0.85 : 1.35);
+    property.z = -21.2 + slot * 5.85 + staggerZ;
+  } else {
+    const streetSlots = [
+      [-8.7, -23], [8.7, -20], [-18.7, -17], [18.7, -14],
+      [-8.7, -11], [8.7, -8], [-18.7, -5], [18.7, -2],
+      [-8.7, 1], [8.7, 4], [-18.7, 7], [18.7, 10],
+      [-8.7, 13], [8.7, 16], [-18.7, 19], [18.7, 22],
+      [-8.7, 25], [8.7, 28], [-18.7, 31], [18.7, 34]
+    ];
+    const slot = streetSlots[(property.id - 33) % streetSlots.length];
+    property.x = slot[0];
+    property.z = slot[1];
+  }
+  property.rotation = [0, -0.08, 0.045, 0.11, -0.055, 0.025, -0.1, 0.06][(index * 5 + 2) % 8];
 });`;
 if (oldLayout.test(s)) s = s.replace(oldLayout, streetLayout);
+
+// Service items do not require inventory; regular goods have a defined batch size.
+const stockAnchor = "    if (!item || item.units <= 0) { tell('Bu mülk için henüz tedarik edilebilir ürün grubu yok.'); return; }";
+const stockReplacement = `    if (!item) { tell('Bu mülk için henüz tedarik edilebilir ürün grubu yok.'); return; }
+    if (item.service) {
+      tell(item.name + ' hizmeti seçildi. Ürün stoğu gerekmez; müşteriler geldikçe hizmet satışı yapılır.');
+      return;
+    }
+    if (!Number.isFinite(item.units) || item.units <= 0) { tell('Bu ürün için stok partisi tanımlı değil.'); return; }`;
+if (s.includes(stockAnchor)) s = s.replace(stockAnchor, stockReplacement);
+
+const salesAnchor = "      const stock = Math.max(0, Number(stockByProperty[propertyId]) || 0);";
+const salesReplacement = `      const serviceSale = Boolean(product.service);
+      const stock = serviceSale ? 1 : Math.max(0, Number(stockByProperty[propertyId]) || 0);`;
+if (s.includes(salesAnchor)) s = s.replace(salesAnchor, salesReplacement);
+s = s.replace("      if (stock <= 0 || Math.random() > salesChance) return;\n      const sold = Math.min(stock, 1 + (Math.random() > 0.72 ? 1 : 0));",
+`      if ((!serviceSale && stock <= 0) || Math.random() > salesChance) return;
+      const sold = serviceSale ? 1 : Math.min(stock, 1 + (Math.random() > 0.72 ? 1 : 0));`);
+s = s.replace("      stockChanges[propertyId] = stock - sold;", "      if (!serviceSale) stockChanges[propertyId] = stock - sold;");
+s = s.replace("      entries.push(property.name + ': ' + sold + ' adet ' + product.name + ' satıldı (+₺' + takings.toFixed(2) + ')');",
+"      entries.push(property.name + ': ' + (serviceSale ? product.name + ' hizmeti' : sold + ' adet ' + product.name) + ' satıldı (+₺' + takings.toFixed(2) + ')');");
 
 fs.writeFileSync(path, s, 'utf8');
