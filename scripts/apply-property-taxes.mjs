@@ -16,7 +16,7 @@ const periodShops = `  { id: 32, name: 'Küçük matbaa ve kırtasiye', type: 'A
   { id: 37, name: 'Kunduracı dükkanı', type: 'Atölye', price: 610, rent: 48, x: 0, z: 0, color: '#a98d75', floors: 2, style: 'Ayakkabı ve kundura ustasının dükkânı' },
   { id: 38, name: 'Kuyumcu', type: 'Ticaret', price: 1180, rent: 86, x: 0, z: 0, color: '#d0b987', floors: 2, style: 'Dar vitrinli kuyumcu mağazası' },
   { id: 39, name: 'Berber dükkanı', type: 'İşletme', price: 560, rent: 52, x: 0, z: 0, color: '#b8a998', floors: 2, style: 'Aynalı mahalle berberi' },
-  { id: 40, name: 'Pera pastanesi', type: 'İşletme', price: 1040, rent: 82, x: 0, z: 0, color: '#d1b79d', floors: 2, style: 'Alafranga pastane ve tatlıcı' },
+  { id: 40, name: 'Baylan Pastanesi', type: 'İşletme', price: 1040, rent: 82, x: 0, z: 0, color: '#d1b79d', floors: 2, style: 'Alafranga pastane ve tatlıcı' },
   { id: 41, name: 'Şapkacı mağazası', type: 'Ticaret', price: 820, rent: 65, x: 0, z: 0, color: '#b8a99d', floors: 2, style: 'Şapka ve şehir giyimi mağazası' },
   { id: 42, name: 'Çiçekçi dükkanı', type: 'Ticaret', price: 590, rent: 47, x: 0, z: 0, color: '#b5c0a4', floors: 1, style: 'Sokak cepheli çiçekçi' },
   { id: 43, name: 'Fotoğrafçı stüdyosu', type: 'Ticaret', price: 980, rent: 76, x: 0, z: 0, color: '#aeb8bd', floors: 3, style: 'Portre fotoğrafı ve stüdyo mağazası' },
