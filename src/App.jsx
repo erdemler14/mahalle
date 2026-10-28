@@ -947,6 +947,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   const [selectedUnit, setSelectedUnit] = useState(1);
   const [selected, setSelected] = useState(() => properties.some(p => p.id === saved.selected) ? saved.selected : 1);
   const [mapSearch, setMapSearch] = useState(() => properties.find(p => p.id === saved.selected)?.name || properties[0].name);
+  const [activeHudPanel, setActiveHudPanel] = useState(null);
   useEffect(() => { const property = properties.find(p => p.id === selected); if (property) setMapSearch(property.name); }, [selected]);
   const [notice, setNotice] = useState('');
   const [showPortfolio, setShowPortfolio] = useState(() => Boolean(saved.showPortfolio));
@@ -1880,13 +1881,24 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     if (multiplayerRole === 'host' && connectionRef.current?.open) connectionRef.current.send({ type: 'world-state', owners: ownerByProperty, marketValues, hostName: playerName.trim() || 'Ev sahibi' });
   }, [multiplayerRole, ownerByProperty, marketValues, playerName]);
 
-  return <main className="app-shell">
-    <header className="topbar">
+  return <main className={'app-shell fullscreen-game ' + (activeHudPanel ? 'hud-open ' + (activeHudPanel === 'social' ? 'hud-social' : 'hud-panel-open hud-panel-' + activeHudPanel) : '')}>
+    <header className="topbar hud-topbar">
       <a className="wordmark" href="#" aria-label="Mahalle ana sayfa"><span className="mark">M.</span><span>MAHALLE</span></a>
-      <div className="top-center"><span className="live-dot" /> BİR BEYOĞLU YAŞAM SİMÜLASYONU</div>
+      <div className="top-center"><span className="live-dot" /> BEYOĞLU · {String(hour).padStart(2, '0')}:00</div>
       <div className="top-actions"><button className="reset-button" onClick={resetGame}>YENİ OYUN ↻</button><button className="avatar-button" onClick={() => setShowPortfolio(v => !v)} aria-label="Portföyü aç">CC</button></div>
     </header>
 
+    <div className="hud-cash" aria-label="Cepteki sermaye"><span>₺</span><strong>{cash.toLocaleString('tr-TR', { maximumFractionDigits: 2 })}</strong><small>{cash > 0 ? 'SERMAYE' : 'SERMAYE BİTTİ'}</small></div>
+    <nav className="hud-dock" aria-label="Oyun menüsü">
+      <button className={activeHudPanel === 'property' ? 'active' : ''} onClick={() => setActiveHudPanel(activeHudPanel === 'property' ? null : 'property')} aria-label="Seçili mülk" title="Mülk"><span>⌂</span><small>MÜLK</small></button>
+      <button className={activeHudPanel === 'business' ? 'active' : ''} onClick={() => setActiveHudPanel(activeHudPanel === 'business' ? null : 'business')} aria-label="İşletme ve stok" title="İşletme"><span>▤</span><small>İŞLETME</small></button>
+      <button className={activeHudPanel === 'goals' ? 'active' : ''} onClick={() => setActiveHudPanel(activeHudPanel === 'goals' ? null : 'goals')} aria-label="Gelişim hedefleri" title="Hedefler"><span>◇</span><small>HEDEFLER</small></button>
+      <button className={activeHudPanel === 'portfolio' ? 'active' : ''} onClick={() => setActiveHudPanel(activeHudPanel === 'portfolio' ? null : 'portfolio')} aria-label="Portföy" title="Portföy"><span>▦</span><small>PORTFÖY</small></button>
+      <button className={activeHudPanel === 'time' ? 'active' : ''} onClick={() => setActiveHudPanel(activeHudPanel === 'time' ? null : 'time')} aria-label="Oyun zamanı" title="Zaman"><span>◷</span><small>ZAMAN</small></button>
+      <button className={activeHudPanel === 'social' ? 'active' : ''} onClick={() => setActiveHudPanel(activeHudPanel === 'social' ? null : 'social')} aria-label="Çok oyunculu oda" title="Oyuncular"><span>♙</span><small>ODA</small></button>
+      <button className={activeHudPanel === 'log' ? 'active' : ''} onClick={() => setActiveHudPanel(activeHudPanel === 'log' ? null : 'log')} aria-label="Mahalle günlüğü" title="Günlük"><span>≡</span><small>GÜNLÜK</small></button>
+    </nav>
+    {activeHudPanel && <button className="hud-dismiss" aria-label="Menüyü kapat" onClick={() => setActiveHudPanel(null)}>×</button>}
     <section className="intro-row">
       <div>
         <div className="eyebrow">SEZON 01 <span>/</span> İSTANBUL</div>
@@ -1900,7 +1912,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       </div>
     </section>
 
-    <section className="multiplayer-panel">
+    <section className="multiplayer-panel hud-multiplayer-panel">
       <div className="multiplayer-heading"><span className="live-dot" /> {session ? 'ORTAK BEYOĞLU · ÇEVRİMİÇİ ŞEHİR' : 'İKİ KİŞİLİK MAHALLE'}</div>
       <div className="multiplayer-status">{session ? (multiplayerStatus || 'Ortak şehir hazırlanıyor…') : multiplayerStatus}</div>
       {!authConfigured && <p className="small-note">Ortak şehir hesabı henüz yapılandırılmadı. Supabase projesi, migration ve Vercel ortam değişkenleri eklendiğinde hesapla giriş ve kalıcı ortak mülkiyet açılacak.</p>}
@@ -1918,7 +1930,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       {incomingOffer && <div className="incoming-offer" role="alert"><strong>{incomingOffer.isCounter ? 'Karşı teklif geldi' : 'Yeni satın alma teklifi'}</strong><span>{incomingOffer.fromName}, {properties.find(p => p.id === incomingOffer.propertyId)?.name || 'bir mülk'} için ₺{Number(incomingOffer.price).toLocaleString('tr-TR')} teklif ediyor.</span><label>Teklif / karşı teklif (₺)<input type="number" min="1" value={offerPriceInput} onChange={e => setOfferPriceInput(e.target.value)} /></label><div><button onClick={() => respondToOffer('accept')}>KABUL ET</button><button onClick={() => respondToOffer('counter', offerPriceInput)}>KARŞI TEKLİF</button><button onClick={() => respondToOffer('reject')}>REDDET</button></div></div>}
     </section>
 
-    <section className="game-layout">
+    <section className="game-layout fullscreen-layout">
       <div className="world-panel">
         <div className="world-topline"><span><span className="live-dot" /> BEYOĞLU MERKEZİ</span><label className="property-finder"><span>⌕</span><input aria-label="Mülk ara ve haritada göster" list="mahalle-property-options" placeholder="Mülk adı yaz..." value={mapSearch} onChange={event => { const value = event.target.value; setMapSearch(value); const match = properties.find(property => property.name.toLocaleLowerCase('tr-TR') === value.trim().toLocaleLowerCase('tr-TR')); if (match) selectProperty(match.id); }} /><datalist id="mahalle-property-options">{properties.map(property => <option key={property.id} value={property.name}>{owned.includes(property.id) ? 'Senin mülkün' : 'Satılık'}</option>)}</datalist><small>{properties.length} MÜLK</small></label><span className="world-year">OYUN DÜNYASI <i>·</i> {year}</span></div>
         <CityScene selected={selected} owned={owned} ownerByProperty={ownerByProperty} playerId={playerId} onSelect={selectProperty} hour={hour} overlay={<div className="scene-action-card">
@@ -1937,7 +1949,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
         {activeEconomicEvents().length > 0 && <div className="economic-event-banner" role="status"><strong>TAKVİM ETKİNLİĞİ · {activeEconomicEvents().map(event => event.name).join(' + ')}</strong><span>{activeEconomicEvents()[0].detail}</span></div>}
       </div>
 
-      <aside className="side-panel">
+      <aside className="side-panel hud-side-panel" aria-label="Oyun menüsü">
         <section className="balance-card">
           <div className="card-label">02 / CEPTEKİ SERMAYE</div>
           <div className="balance-number"><span>₺</span>{cash.toLocaleString('tr-TR', { maximumFractionDigits: 2 })}</div>
@@ -1970,7 +1982,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
         </section>
 
         <section className="property-card">
-          <div className="section-heading"><span>04 / MÜLKÜ İNCELE</span><span className="count-tag">{String(active.id).padStart(2, '0')}</span></div>
+          <div className="section-heading hud-property-heading"><span>04 / MÜLKÜ İNCELE</span><span className="count-tag">{String(active.id).padStart(2, '0')}</span></div>
           <div className="property-type">{active.type.toUpperCase()}</div>
           <h2>{active.name}</h2>
           {ownerByProperty[active.id] && <div className="owner-chip">MÜLK SAHİBİ: {ownerByProperty[active.id].name}{ownerByProperty[active.id].playerId === playerId ? ' (SEN)' : ''}</div>}
