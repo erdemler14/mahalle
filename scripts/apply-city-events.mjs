@@ -145,12 +145,12 @@ const soldAnchor = '      const sold = Math.min(stock, 1 + (Math.random() > 0.72
 const soldReplacement = '      const secondUnitThreshold = Math.min(0.95, 0.72 / Math.max(0.5, eventMultiplier));\n      const sold = Math.min(stock, 1 + (Math.random() > secondUnitThreshold ? 1 : 0));';
 if (s.includes(soldAnchor)) s = s.replace(soldAnchor, soldReplacement);
 
-const dailyPattern = /^(\s*)const business = settleDailyBusinesses\(\);$/m;
+const dayAdvancePattern = /^(\s*)const nextDayRaw = day \+ 1;$/m;
 if (!s.includes('const cityEventMessage = advanceCityEvents();')) {
-  const dailyMatch = s.match(dailyPattern);
-  if (!dailyMatch) throw new Error('Could not locate the daily rollover path for city events.');
-  const indent = dailyMatch[1];
-  s = s.replace(dailyPattern, indent + 'const cityEventMessage = advanceCityEvents();\n' + dailyMatch[0]);
+  const dayAdvanceMatch = s.match(dayAdvancePattern);
+  if (!dayAdvanceMatch) throw new Error('Could not locate the day advance point for city events.');
+  const indent = dayAdvanceMatch[1];
+  s = s.replace(dayAdvancePattern, indent + 'const cityEventMessage = advanceCityEvents();\n' + dayAdvanceMatch[0]);
 }
 
 const tell1 = "      tell(`Yeni gün başladı. Kira +₺${dailyRent.toFixed(2)}, gün içi işletme satışları kasaya işlendi, yaşam ve bakım -₺${(DAILY_LIVING_COST + maintenance).toFixed(2)}, işletme gideri -₺${business.costs.toFixed(2)}; net ₺${dailyNet.toFixed(2)}.${business.entries.length ? ' ' + business.entries.slice(0, 3).join(' · ') : ''}`);";
