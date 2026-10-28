@@ -129,7 +129,20 @@ const EXTRA_TRADE_CATALOG = {
   ]
 };
 
-const getTradeCatalog = (catalog, propertyId) => catalog[propertyId] || EXTRA_TRADE_CATALOG[propertyId] || [];
+// Shared economy model: prices are retail prices, costs are acquisition/production costs.
+ // Ordinary goods target a 35-45% gross margin; luxury/precious goods a tighter
+ // turnover-adjusted margin. Service prices remain labor fees and never consume stock.
+const getTradeCatalog = (catalog, propertyId) => {
+  const items = catalog[propertyId] || EXTRA_TRADE_CATALOG[propertyId] || [];
+  return items.map(item => {
+    if (item.service) return { ...item, cost: Math.max(0, Math.round(item.price * 0.28)) };
+    const cost = Math.max(1, Number(item.cost) || 1);
+    const luxury = /altın|gümüş|ipek|kuyum|cep saati|deri ayakkabı/i.test(item.name);
+    const markup = luxury ? 1.32 : 1.42;
+    const price = Math.max(cost + 1, Math.round(cost * markup));
+    return { ...item, cost, price };
+  });
+};
 `;
 
 if (!s.includes('const EXTRA_TRADE_CATALOG')) {
