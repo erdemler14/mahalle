@@ -129,7 +129,7 @@ const replacement = `  const settleDailyBusinesses = () => {
       const salesChance = Math.max(0.08, Math.min(0.9, (0.34 + (reputation / 100) * 0.12) * (1 + eventEffect)));
       if ((!serviceSale && stock <= 0) || Math.random() > salesChance) {
         entries.push(property.name + ': ' + (serviceSale ? 'hizmet hazır' : stock + ' stok') + ', günlük gider -₺' + dailyCost.toFixed(2));
-        continue;
+        return;
       }
       const sold = serviceSale ? 1 : Math.min(stock, Math.random() > 0.72 ? 2 : 1);
       const takings = sold * product.price;
