@@ -1225,7 +1225,8 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       return;
     }
     const isWorkingHour = hour >= 8 && hour < 19;
-    const hourlySales = isWorkingHour ? processHourlyBusinessSales() : { revenue: 0, entries: [], salesByProperty: {} };
+    const hourlySales = isWorkingHour ? processBusinessSales(1) : { revenue: 0, entries: [], salesByProperty: {}, stockChanges: {} };
+    if (Object.keys(hourlySales.salesByProperty).length) setStockByProperty(old => ({ ...old, ...hourlySales.stockChanges }));
     if (Object.keys(hourlySales.salesByProperty).length) {
       setBusinessStats(old => {
         const next = { ...old };
@@ -1325,57 +1326,67 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     return { sales: total.sales * effect.sales, chance: total.chance * effect.chance };
   }, { sales: 1, chance: 1 });
 
-  const processHourlyBusinessSales = () => {
+  const getBusinessSalesLevel = (propertyId) => {
+    const sold = Number(businessStats[propertyId]?.unitsSold) || 0;
+    return sold >= 60 ? 5 : sold >= 35 ? 4 : sold >= 15 ? 3 : sold >= 5 ? 2 : 1;
+  };
+  const STOCK_CAPACITY_BY_LEVEL = [0, 12, 24, 40, 60, 90];
+  const STOCK_UPGRADE_COST_BY_LEVEL = [0, 35, 80, 160, 300];
+  const getStockCapacity = (propertyId) => {
+    const level = Math.max(1, Math.min(5, Number(businessStats[propertyId]?.stockCapacityLevel) || 1));
+    return STOCK_CAPACITY_BY_LEVEL[level];
+  };
+  const processBusinessSales = (hours = 1) => {
     let revenue = 0;
-    const stockChanges = {};
+    const localStocks = { ...stockByProperty };
     const entries = [];
     const salesByProperty = {};
-    owned.forEach(propertyId => {
-      if (rented.includes(propertyId)) return;
-      const property = properties.find(item => item.id === propertyId);
-      if (!property || !['İşletme', 'Atölye', 'Ticaret'].includes(property.type)) return;
-      if (propertyId === 37) {
-        const state = stockByProperty[37] && typeof stockByProperty[37] === 'object' ? stockByProperty[37] : { materials: {}, products: {} };
-        const products = { ...(state.products || {}) };
-        let total = 0; const soldItems = [];
-        SHOE_RECIPES.forEach(shoe => {
-          const stock = Math.max(0, Number(products[shoe.id]) || 0);
-          if (!stock || Math.random() > 0.46) return;
-          const eventEffect = getEconomicEventEffect(property, { id: shoe.id, name: shoe.name });
-          const sold = Math.min(stock, Math.random() > 0.78 ? 2 : 1);
-          const amount = Math.round(sold * shoe.price * eventEffect.sales * 100) / 100;
-          products[shoe.id] = stock - sold; total += amount; soldItems.push({ name: shoe.name, sold, amount });
-          entries.push(property.name + ': ' + sold + ' çift ' + shoe.name + ' satıldı (+₺' + amount.toFixed(2) + ')');
-        });
-        if (soldItems.length) {
-          stockChanges[37] = { ...state, materials: state.materials || {}, products };
-          revenue += total;
-          salesByProperty[37] = { units: soldItems.reduce((n, item) => n + item.sold, 0), revenue: total, items: soldItems };
-          setBusinessStats(old => { const prev = old[37] || { unitsSold: 0, revenue: 0, stockInvested: 0 }; return { ...old, 37: { ...prev, unitsSold: prev.unitsSold + soldItems.reduce((n, item) => n + item.sold, 0), revenue: Math.round((prev.revenue + total) * 100) / 100 } }; });
+    const addSale = (propertyId, units, amount, detail) => {
+      revenue += amount;
+      const previous = salesByProperty[propertyId] || { units: 0, revenue: 0 };
+      salesByProperty[propertyId] = { units: previous.units + units, revenue: Math.round((previous.revenue + amount) * 100) / 100 };
+      if (detail && entries.length < 8) entries.push(detail);
+    };
+    for (let hourIndex = 0; hourIndex < hours; hourIndex++) {
+      owned.forEach(propertyId => {
+        if (rented.includes(propertyId)) return;
+        const property = properties.find(item => item.id === propertyId);
+        if (!property || !['İşletme', 'Atölye', 'Ticaret'].includes(property.type)) return;
+        if (propertyId === 37) {
+          const state = localStocks[37] && typeof localStocks[37] === 'object' ? localStocks[37] : { materials: {}, products: {} };
+          const products = { ...(state.products || {}) };
+          let changed = false;
+          SHOE_RECIPES.forEach(shoe => {
+            const stock = Math.max(0, Number(products[shoe.id]) || 0);
+            if (!stock || Math.random() > 0.46) return;
+            const eventEffect = getEconomicEventEffect(property, { id: shoe.id, name: shoe.name });
+            const sold = Math.min(stock, Math.random() > 0.78 ? 2 : 1);
+            const amount = Math.round(sold * shoe.price * eventEffect.sales * 100) / 100;
+            products[shoe.id] = stock - sold;
+            changed = true;
+            addSale(37, sold, amount, property.name + ': ' + sold + ' çift ' + shoe.name + ' satıldı (+₺' + amount.toFixed(2) + ')');
+          });
+          if (changed) localStocks[37] = { ...state, materials: state.materials || {}, products };
+          return;
         }
-        return;
-      }
-      const product = (tradeCatalog[propertyId] || []).find(item => item.id === businessPlans[propertyId]);
-      if (!product || product.price <= 0) return;
-      const stock = Math.max(0, Number(stockByProperty[propertyId]) || 0);
-      const soldBefore = Number(businessStats[propertyId]?.unitsSold) || 0;
-      const reputation = Math.min(100, Math.floor(soldBefore * 1.5));
-      const eventEffect = getEconomicEventEffect(property, product);
-      const salesChance = Math.min(0.92, (0.34 + (reputation / 100) * 0.12) * eventEffect.chance);
-      if (stock <= 0 || Math.random() > salesChance) return;
-      const sold = Math.min(stock, 1 + (Math.random() > 0.72 ? 1 : 0));
-      const baseMultiplier = property.type === 'İşletme' ? 2.1 : property.type === 'Atölye' ? 2.0 : 1.7;
-      const masteryLevel = soldBefore >= 60 ? 5 : soldBefore >= 35 ? 4 : soldBefore >= 15 ? 3 : soldBefore >= 5 ? 2 : 1;
-      const masteryBonus = (masteryLevel - 1) * 0.03;
-      const multiplier = baseMultiplier * (1 + masteryBonus);
-      const takings = Math.round(sold * product.price * multiplier * eventEffect.sales * 100) / 100;
-      revenue += takings;
-      salesByProperty[propertyId] = { units: sold, revenue: takings };
-      stockChanges[propertyId] = stock - sold;
-      entries.push(property.name + ': ' + sold + ' adet ' + product.name + ' satıldı (+₺' + takings.toFixed(2) + ')' + (eventEffect.sales !== 1 || eventEffect.chance !== 1 ? ' · etkinlik etkisi' : ''));
-    });
-    if (Object.keys(stockChanges).length) setStockByProperty(old => ({ ...old, ...stockChanges }));
-    return { revenue: Math.round(revenue * 100) / 100, entries, salesByProperty };
+        const product = (tradeCatalog[propertyId] || []).find(item => item.id === businessPlans[propertyId]);
+        if (!product || product.price <= 0) return;
+        const serviceSale = Boolean(product.service);
+        const stock = serviceSale ? 1 : Math.max(0, Number(localStocks[propertyId]) || 0);
+        const soldBefore = (Number(businessStats[propertyId]?.unitsSold) || 0) + (salesByProperty[propertyId]?.units || 0);
+        const reputation = Math.min(100, Math.floor(soldBefore * 1.5));
+        const eventEffect = getEconomicEventEffect(property, product);
+        const salesChance = Math.min(0.92, (0.34 + (reputation / 100) * 0.12) * eventEffect.chance);
+        if ((!serviceSale && stock <= 0) || Math.random() > salesChance) return;
+        const sold = serviceSale ? 1 : Math.min(stock, 1 + (Math.random() > 0.72 ? 1 : 0));
+        const baseMultiplier = property.type === 'İşletme' ? 2.1 : property.type === 'Atölye' ? 2.0 : 1.7;
+        const masteryLevel = soldBefore >= 60 ? 5 : soldBefore >= 35 ? 4 : soldBefore >= 15 ? 3 : soldBefore >= 5 ? 2 : 1;
+        const takings = Math.round(sold * product.price * baseMultiplier * (1 + (masteryLevel - 1) * 0.03) * eventEffect.sales * 100) / 100;
+        if (!serviceSale) localStocks[propertyId] = stock - sold;
+        addSale(propertyId, sold, takings, property.name + ': ' + sold + ' adet ' + product.name + ' satıldı (+₺' + takings.toFixed(2) + ')');
+      });
+    }
+    return { revenue: Math.round(revenue * 100) / 100, entries, salesByProperty, stockChanges: localStocks };
   };
 
   const settleDailyBusinesses = () => {
@@ -1389,7 +1400,8 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       if (!product || product.price <= 0) return;
       const dailyCost = property.type === 'İşletme' ? 4.5 : property.type === 'Atölye' ? 3.5 : 2.5;
       operatingCosts += dailyCost;
-      if ((Number(stockByProperty[propertyId]) || 0) <= 0) {
+      const hasStock = propertyId === 37 ? Object.values((stockByProperty[37] && typeof stockByProperty[37] === 'object' ? stockByProperty[37].products || {} : {})).some(value => Number(value) > 0) : (Number(stockByProperty[propertyId]) || 0) > 0;
+      if (!hasStock) {
         entries.push(property.name + ': stok bitti, günlük gider -₺' + dailyCost.toFixed(2));
       } else {
         entries.push(property.name + ': günlük işletme gideri -₺' + dailyCost.toFixed(2));
@@ -1405,10 +1417,22 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const nextMonthRaw = month + (nextDayRaw > 30 ? 1 : 0);
     const nextMonth = nextMonthRaw > 12 ? 1 : nextMonthRaw;
     const business = settleDailyBusinesses();
+    const sales = processBusinessSales(11);
+    setStockByProperty(old => ({ ...old, ...sales.stockChanges }));
+    if (Object.keys(sales.salesByProperty).length) {
+      setBusinessStats(old => {
+        const next = { ...old };
+        Object.entries(sales.salesByProperty).forEach(([id, sale]) => {
+          const previous = next[id] || { unitsSold: 0, revenue: 0, stockInvested: 0 };
+          next[id] = { ...previous, unitsSold: previous.unitsSold + sale.units, revenue: Math.round((previous.revenue + sale.revenue) * 100) / 100 };
+        });
+        return next;
+      });
+    }
     const maintenance = portfolio.reduce((sum, p) => sum + Math.max(0.01, Math.round((getMarketValue(p) * 0.003 / 365) * 100) / 100), 0);
     const upkeep = DAILY_LIVING_COST + maintenance + business.costs;
     const rent = Math.round(dailyRentIncome * 100) / 100;
-    const net = rent + business.revenue - upkeep;
+    const net = rent + business.revenue + sales.revenue - upkeep;
     setCash(v => Math.round((v + net) * 100) / 100);
     setDay(nextDay);
     setMonth(nextMonth);
@@ -1417,7 +1441,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     if (nextMonthRaw > 12) setYear(v => v + 1);
     setHour(6);
     setWorkHours(0);
-    tell(`Gün kapandı. Kira +₺${rent.toFixed(2)}, gün içi işletme satışları kasaya işlendi, yaşam ve bakım -₺${(DAILY_LIVING_COST + maintenance).toFixed(2)}, işletme giderleri -₺${business.costs.toFixed(2)}. Net: ₺${net.toFixed(2)}.${business.entries.length ? ' ' + business.entries.slice(0, 3).join(' · ') : ''}`);
+    tell(`Gün kapandı. Kira +₺${rent.toFixed(2)}, satış geliri +₺${sales.revenue.toFixed(2)}, yaşam ve bakım -₺${(DAILY_LIVING_COST + maintenance).toFixed(2)}, işletme giderleri -₺${business.costs.toFixed(2)}. Net: ₺${net.toFixed(2)}.${sales.entries.length ? ' ' + sales.entries.slice(0, 5).join(' · ') : ' Bugün satış olmadı.'}`);
   };
 
   const selectBusinessPlan = (plan) => {
@@ -1456,6 +1480,10 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     if (!owned.includes(37) || rented.includes(37)) { tell('Hammadde almak için kunduracı sana ait olmalı ve kirada olmamalı.'); return; }
     const material = SHOE_MATERIALS.find(item => item.id === materialId); if (!material) return;
     if (cash < material.cost) { tell(material.name + ' için ₺' + material.cost + ' gerekiyor.'); return; }
+    const shoeState = stockByProperty[37] && typeof stockByProperty[37] === 'object' ? stockByProperty[37] : { materials: {}, products: {} };
+    const materialStock = Number(shoeState.materials?.[material.id]) || 0;
+    const capacity = getStockCapacity(37);
+    if (materialStock + material.batch > capacity) { tell('Depo dolu: ' + material.name + ' için kapasite ' + capacity + ', mevcut stok ' + materialStock + '. Önce üretim yap veya depo genişlet.'); return; }
     setCash(v => Math.round((v - material.cost) * 100) / 100);
     setStockByProperty(old => { const state = old[37] && typeof old[37] === 'object' ? old[37] : { materials: {}, products: {} }; return { ...old, 37: { materials: { ...(state.materials || {}), [material.id]: (Number(state.materials?.[material.id]) || 0) + material.batch }, products: state.products || {} } }; });
     setBusinessStats(old => { const prev = old[37] || { unitsSold: 0, revenue: 0, stockInvested: 0 }; return { ...old, 37: { ...prev, stockInvested: Math.round((prev.stockInvested + material.cost) * 100) / 100 } }; });
@@ -1466,11 +1494,30 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const shoe = SHOE_RECIPES.find(item => item.id === shoeId); if (!shoe) return;
     const state = stockByProperty[37] && typeof stockByProperty[37] === 'object' ? stockByProperty[37] : { materials: {}, products: {} };
     const materials = state.materials || {};
+    const productStock = Number(state.products?.[shoe.id]) || 0;
+    const capacity = getStockCapacity(37);
+    if (productStock + 1 > capacity) { tell('Vitrin deposu dolu: ' + shoe.name + ' kapasitesi ' + capacity + ' çift. Satış bekle veya depo genişlet.'); return; }
     const missing = Object.entries(shoe.recipe).filter(([id, qty]) => (Number(materials[id]) || 0) < qty);
     if (missing.length) { tell('Hammadde eksik: ' + missing.map(([id, qty]) => (SHOE_MATERIALS.find(m => m.id === id)?.name || id) + ' ' + qty).join(', ') + '. Önce tedarik et.'); return; }
     const next = { ...materials }; Object.entries(shoe.recipe).forEach(([id, qty]) => { next[id] = (Number(next[id]) || 0) - qty; });
     setStockByProperty(old => { const current = old[37] && typeof old[37] === 'object' ? old[37] : { materials: {}, products: {} }; return { ...old, 37: { materials: next, products: { ...(current.products || {}), [shoe.id]: (Number(current.products?.[shoe.id]) || 0) + 1 } } }; });
     tell('Üretim tamamlandı: 1 çift ' + shoe.name + '. Hammaddeler düşüldü; ürün vitrinde satışa hazır.');
+  };
+
+  const upgradeBusinessStorage = (propertyId) => {
+    if (sendAction('upgradeBusinessStorage', propertyId)) return;
+    if (!owned.includes(propertyId) || rented.includes(propertyId)) { tell('Depoyu genişletmek için işletme sana ait olmalı ve kirada olmamalı.'); return; }
+    const stats = businessStats[propertyId] || { unitsSold: 0, stockCapacityLevel: 1 };
+    const currentLevel = Math.max(1, Math.min(5, Number(stats.stockCapacityLevel) || 1));
+    const businessLevel = getBusinessSalesLevel(propertyId);
+    if (currentLevel >= 5) { tell('Depo en yüksek seviyede.'); return; }
+    if (businessLevel < currentLevel + 1) { tell('Sonraki depo seviyesi için işletme seviyen ' + (currentLevel + 1) + ' olmalı. Şu an ' + businessLevel + '. seviyedesin. Daha fazla ürün sat.'); return; }
+    const nextLevel = currentLevel + 1;
+    const cost = STOCK_UPGRADE_COST_BY_LEVEL[nextLevel];
+    if (cash < cost) { tell('Depo genişletmek için ₺' + cost + ' gerekiyor.'); return; }
+    setCash(value => Math.round((value - cost) * 100) / 100);
+    setBusinessStats(old => { const prev = old[propertyId] || { unitsSold: 0, revenue: 0, stockInvested: 0 }; return { ...old, [propertyId]: { ...prev, stockCapacityLevel: nextLevel, storageUpgradeSpent: (Number(prev.storageUpgradeSpent) || 0) + cost } }; });
+    tell('Depo genişletildi: seviye ' + nextLevel + ', kapasite ' + STOCK_CAPACITY_BY_LEVEL[nextLevel] + ' birim. Ödenen: ₺' + cost + '.');
   };
 
   const stockBusiness = () => {
@@ -1479,6 +1526,9 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     if (!owned.includes(active.id) || rented.includes(active.id)) { tell('Stok alabilmek için mülkün sahibi olmalı ve mülk kirada olmamalı.'); return; }
     if (!item || item.units <= 0) { tell('Bu mülk için henüz tedarik edilebilir ürün grubu yok.'); return; }
     if (cash < item.cost) { tell(`İlk stok için ₺${item.cost} gerekiyor.`); return; }
+    const currentStock = Math.max(0, Number(stockByProperty[active.id]) || 0);
+    const capacity = getStockCapacity(active.id);
+    if (currentStock + item.units > capacity) { tell(`Depo dolu: kapasite ${capacity} adet, mevcut stok ${currentStock}. Daha fazla stok için işletme seviyeni yükseltip depo genişlet.`); return; }
     setCash(v => Math.round((v - item.cost) * 100) / 100);
     setBusinessStats(old => { const previous = old[active.id] || { unitsSold: 0, revenue: 0, stockInvested: 0 }; return { ...old, [active.id]: { ...previous, stockInvested: Math.round((previous.stockInvested + item.cost) * 100) / 100 } }; });
     setStockByProperty(old => ({ ...old, [active.id]: (old[active.id] || 0) + item.units }));
