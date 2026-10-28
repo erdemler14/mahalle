@@ -887,3 +887,32 @@ body{overflow:hidden}
   margin-top:0!important;
   box-sizing:border-box!important;
 }
+
+
+/* Production supply rows: robust two-column layout inside the narrow right-hand HUD. */
+.hud-panel-business .hud-side-panel>.property-card .business-plan .production-materials-list{
+  display:flex!important;flex-direction:column!important;gap:7px!important;
+  width:100%!important;min-width:0!important;align-items:stretch!important;
+}
+.hud-panel-business .hud-side-panel>.property-card .business-plan .production-material-row{
+  display:grid!important;grid-template-columns:minmax(0,1fr) 108px!important;
+  align-items:center!important;gap:9px!important;width:100%!important;
+  min-width:0!important;max-width:100%!important;padding:10px!important;
+  box-sizing:border-box!important;overflow:hidden!important;
+}
+.hud-panel-business .hud-side-panel>.property-card .business-plan .production-material-row>div{
+  display:block!important;width:auto!important;min-width:0!important;max-width:none!important;
+  flex:none!important;overflow:hidden!important;
+}
+.hud-panel-business .hud-side-panel>.property-card .business-plan .production-material-row>div strong,
+.hud-panel-business .hud-side-panel>.property-card .business-plan .production-material-row>div small{
+  display:block!important;width:auto!important;max-width:100%!important;
+  white-space:normal!important;word-break:normal!important;overflow-wrap:anywhere!important;
+  writing-mode:horizontal-tb!important;line-height:1.45!important;
+}
+.hud-panel-business .hud-side-panel>.property-card .business-plan .production-material-row>button{
+  display:block!important;width:100%!important;min-width:0!important;max-width:none!important;
+  flex:none!important;margin:0!important;padding:8px 5px!important;
+  white-space:normal!important;word-break:normal!important;overflow-wrap:anywhere!important;
+  box-sizing:border-box!important;
+}
