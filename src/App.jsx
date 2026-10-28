@@ -403,6 +403,22 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
         displayFrame.position.set(-w * 0.12, 0.9, d / 2 + 0.07); group.add(displayFrame);
         const displaySill = new THREE.Mesh(new THREE.BoxGeometry(storefrontW + 0.1, 0.08, 0.09), darkWood);
         displaySill.position.set(-w * 0.12, 0.22, d / 2 + 0.07); group.add(displaySill);
+
+        // Small product silhouettes make shop windows feel stocked without expensive assets.
+        const displayColors = p.id === 15 ? ['#d8d0b9', '#78908a', '#b3a17e'] :
+          [7, 23, 29].includes(p.id) ? ['#8c5947', '#c7a56b', '#6f8060'] :
+          [12, 25, 31].includes(p.id) ? ['#9b7959', '#e0c99c', '#6f8b83'] :
+          [9, 32].includes(p.id) ? ['#c6b89c', '#8d9aab', '#b56e55'] :
+          ['#c7a56b', '#8c9a7c', '#b56e55'];
+        for (let itemIndex = 0; itemIndex < 3; itemIndex++) {
+          const item = new THREE.Mesh(
+            new THREE.BoxGeometry(0.13, 0.17 + (itemIndex % 2) * 0.06, 0.12),
+            new THREE.MeshStandardMaterial({ color: displayColors[itemIndex], roughness: 0.88 })
+          );
+          item.position.set(-w * 0.31 + itemIndex * 0.3, 0.34 + (itemIndex % 2) * 0.025, d / 2 + 0.13);
+          item.castShadow = true;
+          group.add(item);
+        }
         for (const x of [-w * 0.12 - storefrontW / 2, -w * 0.12 + storefrontW / 2]) {
           const post = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.78, 0.09), darkWood);
           post.position.set(x, 0.56, d / 2 + 0.075); group.add(post);
