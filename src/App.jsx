@@ -1231,6 +1231,57 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     else tell(`${String(hour).padStart(2, '0')}:00 — Sokak sakin. Bu saatte düzenli bir gelir elde etmedin.`);
   };
 
+  // Calendar-driven demand shocks: event dates use the game's 30-day monthly calendar.
+  const activeEconomicEvents = () => {
+    const events = [];
+    const inDays = (m, days) => month === m && days.includes(day);
+    const isFood = product => /kahve|tatli|ekmek|pogaca|et|sakatat|yemek|corba|erzak|zeytin|meyve|sebze|bakkal|konserve|koli|meze|sarap/i.test(product?.id || '');
+    const isGiftOrRetail = product => /kumas|ithalat|kitap|kirtasiye|oyuncak|kolonya|sabun|bakim|saat|mobilya|cicek|cicekci/i.test((product?.id || '') + ' ' + (product?.name || ''));
+    const isEntertainment = property => [12,19,25,31,53,55,56,57,58,59,62].includes(property?.id);
+    const isBookshop = property => [9,16,32,45].includes(property?.id);
+    const isPharmacy = property => property?.id === 15 || /eczane|eczacı/i.test(property?.name || '');
+    const isBusiness = property => ['İşletme','Atölye','Ticaret'].includes(property?.type);
+
+    if ((month === 12 && day >= 30) || (month === 1 && day <= 2)) {
+      events.push({ id: 'new-year', name: 'Yılbaşı alışverişi', detail: 'Yılbaşı alışverişi ticareti canlandırıyor.', effect: (p, product) => ({ sales: isFood(product) || isGiftOrRetail(product) || isEntertainment(p) ? 1.35 : 1.08, chance: 1.18 }) });
+    }
+    if (inDays(12, [24,25,26])) {
+      events.push({ id: 'christmas', name: 'Noel dönemi', detail: 'Noel dönemi hediyelik, yiyecek ve eğlence harcamalarını artırıyor.', effect: (p, product) => ({ sales: isGiftOrRetail(product) || isFood(product) || isEntertainment(p) ? 1.28 : 1.03, chance: 1.12 }) });
+    }
+    if (inDays(4, [23])) {
+      events.push({ id: 'national-sovereignty', name: '23 Nisan', detail: '23 Nisan kutlamaları ailelerin yiyecek ve küçük alışveriş harcamalarını artırıyor.', effect: (p, product) => ({ sales: isFood(product) || isGiftOrRetail(product) || isEntertainment(p) ? 1.25 : 1.04, chance: 1.12 }) });
+    }
+    if (inDays(5, [1])) {
+      events.push({ id: 'labour-day', name: '1 Mayıs', detail: '1 Mayıs nedeniyle ticari tempo yavaşlıyor; kahvehane ve yemek işletmeleri hareketleniyor.', effect: (p, product) => ({ sales: isFood(product) || isEntertainment(p) ? 1.12 : 0.88, chance: 0.92 }) });
+    }
+    if (inDays(5, [19])) {
+      events.push({ id: 'youth-sports', name: '19 Mayıs', detail: '19 Mayıs etkinlikleri yeme-içme ve eğlence talebini yükseltiyor.', effect: (p, product) => ({ sales: isFood(product) || isEntertainment(p) ? 1.32 : 1.06, chance: 1.16 }) });
+    }
+    if (inDays(8, [30])) {
+      events.push({ id: 'victory-day', name: '30 Ağustos', detail: 'Zafer Bayramı kutlamaları cadde ticaretini ve yeme-içme talebini artırıyor.', effect: (p, product) => ({ sales: isFood(product) || isGiftOrRetail(product) || isEntertainment(p) ? 1.28 : 1.05, chance: 1.14 }) });
+    }
+    if ((month === 10 && [28,29].includes(day))) {
+      events.push({ id: 'republic-day', name: '29 Ekim Cumhuriyet Bayramı', detail: 'Cumhuriyet Bayramı kutlamaları nedeniyle merkezde alışveriş ve eğlence talebi artıyor.', effect: (p, product) => ({ sales: isFood(product) || isGiftOrRetail(product) || isEntertainment(p) ? 1.38 : 1.08, chance: 1.2 }) });
+    }
+    if (month === 9 && day >= 1 && day <= 5) {
+      events.push({ id: 'school-opening', name: 'Okullar açılıyor', detail: 'Okul hazırlıkları kitapçı ve kırtasiyelerde satışları artırıyor.', effect: (p, product) => ({ sales: isBookshop(p) || /kitap|defter|kalem|kırtasiye/i.test((product?.id || '') + ' ' + (product?.name || '')) ? 1.75 : 0.96, chance: isBookshop(p) ? 1.45 : 0.98 }) });
+    }
+    if ([1,2,11,12].includes(month)) {
+      events.push({ id: 'winter-illness', name: 'Kış hastalıkları', detail: 'Kış hastalıkları nedeniyle eczane talebi yükseldi; diğer işletmelerde müşteri trafiği azaldı.', effect: (p, product) => isPharmacy(p) ? { sales: 1.8, chance: 1.65 } : { sales: 0.78, chance: 0.82 } });
+    }
+    if ([6,7,8].includes(month)) {
+      events.push({ id: 'summer-tourism', name: 'Yaz sezonu', detail: 'Yaz ziyaretçileri otel, kahve, lokanta ve eğlence işletmelerini canlandırıyor.', effect: (p, product) => ({ sales: isEntertainment(p) || [7,12,19,25,31,53,55,56,57,58,59,62].includes(p?.id) || isFood(product) ? 1.38 : 0.94, chance: isEntertainment(p) ? 1.3 : 1.02 }) });
+    }
+    if (month === 11 && day >= 15 && day <= 30) {
+      events.push({ id: 'rainy-season', name: 'Yağışlı günler', detail: 'Yağışlı günlerde kahve, sıcak yemek ve tamir hizmetlerine talep kayıyor.', effect: (p, product) => ({ sales: /kahve|corba|tamir|tamirat|sakatat/i.test((product?.id || '') + ' ' + (product?.name || '')) ? 1.25 : 0.9, chance: 1.04 }) });
+    }
+    return events;
+  };
+  const getEconomicEventEffect = (property, product) => activeEconomicEvents().reduce((total, event) => {
+    const effect = event.effect(property, product);
+    return { sales: total.sales * effect.sales, chance: total.chance * effect.chance };
+  }, { sales: 1, chance: 1 });
+
   const processHourlyBusinessSales = () => {
     let revenue = 0;
     const stockChanges = {};
@@ -1245,18 +1296,19 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       const stock = Math.max(0, Number(stockByProperty[propertyId]) || 0);
       const soldBefore = Number(businessStats[propertyId]?.unitsSold) || 0;
       const reputation = Math.min(100, Math.floor(soldBefore * 1.5));
-      const salesChance = 0.34 + (reputation / 100) * 0.12;
+      const eventEffect = getEconomicEventEffect(property, product);
+      const salesChance = Math.min(0.92, (0.34 + (reputation / 100) * 0.12) * eventEffect.chance);
       if (stock <= 0 || Math.random() > salesChance) return;
       const sold = Math.min(stock, 1 + (Math.random() > 0.72 ? 1 : 0));
       const baseMultiplier = property.type === 'İşletme' ? 2.1 : property.type === 'Atölye' ? 2.0 : 1.7;
       const masteryLevel = soldBefore >= 60 ? 5 : soldBefore >= 35 ? 4 : soldBefore >= 15 ? 3 : soldBefore >= 5 ? 2 : 1;
       const masteryBonus = (masteryLevel - 1) * 0.03;
       const multiplier = baseMultiplier * (1 + masteryBonus);
-      const takings = Math.round(sold * product.price * multiplier * 100) / 100;
+      const takings = Math.round(sold * product.price * multiplier * eventEffect.sales * 100) / 100;
       revenue += takings;
       salesByProperty[propertyId] = { units: sold, revenue: takings };
       stockChanges[propertyId] = stock - sold;
-      entries.push(property.name + ': ' + sold + ' adet ' + product.name + ' satıldı (+₺' + takings.toFixed(2) + ')');
+      entries.push(property.name + ': ' + sold + ' adet ' + product.name + ' satıldı (+₺' + takings.toFixed(2) + ')' + (eventEffect.sales !== 1 || eventEffect.chance !== 1 ? ' · etkinlik etkisi' : ''));
     });
     if (Object.keys(stockChanges).length) setStockByProperty(old => ({ ...old, ...stockChanges }));
     return { revenue: Math.round(revenue * 100) / 100, entries, salesByProperty };
@@ -1679,6 +1731,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
         </div>} />
         <div className="map-legend"><span><i className="legend-dot available" /> SATILIK MÜLK</span><span><i className="legend-dot owned" /> SENİN MÜLKÜN</span><span className="map-hint">SÜRÜKLE: DÖNDÜR · KAYDIR: YAKINLAŞ · BİNAYA TIKLA</span></div>
         <div className="world-caption"><span>İSTANBUL / BEYOĞLU</span><span>GÜN {day} <i>·</i> SAAT {String(hour).padStart(2, '0')}:00</span></div>
+        {activeEconomicEvents().length > 0 && <div className="economic-event-banner" role="status"><strong>TAKVİM ETKİNLİĞİ · {activeEconomicEvents().map(event => event.name).join(' + ')}</strong><span>{activeEconomicEvents()[0].detail}</span></div>}
       </div>
 
       <aside className="side-panel">
