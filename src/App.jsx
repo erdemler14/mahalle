@@ -726,7 +726,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
       event.preventDefault();
       // Exponential, clamped dolly input avoids large jumps on high-resolution trackpads.
       const zoomFactor = Math.exp(clamp(event.deltaY, -120, 120) * 0.00115);
-      radiusGoal = clamp(radiusGoal * zoomFactor, 5.5, 40);
+      radiusGoal = clamp(radiusGoal * zoomFactor, 5.5, 55);
     };
     const onContextMenu = (event) => event.preventDefault();
     const onClick = (event) => {
@@ -850,7 +850,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
     };
   }, [owned, ownerByProperty, playerId]);
 
-  return <div className="scene-host" ref={host} aria-label="Beyoğlu 1923 3D mahalle sahnesi"><div className="scene-building-overlay" ref={overlayRef}>{overlay}</div><div className="map-zoom-controls"><button type="button" aria-label="Yakınlaştır" title="Yakınlaştır" onClick={() => cameraControlRef.current?.('in')}>＋</button><button type="button" aria-label="Uzaklaştır" title="Uzaklaştır" onClick={() => cameraControlRef.current?.('out')}>−</button><button type="button" aria-label="Seçili binaya git" title="Seçili binaya git" onClick={() => cameraControlRef.current?.('focus', properties.find(item => item.id === selected))}>⌖</button><button type="button" aria-label="Haritayı sıfırla" title="Haritayı sıfırla" onClick={() => cameraControlRef.current?.('reset')}>⌂</button></div><div className="map-hint">Tek parmak: döndür · İki parmak: yakınlaştır / uzaklaştır · Sağ sürükle: ilerle</div></div>;
+  return <div className="scene-host" ref={host} aria-label="Beyoğlu 1923 3D mahalle sahnesi"><div className="scene-building-overlay" ref={overlayRef}>{overlay}</div><div className="map-zoom-controls"><button type="button" aria-label="Yakınlaştır" title="Yakınlaştır" onClick={() => cameraControlRef.current?.('in')}>＋</button><button type="button" aria-label="Uzaklaştır" title="Uzaklaştır" onClick={() => cameraControlRef.current?.('out')}>−</button><button type="button" aria-label="Seçili binaya git" title="Seçili binaya git" onClick={() => cameraControlRef.current?.('focus', properties.find(item => item.id === selected))}>⌖</button><button type="button" aria-label="Haritayı sıfırla" title="Haritayı sıfırla" onClick={() => cameraControlRef.current?.('reset')}>⌂</button></div><div className="map-hint">Binaya tıkla: seç · Ara: mülk bul · Sürükle: haritayı döndür · Sağ tuş: taşı</div></div>;
 }
 
 function App() {
