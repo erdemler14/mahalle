@@ -1078,7 +1078,8 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   const rentedProperties = portfolio.filter(p => rented.includes(p.id));
   const annualRent = portfolio.reduce((sum, p) => sum + p.rent * 12, 0);
   const realizedAnnualRent = rentedProperties.reduce((sum, p) => sum + p.rent * 12, 0);
-  const dailyRentIncome = rentedProperties.reduce((sum, p) => sum + p.rent / 30, 0);
+  const unitRentIncome = Object.entries(unitRented).reduce((sum, [key, activeRent]) => { if (!activeRent) return sum; const [pid] = key.split(':'); const p = properties.find(item => item.id === Number(pid)); const unitOwner = unitOwners[key]; return sum + (p && unitOwner?.playerId === playerId ? p.rent / (p.units || 1) / 30 : 0); }, 0);
+  const dailyRentIncome = rentedProperties.reduce((sum, p) => sum + p.rent / 30, 0) + unitRentIncome;
   const selectedVenueCompatible = owned.includes(active.id) && !rented.includes(active.id) && supportsProfessionAt(active, professionId);
   const hasSuitablePremise = portfolio.some(p => !rented.includes(p.id) && supportsProfessionAt(p, professionId));
   const [noticeId, setNoticeId] = useState(0);
@@ -1764,14 +1765,14 @@ function App({ session = null, supabase = null, authConfigured = false }) {
         connectionRef.current = conn;
         conn.on('open', () => {
           setMultiplayerStatus('Bağlantı kuruldu · oyuncu bilgisi bekleniyor');
-          conn.send({ type: 'world-state', owners: snapshotRef.current?.owners || {}, marketValues: snapshotRef.current?.marketValues || {}, hostName });
+          conn.send({ type: 'world-state', owners: snapshotRef.current?.owners || {}, unitOwners, marketValues: snapshotRef.current?.marketValues || {}, hostName });
         });
         conn.on('data', message => {
           if (message?.type === 'hello') {
             setOpponentName(message.playerName || 'Oyuncu 2');
             const mergedOwners = { ...(snapshotRef.current?.owners || {}), ...(message.owners || {}) };
             setOwnerByProperty(mergedOwners);
-            conn.send({ type: 'world-state', owners: mergedOwners, marketValues, hostName });
+            conn.send({ type: 'world-state', owners: mergedOwners, unitOwners, marketValues, hostName });
             setMultiplayerStatus(`İki oyuncu bağlı · ${message.playerName || 'Oyuncu 2'}`);
           }
           if (message?.type === 'world-update' && message.owners && typeof message.owners === 'object') {
