@@ -1888,7 +1888,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       <div className="top-actions"><button className="reset-button" onClick={resetGame}>YENİ OYUN ↻</button><button className="avatar-button" onClick={() => setShowPortfolio(v => !v)} aria-label="Portföyü aç">CC</button></div>
     </header>
 
-    <div className="hud-cash" aria-label="Cepteki sermaye"><span>₺</span><strong>{cash.toLocaleString('tr-TR', { maximumFractionDigits: 2 })}</strong><small>{cash > 0 ? 'SERMAYE' : 'SERMAYE BİTTİ'}</small></div>
+    <button type="button" className="hud-cash" aria-label="Cepteki sermaye ayrıntıları" onClick={() => setActiveHudPanel(activeHudPanel === 'cash' ? null : 'cash')}><span>₺</span><strong>{cash.toLocaleString('tr-TR', { maximumFractionDigits: 2 })}</strong><small>{cash > 0 ? 'SERMAYE' : 'SERMAYE BİTTİ'}</small></button>
     <nav className="hud-dock" aria-label="Oyun menüsü">
       <button className={activeHudPanel === 'property' ? 'active' : ''} onClick={() => setActiveHudPanel(activeHudPanel === 'property' ? null : 'property')} aria-label="Seçili mülk" title="Mülk"><span>⌂</span><small>MÜLK</small></button>
       <button className={activeHudPanel === 'business' ? 'active' : ''} onClick={() => setActiveHudPanel(activeHudPanel === 'business' ? null : 'business')} aria-label="İşletme ve stok" title="İşletme"><span>▤</span><small>İŞLETME</small></button>
@@ -1949,7 +1949,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
         {activeEconomicEvents().length > 0 && <div className="economic-event-banner" role="status"><strong>TAKVİM ETKİNLİĞİ · {activeEconomicEvents().map(event => event.name).join(' + ')}</strong><span>{activeEconomicEvents()[0].detail}</span></div>}
       </div>
 
-      <aside className="side-panel hud-side-panel" aria-label="Oyun menüsü">
+      <aside className={'side-panel hud-side-panel hud-panel-content-' + (activeHudPanel || 'none')} aria-label="Oyun menüsü">
         <section className="balance-card">
           <div className="card-label">02 / CEPTEKİ SERMAYE</div>
           <div className="balance-number"><span>₺</span>{cash.toLocaleString('tr-TR', { maximumFractionDigits: 2 })}</div>
