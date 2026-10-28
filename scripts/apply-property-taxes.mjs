@@ -20,7 +20,15 @@ const periodShops = `  { id: 32, name: 'Küçük matbaa ve kırtasiye', type: 'A
   { id: 41, name: 'Şapkacı mağazası', type: 'Ticaret', price: 820, rent: 65, x: 0, z: 0, color: '#b8a99d', floors: 2, style: 'Şapka ve şehir giyimi mağazası' },
   { id: 42, name: 'Çiçekçi dükkanı', type: 'Ticaret', price: 590, rent: 47, x: 0, z: 0, color: '#b5c0a4', floors: 1, style: 'Sokak cepheli çiçekçi' },
   { id: 43, name: 'Fotoğrafçı stüdyosu', type: 'Ticaret', price: 980, rent: 76, x: 0, z: 0, color: '#aeb8bd', floors: 3, style: 'Portre fotoğrafı ve stüdyo mağazası' },
-  { id: 44, name: 'Sabuncu ve güzel koku imalathanesi', type: 'Atölye', price: 900, rent: 64, x: 0, z: 0, color: '#b9b39e', floors: 2, style: 'Küçük sabun ve koku imalathanesi' }
+  { id: 44, name: 'Sabuncu ve güzel koku imalathanesi', type: 'Atölye', price: 900, rent: 64, x: 0, z: 0, color: '#b9b39e', floors: 2, style: 'Küçük sabun ve koku imalathanesi' },
+  { id: 45, name: 'Sahaf ve eski kitapçı', type: 'Ticaret', price: 720, rent: 55, x: 0, z: 0, color: '#bcae98', floors: 2, style: 'İkinci el kitaplar ve eski baskılar' },
+  { id: 46, name: 'Şarküteri ve peynirci', type: 'Ticaret', price: 780, rent: 62, x: 0, z: 0, color: '#c8b49b', floors: 2, style: 'Peynir, zeytin ve şarküteri tezgahı' },
+  { id: 47, name: 'Bakırcı ve kalaycı', type: 'Atölye', price: 690, rent: 51, x: 0, z: 0, color: '#b58c6c', floors: 2, style: 'Bakır kaplar ve kalaylama tezgahı' },
+  { id: 48, name: 'Oyuncakçı dükkanı', type: 'Ticaret', price: 640, rent: 49, x: 0, z: 0, color: '#c9b59b', floors: 2, style: 'Ahşap oyuncak ve bez bebek vitrini' },
+  { id: 49, name: 'Saat tamircisi', type: 'Atölye', price: 760, rent: 58, x: 0, z: 0, color: '#aaa99f', floors: 2, style: 'Duvar ve cep saati tamiri' },
+  { id: 50, name: 'Kahve kavurucusu', type: 'İşletme', price: 830, rent: 66, x: 0, z: 0, color: '#b79b80', floors: 2, style: 'Kahve çekirdeği kavurma ve satış' },
+  { id: 51, name: 'Mefruşatçı dükkanı', type: 'Ticaret', price: 910, rent: 70, x: 0, z: 0, color: '#c5b2a2', floors: 2, style: 'Perde, örtü ve ev kumaşları' },
+  { id: 52, name: 'Tabelacı ve boyacı', type: 'Atölye', price: 620, rent: 46, x: 0, z: 0, color: '#b9a28d', floors: 2, style: 'El yazısı tabela ve boya atölyesi' }
 ];`;
 if (s.includes(shopAnchor) && !s.includes("id: 33, name: 'Galata kumaşçı dükkanı'")) {
   s = s.replace(shopAnchor, periodShops);
