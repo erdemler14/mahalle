@@ -1026,7 +1026,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   };
 
   const shopOpen = shopPropertyId === selected;
-  const [log, setLog] = useState(() => Array.isArray(saved.log) && saved.log.length ? saved.log.slice(0, 5) : [{ id: 0, text: 'Beyoğlu’na geldin. Geçimini kurmak için bir meslek seç.' }]);
+  const [log, setLog] = useState(() => Array.isArray(saved.log) && saved.log.length ? saved.log.slice(0, 5) : [{ id: 0, text: 'Beyoğlu’na geldin. Gündelik işlerle sermaye biriktir, ilk dükkânını al ve işletmeni büyüt.' }]);
   const professionOptions = [
     { id: 'kolonyaci', name: 'Kolonyacı', gross: 15, overhead: 7, description: 'Kolonya, koku ve kişisel bakım ürünleri.' },
     { id: 'leblebici', name: 'Leblebici', gross: 13, overhead: 4, description: 'Kuruyemiş ve leblebi; düşük sermayeli ticaret.' },
@@ -1203,10 +1203,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
 
   const advanceHour = (work = false) => {
     if (sendAction('advanceHour', work)) return;
-    if (work && professionId !== 'amele' && !selectedVenueCompatible) {
-      tell(`${profession.name} olarak çalışmak için seçili mekana uygun bir iş yeri edinmelisin. Şimdilik Gündelik işçi seçerek ücret kazanabilirsin.`);
-      return;
-    }
+
     if (hour === 5) {
       const nextDayRaw = day + 1;
       const nextDay = nextDayRaw > 30 ? 1 : nextDayRaw;
@@ -1251,7 +1248,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       if (owned.length > 0 && !shopOpen) {
         laborNet = 0;
         detail = (detail ? detail + ' · ' : '') + 'Artık ücretli gündelik iş yerine mülküne odaklanmalısın; kendi iş yerini açıp stok hazırlayarak ve satış yaparak kazanabilirsin.';
-      } else if (professionId === 'amele' && owned.length === 0) {
+      } else if (owned.length === 0) {
         const wage = Math.round(profession.gross * variance * 100) / 100;
         laborNet = wage;
         detail = (detail ? detail + ' · ' : '') + `Gündelik işçilik: saatlik ücret ${wage.toFixed(2)} oyun lirası`;
@@ -1671,9 +1668,9 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   const toggleShop = () => {
     if (sendAction('toggleShop')) return;
     if (!owned.includes(selected)) { tell('İşletme açmak için önce seçili mekanı satın almalısın.'); return; }
-    if (!selectedVenueCompatible) { tell('Seçtiğin meslek bu mekanla uyumlu değil. Uygun bir mülk veya meslek seç.'); return; }
+    if (!owned.includes(active.id) || rented.includes(active.id)) { tell('İşletmeyi açmak için sana ait ve kirada olmayan bir mülk seçmelisin.'); return; }
     setShopPropertyId(shopOpen ? null : selected);
-    tell(shopOpen ? 'İşletme kapatıldı; satış ve stok giderleri durdu.' : `${profession.name} işletmesi açıldı. Çalışma saatlerinde satışlar ve stok giderleri işleyecek.`);
+    tell(shopOpen ? 'İşletme kapatıldı; satış ve stok giderleri durdu.' : `${active.name} açıldı. Çalışma saatlerinde satışlar ve stok giderleri işleyecek.`);
   };
 
   const makeWine = () => {
@@ -1843,7 +1840,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   };
 
   snapshotRef.current = { owners: ownerByProperty, marketValues, hostName: playerName.trim() || 'Ev sahibi' };
-  actionRefs.current = { advanceHour, sleepUntilMorning, clockTick: () => advanceHour(hour >= 8 && hour < 19 && (professionId === 'amele' || selectedVenueCompatible)), selectBusinessPlan, stockBusiness, buy, toggleRent, toggleShop, makeWine, resetGame, selectProperty, changeProfession };
+  actionRefs.current = { advanceHour, sleepUntilMorning, clockTick: () => advanceHour(hour >= 8 && hour < 19), selectBusinessPlan, stockBusiness, buy, toggleRent, toggleShop, makeWine, resetGame, selectProperty, changeProfession };
   useEffect(() => {
     if (multiplayerRole === 'guest') return undefined;
     const timer = window.setInterval(() => actionRefs.current.clockTick?.(), 5000);
@@ -1911,16 +1908,6 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       </div>
 
       <aside className="side-panel">
-        <section className="balance-card profession-card">
-          <div className="card-label">01 / MESLEK SEÇİMİ</div>
-          <select className="profession-select" value={professionId} onChange={e => changeProfession(e.target.value)}>
-            {professionOptions.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
-          <p className="profession-description">{profession.description}</p>
-          <div className="profession-meta">{owned.length === 0 ? `İlk mülküne kadar saatlik kazanç: yaklaşık ₺${profession.gross.toFixed(2)} brüt.` : 'Mülkün var: gündelik maaş biter; üretim, stok ve satış gelirine odaklan.'}</div>
-          <div className="profession-meta">{professionId === 'amele' ? 'İlk mülk için her işte çalışabilirsin; sonrasında bir meslek seçip işletmeni büyüt.' : hasSuitablePremise ? 'Mesleğine uygun bir mülkün var; iş yerini açıp üretim ve ticaret yap.' : 'Bu meslek için uygun bir dükkan veya atölye edinmen gerekiyor.'}</div>
-        </section>
-
         <section className="balance-card">
           <div className="card-label">02 / CEPTEKİ SERMAYE</div>
           <div className="balance-number"><span>₺</span>{cash.toLocaleString('tr-TR', { maximumFractionDigits: 2 })}</div>
