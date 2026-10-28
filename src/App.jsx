@@ -54,19 +54,19 @@ const SAVE_KEY = 'mahalle-save-v1';
 const SAVE_BACKUP_KEY = 'mahalle-save-v1-backup';
 const DAILY_LIVING_COST = 2.5;
 const SHOE_MATERIALS = [
-  { id: 'deri', name: 'İşlenmiş deri', batch: 6, cost: 18 },
-  { id: 'taban', name: 'Ayakkabı tabanı', batch: 6, cost: 12 },
-  { id: 'iplik', name: 'Sağlam iplik', batch: 12, cost: 8 },
-  { id: 'civi', name: 'Kunduracı çivisi', batch: 12, cost: 6 }
+  { id: 'deri', name: 'İşlenmiş deri', batch: 4, cost: 24 },
+  { id: 'taban', name: 'Ayakkabı tabanı', batch: 4, cost: 16 },
+  { id: 'iplik', name: 'Sağlam iplik', batch: 6, cost: 6 },
+  { id: 'civi', name: 'Kunduracı çivisi', batch: 6, cost: 6 }
 ];
 const SHOE_RECIPES = [
-  { id: 'kundura', name: 'Günlük kundura', price: 18, recipe: { deri: 1, taban: 1, iplik: 2, civi: 2 } },
+  { id: 'kundura', name: 'Günlük kundura', price: 20, recipe: { deri: 1, taban: 1, iplik: 2, civi: 2 } },
   { id: 'deri-ayakkabi', name: 'Kaliteli deri ayakkabı', price: 29, recipe: { deri: 2, taban: 1, iplik: 2, civi: 2 } },
-  { id: 'ayakkabi-taban', name: 'Tamirlik tabanlı ayakkabı', price: 12, recipe: { deri: 1, taban: 2, iplik: 1, civi: 3 }, unlockLevel: 1 },
-  { id: 'ince-deri-bot', name: 'İnce deri bot', price: 42, recipe: { deri: 3, taban: 2, iplik: 3, civi: 3 }, unlockLevel: 2 },
-  { id: 'hanim-isyeri-ayakkabisi', name: 'Kadın şehir ayakkabısı', price: 48, recipe: { deri: 3, taban: 1, iplik: 4, civi: 2 }, unlockLevel: 3 },
-  { id: 'el-yapimi-ustalik', name: 'Usta işi el dikişi kundura', price: 68, recipe: { deri: 4, taban: 2, iplik: 5, civi: 3 }, unlockLevel: 4 },
-  { id: 'ozel-siparis-cizme', name: 'Özel sipariş binici çizmesi', price: 95, recipe: { deri: 5, taban: 3, iplik: 6, civi: 4 }, unlockLevel: 5 }
+  { id: 'ayakkabi-taban', name: 'Tamirlik tabanlı ayakkabı', price: 26, recipe: { deri: 1, taban: 2, iplik: 1, civi: 3 }, unlockLevel: 1 },
+  { id: 'ince-deri-bot', name: 'İnce deri bot', price: 45, recipe: { deri: 3, taban: 2, iplik: 3, civi: 3 }, unlockLevel: 2 },
+  { id: 'hanim-isyeri-ayakkabisi', name: 'Kadın şehir ayakkabısı', price: 40, recipe: { deri: 3, taban: 1, iplik: 4, civi: 2 }, unlockLevel: 3 },
+  { id: 'el-yapimi-ustalik', name: 'Usta işi el dikişi kundura', price: 58, recipe: { deri: 4, taban: 2, iplik: 5, civi: 3 }, unlockLevel: 4 },
+  { id: 'ozel-siparis-cizme', name: 'Özel sipariş binici çizmesi', price: 75, recipe: { deri: 5, taban: 3, iplik: 6, civi: 4 }, unlockLevel: 5 }
 ];
 const STARTING_CASH = 800;
 const STARTER_ECONOMY_VERSION = 2;
@@ -1154,6 +1154,13 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       return sum + (material ? material.cost / material.batch * part.qty : 0);
     }, 0) * 100) / 100;
   };
+  // Keep production goods at a modest, sustainable gross margin of roughly 28%.
+  // Catalog prices remain the minimum floor for established retail/luxury goods.
+  const getBusinessSalePrice = (propertyId, product) => {
+    if (!product) return 0;
+    const recipeCost = getBusinessRecipeCost(propertyId, product);
+    return Math.round(Math.max(Number(product.price) || 0, recipeCost * 1.38) * 100) / 100;
+  };
 
   const profession = professionOptions.find(p => p.id === professionId) || professionOptions.find(p => p.id === 'amele');
   const active = properties.find(p => p.id === selected) || properties[0];
@@ -1481,9 +1488,10 @@ function App({ session = null, supabase = null, authConfigured = false }) {
           const salesChance = Math.min(0.92, (0.34 + (reputation / 100) * 0.12) * eventEffect.chance);
           if ((!serviceSale && stock <= 0) || Math.random() > salesChance) return;
           const sold = Math.min(stock, 1 + (Math.random() > 0.72 ? 1 : 0));
-          const baseMultiplier = property.type === 'İşletme' ? 2.1 : property.type === 'Atölye' ? 2.0 : 1.7;
+          const baseMultiplier = 1;
           const masteryLevel = soldBefore >= 60 ? 5 : soldBefore >= 35 ? 4 : soldBefore >= 15 ? 3 : soldBefore >= 5 ? 2 : 1;
-          const takings = Math.round(sold * product.price * baseMultiplier * (1 + (masteryLevel - 1) * 0.03) * eventEffect.sales * 100) / 100;
+          const salePrice = getBusinessSalePrice(propertyId, product);
+          const takings = Math.round(sold * salePrice * (1 + (masteryLevel - 1) * 0.02) * eventEffect.sales * 100) / 100;
           products[product.id] = stock - sold;
           addSale(propertyId, product.id, sold, takings, property.name + ': ' + sold + ' adet ' + product.name + ' satıldı (+₺' + takings.toFixed(2) + ')');
         });
@@ -2151,7 +2159,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
             <label className="business-label" htmlFor="business-plan-select">Ne satacaksın?</label>
             <select id="business-plan-select" className="profession-select" value={businessPlans[active.id] || ''} onChange={e => selectBusinessPlan(e.target.value)}>
               <option value="">Ürün grubu seç</option>
-              {(tradeCatalog[active.id] || []).map(item => { const locked = (item.unlockLevel || 1) > getBusinessSalesLevel(active.id); return <option key={item.id} value={item.id} disabled={locked}>{locked ? '🔒 Seviye ' + item.unlockLevel + ' · ' : ''}{item.name} · maliyet ₺{(item.units > 0 ? getBusinessRecipeCost(active.id, item) : 0).toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} / satış ₺{item.price.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</option>; })}
+              {(tradeCatalog[active.id] || []).map(item => { const locked = (item.unlockLevel || 1) > getBusinessSalesLevel(active.id); return <option key={item.id} value={item.id} disabled={locked}>{locked ? '🔒 Seviye ' + item.unlockLevel + ' · ' : ''}{item.name} · maliyet ₺{(item.units > 0 ? getBusinessRecipeCost(active.id, item) : 0).toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} / satış ₺{getBusinessSalePrice(active.id, item).toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</option>; })}
             </select>
             {(() => {
               const profile = getBusinessProfile(active.id);
