@@ -66,7 +66,7 @@ const PROPERTY_TAX_RATES = {
 };
 const PROPERTY_TAX_PROGRESSIVE = [1, 1, 1.25, 1.25, 1.6, 1.6, 1.6, 2, 2, 2, 2, 2.5];
 const QUARTER_START_MONTHS = [1, 4, 7, 10];`;
-if (!s.includes('PROPERTY_TAX_RATES')) s = s.replace(marker, marker + '\\n' + constants);
+if (!s.includes('PROPERTY_TAX_RATES')) s = s.replace(marker, marker + '\n' + constants);
 
 const marketAnchor = "  const getMarketValue = property => Math.max(1,Math.round((Number(marketValues[property.id])||property.price)*100)/100);";
 const taxHelpers = `  const getMarketValue = property => Math.max(1,Math.round((Number(marketValues[property.id])||property.price)*100)/100);
