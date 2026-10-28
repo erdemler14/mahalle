@@ -837,3 +837,53 @@ body{overflow:hidden}
 .production-details[open] summary:after{content:'−'}
 .production-detail-body{padding-top:10px;display:flex;flex-direction:column;gap:10px}
 @media(max-width:520px){.production-console-head{flex-direction:column}.production-level-chip{align-self:stretch;text-align:left}.production-quick-stats strong{font-size:12px}.production-material-row{align-items:flex-start}.production-material-row button{min-width:76px}}
+
+
+/* Override the generic business-panel child sizing inside each supply row.
+   Without this, the row's label and button both get width:100% and the label collapses. */
+.hud-panel-business .hud-side-panel>.property-card .business-plan .production-materials-list{
+  display:flex!important;
+  flex-direction:column!important;
+  width:100%!important;
+  min-width:0!important;
+  gap:7px!important;
+}
+.hud-panel-business .hud-side-panel>.property-card .business-plan .production-material-row{
+  display:flex!important;
+  flex-direction:row!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:10px!important;
+  width:100%!important;
+  min-width:0!important;
+  box-sizing:border-box!important;
+}
+.hud-panel-business .hud-side-panel>.property-card .business-plan .production-material-row>div{
+  width:auto!important;
+  min-width:0!important;
+  max-width:none!important;
+  flex:1 1 0!important;
+  box-sizing:border-box!important;
+}
+.hud-panel-business .hud-side-panel>.property-card .business-plan .production-material-row>div strong{
+  display:block;
+  white-space:normal!important;
+  overflow-wrap:break-word!important;
+  word-break:normal!important;
+  line-height:1.4!important;
+}
+.hud-panel-business .hud-side-panel>.property-card .business-plan .production-material-row>div small{
+  display:block;
+  white-space:normal!important;
+  overflow-wrap:break-word!important;
+  word-break:normal!important;
+}
+.hud-panel-business .hud-side-panel>.property-card .business-plan .production-material-row>button{
+  width:auto!important;
+  min-width:96px!important;
+  max-width:120px!important;
+  flex:0 0 108px!important;
+  white-space:normal!important;
+  margin-top:0!important;
+  box-sizing:border-box!important;
+}
