@@ -2145,7 +2145,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
               </div>
               <h3>1 · Hammadde deposu</h3>
               <p className="production-helper">Depo kapasitesi tüm hammadde çeşitleri arasında ortaktır. Tedarik düğmesi, depoda kalan yere sığan miktarı alır. Üretime bastığında reçetedeki hammaddeler hemen düşer.</p>
-              {SHOE_MATERIALS.map(m => {
+              {SHOE_MATERIALS.filter(m => SHOE_RECIPES.filter(shoe => (shoe.unlockLevel || 1) <= getBusinessSalesLevel(37)).some(shoe => Object.prototype.hasOwnProperty.call(shoe.recipe, m.id))).map(m => {
                 const amount = Number(materials[m.id]) || 0;
                 const cap = getStockCapacity(37);
                 const totalRaw = SHOE_MATERIALS.reduce((sum,item)=>sum+(Number(materials[item.id])||0),0);
