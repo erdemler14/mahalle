@@ -42,7 +42,7 @@ const periodShops = `  { id: 32, name: 'Küçük matbaa ve kırtasiye', type: 'A
 ];`;
 const additionalShops = periodShops.slice(periodShops.indexOf(',\n') + 2, periodShops.lastIndexOf('\n];'));
 if (!s.includes("id: 54, name: 'Galata şarap imalathanesi'")) {
-  const lastBaseProperty = /(\\s*\\{ id: 32, name: '[^']+'[^\\n]*\\})\\s*\\n\\];/;/;
+  const lastBaseProperty = /(\s*\{ id: 32, name: '[^']+'[^\n]*\})\s*\n\];/;
   if (!lastBaseProperty.test(s)) throw new Error('Could not find final base property to append new shops');
   s = s.replace(lastBaseProperty, '$1,\n' + additionalShops + '\n];');
 }
