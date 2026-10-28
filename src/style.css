@@ -684,3 +684,19 @@ body{overflow:hidden}
 .hud-panel-property .hud-side-panel .business-plan{display:none!important}
 .hud-panel-business .hud-side-panel .shoe-workshop{display:flex!important}
 .hud-panel-business .hud-side-panel .product-sales-panel{display:block!important}
+
+/* Business production & supply chain */
+.business-materials-panel{margin:12px 0;padding:12px;border:1px solid #394b5b;border-radius:11px;background:rgba(20,31,41,.68);min-width:0}
+.business-materials-panel .material-help{font-size:11px;line-height:1.5;color:#aab8c4;margin:6px 0 10px}
+.business-material-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;min-width:0}
+.business-material-card{min-width:0;padding:9px;border:1px solid #354453;border-radius:8px;background:#111b24}
+.business-material-card .material-stock-head{display:flex;justify-content:space-between;align-items:flex-start;gap:6px;font-size:10px;line-height:1.4}
+.business-material-card .material-stock-head span{min-width:0;overflow-wrap:anywhere}
+.business-material-card .material-stock-head strong{white-space:nowrap;color:#d9c28c}
+.business-material-card .material-stock-meter{height:5px;margin:7px 0;background:#293541;border-radius:6px;overflow:hidden}
+.business-material-card .material-stock-meter span{display:block;height:100%;background:#91ad91;border-radius:6px}
+.business-material-card .stock-button{width:100%;white-space:normal;font-size:9px;padding:7px 4px}
+.business-recipe-panel{display:flex;flex-direction:column;gap:5px;margin-top:10px;padding:10px;border-radius:8px;background:#0e171f;font-size:11px;line-height:1.5}
+.business-recipe-panel strong{color:#f0d7a0}
+.business-recipe-panel span,.business-recipe-panel small{color:#b5c1ca;overflow-wrap:anywhere}
+@media(max-width:680px){.business-material-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.business-material-card{padding:7px}.business-material-card .material-stock-head{font-size:9px}}
