@@ -655,13 +655,13 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
     };
     cameraControlRef.current = (action, property) => {
       if (action === 'in') radiusGoal = clamp(radiusGoal * 0.82, 5.5, 40);
-      else if (action === 'out') radiusGoal = clamp(radiusGoal * 1.22, 5.5, 40);
+      else if (action === 'out') radiusGoal = clamp(radiusGoal * 1.22, 5.5, 55);
       else if (action === 'focus' && property) {
         targetGoal.set(clamp(property.x || 0, -34, 34), 0, clamp(property.z || 0, -34, 34));
-        radiusGoal = Math.min(radiusGoal, 15);
+        radiusGoal = Math.min(radiusGoal, 13);
         phiGoal = 0.72;
       } else {
-        radiusGoal = 25; thetaGoal = Math.PI / 4; phiGoal = 0.78; targetGoal.set(0, 0, 0);
+        radiusGoal = 43; thetaGoal = Math.PI / 4; phiGoal = 0.78; targetGoal.set(0, 0, 0);
       }
     };
     const activePointers = new Map();
@@ -707,8 +707,8 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
         phiGoal = clamp(phiGoal + dy * 0.004, 0.28, 1.28);
       } else {
         const panScale = radiusGoal * 0.0017;
-        targetGoal.x = clamp(targetGoal.x - dx * panScale * Math.cos(thetaGoal) + dy * panScale * Math.sin(thetaGoal) * 0.45, -34, 34);
-        targetGoal.z = clamp(targetGoal.z + dx * panScale * Math.sin(thetaGoal) + dy * panScale * Math.cos(thetaGoal) * 0.45, -34, 34);
+        targetGoal.x = clamp(targetGoal.x - dx * panScale * Math.cos(thetaGoal) + dy * panScale * Math.sin(thetaGoal) * 0.45, -42, 42);
+        targetGoal.z = clamp(targetGoal.z + dx * panScale * Math.sin(thetaGoal) + dy * panScale * Math.cos(thetaGoal) * 0.45, -42, 42);
       }
       lastX = event.clientX; lastY = event.clientY;
     };
@@ -877,6 +877,8 @@ function App() {
   const [owned, setOwned] = useState(() => Array.isArray(saved.owned) ? saved.owned.filter(id => properties.some(p => p.id === id)) : []);
   const [rented, setRented] = useState(() => Array.isArray(saved.rented) ? saved.rented.filter(id => properties.some(p => p.id === id)) : []);
   const [selected, setSelected] = useState(() => properties.some(p => p.id === saved.selected) ? saved.selected : 1);
+  const [mapSearch, setMapSearch] = useState(() => properties.find(p => p.id === saved.selected)?.name || properties[0].name);
+  useEffect(() => { const property = properties.find(p => p.id === selected); if (property) setMapSearch(property.name); }, [selected]);
   const [notice, setNotice] = useState('');
   const [showPortfolio, setShowPortfolio] = useState(() => Boolean(saved.showPortfolio));
   const [portfolioDetailId, setPortfolioDetailId] = useState(null);
@@ -1490,7 +1492,7 @@ function App() {
 
     <section className="game-layout">
       <div className="world-panel">
-        <div className="world-topline"><span><span className="live-dot" /> BEYOĞLU MERKEZİ</span><label className="property-finder"><span>⌕</span><select aria-label="Mülk bul ve haritada göster" value={selected} onChange={event => selectProperty(Number(event.target.value))}><option value="" disabled>Mülk ara...</option>{properties.map(property => <option key={property.id} value={property.id}>{property.name}{owned.includes(property.id) ? ' · SENİN' : ''}</option>)}</select><small>{properties.length} MÜLK</small></label><span className="world-year">OYUN DÜNYASI <i>·</i> {year}</span></div>
+        <div className="world-topline"><span><span className="live-dot" /> BEYOĞLU MERKEZİ</span><label className="property-finder"><span>⌕</span><input aria-label="Mülk ara ve haritada göster" list="mahalle-property-options" placeholder="Mülk adı yaz..." value={mapSearch} onChange={event => { const value = event.target.value; setMapSearch(value); const match = properties.find(property => property.name.toLocaleLowerCase('tr-TR') === value.trim().toLocaleLowerCase('tr-TR')); if (match) selectProperty(match.id); }} /><datalist id="mahalle-property-options">{properties.map(property => <option key={property.id} value={property.name}>{owned.includes(property.id) ? 'Senin mülkün' : 'Satılık'}</option>)}</datalist><small>{properties.length} MÜLK</small></label><span className="world-year">OYUN DÜNYASI <i>·</i> {year}</span></div>
         <CityScene selected={selected} owned={owned} ownerByProperty={ownerByProperty} playerId={playerId} onSelect={selectProperty} hour={hour} overlay={<div className="scene-action-card">
           <div className="scene-action-eyebrow">SEÇİLİ BİNA · {String(active.id).padStart(2, '0')}</div><strong>{active.name}</strong>
           <span>{ownerByProperty[active.id] ? (ownerByProperty[active.id].playerId === playerId ? `Sahibi: ${ownerByProperty[active.id].name} (sen)` : `Sahibi: ${ownerByProperty[active.id].name}`) : 'Satılık'} · ₺{getMarketValue(active).toLocaleString('tr-TR')}</span>
