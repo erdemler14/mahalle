@@ -49,9 +49,8 @@ s = s.replace(addedPropertyBlock, (match, id, price, rent) => {
 });
 
 
-const marker = "const DAILY_LIVING_COST = 2.5;\nconst CITY_EVENTS = [";
-const constants = `const DAILY_LIVING_COST = 2.5;
-const CITY_EVENTS = [
+const marker = "const DAILY_LIVING_COST = 2.5;";
+const constants = `const CITY_EVENTS = [
   { id: 'festival', title: 'Mahalle şenliği', days: 3, effects: { 'İşletme': 0.35, 'Ticaret': 0.15 }, text: 'Mahalle şenliği başladı: yeme-içme ve çarşı satışları arttı.' },
   { id: 'flu', title: 'Grip salgını', days: 4, effects: { 'İşletme': -0.22, 'Ticaret': -0.10 }, text: 'Grip salgını: müşteri trafiği azaldı, şehirde harcamalar yavaşladı.' },
   { id: 'tram', title: 'Tramvay hattı yoğunluğu', days: 3, effects: { 'Ticaret': 0.24, 'Atölye': 0.08 }, text: 'Tramvay hattı yoğun: durak çevresindeki ticari hareketlilik arttı.' },
@@ -67,7 +66,7 @@ const PROPERTY_TAX_RATES = {
 };
 const PROPERTY_TAX_PROGRESSIVE = [1, 1, 1.25, 1.25, 1.6, 1.6, 1.6, 2, 2, 2, 2, 2.5];
 const QUARTER_START_MONTHS = [1, 4, 7, 10];`;
-if (!s.includes('PROPERTY_TAX_RATES')) s = s.replace(marker, constants);
+if (!s.includes('PROPERTY_TAX_RATES')) s = s.replace(marker, marker + '\\n' + constants);
 
 const marketAnchor = "  const getMarketValue = property => Math.max(1,Math.round((Number(marketValues[property.id])||property.price)*100)/100);";
 const taxHelpers = `  const getMarketValue = property => Math.max(1,Math.round((Number(marketValues[property.id])||property.price)*100)/100);
