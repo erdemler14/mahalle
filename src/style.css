@@ -541,3 +541,9 @@ button,select,input{touch-action:manipulation}
 .storage-upgrade-panel small{font-size:10px;line-height:1.45;color:var(--muted,#777)}
 .storage-upgrade-panel .stock-button{flex:0 0 auto;max-width:135px}
 .storage-upgrade-panel .stock-button:disabled{opacity:.45;cursor:not-allowed}
+
+
+.product-sales-panel{margin-top:10px;padding-top:8px;border-top:1px solid rgba(120,110,95,.22)}
+.product-sales-panel .card-label{margin-bottom:5px}
+.production-pending{display:block;margin-top:3px;color:#d8a94f;font-size:10px;line-height:1.4}
+.shoe-product-row .production-pending{max-width:240px}
