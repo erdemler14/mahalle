@@ -6,66 +6,66 @@ let s = fs.readFileSync(path, 'utf8');
 const extraCatalog = `
 const EXTRA_TRADE_CATALOG = {
   33: [
-    { id: 'kumas-bez', name: 'Pamuklu kumaş', cost: 8, price: 18 },
-    { id: 'kumas-yun', name: 'Yün kumaş', cost: 14, price: 31 },
-    { id: 'ipek-kumas', name: 'İpek kumaş', cost: 28, price: 58 }
+    { id: 'kumas-bez', name: 'Pamuklu kumaş', cost: 8, price: 18, units: 8 },
+    { id: 'kumas-yun', name: 'Yün kumaş', cost: 14, price: 31, units: 8 },
+    { id: 'ipek-kumas', name: 'İpek kumaş', cost: 28, price: 58, units: 8 }
   ],
   34: [
-    { id: 'kolonya-limon', name: 'Limon kolonyası', cost: 4, price: 11 },
-    { id: 'kolonya-gul', name: 'Gül kolonyası', cost: 5, price: 13 },
-    { id: 'koku-sisesi', name: 'Koku şişesi', cost: 7, price: 18 }
+    { id: 'kolonya-limon', name: 'Limon kolonyası', cost: 4, price: 11, units: 8 },
+    { id: 'kolonya-gul', name: 'Gül kolonyası', cost: 5, price: 13, units: 8 },
+    { id: 'koku-sisesi', name: 'Koku şişesi', cost: 7, price: 18, units: 8 }
   ],
   35: [
-    { id: 'lokum', name: 'Lokum', cost: 5, price: 14 },
-    { id: 'akide', name: 'Akide şekeri', cost: 4, price: 12 },
-    { id: 'badem-ezmesi', name: 'Badem ezmesi', cost: 8, price: 20 },
-    { id: 'helva', name: 'Helva', cost: 6, price: 16 }
+    { id: 'lokum', name: 'Lokum', cost: 5, price: 14, units: 8 },
+    { id: 'akide', name: 'Akide şekeri', cost: 4, price: 12, units: 8 },
+    { id: 'badem-ezmesi', name: 'Badem ezmesi', cost: 8, price: 20, units: 8 },
+    { id: 'helva', name: 'Helva', cost: 6, price: 16, units: 8 }
   ],
   36: [
-    { id: 'leblebi', name: 'Leblebi', cost: 3, price: 9 },
-    { id: 'kavrulmus-nohut', name: 'Kavrulmuş nohut', cost: 3, price: 10 },
-    { id: 'kuruyemis', name: 'Kuruyemiş karışımı', cost: 6, price: 15 }
+    { id: 'leblebi', name: 'Leblebi', cost: 3, price: 9, units: 8 },
+    { id: 'kavrulmus-nohut', name: 'Kavrulmuş nohut', cost: 3, price: 10, units: 8 },
+    { id: 'kuruyemis', name: 'Kuruyemiş karışımı', cost: 6, price: 15, units: 8 }
   ],
   37: [
-    { id: 'kundura', name: 'Kundura', cost: 18, price: 39 },
-    { id: 'deri-ayakkabi', name: 'Deri ayakkabı', cost: 27, price: 58 },
-    { id: 'ayakkabi-taban', name: 'Ayakkabı tabanı', cost: 8, price: 20 }
+    { id: 'kundura', name: 'Kundura', cost: 18, price: 39, units: 8 },
+    { id: 'deri-ayakkabi', name: 'Deri ayakkabı', cost: 27, price: 58, units: 8 },
+    { id: 'ayakkabi-taban', name: 'Ayakkabı tabanı', cost: 8, price: 20, units: 8 }
   ],
   38: [
-    { id: 'gumus-yuzuk', name: 'Gümüş yüzük', cost: 35, price: 76 },
-    { id: 'altin-bilezik', name: 'Altın bilezik', cost: 90, price: 190 },
-    { id: 'saat', name: 'Cep saati', cost: 48, price: 105 }
+    { id: 'gumus-yuzuk', name: 'Gümüş yüzük', cost: 35, price: 76, units: 8 },
+    { id: 'altin-bilezik', name: 'Altın bilezik', cost: 90, price: 190, units: 8 },
+    { id: 'saat', name: 'Cep saati', cost: 48, price: 105, units: 8 }
   ],
   39: [
-    { id: 'berber-tiras', name: 'Tıraş hizmeti', cost: 0, price: 9, service: true },
-    { id: 'berber-sakal', name: 'Sakal tıraşı', cost: 0, price: 6, service: true },
-    { id: 'berber-sac', name: 'Saç kesimi', cost: 0, price: 10, service: true }
+    { id: 'berber-tiras', name: 'Tıraş hizmeti', cost: 0, price: 9, units: 0, service: true },
+    { id: 'berber-sakal', name: 'Sakal tıraşı', cost: 0, price: 6, units: 0, service: true },
+    { id: 'berber-sac', name: 'Saç kesimi', cost: 0, price: 10, units: 0, service: true }
   ],
   40: [
-    { id: 'pastane-pasta', name: 'Yaş pasta dilimi', cost: 4, price: 12 },
-    { id: 'pastane-kurabiye', name: 'Kurabiye', cost: 2, price: 7 },
-    { id: 'pastane-tatli', name: 'Şerbetli tatlı', cost: 3, price: 9 },
-    { id: 'pastane-kahve', name: 'Kahve ve tatlı', cost: 4, price: 12 }
+    { id: 'pastane-pasta', name: 'Yaş pasta dilimi', cost: 4, price: 12, units: 8 },
+    { id: 'pastane-kurabiye', name: 'Kurabiye', cost: 2, price: 7, units: 8 },
+    { id: 'pastane-tatli', name: 'Şerbetli tatlı', cost: 3, price: 9, units: 8 },
+    { id: 'pastane-kahve', name: 'Kahve ve tatlı', cost: 4, price: 12, units: 8 }
   ],
   41: [
-    { id: 'sapka-kece', name: 'Keçe şapka', cost: 15, price: 34 },
-    { id: 'sapka-fes', name: 'Fes', cost: 9, price: 22 },
-    { id: 'sapka-kasket', name: 'Kasket', cost: 12, price: 28 }
+    { id: 'sapka-kece', name: 'Keçe şapka', cost: 15, price: 34, units: 8 },
+    { id: 'sapka-fes', name: 'Fes', cost: 9, price: 22, units: 8 },
+    { id: 'sapka-kasket', name: 'Kasket', cost: 12, price: 28, units: 8 }
   ],
   42: [
-    { id: 'guldeste', name: 'Gül demeti', cost: 3, price: 9 },
-    { id: 'karanfil', name: 'Karanfil demeti', cost: 2, price: 7 },
-    { id: 'saksi-cicegi', name: 'Saksı çiçeği', cost: 5, price: 14 }
+    { id: 'guldeste', name: 'Gül demeti', cost: 3, price: 9, units: 8 },
+    { id: 'karanfil', name: 'Karanfil demeti', cost: 2, price: 7, units: 8 },
+    { id: 'saksi-cicegi', name: 'Saksı çiçeği', cost: 5, price: 14, units: 8 }
   ],
   43: [
-    { id: 'portre', name: 'Portre fotoğrafı', cost: 5, price: 18, service: true },
-    { id: 'kartpostal', name: 'Fotoğraf kartı', cost: 3, price: 11 },
-    { id: 'vesikalik', name: 'Vesikalık fotoğraf', cost: 4, price: 14, service: true }
+    { id: 'portre', name: 'Portre fotoğrafı', cost: 5, price: 18, units: 0, service: true },
+    { id: 'kartpostal', name: 'Fotoğraf kartı', cost: 3, price: 11, units: 8 },
+    { id: 'vesikalik', name: 'Vesikalık fotoğraf', cost: 4, price: 14, units: 0, service: true }
   ],
   44: [
-    { id: 'sabun', name: 'Kalıp sabun', cost: 3, price: 9 },
-    { id: 'lavanta-sabun', name: 'Lavanta sabunu', cost: 4, price: 12 },
-    { id: 'guzel-koku', name: 'Güzel koku', cost: 6, price: 16 }
+    { id: 'sabun', name: 'Kalıp sabun', cost: 3, price: 9, units: 8 },
+    { id: 'lavanta-sabun', name: 'Lavanta sabunu', cost: 4, price: 12, units: 8 },
+    { id: 'guzel-koku', name: 'Güzel koku', cost: 6, price: 16, units: 8 }
   ]
 };
 
