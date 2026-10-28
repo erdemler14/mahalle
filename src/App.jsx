@@ -60,13 +60,13 @@ const SHOE_MATERIALS = [
   { id: 'civi', name: 'Kunduracı çivisi', batch: 6, cost: 6 }
 ];
 const SHOE_RECIPES = [
-  { id: 'kundura', name: 'Günlük kundura', price: 20, recipe: { deri: 1, taban: 1, iplik: 2, civi: 2 } },
-  { id: 'deri-ayakkabi', name: 'Kaliteli deri ayakkabı', price: 29, recipe: { deri: 2, taban: 1, iplik: 2, civi: 2 } },
-  { id: 'ayakkabi-taban', name: 'Tamirlik tabanlı ayakkabı', price: 26, recipe: { deri: 1, taban: 2, iplik: 1, civi: 3 }, unlockLevel: 1 },
-  { id: 'ince-deri-bot', name: 'İnce deri bot', price: 45, recipe: { deri: 3, taban: 2, iplik: 3, civi: 3 }, unlockLevel: 2 },
-  { id: 'hanim-isyeri-ayakkabisi', name: 'Kadın şehir ayakkabısı', price: 40, recipe: { deri: 3, taban: 1, iplik: 4, civi: 2 }, unlockLevel: 3 },
-  { id: 'el-yapimi-ustalik', name: 'Usta işi el dikişi kundura', price: 58, recipe: { deri: 4, taban: 2, iplik: 5, civi: 3 }, unlockLevel: 4 },
-  { id: 'ozel-siparis-cizme', name: 'Özel sipariş binici çizmesi', price: 75, recipe: { deri: 5, taban: 3, iplik: 6, civi: 4 }, unlockLevel: 5 }
+  { id: 'kundura', name: 'Günlük kundura', price: 14, recipe: { deri: 1, taban: 1 }, unlockLevel: 1 },
+  { id: 'deri-ayakkabi', name: 'Kaliteli deri ayakkabı', price: 25, recipe: { deri: 2, taban: 1, iplik: 2 }, unlockLevel: 2 },
+  { id: 'ayakkabi-taban', name: 'Tamirlik tabanlı ayakkabı', price: 25, recipe: { deri: 1, taban: 2, iplik: 1, civi: 3 }, unlockLevel: 3 },
+  { id: 'ince-deri-bot', name: 'İnce deri bot', price: 45, recipe: { deri: 3, taban: 2, iplik: 3, civi: 3 }, unlockLevel: 4 },
+  { id: 'hanim-isyeri-ayakkabisi', name: 'Kadın şehir ayakkabısı', price: 39, recipe: { deri: 3, taban: 1, iplik: 4, civi: 2 }, unlockLevel: 4 },
+  { id: 'el-yapimi-ustalik', name: 'Usta işi el dikişi kundura', price: 56, recipe: { deri: 4, taban: 2, iplik: 5, civi: 3 }, unlockLevel: 5 },
+  { id: 'ozel-siparis-cizme', name: 'Özel sipariş binici çizmesi', price: 73, recipe: { deri: 5, taban: 3, iplik: 6, civi: 4 }, unlockLevel: 5 }
 ];
 const STARTING_CASH = 800;
 const STARTER_ECONOMY_VERSION = 2;
@@ -1116,7 +1116,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       if (!tradeCatalog[id].some(item => item.id === productId)) tradeCatalog[id].push({ id: productId, name, cost, price, units, unlockLevel });
     });
   });
-  Object.values(tradeCatalog).forEach(items => items.forEach(item => { if (!item.unlockLevel) item.unlockLevel = 1; }));
+  Object.values(tradeCatalog).forEach(items => items.forEach((item, index) => { item.unlockLevel = Math.min(5, index + 1); }));
   const businessMaterialProfiles = {
     pharmacy: { name: 'Eczahane', materials: [{id:'ecz-ot',name:'Şifalı ot ve etkin madde',batch:6,cost:9},{id:'ecz-sise',name:'Cam şişe ve kavanoz',batch:6,cost:8},{id:'ecz-sargi',name:'Sargı bezi ve temiz pamuk',batch:6,cost:10},{id:'ecz-ambalaj',name:'Etiket ve kâğıt ambalaj',batch:8,cost:7}], recipes: [['ecz-ot',1,'ecz-sise',1],['ecz-ot',2,'ecz-sise',1],['ecz-ot',1,'ecz-ambalaj',2],['ecz-sargi',2,'ecz-ambalaj',1],['ecz-ot',2,'ecz-sise',2]] },
     food: { name: 'Gıda', materials: [{id:'gida-un',name:'Un ve tahıl',batch:8,cost:8},{id:'gida-yag',name:'Yağ ve süt ürünleri',batch:6,cost:9},{id:'gida-urun',name:'Taze gıda ve et',batch:6,cost:12},{id:'gida-baharat',name:'Baharat ve maya',batch:8,cost:7}], recipes: [['gida-un',2,'gida-yag',1],['gida-urun',1,'gida-baharat',1],['gida-urun',2,'gida-yag',1],['gida-un',1,'gida-baharat',1],['gida-urun',2,'gida-baharat',1]] },
@@ -1153,6 +1153,15 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       const material = profile.materials.find(item => item.id === part.id);
       return sum + (material ? material.cost / material.batch * part.qty : 0);
     }, 0) * 100) / 100;
+  };
+  const getUnlockedBusinessMaterials = (propertyId, level = getBusinessSalesLevel(propertyId)) => {
+    const profile = getBusinessProfile(propertyId);
+    const recipeMaterialIds = new Set();
+    profile.recipes.slice(0, Math.max(1, level)).forEach(recipe => {
+      recipeMaterialIds.add(recipe[0]);
+      recipeMaterialIds.add(recipe[2]);
+    });
+    return profile.materials.filter((material, index) => index < Math.min(profile.materials.length, level + 1) || recipeMaterialIds.has(material.id));
   };
   // Keep production goods at a modest, sustainable gross margin of roughly 28%.
   // Catalog prices remain the minimum floor for established retail/luxury goods.
@@ -1671,7 +1680,8 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   const stockBusiness = () => {
     if (sendAction('stockBusiness')) return;
     const propertyId = active.id;
-    const item = (tradeCatalog[propertyId] || []).find(product => product.id === businessPlans[propertyId]);
+    const availableProducts = (tradeCatalog[propertyId] || []).filter(product => (product.unlockLevel || 1) <= getBusinessSalesLevel(propertyId));
+    const item = availableProducts.find(product => product.id === businessPlans[propertyId]) || availableProducts[0];
     if (!owned.includes(propertyId) || rented.includes(propertyId)) { tell('İşletmeyi yönetmek için sahibi olmalı ve kiraya vermemiş olmalısın.'); return; }
     if (!item || item.price <= 0) { tell('Önce satışa sunacağın ürün veya hizmeti seç.'); return; }
     const level = getBusinessSalesLevel(propertyId);
@@ -2149,64 +2159,73 @@ function App({ session = null, supabase = null, authConfigured = false }) {
                 </div>;
               })}
               <h3>2 · Üretim tezgâhı</h3>
-              {SHOE_RECIPES.map(shoe => { const job = pendingProductions['37:' + shoe.id]; const sold = Number(businessStats[37]?.productUnitsSold?.[shoe.id]?.units) || 0; const missing = Object.entries(shoe.recipe).filter(([id, qty]) => (Number(materials[id]) || 0) < qty); const locked = (shoe.unlockLevel || 1) > getBusinessSalesLevel(37); return <div className={'shoe-product-row ' + (locked ? 'shoe-product-locked' : '')} key={shoe.id}><div><strong>{shoe.name}{locked ? ' 🔒' : ''}</strong><small>Reçete: {Object.entries(shoe.recipe).map(([id, qty]) => (SHOE_MATERIALS.find(m => m.id === id)?.name || id) + ' ×' + qty).join(' · ')}</small><small>Satış fiyatı: ₺{shoe.price} / çift · Tahmini hammadde maliyeti: ₺{Object.entries(shoe.recipe).reduce((sum,[id,qty])=>{const m=SHOE_MATERIALS.find(item=>item.id===id);return sum+(m?m.cost/m.batch*qty:0)},0).toLocaleString('tr-TR',{maximumFractionDigits:2})} · Brüt fark: ₺{(shoe.price-Object.entries(shoe.recipe).reduce((sum,[id,qty])=>{const m=SHOE_MATERIALS.find(item=>item.id===id);return sum+(m?m.cost/m.batch*qty:0)},0)).toLocaleString('tr-TR',{maximumFractionDigits:2})}</small><small>Satılan toplam: {sold}</small><small className={locked ? 'production-requirements' : missing.length ? 'production-requirements' : 'production-ready'}>{locked ? 'Kilitli · Kunduracı seviye ' + shoe.unlockLevel + ' gerekli' : missing.length ? 'Eksik hammadde: ' + missing.map(([id, qty]) => (SHOE_MATERIALS.find(m => m.id === id)?.name || id) + ' ' + Math.max(0, qty - (Number(materials[id]) || 0))).join(', ') : 'Üretime hazır · gerekli hammaddeler mevcut'}</small>{job && <small className="production-pending">Kuyrukta: {job.units} çift · sıradaki {Math.max(0, Math.ceil((job.readyAt - productionNow) / 1000))} sn · son çift {Math.max(0, Math.ceil(((job.finishAt || job.readyAt) - productionNow) / 1000))} sn</small>}</div><button className="stock-button" onClick={() => craftShoe(shoe.id)} disabled={locked || missing.length > 0}>{locked ? 'SEVİYE KİLİDİ' : missing.length ? 'HAMMADDE EKSİK' : job ? 'KUYRUĞA 1 ÇİFT EKLE' : '1 ÇİFT ÜRET'}</button></div>; })}
+              {SHOE_RECIPES.filter(shoe => (shoe.unlockLevel || 1) <= getBusinessSalesLevel(37)).map(shoe => { const job = pendingProductions['37:' + shoe.id]; const sold = Number(businessStats[37]?.productUnitsSold?.[shoe.id]?.units) || 0; const missing = Object.entries(shoe.recipe).filter(([id, qty]) => (Number(materials[id]) || 0) < qty); const locked = (shoe.unlockLevel || 1) > getBusinessSalesLevel(37); return <div className={'shoe-product-row ' + (locked ? 'shoe-product-locked' : '')} key={shoe.id}><div><strong>{shoe.name}{locked ? ' 🔒' : ''}</strong><small>Reçete: {Object.entries(shoe.recipe).map(([id, qty]) => (SHOE_MATERIALS.find(m => m.id === id)?.name || id) + ' ×' + qty).join(' · ')}</small><small>Satış fiyatı: ₺{shoe.price} / çift · Tahmini hammadde maliyeti: ₺{Object.entries(shoe.recipe).reduce((sum,[id,qty])=>{const m=SHOE_MATERIALS.find(item=>item.id===id);return sum+(m?m.cost/m.batch*qty:0)},0).toLocaleString('tr-TR',{maximumFractionDigits:2})} · Brüt fark: ₺{(shoe.price-Object.entries(shoe.recipe).reduce((sum,[id,qty])=>{const m=SHOE_MATERIALS.find(item=>item.id===id);return sum+(m?m.cost/m.batch*qty:0)},0)).toLocaleString('tr-TR',{maximumFractionDigits:2})}</small><small>Satılan toplam: {sold}</small><small className={locked ? 'production-requirements' : missing.length ? 'production-requirements' : 'production-ready'}>{locked ? 'Kilitli · Kunduracı seviye ' + shoe.unlockLevel + ' gerekli' : missing.length ? 'Eksik hammadde: ' + missing.map(([id, qty]) => (SHOE_MATERIALS.find(m => m.id === id)?.name || id) + ' ' + Math.max(0, qty - (Number(materials[id]) || 0))).join(', ') : 'Üretime hazır · gerekli hammaddeler mevcut'}</small>{job && <small className="production-pending">Kuyrukta: {job.units} çift · sıradaki {Math.max(0, Math.ceil((job.readyAt - productionNow) / 1000))} sn · son çift {Math.max(0, Math.ceil(((job.finishAt || job.readyAt) - productionNow) / 1000))} sn</small>}</div><button className="stock-button" onClick={() => craftShoe(shoe.id)} disabled={locked || missing.length > 0}>{locked ? 'SEVİYE KİLİDİ' : missing.length ? 'HAMMADDE EKSİK' : job ? 'KUYRUĞA 1 ÇİFT EKLE' : '1 ÇİFT ÜRET'}</button></div>; })}
               <h3>3 · Vitrin stokları</h3>
-              {SHOE_RECIPES.map(shoe => <div className="stock-line" key={shoe.id}><span>{shoe.name}</span><strong>{Number(products[shoe.id]) || 0} çift</strong></div>)}
+              {SHOE_RECIPES.filter(shoe => (shoe.unlockLevel || 1) <= getBusinessSalesLevel(37) || (Number(products[shoe.id]) || 0) > 0 || !!pendingProductions['37:' + shoe.id]).map(shoe => <div className="stock-line" key={shoe.id}><span>{shoe.name}</span><strong>{Number(products[shoe.id]) || 0} çift</strong></div>)}
             </div>;
           })()}
-          {owned.includes(active.id) && !rented.includes(active.id) && active.id !== 37 && (tradeCatalog[active.id] || []).some(item => item.price > 0) && <div className="business-plan">
-            <div className="card-label">İŞ MODELİ · TEDARİK · STOK</div>
-            <label className="business-label" htmlFor="business-plan-select">Ne satacaksın?</label>
-            <select id="business-plan-select" className="profession-select" value={businessPlans[active.id] || ''} onChange={e => selectBusinessPlan(e.target.value)}>
-              <option value="">Ürün grubu seç</option>
-              {(tradeCatalog[active.id] || []).map(item => { const locked = (item.unlockLevel || 1) > getBusinessSalesLevel(active.id); return <option key={item.id} value={item.id} disabled={locked}>{locked ? '🔒 Seviye ' + item.unlockLevel + ' · ' : ''}{item.name} · maliyet ₺{(item.units > 0 ? getBusinessRecipeCost(active.id, item) : 0).toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} / satış ₺{getBusinessSalePrice(active.id, item).toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</option>; })}
-            </select>
+          {owned.includes(active.id) && !rented.includes(active.id) && active.id !== 37 && (tradeCatalog[active.id] || []).some(item => item.price > 0) && <div className="business-plan production-console">
             {(() => {
+              const level = getBusinessSalesLevel(active.id);
+              const allProducts = (tradeCatalog[active.id] || []).filter(item => item.price > 0);
+              const availableProducts = allProducts.filter(item => (item.unlockLevel || 1) <= level);
+              const selectedProduct = availableProducts.find(item => item.id === businessPlans[active.id]) || availableProducts[0];
               const profile = getBusinessProfile(active.id);
               const inventory = getInventoryState(active.id);
-              const product = (tradeCatalog[active.id] || []).find(item => item.id === businessPlans[active.id]);
-              const recipe = product ? getBusinessRecipe(active.id, product) : [];
-              const locked = product && (product.unlockLevel || 1) > getBusinessSalesLevel(active.id);
+              const recipe = selectedProduct ? getBusinessRecipe(active.id, selectedProduct) : [];
               const missing = recipe.filter(part => (Number(inventory.materials?.[part.id]) || 0) < part.qty);
-              return <div className="business-materials-panel">
-                <div className="card-label">TEDARİK / HAMMADDE DEPOSU · {profile.name.toLocaleUpperCase('tr-TR')}</div>
-                <p className="material-help">Hammadde depodaki miktar üretim emri verildiğinde hemen düşer. Üretim tamamlanınca ürün hazır stoğa eklenir; hazır ürünler satış yaptıkça azalır.</p>
-                <div className="business-inventory-summary">
-                  <div><span>HAMMADDE DEPOSU</span><strong>{profile.materials.reduce((sum, material) => sum + (Number(inventory.materials?.[material.id]) || 0), 0)} / {getStockCapacity(active.id)}</strong><small>birim mevcut</small></div>
-                  <div><span>ÜRETİM KUYRUĞU</span><strong>{getPendingUnits(active.id)}</strong><small>birim üretimde</small></div>
-                  <div><span>HAZIR ÜRÜN</span><strong>{getTotalStock(active.id)} / {getStockCapacity(active.id)}</strong><small>birim satışa hazır</small></div>
+              const unlockedMaterials = getUnlockedBusinessMaterials(active.id, level);
+              const totalRaw = profile.materials.reduce((sum, material) => sum + (Number(inventory.materials?.[material.id]) || 0), 0);
+              const freeCapacity = Math.max(0, getStockCapacity(active.id) - totalRaw);
+              const pending = selectedProduct ? pendingProductions[active.id + ':' + selectedProduct.id] : null;
+              const canProduce = !!selectedProduct && !missing.length && getTotalStock(active.id) + getPendingUnits(active.id) < getStockCapacity(active.id);
+              const sold = Number(businessStats[active.id]?.unitsSold) || 0;
+              const thresholds = [0, 5, 15, 35, 60];
+              const nextTarget = thresholds[level];
+              return <>
+                <div className="production-console-head">
+                  <div><span className="card-label">ÜRETİM ATÖLYESİ</span><h3>{profile.name}</h3><p>Ürün seç, eksik hammaddeni al ve üretime bas.</p></div>
+                  <div className="production-level-chip"><strong>SEV. {level}/5</strong><small>{level === 5 ? 'Usta işletme' : Math.max(0, nextTarget - sold) + ' satışla seviye atla'}</small></div>
                 </div>
-                <div className="business-material-grid">{profile.materials.map(material => {
-                  const amount = Number(inventory.materials?.[material.id]) || 0;
-                  const cap = getStockCapacity(active.id);
-                  const totalMaterialStock = profile.materials.reduce((sum, entry) => sum + (Number(inventory.materials?.[entry.id]) || 0), 0);
-                  const purchaseQuantity = Math.min(material.batch, Math.max(0, cap - totalMaterialStock));
-                  const purchaseCost = Math.round(material.cost * purchaseQuantity / material.batch * 100) / 100;
-                  const ratio = Math.min(100, Math.round(amount / cap * 100));
-                  return <div className="business-material-card" key={material.id}>
-                    <div className="material-stock-head"><span>{material.name}</span><strong>{amount} adet</strong></div>
-                    <div className="material-stock-meter"><span style={{width:ratio+'%'}} /></div>
-                    <button className="stock-button" onClick={() => buyBusinessMaterial(active.id, material.id)} disabled={purchaseQuantity <= 0 || cash < purchaseCost}>+{purchaseQuantity} · ₺{purchaseCost}</button>
-                  </div>;
-                })}</div>
-                {product && product.price > 0 && <div className="business-recipe-panel">
-                  <strong>{product.name} · üretim reçetesi</strong>
-                  <span>{recipe.map(part => { const material=profile.materials.find(m=>m.id===part.id); return (material?.name||part.id)+' × '+part.qty+' (stok '+(Number(inventory.materials?.[part.id])||0)+')'; }).join(' · ')}</span>
-                  {locked && <small>Bu ürün için işletme seviyesi {product.unlockLevel} gerekli. Mevcut seviye: {getBusinessSalesLevel(active.id)}.</small>}
-                  {!locked && missing.length > 0 && <small>Üretim için eksik: {missing.map(part => { const material=profile.materials.find(m=>m.id===part.id); return (material?.name||part.id)+' '+(part.qty-(Number(inventory.materials?.[part.id])||0)); }).join(', ')}</small>}
+                <div className="production-quick-stats">
+                  <div><span>HAMMADDE</span><strong>{totalRaw}/{getStockCapacity(active.id)}</strong></div>
+                  <div><span>ÜRETİMDE</span><strong>{getPendingUnits(active.id)}</strong></div>
+                  <div><span>HAZIR ÜRÜN</span><strong>{getTotalStock(active.id)}/{getStockCapacity(active.id)}</strong></div>
+                </div>
+                <label className="business-label" htmlFor="business-plan-select">Üretilecek ürün</label>
+                <select id="business-plan-select" className="profession-select production-product-select" value={selectedProduct?.id || ''} onChange={e => selectBusinessPlan(e.target.value)}>
+                  {availableProducts.map(item => <option key={item.id} value={item.id}>{item.name} · ₺{getBusinessSalePrice(active.id, item).toLocaleString('tr-TR', {maximumFractionDigits:2})}</option>)}
+                </select>
+                {selectedProduct && <div className="production-recipe-compact">
+                  <div><strong>{selectedProduct.name}</strong><span>Satış ₺{getBusinessSalePrice(active.id, selectedProduct).toLocaleString('tr-TR', {maximumFractionDigits:2})} · Hammadde ₺{getBusinessRecipeCost(active.id, selectedProduct).toLocaleString('tr-TR', {maximumFractionDigits:2})}</span></div>
+                  <p>{recipe.map(part => { const material = profile.materials.find(m => m.id === part.id); const amount = Number(inventory.materials?.[part.id]) || 0; return (material?.name || part.id) + ' ' + amount + '/' + part.qty; }).join('  ·  ')}</p>
+                  {missing.length > 0 && <small className="production-missing">Eksik: {missing.map(part => { const material = profile.materials.find(m => m.id === part.id); return (material?.name || part.id) + ' ×' + (part.qty - (Number(inventory.materials?.[part.id]) || 0)); }).join(', ')}</small>}
+                  {pending && <small className="production-queue-note">Kuyrukta {pending.units} adet · sıradaki {Math.max(0, Math.ceil((pending.readyAt - productionNow) / 1000))} sn</small>}
                 </div>}
-              </div>;
+                <div className="production-materials-head"><strong>Hammaddeler</strong><span>{unlockedMaterials.length} çeşit açık</span></div>
+                <div className="production-materials-list">
+                  {unlockedMaterials.map(material => {
+                    const amount = Number(inventory.materials?.[material.id]) || 0;
+                    const quantity = Math.min(material.batch, freeCapacity);
+                    const cost = Math.round(material.cost * quantity / material.batch * 100) / 100;
+                    return <div className="production-material-row" key={material.id}>
+                      <div><strong>{material.name}</strong><small>Stokta {amount} · +{quantity} adet ₺{cost}</small></div>
+                      <button className="stock-button" onClick={() => buyBusinessMaterial(active.id, material.id)} disabled={quantity <= 0 || cash < cost}>{quantity > 0 ? 'TEDARİK ET' : 'DEPO DOLU'}</button>
+                    </div>;
+                  })}
+                </div>
+                <button className="stock-button production-primary-action" onClick={stockBusiness} disabled={!canProduce}>{pending ? 'KUYRUĞA 1 ADET EKLE' : '1 ADET ÜRET'}</button>
+                {!canProduce && <p className="production-action-hint">{missing.length ? 'Üretime başlamak için eksik hammaddeleri tedarik et.' : 'Hazır ürün deposu dolu. Önce satış bekle veya depoyu genişlet.'}</p>}
+                <details className="production-details">
+                  <summary>İşletme raporu ve stok ayrıntıları</summary>
+                  <div className="production-detail-body">
+                    <div className="storage-upgrade-panel"><div><span>DEPO SEVİYESİ {Number(businessStats[active.id]?.stockCapacityLevel) || 1}/5</span><strong>Ürün başına {getStockCapacity(active.id)} adet kapasite</strong><small>İşletme seviyesi {level} · sonraki kademe için satış yap.</small></div><button className="stock-button" onClick={() => upgradeBusinessStorage(active.id)} disabled={(Number(businessStats[active.id]?.stockCapacityLevel) || 1) >= 5 || level < (Number(businessStats[active.id]?.stockCapacityLevel) || 1) + 1}>GENİŞLET · ₺{STOCK_UPGRADE_COST_BY_LEVEL[(Number(businessStats[active.id]?.stockCapacityLevel) || 1) + 1] || '—'}</button></div>
+                    {(() => { const stats = businessStats[active.id] || { unitsSold: 0, revenue: 0, stockInvested: 0 }; const masteryBonus = (level - 1) * 3; const reputation = Math.min(100, Math.floor(stats.unitsSold * 1.5)); const reputationLabel = reputation >= 75 ? 'Mahallenin sevilen yeri' : reputation >= 40 ? 'Düzenli müşteri kitlesi' : reputation >= 10 ? 'Adı duyulmaya başladı' : 'Müşteri kazanıyor'; const ratio = level >= 5 ? 100 : Math.min(100, Math.round(stats.unitsSold / nextTarget * 100)); return <div className="mastery-panel"><div className="mastery-head"><span className="card-label">İŞLETME USTALIĞI</span><strong>SEV. {level} · +%{masteryBonus} SATIŞ</strong></div><div className="mastery-name">{['Yeni açıldı', 'Mahalle esnafı', 'Tanıdık dükkan', 'Yerleşik işletme', 'Mahallenin gözdesi'][level - 1]}</div><div className="mastery-meter"><span style={{width: ratio + '%'}} /></div><div className="mastery-foot"><span>{stats.unitsSold} ürün satıldı</span><span>{level >= 5 ? 'En yüksek ustalık' : nextTarget + ' satışa ilerle'}</span></div><div className="reputation-row"><div><span>MAHALLE İTİBARI</span><strong>{reputation}/100 · {reputationLabel}</strong></div><b>+{Math.round(reputation * 0.12)} puan satış fırsatı</b></div><div className="reputation-meter"><span style={{width: reputation + '%'}} /></div><div className="mastery-stats"><div><span>Toplam hasılat</span><strong>₺{stats.revenue.toLocaleString('tr-TR', {maximumFractionDigits: 2})}</strong></div><div><span>Stok yatırımı</span><strong>₺{stats.stockInvested.toLocaleString('tr-TR', {maximumFractionDigits: 2})}</strong></div><div><span>Hasılat − stok</span><strong>₺{(stats.revenue - stats.stockInvested).toLocaleString('tr-TR', {maximumFractionDigits: 2})}</strong></div></div></div>; })()}
+                    <div className="product-sales-panel"><div className="card-label">ÜRÜN BAZINDA STOK VE SATIŞ</div>{availableProducts.map(product => { const soldUnits = Number(businessStats[active.id]?.productUnitsSold?.[product.id]?.units) || 0; const stock = getProductStock(active.id, product.id); const queued = pendingProductions[active.id + ':' + product.id]; return <div className="stock-line product-inventory-row" key={product.id}><span>{product.name}<small className="product-stock-meta">Hazır {stock} · Üretimde {queued?.units || 0} · Satılan {soldUnits}</small></span></div>; })}</div>
+                  </div>
+                </details>
+              </>;
             })()}
-            <div className="storage-upgrade-panel"><div><span>DEPO SEVİYESİ {Number(businessStats[active.id]?.stockCapacityLevel) || 1}/5</span><strong>Ürün başına {getStockCapacity(active.id)} adet kapasite</strong><small>İşletme seviyesi {getBusinessSalesLevel(active.id)} · sonraki kademe için satış yap.</small></div><button className="stock-button" onClick={() => upgradeBusinessStorage(active.id)} disabled={(Number(businessStats[active.id]?.stockCapacityLevel) || 1) >= 5 || getBusinessSalesLevel(active.id) < (Number(businessStats[active.id]?.stockCapacityLevel) || 1) + 1}>GENİŞLET · ₺{STOCK_UPGRADE_COST_BY_LEVEL[(Number(businessStats[active.id]?.stockCapacityLevel) || 1) + 1] || '—'}</button></div>
-
-            {(() => { const stats = businessStats[active.id] || { unitsSold: 0, revenue: 0, stockInvested: 0 }; const level = stats.unitsSold >= 60 ? 5 : stats.unitsSold >= 35 ? 4 : stats.unitsSold >= 15 ? 3 : stats.unitsSold >= 5 ? 2 : 1; const thresholds = [0, 5, 15, 35, 60]; const nextTarget = thresholds[level]; const levelNames = ['Yeni açıldı', 'Mahalle esnafı', 'Tanıdık dükkan', 'Yerleşik işletme', 'Mahallenin gözdesi']; const ratio = level >= 5 ? 100 : Math.min(100, Math.round(stats.unitsSold / nextTarget * 100)); const masteryBonus = (level - 1) * 3; const reputation = Math.min(100, Math.floor(stats.unitsSold * 1.5)); const reputationLabel = reputation >= 75 ? 'Mahallenin sevilen yeri' : reputation >= 40 ? 'Düzenli müşteri kitlesi' : reputation >= 10 ? 'Adı duyulmaya başladı' : 'Müşteri kazanıyor'; return <div className="mastery-panel"><div className="mastery-head"><span className="card-label">İŞLETME USTALIĞI</span><strong>SEV. {level} · +%{masteryBonus} SATIŞ</strong></div><div className="mastery-name">{levelNames[level - 1]}</div><div className="mastery-meter"><span style={{width: ratio + '%'}} /></div><div className="mastery-foot"><span>{stats.unitsSold} ürün satıldı</span><span>{level >= 5 ? 'En yüksek ustalık' : nextTarget + ' satışa ilerle'}</span></div><div className="reputation-row"><div><span>MAHALLE İTİBARI</span><strong>{reputation}/100 · {reputationLabel}</strong></div><b>+{Math.round(reputation * 0.12)} puan satış fırsatı</b></div><div className="reputation-meter"><span style={{width: reputation + '%'}} /></div><div className="mastery-stats"><div><span>Toplam hasılat</span><strong>₺{stats.revenue.toLocaleString('tr-TR', {maximumFractionDigits: 2})}</strong></div><div><span>Stok yatırımı</span><strong>₺{stats.stockInvested.toLocaleString('tr-TR', {maximumFractionDigits: 2})}</strong></div><div><span>Hasılat − stok</span><strong className={stats.revenue - stats.stockInvested >= 0 ? 'mastery-positive' : 'mastery-negative'}>₺{(stats.revenue - stats.stockInvested).toLocaleString('tr-TR', {maximumFractionDigits: 2})}</strong></div></div><p className="mastery-note">Ustalık satılan ürünlerle artar. Hasılat − stok, kira ve günlük işletme giderleri düşülmeden önceki farktır.</p></div>; })()}
-            <div className="stock-line"><span>Hazır ürün stoğu / kapasite</span><strong>{getTotalStock(active.id)} / {getStockCapacity(active.id)} adet</strong></div>
-            <div className="product-sales-panel"><div className="card-label">ÜRÜN BAZINDA STOK VE SATIŞ</div>{(tradeCatalog[active.id] || []).filter(product => product.price > 0).map(product => { const sold = Number(businessStats[active.id]?.productUnitsSold?.[product.id]?.units) || 0; const pending = pendingProductions[active.id + ':' + product.id]; const inStock = getProductStock(active.id, product.id); return <div className="stock-line product-inventory-row" key={product.id}><span>{product.name}<small className="product-stock-meta">Hazır: {inStock} · Üretimde: {pending?.units || 0} · Satılan: {sold}{pending ? ' · Sıradaki ürün ' + Math.max(0, Math.ceil((pending.readyAt - productionNow) / 1000)) + ' sn, kuyruğun sonu ' + Math.max(0, Math.ceil(((pending.finishAt || pending.readyAt) - productionNow) / 1000)) + ' sn' : ''}</small></span><strong>{sold} satıldı</strong></div>; })}</div>
-            <div className="stock-line"><span>Birim hammadde maliyeti</span><strong>{(() => { const item = (tradeCatalog[active.id] || []).find(product => product.id === businessPlans[active.id]); return item ? `₺${getBusinessRecipeCost(active.id,item).toLocaleString('tr-TR',{maximumFractionDigits:2})}` : '₺0'; })()}</strong></div>
-            <div className="stock-line"><span>Birim maliyet / satış</span><strong>{(() => { const item = (tradeCatalog[active.id] || []).find(product => product.id === businessPlans[active.id]); return item && item.units > 0 ? `₺${getBusinessRecipeCost(active.id,item).toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} / ₺${item.price.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : '—'; })()}</strong></div>
-            <div className="stock-line"><span>Birim tahmini brüt fark</span><strong>₺{(() => { const item = (tradeCatalog[active.id] || []).find(product => product.id === businessPlans[active.id]); const multiplier = active.type === 'İşletme' ? 2.1 : active.type === 'Atölye' ? 2 : 1.7; return item ? (item.price * multiplier - getBusinessRecipeCost(active.id,item)).toLocaleString('tr-TR', {maximumFractionDigits: 2}) : '0'; })()}</strong></div>
-            <button className="stock-button" onClick={stockBusiness}>ÜRETİMİ BAŞLAT</button>
-            <p>Stoklu otomatik satışın yanında burada bizzat bir saat çalışıp ek gelir kazanabilirsin. Çalışma saati 08.00–19.00; manuel çalışınca zaman durur, tekrar başlatabilirsin.</p>
           </div>}
 
           {owned.includes(active.id) && (rented.includes(active.id)
