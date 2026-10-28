@@ -38,11 +38,14 @@ if (!s.includes('const developmentLevel = (id) =>')) {
     setMarketValues(old => ({ ...old, [active.id]: Math.round(((Number(old[active.id]) || active.price) + cost * 1.35) * 100) / 100 }));
     setSteps(value => value + 1);
     const nextLevel = level + 1;
-    const newProperty = developedProperty({ ...active, floors: active.floors + 1 });
     tell(active.name + ' geliştirildi: seviye ' + nextLevel + '/3. Mülk değeri ve kira potansiyeli arttı; yatırım ₺' + cost.toLocaleString('tr-TR') + '.');
   }; `;
-  if (!s.includes(anchor)) throw new Error('Development insertion anchor missing');
-  s = s.replace(anchor, helpers);
+  if (s.includes(anchor)) s = s.replace(anchor, helpers);
+  else if (!s.includes('const developmentLevel = (id) =>')) {
+    const fallback = '  const updateMarketValues = (nextYear,nextMonth) =>';
+    if (!s.includes(fallback)) throw new Error('Could not find a safe insertion point for property development helpers');
+    s = s.replace(fallback, helpers + '\n  const updateMarketValues = (nextYear,nextMonth) =>');
+  }
 }
 
 s = s.replace(
@@ -84,7 +87,7 @@ const upgradeUi = `          {owned.includes(active.id) && <div className="devel
             <div className="card-label">MÜLK GELİŞTİRME</div>
             <div className="development-heading"><strong>SEVİYE {developmentLevel(active.id)} / 3</strong><span>{developmentLevel(active.id) === 3 ? 'TAM GELİŞMİŞ' : 'YENİDEN İNŞA / GENİŞLETME'}</span></div>
             <div className="development-meter"><span style={{width: (developmentLevel(active.id) / 3 * 100) + '%'}} /></div>
-            <div className="development-benefits"><span>Geliştirme sonrası kira</span><strong>₺{(active.rent * (1 + developmentLevel(active.id) * 0.18) / 30).toFixed(2)} / gün</strong></div>
+            <div className="development-benefits"><span>Geliştirme sonrası kira</span><strong>₺{(active.rent / 30).toFixed(2)} / gün</strong></div>
             <div className="development-benefits"><span>Tahmini yatırım değeri artışı</span><strong>+₺{Math.round(active.price * 0.22 * 1.35).toLocaleString('tr-TR')}</strong></div>
             <button className="development-button" onClick={upgradeProperty} disabled={rented.includes(active.id) || developmentLevel(active.id) >= 3 || cash < getDevelopmentCost(active)}>
               {developmentLevel(active.id) >= 3 ? 'EN ÜST SEVİYEYE ULAŞTI' : rented.includes(active.id) ? 'KİRACI VARKEN GELİŞTİRİLEMEZ' : 'GELİŞTİR · ₺' + getDevelopmentCost(active).toLocaleString('tr-TR')}
@@ -92,8 +95,12 @@ const upgradeUi = `          {owned.includes(active.id) && <div className="devel
             <p className="small-note">Her yatırım binaya bir kat ekler. Mülk değeri ve kira potansiyeli yükselir. Bakkal, fırın, kahvehane ve lokanta gibi bazı yapılar gelişim seviyesine göre dönüşür.</p>
           </div>}`;
 if (!s.includes('className="development-panel"')) {
-  if (!s.includes(buyAnchor)) throw new Error('Development UI anchor missing');
-  s = s.replace(buyAnchor, buyAnchor + '\n' + upgradeUi);
+  if (s.includes(buyAnchor)) s = s.replace(buyAnchor, buyAnchor + '\n' + upgradeUi);
+  else {
+    const fallback = '          {owned.includes(active.id) && <button className="sell-button"';
+    if (!s.includes(fallback)) throw new Error('Could not find a safe insertion point for property development UI');
+    s = s.replace(fallback, upgradeUi + '\n' + fallback);
+  }
 }
 
 if (!s.includes('.development-panel')) {
