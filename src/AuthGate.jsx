@@ -8,6 +8,7 @@ export default function AuthGate({ children }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
+  const [verificationCode, setVerificationCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
 
@@ -36,7 +37,13 @@ export default function AuthGate({ children }) {
     setBusy(true);
     setMessage('');
     try {
-      if (mode === 'signup') {
+      if (mode === 'verify') {
+        const { error } = await supabase.auth.verifyOtp({
+          email: email.trim(), token: verificationCode.trim(), type: 'signup'
+        });
+        if (error) throw error;
+        setMessage('E-posta doğrulandı. Şehre giriş yapılıyor…');
+      } else if (mode === 'signup') {
         const { data, error } = await supabase.auth.signUp({
           email: email.trim(),
           password,
@@ -46,19 +53,46 @@ export default function AuthGate({ children }) {
           }
         });
         if (error) throw error;
-        if (!data.session) setMessage('Hesap oluşturuldu. E-posta doğrulaması isteniyorsa gelen kutunu kontrol et. Doğrulama bağlantısının açılması için Supabase Auth URL ayarlarında bu sitenin adresi izinli olmalı.');
-        else setMessage('Hesabın oluşturuldu.');
+        if (!data.session) {
+          setMode('verify');
+          setVerificationCode('');
+          setMessage('Doğrulama e-postası gönderildi. E-postadaki tek kullanımlık kodu gir. Kod görünmüyorsa Supabase e-posta şablonunda {{ .Token }} alanının bulunduğunu kontrol et.');
+        } else {
+          setMessage('Hesabın oluşturuldu.');
+        }
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
         if (error) throw error;
       }
     } catch (error) {
       const raw = error?.message || 'İşlem tamamlanamadı. Bilgilerini kontrol et.';
-      if (/invalid path specified in request url/i.test(raw)) {
+      if (/invalid token|token has expired|otp_expired|invalid otp/i.test(raw)) {
+        setMessage('Kod geçersiz veya süresi dolmuş. En son gelen e-postadaki kodu kullan; gerekirse yeni kod iste.');
+      } else if (/invalid path specified in request url/i.test(raw)) {
         setMessage('Supabase isteği geçersiz bir adrese gidiyor. Vercel’de VITE_SUPABASE_URL değerinin Supabase Project URL olduğundan emin ol: https://....supabase.co. Dashboard adresini veya /project/... yolunu buraya koyma. Değişkeni düzelttikten sonra yeniden deploy et.');
       } else if (/redirect url not allowed|redirect_to/i.test(raw)) {
         setMessage('E-posta doğrulama adresine izin verilmemiş. Supabase → Authentication → URL Configuration bölümünde Site URL ve Redirect URLs alanlarına bu sitenin tam adresini ekle.');
-      } else setMessage(raw);
+      } else {
+        setMessage(raw);
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const resendCode = async () => {
+    setBusy(true);
+    setMessage('');
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: email.trim(),
+        options: { emailRedirectTo: window.location.origin }
+      });
+      if (error) throw error;
+      setMessage('Yeni doğrulama e-postası gönderildi. Yalnızca en son gelen kodu kullan.');
+    } catch (error) {
+      setMessage(error?.message || 'Yeni kod gönderilemedi. Biraz bekleyip tekrar dene.');
     } finally {
       setBusy(false);
     }
@@ -73,20 +107,25 @@ export default function AuthGate({ children }) {
         <div className="auth-brand-subtitle"><span /> BEYOĞLU 1923 <span /></div>
       </header>
       <div className="auth-intro">
-        <div className="auth-eyebrow">{mode === 'signup' ? 'YENİ BİR HAYAT KUR' : 'ŞEHİR SENİ BEKLİYOR'}</div>
-        <h1>{mode === 'signup' ? 'Mahalleye katıl.' : 'Mahallene dön.'}</h1>
-        <p>Tek şehir. Ayrı ekonomiler. Kendi hikâyen.</p>
+        <div className="auth-eyebrow">{mode === 'signup' ? 'YENİ BİR HAYAT KUR' : mode === 'verify' ? 'E-POSTA DOĞRULAMA' : 'ŞEHİR SENİ BEKLİYOR'}</div>
+        <h1>{mode === 'signup' ? 'Mahalleye katıl.' : mode === 'verify' ? 'E-postanı doğrula.' : 'Mahallene dön.'}</h1>
+        <p>{mode === 'verify' ? email + ' adresine gönderilen tek kullanımlık kodu gir.' : 'Tek şehir. Ayrı ekonomiler. Kendi hikâyen.'}</p>
       </div>
-      <div className="auth-tabs" role="tablist" aria-label="Hesap işlemi">
+      {mode !== 'verify' && <div className="auth-tabs" role="tablist" aria-label="Hesap işlemi">
         <button type="button" role="tab" aria-selected={mode === 'login'} className={mode === 'login' ? 'active' : ''} onClick={() => { setMode('login'); setMessage(''); }}>GİRİŞ YAP</button>
         <button type="button" role="tab" aria-selected={mode === 'signup'} className={mode === 'signup' ? 'active' : ''} onClick={() => { setMode('signup'); setMessage(''); }}>HESAP OLUŞTUR</button>
-      </div>
+      </div>}
       <form className="auth-form" onSubmit={submit}>
         {mode === 'signup' && <label>OYUNCU ADI<input value={displayName} onChange={e => setDisplayName(e.target.value.slice(0, 24))} placeholder="Mahallede görünecek adın" maxLength={24} autoComplete="nickname" /></label>}
-        <label>E-POSTA<input type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="ornek@email.com" autoComplete="email" /></label>
-        <label>ŞİFRE<input type="password" required minLength={6} value={password} onChange={e => setPassword(e.target.value)} placeholder="En az 6 karakter" autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} /></label>
-        <button className="auth-submit" disabled={busy}>{busy ? 'İŞLENİYOR…' : mode === 'signup' ? 'HESAP OLUŞTUR  ↗' : 'ŞEHRE GİR  ↗'}</button>
+        {mode !== 'verify' && <label>E-POSTA<input type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="ornek@email.com" autoComplete="email" /></label>}
+        {mode === 'verify' && <label>DOĞRULAMA KODU<input inputMode="numeric" autoComplete="one-time-code" required value={verificationCode} onChange={e => setVerificationCode(e.target.value.replace(/\s/g, '').slice(0, 12))} placeholder="E-postadaki kod" /></label>}
+        {mode !== 'verify' && <label>ŞİFRE<input type="password" required minLength={6} value={password} onChange={e => setPassword(e.target.value)} placeholder="En az 6 karakter" autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} /></label>}
+        <button className="auth-submit" disabled={busy}>{busy ? 'İŞLENİYOR…' : mode === 'verify' ? 'E-POSTAYI DOĞRULA ↗' : mode === 'signup' ? 'HESAP OLUŞTUR ↗' : 'ŞEHRE GİR ↗'}</button>
       </form>
+      {mode === 'verify' && <>
+        <button type="button" className="auth-secondary" disabled={busy} onClick={resendCode}>YENİ KOD GÖNDER</button>
+        <button type="button" className="auth-back" onClick={() => { setMode('signup'); setMessage(''); }}>KAYIT EKRANINA DÖN</button>
+      </>}
       {message && <p className="auth-message" role="status">{message}</p>}
       <footer className="auth-footer"><span className="auth-lock">◆</span><p>Hesabın ve kayıtların sana özel. Kimlik doğrulaması Supabase Auth tarafından yönetilir.</p></footer>
     </section>
