@@ -489,3 +489,31 @@ button,select,input{touch-action:manipulation}
 .auth-secondary:disabled{opacity:.55;cursor:wait}
 .auth-back{border-color:transparent;color:#aaa;background:transparent}
 .auth-back:hover{color:#fff;border-color:#555}
+
+/* Minimal gaming-style authentication UI */
+.auth-screen{font-family:'IBM Plex Mono','SFMono-Regular',Consolas,monospace;gap:0;padding:24px 16px;background:#090909}
+.auth-screen:before{background:linear-gradient(90deg,transparent 49.7%,#ffffff0a 50%,transparent 50.3%);background-size:64px 100%;mask-image:linear-gradient(to bottom,transparent,#000 15%,#000 85%,transparent)}
+.auth-screen:after{display:none}
+.auth-card{max-width:430px;padding:clamp(22px,4vw,34px);border:1px solid #777;border-radius:0;background:#0b0b0b;box-shadow:0 18px 55px #0009;clip-path:polygon(0 12px,12px 0,calc(100% - 12px) 0,100% 12px,100% calc(100% - 12px),calc(100% - 12px) 100%,12px 100%,0 calc(100% - 12px))}
+.auth-card:before{inset:5px;border:1px solid #ffffff16}
+.auth-brand{padding:0 0 18px;border-bottom:1px solid #444}
+.auth-brand-title{display:flex;align-items:center;justify-content:center;margin:0;color:#f4f4ef;font-family:'Arial Black','Impact','IBM Plex Mono',monospace;font-size:clamp(36px,8vw,48px);font-weight:900;letter-spacing:4px;line-height:1.1}
+.auth-brand-mark{display:inline-flex;align-items:center;justify-content:center;width:13px;height:13px;margin-left:8px;border:1px solid #f4f4ef;color:#f4f4ef;font:700 10px 'IBM Plex Mono',monospace}
+.auth-intro{padding:22px 0 18px}
+.auth-intro h1{margin:0;color:#f4f4ef;font-family:'IBM Plex Mono','SFMono-Regular',Consolas,monospace;font-size:15px;font-weight:800;letter-spacing:2px;line-height:1.4}
+.auth-intro p{margin:8px 0 0;color:#aaa;font-size:11px;overflow-wrap:anywhere}
+.auth-tabs{margin:0 0 19px;border:1px solid #696969;clip-path:polygon(0 0,calc(100% - 8px) 0,100% 8px,100% 100%,8px 100%,0 calc(100% - 8px))}
+.auth-tabs button{min-height:43px;background:#101010;color:#aaa;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1.1px}
+.auth-tabs button.active{background:#f2f2ed;color:#111}
+.auth-form{gap:13px}
+.auth-form label{gap:6px;color:#c9c9c4;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:1.2px}
+.auth-form input{min-height:48px;padding:12px 13px;border:1px solid #555;border-radius:0;background:#111;color:#f7f7f2;font:500 13px 'IBM Plex Mono','SFMono-Regular',Consolas,monospace;clip-path:polygon(0 0,calc(100% - 7px) 0,100% 7px,100% 100%,0 100%)}
+.auth-form input::placeholder{color:#777}
+.auth-form input:focus{border-color:#f5f5f0;background:#151515}
+.auth-submit{min-height:49px;margin-top:4px;border:1px solid #f5f5f0;border-radius:0;background:#f5f5f0;color:#101010;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:900;letter-spacing:1.6px;clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%)}
+.auth-submit:hover:not(:disabled){background:#d8d8d2}
+.auth-message{margin:14px 0 0;padding:11px 12px;border:1px solid #666;border-radius:0;background:#141414;color:#eee;font:11px/1.6 'IBM Plex Mono',monospace}
+.auth-secondary,.auth-back{font-family:'IBM Plex Mono',monospace;border-radius:0;letter-spacing:1.1px}
+.auth-footer,.auth-bottomline{display:none}
+.auth-loading{font-family:'IBM Plex Mono',monospace;letter-spacing:2px}
+@media(max-width:520px){.auth-screen{padding:16px 12px}.auth-card{padding:24px 19px}.auth-intro{padding:19px 0 16px}.auth-tabs button{font-size:9px}.auth-form input{min-height:46px}}
