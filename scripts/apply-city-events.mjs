@@ -193,6 +193,27 @@ if (!s.includes('<section className="city-events-panel">')) {
   s = s.replace(uiAnchor, eventUI + uiAnchor);
 }
 
+// Share the active city-news state with the guest so both players see the same events.
+const multiplayerSyncPatches = [
+  ["conn.send({ type: 'world-state', owners: snapshotRef.current?.owners || {}, marketValues: snapshotRef.current?.marketValues || {}, hostName });",
+   "conn.send({ type: 'world-state', owners: snapshotRef.current?.owners || {}, marketValues: snapshotRef.current?.marketValues || {}, activeEvents: snapshotRef.current?.activeEvents || [], hostName });"],
+  ["conn.send({ type: 'world-state', owners: mergedOwners, marketValues, hostName });",
+   "conn.send({ type: 'world-state', owners: mergedOwners, marketValues, activeEvents, hostName });"],
+  ["conn.send({ type: 'world-state', owners: message.owners, marketValues: message.marketValues || marketValues, hostName });",
+   "conn.send({ type: 'world-state', owners: message.owners, marketValues: message.marketValues || marketValues, activeEvents, hostName });"],
+  ["if (message.marketValues && typeof message.marketValues === 'object') setMarketValues(message.marketValues);",
+   "if (message.marketValues && typeof message.marketValues === 'object') setMarketValues(message.marketValues);\n    if (Array.isArray(message.activeEvents)) setActiveEvents(message.activeEvents);"],
+  ["snapshotRef.current = { owners: ownerByProperty, marketValues, hostName: playerName.trim() || 'Ev sahibi' };",
+   "snapshotRef.current = { owners: ownerByProperty, marketValues, activeEvents, hostName: playerName.trim() || 'Ev sahibi' };"],
+  ["connectionRef.current.send({ type: 'world-state', owners: ownerByProperty, marketValues, hostName: playerName.trim() || 'Ev sahibi' });",
+   "connectionRef.current.send({ type: 'world-state', owners: ownerByProperty, marketValues, activeEvents, hostName: playerName.trim() || 'Ev sahibi' });"],
+  ["[multiplayerRole, ownerByProperty, marketValues, playerName]);",
+   "[multiplayerRole, ownerByProperty, marketValues, activeEvents, playerName]);"]
+];
+for (const [from, to] of multiplayerSyncPatches) {
+  if (s.includes(from)) s = s.replace(from, to);
+}
+
 fs.writeFileSync(appPath, s, 'utf8');
 
 const cssPath = 'src/style.css';
