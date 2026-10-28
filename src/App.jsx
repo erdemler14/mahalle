@@ -1082,6 +1082,67 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     31: [{ id: 'lokanta-galata', name: 'Günün yemeği', cost: 16, price: 6.5, units: 8 }, { id: 'meze', name: 'Meze ve sıcak çorba', cost: 11, price: 4.5, units: 8 }],
     32: [{ id: 'baski-galata', name: 'Basılı ilan ve evrak', cost: 14, price: 5, units: 8 }, { id: 'kirtasiye-galata', name: 'Defter ve kırtasiye', cost: 10, price: 3.8, units: 8 }]
   };
+
+  // Commercial ownership is independent of the character's former profession.
+  // Product tiers unlock from actual sales; premium goods need a more developed supply chain.
+  const advancedProducts = {
+    1: [['konserve-erzak','Konserve ve ithal erzak',14,3.4,8,2],['kahve-ithal','İthal kahve ve kakao',18,4.5,6,3],['hediyelik-set','Hediye ve tuvalet seti',22,6.2,5,4],['ithal-parfum','İthal Fransız parfümü',30,8.5,4,5]],
+    7: [['masa-sarabi','Fıçıdan sofra şarabı',14,3.8,8,2],['ozel-rezerv','Özel mahzen şarabı',22,6.5,5,3],['ithal-peynir','İthal peynir ve şarküteri',25,7.5,5,4],['koleksiyon-sarabi','Mahzen seçkisi',34,10,3,5]],
+    9: [['davetiye','Davetiye ve kartvizit',15,5,6,2],['ciltli-defter','Ciltli defter',19,6.2,5,3],['kitap-baski','Küçük tiraj kitap baskısı',24,8,4,4],['sanat-baski','Sanat baskısı ve afiş',32,10.5,3,5]],
+    10: [['hazir-elbise','Hazır şehir elbisesi',22,7,6,2],['yün-palto','Yün palto ve ceket',28,9,5,3],['ipek-eldiven','İpek aksesuar ve eldiven',34,11,4,4],['paris-modasi','Paris modası özel seri',42,14,3,5]],
+    12: [['turk-kahvesi','Özenli Türk kahvesi',14,4.5,8,2],['lokum-tabagi','Lokum ve şerbet tabağı',16,5.2,7,3],['ithal-pasta','Pasta ve pastane tatlısı',22,7.5,5,4],['ozel-kahve','Özel harman kahve',28,9.5,4,5]],
+    13: [['simit','Simit ve açma',12,4.2,8,2],['sutlu-corek','Sütlü çörek ve çörek otu',15,5.5,6,3],['pastane','Pasta ve tatlı çörek',22,7.5,5,4],['ozel-ekmek','Özel mayalı ekmek',28,9,4,5]],
+    14: [['kiyma','Kıyma ve köfte harcı',15,5,6,2],['sucuk','Sucuk ve pastırma',22,7.5,5,3],['kuzu-secme','Seçme kuzu eti',28,9.5,4,4],['ozel-sarkuteri','Şarküteri ve özel kesim',36,12,3,5]],
+    15: [['bitkisel-tentur','Bitkisel tentür ve damla',14,5,6,2],['oksuruk-surubu','Öksürük şurubu ve pastil',17,6.5,5,3],['sargilik-gaz','Sargı bezi ve antiseptik',20,7.5,5,4],['ithal-ilac','İthal ilaç ve özel preparat',30,11,3,5]],
+    16: [['roman-serisi','Yeni romanlar',15,5.2,6,2],['resim-defteri','Resim defteri ve boya',18,6.5,5,3],['ithal-kalem','İthal dolma kalem',25,9,4,4],['ansiklopedi','Ciltli eser ve ansiklopedi',32,12,3,5]],
+    17: [['tabure','Ahşap tabure',15,5.5,5,2],['sandik','Çeyiz sandığı',22,8,4,3],['masa','Oymalı masa',30,11,3,4],['vitrin-dolap','Vitrin dolabı',38,14,2,5]],
+    18: [['narenciye','Narenciye kasası',13,4.5,5,2],['mevsim-sepeti','Mevsimlik meyve sepeti',16,6,4,3],['ithal-meyve','İthal meyve',22,8,3,4],['seckin-urun','Seçme meyve ve sebze',28,10,3,5]],
+    19: [['ev-yemegi','Zeytinyağlı ev yemeği',14,5,6,2],['etli-yemek','Etli tencere yemeği',20,7.5,5,3],['tatli-lokanta','Sütlü tatlı',22,8.5,4,4],['usta-menusu','Usta menüsü',30,12,3,5]],
+    20: [['menteşe','Menteşe ve nal',15,5.5,5,2],['alet-takimi','El aleti takımı',22,8,4,3],['ocak-demiri','Dövme demir eşya',30,11,3,4],['ozel-demir','Özel sipariş ferforje',38,14,2,5]],
+    23: [['bitki-karisimi','Özel bitki karışımları',14,5,6,2],['baharat-seti','Baharat sandığı',18,6.5,5,3],['aktar-merhemi','Bitkisel merhem',24,8.5,4,4],['ithal-baharat','İthal baharat',32,11,3,5]],
+    25: [['filtre-kahve','Kahve harmanı ve lokum',15,5.2,8,2],['serbet','Gül şerbeti ve tatlı',18,6.5,6,3],['pasta','Pasta ve pastane tabağı',24,9,5,4],['salon-kahvesi','Salon kahvesi özel harmanı',32,12,4,5]],
+    26: [['elbise','Günlük şehir elbisesi',18,7,5,2],['palto','Yün palto',25,10,4,3],['gelinlik','Özel gün elbisesi',32,13,3,4],['moda-dikim','Pera modası özel dikim',42,17,2,5]],
+    28: [['peynir-zeytin','Peynir ve zeytin',14,4.5,8,2],['kahve-seker','Kahve ve şeker',18,6,6,3],['ithal-erzak','İthal erzak',24,8.5,5,4],['hediyelik-kutu','Hediyelik erzak kutusu',30,11,4,5]],
+    29: [['lavanta-sabun','Lavanta sabunu',17,6.5,6,2],['kokulu-sabun','Kokulu misafir sabunu',22,8.5,5,3],['kolonya-uretim','Kolonya ve esans',28,11,4,4],['otel-seti','Otel sabun seti',36,14,3,5]],
+    31: [['pilav','Pilav ve zeytinyağlı',15,5.5,7,2],['kebap','Kebap ve ızgara',22,8,5,3],['tatli-galata','Günün tatlısı',25,9.5,4,4],['usta-sofrasi','Usta sofrası',34,13,3,5]],
+    32: [['davetiye-galata','Davetiye ve kartvizit',15,5.5,7,2],['ciltli-eser','Ciltli kitap ve defter',21,7.5,5,3],['afis','Renkli afiş ve ilan',28,10,4,4],['prestij-baski','Prestijli sanat baskısı',36,13,3,5]],
+    33: [['sakal-bakimi','Sakal bakımı ve kolonya',10,4.8,6,2],['sac-kesimi','Saç kesimi ve şekillendirme',15,6.5,5,3],['damat-tirasi','Damat tıraşı ve bakım',22,9.5,4,4],['ustura-seti','Usta işi tıraş ve sıcak havlu',30,13,3,5]]
+  };
+  Object.entries(advancedProducts).forEach(([id, rows]) => {
+    if (!tradeCatalog[id]) tradeCatalog[id] = [];
+    rows.forEach(([productId, name, cost, price, units, unlockLevel]) => {
+      if (!tradeCatalog[id].some(item => item.id === productId)) tradeCatalog[id].push({ id: productId, name, cost, price, units, unlockLevel });
+    });
+  });
+  Object.values(tradeCatalog).forEach(items => items.forEach(item => { if (!item.unlockLevel) item.unlockLevel = 1; }));
+  const businessMaterialProfiles = {
+    pharmacy: { name: 'Eczahane', materials: [{id:'ecz-ot',name:'Şifalı ot ve etkin madde',batch:6,cost:9},{id:'ecz-sise',name:'Cam şişe ve kavanoz',batch:6,cost:8},{id:'ecz-sargi',name:'Sargı bezi ve temiz pamuk',batch:6,cost:10},{id:'ecz-ambalaj',name:'Etiket ve kâğıt ambalaj',batch:8,cost:7}], recipes: [['ecz-ot',1,'ecz-sise',1],['ecz-ot',2,'ecz-sise',1],['ecz-ot',1,'ecz-ambalaj',2],['ecz-sargi',2,'ecz-ambalaj',1],['ecz-ot',2,'ecz-sise',2]] },
+    food: { name: 'Gıda', materials: [{id:'gida-un',name:'Un ve tahıl',batch:8,cost:8},{id:'gida-yag',name:'Yağ ve süt ürünleri',batch:6,cost:9},{id:'gida-urun',name:'Taze gıda ve et',batch:6,cost:12},{id:'gida-baharat',name:'Baharat ve maya',batch:8,cost:7}], recipes: [['gida-un',2,'gida-yag',1],['gida-urun',1,'gida-baharat',1],['gida-urun',2,'gida-yag',1],['gida-un',1,'gida-baharat',1],['gida-urun',2,'gida-baharat',1]] },
+    textile: { name: 'Kumaş', materials: [{id:'kum-kumas',name:'Kumaş topu',batch:6,cost:12},{id:'kum-iplik',name:'İplik ve düğme',batch:8,cost:8},{id:'kum-aksesuar',name:'Dantel ve aksesuar',batch:6,cost:10}], recipes: [['kum-kumas',1,'kum-iplik',1],['kum-kumas',2,'kum-iplik',1],['kum-kumas',2,'kum-aksesuar',1],['kum-kumas',2,'kum-iplik',2],['kum-kumas',3,'kum-aksesuar',2]] },
+    paper: { name: 'Matbaa ve kitap', materials: [{id:'kagit',name:'Kâğıt ve karton',batch:8,cost:9},{id:'baski-murekkep',name:'Baskı mürekkebi',batch:6,cost:10},{id:'cilt-malzemesi',name:'Cilt bezi ve tutkal',batch:6,cost:12}], recipes: [['kagit',2,'baski-murekkep',1],['kagit',1,'cilt-malzemesi',1],['kagit',2,'baski-murekkep',2],['kagit',3,'cilt-malzemesi',2],['kagit',3,'baski-murekkep',2]] },
+    wood: { name: 'Marangoz', materials: [{id:'ahsap',name:'Kereste',batch:6,cost:12},{id:'marangoz-civi',name:'Çivi ve bağlantı',batch:8,cost:7},{id:'ahsap-cila',name:'Cila ve tutkal',batch:6,cost:9}], recipes: [['ahsap',1,'marangoz-civi',1],['ahsap',2,'marangoz-civi',1],['ahsap',2,'ahsap-cila',1],['ahsap',3,'ahsap-cila',1],['ahsap',3,'marangoz-civi',2]] },
+    metal: { name: 'Demirci', materials: [{id:'demir-hammadde',name:'Demir külçe',batch:6,cost:14},{id:'komur',name:'Kömür',batch:8,cost:8},{id:'baglanti',name:'Perçin ve bağlantı',batch:8,cost:7}], recipes: [['demir-hammadde',1,'komur',1],['demir-hammadde',2,'komur',1],['demir-hammadde',2,'baglanti',1],['demir-hammadde',3,'komur',2],['demir-hammadde',3,'baglanti',2]] },
+    soap: { name: 'Sabun imalatı', materials: [{id:'sabun-yag',name:'Yağ ve sabun bazı',batch:6,cost:11},{id:'sabun-esans',name:'Koku ve bitki özü',batch:6,cost:10},{id:'sabun-kagit',name:'Kalıp ve ambalaj',batch:8,cost:7}], recipes: [['sabun-yag',1,'sabun-kagit',1],['sabun-yag',1,'sabun-esans',1],['sabun-yag',2,'sabun-esans',1],['sabun-yag',2,'sabun-kagit',2],['sabun-yag',2,'sabun-esans',2]] },
+    general: { name: 'Ticari mal', materials: [{id:'toptan',name:'Toptan mal kolisi',batch:8,cost:12},{id:'ambalaj',name:'Kâğıt ve ambalaj',batch:8,cost:7},{id:'cam',name:'Cam, teneke ve kavanoz',batch:6,cost:9}], recipes: [['toptan',1,'ambalaj',1],['toptan',1,'cam',1],['toptan',2,'ambalaj',1],['toptan',2,'cam',1],['toptan',3,'ambalaj',2]] },
+    service: { name: 'Hizmet', materials: [{id:'sabun-berber',name:'Sabun ve tıraş malzemesi',batch:8,cost:8},{id:'kolonya-berber',name:'Kolonya ve bakım ürünü',batch:6,cost:9},{id:'alet-berber',name:'Ustura ve bakım aleti',batch:4,cost:12}], recipes: [['sabun-berber',1,'kolonya-berber',1],['sabun-berber',1,'alet-berber',1],['kolonya-berber',1,'alet-berber',1],['sabun-berber',2,'kolonya-berber',1],['kolonya-berber',2,'alet-berber',1]] }
+  };
+  const getBusinessProfile = (propertyId) => {
+    if (propertyId === 15) return businessMaterialProfiles.pharmacy;
+    if ([13,14,18,19,12,25].includes(Number(propertyId))) return businessMaterialProfiles.food;
+    if ([10,26].includes(Number(propertyId))) return businessMaterialProfiles.textile;
+    if ([9,16,32].includes(Number(propertyId))) return businessMaterialProfiles.paper;
+    if ([17].includes(Number(propertyId))) return businessMaterialProfiles.wood;
+    if ([20].includes(Number(propertyId))) return businessMaterialProfiles.metal;
+    if ([29].includes(Number(propertyId))) return businessMaterialProfiles.soap;
+    if ([33].includes(Number(propertyId))) return businessMaterialProfiles.service;
+    return businessMaterialProfiles.general;
+  };
+  const getBusinessRecipe = (propertyId, product) => {
+    const profile = getBusinessProfile(propertyId);
+    const recipe = profile.recipes[Math.min(4, Math.max(0, (Number(product?.unlockLevel) || 1) - 1))] || profile.recipes[0];
+    return [{id:recipe[0],qty:recipe[1]},{id:recipe[2],qty:recipe[3]}];
+  };
+
   const profession = professionOptions.find(p => p.id === professionId) || professionOptions.find(p => p.id === 'amele');
   const active = properties.find(p => p.id === selected) || properties[0];
   const portfolioDetail = portfolioDetailId == null ? null : properties.find(p => p.id === portfolioDetailId) || null;
