@@ -29,7 +29,7 @@ export default function AuthGate({ children }) {
   }, []);
 
   if (!supabaseConfigured) return <>{children({ session: null, supabase: null, authConfigured: false })}</>;
-  if (loading) return <main className="auth-loading"><span className="auth-spinner" />MAHALLE · HESAP KONTROL EDİLİYOR</main>;
+  if (loading) return <main className="auth-loading"><span className="auth-spinner" />MAHALLE</main>;
   if (session) return <>{children({ session, supabase, authConfigured: true })}</>;
 
   const submit = async (event) => {
@@ -102,24 +102,21 @@ export default function AuthGate({ children }) {
     <div className="auth-grain" aria-hidden="true" />
     <section className="auth-card" aria-label="Mahalle hesabı">
       <header className="auth-brand">
-        <span className="auth-brand-kicker">ORTAK ŞEHİR · ORTAK HİKÂYE</span>
-        <div className="auth-brand-title">MAHALLE</div>
-        <div className="auth-brand-subtitle"><span /> BEYOĞLU 1923 <span /></div>
+        <div className="auth-brand-title">MAHALLE<span className="auth-brand-mark">+</span></div>
       </header>
       <div className="auth-intro">
-        <div className="auth-eyebrow">{mode === 'signup' ? 'YENİ BİR HAYAT KUR' : mode === 'verify' ? 'E-POSTA DOĞRULAMA' : 'ŞEHİR SENİ BEKLİYOR'}</div>
-        <h1>{mode === 'signup' ? 'Mahalleye katıl.' : mode === 'verify' ? 'E-postanı doğrula.' : 'Mahallene dön.'}</h1>
-        <p>{mode === 'verify' ? email + ' adresine gönderilen tek kullanımlık kodu gir.' : 'Tek şehir. Ayrı ekonomiler. Kendi hikâyen.'}</p>
+        <h1>{mode === 'signup' ? 'HESAP OLUŞTUR' : mode === 'verify' ? 'E-POSTA KODU' : 'GİRİŞ YAP'}</h1>
+        {mode === 'verify' && <p>{email}</p>}
       </div>
       {mode !== 'verify' && <div className="auth-tabs" role="tablist" aria-label="Hesap işlemi">
         <button type="button" role="tab" aria-selected={mode === 'login'} className={mode === 'login' ? 'active' : ''} onClick={() => { setMode('login'); setMessage(''); }}>GİRİŞ YAP</button>
         <button type="button" role="tab" aria-selected={mode === 'signup'} className={mode === 'signup' ? 'active' : ''} onClick={() => { setMode('signup'); setMessage(''); }}>HESAP OLUŞTUR</button>
       </div>}
       <form className="auth-form" onSubmit={submit}>
-        {mode === 'signup' && <label>OYUNCU ADI<input value={displayName} onChange={e => setDisplayName(e.target.value.slice(0, 24))} placeholder="Mahallede görünecek adın" maxLength={24} autoComplete="nickname" /></label>}
-        {mode !== 'verify' && <label>E-POSTA<input type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="ornek@email.com" autoComplete="email" /></label>}
-        {mode === 'verify' && <label>DOĞRULAMA KODU<input inputMode="numeric" autoComplete="one-time-code" required value={verificationCode} onChange={e => setVerificationCode(e.target.value.replace(/\s/g, '').slice(0, 12))} placeholder="E-postadaki kod" /></label>}
-        {mode !== 'verify' && <label>ŞİFRE<input type="password" required minLength={6} value={password} onChange={e => setPassword(e.target.value)} placeholder="En az 6 karakter" autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} /></label>}
+        {mode === 'signup' && <label><span>OYUNCU ADI</span><input value={displayName} onChange={e => setDisplayName(e.target.value.slice(0, 24))} placeholder="Oyuncu adı" maxLength={24} autoComplete="nickname" /></label>}
+        {mode !== 'verify' && <label><span>E-POSTA</span><input type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="E-posta" autoComplete="email" /></label>}
+        {mode === 'verify' && <label><span>KOD</span><input inputMode="numeric" autoComplete="one-time-code" required value={verificationCode} onChange={e => setVerificationCode(e.target.value.replace(/\s/g, '').slice(0, 12))} placeholder="Doğrulama kodu" /></label>}
+        {mode !== 'verify' && <label><span>ŞİFRE</span><input type="password" required minLength={6} value={password} onChange={e => setPassword(e.target.value)} placeholder="Şifre" autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} /></label>}
         <button className="auth-submit" disabled={busy}>{busy ? 'İŞLENİYOR…' : mode === 'verify' ? 'E-POSTAYI DOĞRULA ↗' : mode === 'signup' ? 'HESAP OLUŞTUR ↗' : 'ŞEHRE GİR ↗'}</button>
       </form>
       {mode === 'verify' && <>
@@ -127,8 +124,6 @@ export default function AuthGate({ children }) {
         <button type="button" className="auth-back" onClick={() => { setMode('signup'); setMessage(''); }}>KAYIT EKRANINA DÖN</button>
       </>}
       {message && <p className="auth-message" role="status">{message}</p>}
-      <footer className="auth-footer"><span className="auth-lock">◆</span><p>Hesabın ve kayıtların sana özel. Kimlik doğrulaması Supabase Auth tarafından yönetilir.</p></footer>
     </section>
-    <div className="auth-bottomline"><span>MAHALLE / 1923</span><span>AYNI ŞEHİRDE, AYRI HİKÂYELER</span></div>
   </main>;
 }
