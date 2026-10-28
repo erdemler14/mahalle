@@ -968,7 +968,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   const [offerPriceInput, setOfferPriceInput] = useState('');
   const [offerComposerOpen, setOfferComposerOpen] = useState(false);
   const [marketValues, setMarketValues] = useState(() => saved.marketValues && typeof saved.marketValues === 'object' ? saved.marketValues : {});
-  const playerId = session?.user?.id || (multiplayerRole === 'host' ? 'host' : multiplayerRole === 'guest' ? 'guest' : 'solo');
+  const playerId = multiplayerRole === 'host' || multiplayerRole === 'guest' ? multiplayerRole : (session?.user?.id || 'solo');
   const peerRef = useRef(null);
   const connectionRef = useRef(null);
   const actionRefs = useRef({});
@@ -989,7 +989,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   })));
   const sendOffer = () => {
     if(multiplayerRole==='solo'||!connectionRef.current?.open){setNotice('Teklifin ulaşması için iki oyuncunun da aynı odaya bağlı olması gerekir.');setMultiplayerStatus('Teklif gönderilemedi: oyuncu bağlantısı açık değil.');return;}
-    const owner=ownerByProperty[active.id]; if(!owner||owner.playerId===playerId){setNotice('Bu mülk başka oyuncuya ait olmalı.');return;}
+    const owner=ownerByProperty[active.id] || snapshotRef.current?.owners?.[active.id]; if(!owner||owner.playerId===playerId){setNotice('Bu mülk başka oyuncuya ait olmalı.');return;}
     const price=Math.round(Number(offerPriceInput)*100)/100;
     if(!Number.isFinite(price)||price<=0){setNotice('Geçerli bir teklif tutarı gir.');return;}
     if(cash<price){setNotice('Teklifin ₺'+price.toLocaleString('tr-TR')+' ama nakdin yeterli değil.');return;}
@@ -1763,7 +1763,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
             setOwnerByProperty(message.owners);
             conn.send({ type: 'world-state', owners: message.owners, marketValues: message.marketValues || marketValues, hostName });
           }
-          if(message?.type==='offer'&&message.offer){const offer=message.offer;if(ownerByProperty[offer.propertyId]?.playerId==='host'||snapshotRef.current?.owners?.[offer.propertyId]?.playerId==='host'){setIncomingOffer({...offer,fromName:offer.fromName||'Diğer oyuncu'});setOfferPriceInput(String(offer.price));setMultiplayerStatus('Yeni teklif: '+(properties.find(p=>p.id===offer.propertyId)?.name||'mülk')+' · ₺'+Number(offer.price).toLocaleString('tr-TR'));setNotice('Yeni mülk teklifi geldi. Teklif balonundan yanıt verebilirsin.');}}
+          if(message?.type==='offer'&&message.offer){const offer=message.offer;if(offer.toPlayerId==='host'||ownerByProperty[offer.propertyId]?.playerId==='host'||snapshotRef.current?.owners?.[offer.propertyId]?.playerId==='host'){setIncomingOffer({...offer,fromName:offer.fromName||'Diğer oyuncu'});setOfferPriceInput(String(offer.price));setMultiplayerStatus('Yeni teklif: '+(properties.find(p=>p.id===offer.propertyId)?.name||'mülk')+' · ₺'+Number(offer.price).toLocaleString('tr-TR'));setNotice('Yeni mülk teklifi geldi. Teklif balonundan yanıt verebilirsin.');}}
           if(message?.type==='offer-response'){handleOfferResponse(message);conn.send({type:'world-state',owners:message.owners||ownerByProperty,marketValues,hostName});}
         });
         conn.on('error', error => setMultiplayerStatus('Oyuncu bağlantısı hatası: ' + (error?.type || 'bağlantı hatası')));
@@ -1818,7 +1818,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
             applyWorldState(message);
             setMultiplayerStatus(`İki oyuncu bağlı · ev sahibi: ${message.hostName || 'Ev sahibi'}`);
           }
-          if(message?.type==='offer'&&message.offer){const offer=message.offer;if(ownerByProperty[offer.propertyId]?.playerId==='guest'||snapshotRef.current?.owners?.[offer.propertyId]?.playerId==='guest'){setIncomingOffer({...offer,fromName:offer.fromName||opponentName});setOfferPriceInput(String(offer.price));setMultiplayerStatus('Yeni teklif: '+(properties.find(p=>p.id===offer.propertyId)?.name||'mülk')+' · ₺'+Number(offer.price).toLocaleString('tr-TR'));setNotice('Yeni mülk teklifi geldi. Teklif balonundan yanıt verebilirsin.');}}
+          if(message?.type==='offer'&&message.offer){const offer=message.offer;if(offer.toPlayerId==='guest'||ownerByProperty[offer.propertyId]?.playerId==='guest'||snapshotRef.current?.owners?.[offer.propertyId]?.playerId==='guest'){setIncomingOffer({...offer,fromName:offer.fromName||opponentName});setOfferPriceInput(String(offer.price));setMultiplayerStatus('Yeni teklif: '+(properties.find(p=>p.id===offer.propertyId)?.name||'mülk')+' · ₺'+Number(offer.price).toLocaleString('tr-TR'));setNotice('Yeni mülk teklifi geldi. Teklif balonundan yanıt verebilirsin.');}}
           if(message?.type==='offer-response'){handleOfferResponse(message);if(message.owners)setOwnerByProperty(message.owners);}
         });
         conn.on('error', error => {
