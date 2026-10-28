@@ -181,7 +181,7 @@ const getTradeCatalog = (catalog, propertyId) => {
     const units = Math.max(1, Number(item.units) || 1);
     const unitCost = batchCost / units;
     const luxury = /altın|gümüş|ipek|kuyum|cep saati|deri ayakkabı/i.test(item.name);
-    const markup = luxury ? 1.65 : 1.55;
+    const markup = luxury ? 1.40 : 1.32;
     const price = Math.max(0.25, Math.round(unitCost * markup * 100) / 100);
     return { ...item, cost: batchCost, price };
   });
