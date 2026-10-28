@@ -573,3 +573,9 @@ button,select,input{touch-action:manipulation}
 .material-stock-meter>span{display:block;height:100%;max-width:100%;border-radius:inherit;background:#63e6be;transition:width .25s ease}
 .material-stock-card .stock-button{grid-column:1/-1;width:auto;justify-self:start;max-width:100%;margin-top:0;white-space:normal}
 .material-stock-card .stock-button:disabled{opacity:.4;cursor:not-allowed}
+
+
+.production-requirements,.production-ready{display:block;margin-top:4px;font-size:10px;line-height:1.5;overflow-wrap:anywhere}
+.production-requirements{color:#e0a15b!important}
+.production-ready{color:#63c9a5!important}
+.shoe-product-row .stock-button:disabled{opacity:.5;cursor:not-allowed}
