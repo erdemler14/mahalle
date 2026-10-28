@@ -2088,7 +2088,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
             <label className="business-label" htmlFor="business-plan-select">Ne satacaksın?</label>
             <select id="business-plan-select" className="profession-select" value={businessPlans[active.id] || ''} onChange={e => selectBusinessPlan(e.target.value)}>
               <option value="">Ürün grubu seç</option>
-              {(tradeCatalog[active.id] || []).map(item => { const locked = (item.unlockLevel || 1) > getBusinessSalesLevel(active.id); return <option key={item.id} value={item.id} disabled={locked}>{locked ? '🔒 Seviye ' + item.unlockLevel + ' · ' : ''}{item.name} · maliyet ₺{(item.units > 0 ? item.cost / item.units : 0).toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} / satış ₺{item.price.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</option>; })}
+              {(tradeCatalog[active.id] || []).map(item => { const locked = (item.unlockLevel || 1) > getBusinessSalesLevel(active.id); return <option key={item.id} value={item.id} disabled={locked}>{locked ? '🔒 Seviye ' + item.unlockLevel + ' · ' : ''}{item.name} · maliyet ₺{(item.units > 0 ? getBusinessRecipeCost(active.id, item) : 0).toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} / satış ₺{item.price.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</option>; })}
             </select>
             {(() => {
               const profile = getBusinessProfile(active.id);
