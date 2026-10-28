@@ -1086,7 +1086,9 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   // Commercial ownership is independent of the character's former profession.
   // Product tiers unlock from actual sales; premium goods need a more developed supply chain.
   const advancedProducts = {
+    4: [['han-odasi-gunluk','Günlük han odası',12,5,6,1],['esnaf-konaklama','Esnaf konaklaması',16,7,5,2],['uzun-konaklama','Uzun süreli konaklama',22,9,4,3],['ticaret-yolcusu','Ticaret yolcusu paketi',30,12,3,4],['ust-duzey-suit','Üst kat özel oda',40,16,2,5]],
     1: [['konserve-erzak','Konserve ve ithal erzak',14,3.4,8,2],['kahve-ithal','İthal kahve ve kakao',18,4.5,6,3],['hediyelik-set','Hediye ve tuvalet seti',22,6.2,5,4],['ithal-parfum','İthal Fransız parfümü',30,8.5,4,5]],
+    21: [['han-konaklama','Han odası ve yatak takımı',14,5.5,6,1],['ambar-koli','Toptan erzak ve yük',22,7,8,2],['ticaret-deposu','Ticaret kervanı ambar hizmeti',28,9,5,3],['uzun-konaklama-han','Uzun süreli han konaklaması',34,11,4,4],['buyuk-tuccar-odasi','Büyük tüccar odası',42,14,3,5]],
     7: [['masa-sarabi','Fıçıdan sofra şarabı',14,3.8,8,2],['ozel-rezerv','Özel mahzen şarabı',22,6.5,5,3],['ithal-peynir','İthal peynir ve şarküteri',25,7.5,5,4],['koleksiyon-sarabi','Mahzen seçkisi',34,10,3,5]],
     9: [['davetiye','Davetiye ve kartvizit',15,5,6,2],['ciltli-defter','Ciltli defter',19,6.2,5,3],['kitap-baski','Küçük tiraj kitap baskısı',24,8,4,4],['sanat-baski','Sanat baskısı ve afiş',32,10.5,3,5]],
     10: [['hazir-elbise','Hazır şehir elbisesi',22,7,6,2],['yün-palto','Yün palto ve ceket',28,9,5,3],['ipek-eldiven','İpek aksesuar ve eldiven',34,11,4,4],['paris-modasi','Paris modası özel seri',42,14,3,5]],
@@ -1106,7 +1108,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     29: [['lavanta-sabun','Lavanta sabunu',17,6.5,6,2],['kokulu-sabun','Kokulu misafir sabunu',22,8.5,5,3],['kolonya-uretim','Kolonya ve esans',28,11,4,4],['otel-seti','Otel sabun seti',36,14,3,5]],
     31: [['pilav','Pilav ve zeytinyağlı',15,5.5,7,2],['kebap','Kebap ve ızgara',22,8,5,3],['tatli-galata','Günün tatlısı',25,9.5,4,4],['usta-sofrasi','Usta sofrası',34,13,3,5]],
     32: [['davetiye-galata','Davetiye ve kartvizit',15,5.5,7,2],['ciltli-eser','Ciltli kitap ve defter',21,7.5,5,3],['afis','Renkli afiş ve ilan',28,10,4,4],['prestij-baski','Prestijli sanat baskısı',36,13,3,5]],
-    33: [['sakal-bakimi','Sakal bakımı ve kolonya',10,4.8,6,2],['sac-kesimi','Saç kesimi ve şekillendirme',15,6.5,5,3],['damat-tirasi','Damat tıraşı ve bakım',22,9.5,4,4],['ustura-seti','Usta işi tıraş ve sıcak havlu',30,13,3,5]]
+    33: [['ilk-tiras','Tıraş ve sakal bakımı',6,3.2,8,1],['sakal-bakimi','Sakal bakımı ve kolonya',10,4.8,6,2],['sac-kesimi','Saç kesimi ve şekillendirme',15,6.5,5,3],['damat-tirasi','Damat tıraşı ve bakım',22,9.5,4,4],['ustura-seti','Usta işi tıraş ve sıcak havlu',30,13,3,5]]
   };
   Object.entries(advancedProducts).forEach(([id, rows]) => {
     if (!tradeCatalog[id]) tradeCatalog[id] = [];
