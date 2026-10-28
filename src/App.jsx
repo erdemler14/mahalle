@@ -1217,7 +1217,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       }
       setWorkHours(v => v + 1);
       setCareerHours(v => v + 1);
-      if (careerHours === 4) tell('✦ HEDEF TAMAMLANDI: İlk 5 çalışma saatini tamamladın. Sıradaki hedefin ilk mülkünü edinmek.');
+      if (careerHours === 4 && owned.length === 0) tell('✦ HEDEF TAMAMLANDI: İlk 5 çalışma saatini tamamladın. Sıradaki hedefin ilk mülkünü edinmek.');
     } else if (work && !isWorkingHour) {
       detail = 'Bu saatte iş bulmak zor. Dinlenmeyi veya saati ilerletmeyi seçtin.';
     }
@@ -1688,8 +1688,8 @@ function App({ session = null, supabase = null, authConfigured = false }) {
             {professionOptions.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
           <p className="profession-description">{profession.description}</p>
-          <div className="profession-meta">Saatlik hasılat ≈ {profession.gross.toFixed(2)} · Günlük işletme gideri {profession.overhead} oyun lirası</div>
-          <div className="profession-meta">{professionId === 'amele' ? 'Dükkan gerekmez; ücretli iş bulup sermaye biriktirebilirsin.' : hasSuitablePremise ? 'Mesleğine uygun bir mülkün var.' : 'Bu meslek için uygun bir dükkan veya atölye edinmen gerekiyor.'}</div>
+          <div className="profession-meta">{owned.length === 0 ? `İlk mülküne kadar saatlik kazanç: yaklaşık ₺${profession.gross.toFixed(2)} brüt.` : 'Mülkün var: gündelik maaş biter; üretim, stok ve satış gelirine odaklan.'}</div>
+          <div className="profession-meta">{professionId === 'amele' ? 'İlk mülk için her işte çalışabilirsin; sonrasında bir meslek seçip işletmeni büyüt.' : hasSuitablePremise ? 'Mesleğine uygun bir mülkün var; iş yerini açıp üretim ve ticaret yap.' : 'Bu meslek için uygun bir dükkan veya atölye edinmen gerekiyor.'}</div>
         </section>
 
         <section className="balance-card">
