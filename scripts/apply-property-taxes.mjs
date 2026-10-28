@@ -41,7 +41,14 @@ s = s.replace(
   "  const baseX = [-8.5, 8.5, -18.5, 18.5, 0, 25.5][frontage] ?? 0;"
 );
 
-const marker = 'const DAILY_LIVING_COST = 2.5;';
+const marker = 'const DAILY_LIVING_COST = 2.5;
+const CITY_EVENTS = [
+  { id: 'festival', title: 'Mahalle şenliği', days: 3, effects: { 'İşletme': 0.35, 'Ticaret': 0.15 }, text: 'Mahalle şenliği başladı: yeme-içme ve çarşı satışları arttı.' },
+  { id: 'flu', title: 'Grip salgını', days: 4, effects: { 'İşletme': -0.22, 'Ticaret': -0.10 }, text: 'Grip salgını: müşteri trafiği azaldı, şehirde harcamalar yavaşladı.' },
+  { id: 'tram', title: 'Tramvay hattı yoğunluğu', days: 3, effects: { 'Ticaret': 0.24, 'Atölye': 0.08 }, text: 'Tramvay hattı yoğun: durak çevresindeki ticari hareketlilik arttı.' },
+  { id: 'rain', title: 'Uzun yağış', days: 2, effects: { 'İşletme': -0.15, 'Ticaret': -0.08 }, text: 'Uzun yağış: sokaklardaki müşteri trafiği düştü.' },
+  { id: 'holiday', title: 'Bayram hazırlığı', days: 3, effects: { 'Ticaret': 0.28, 'Atölye': 0.22, 'İşletme': 0.12 }, text: 'Bayram hazırlıkları başladı: alışveriş ve siparişler arttı.' }
+];';
 const constants = `const DAILY_LIVING_COST = 2.5;
 const PROPERTY_TAX_RATES = {
   Konut: 0.0010,
@@ -123,6 +130,15 @@ const replacement = `  const settleDailyBusinesses = () => {
     setCash(v => Math.max(0, Math.round((v + net) * 100) / 100));
     setDay(nextDay);
     setMonth(nextMonth);
+    setCityEvent(previous => {
+      if (previous && previous.daysLeft > 1) return { ...previous, daysLeft: previous.daysLeft - 1 };
+      if (Math.random() < 0.32) {
+        const event = CITY_EVENTS[Math.floor(Math.random() * CITY_EVENTS.length)];
+        tell('ŞEHİR HABERİ: ' + event.text + ' Etki ' + event.days + ' gün sürecek.');
+        return { ...event, daysLeft: event.days };
+      }
+      return null;
+    });
     const nextYear = nextMonthRaw > 12 ? year + 1 : year;
     if (nextDayRaw > 30) updateMarketValues(nextYear, nextMonth);
     if (nextMonthRaw > 12) setYear(v => v + 1);
