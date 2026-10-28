@@ -194,6 +194,11 @@ const taxUi = `        <section className="balance-card tax-card" aria-label="Ve
 `;
 if (!s.includes('tax-card')) s = s.replace(uiAnchor, taxUi + uiAnchor);
 
+// Raise stale saved market values after the new property-price scale, without discarding legitimate appreciation.
+const marketValueOld = "  const getMarketValue = property => Math.max(1,Math.round((Number(marketValues[property.id])||property.price)*100)/100);";
+const marketValueNew = "  const getMarketValue = property => Math.max(1, Math.round(Math.max(Number(marketValues[property.id]) || property.price, property.price * 0.75) * 100) / 100);";
+if (s.includes(marketValueOld)) s = s.replace(marketValueOld, marketValueNew);
+
 fs.writeFileSync(path, s, 'utf8');
 
 const cssPath = 'src/style.css';
