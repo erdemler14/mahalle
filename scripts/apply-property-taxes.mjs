@@ -47,7 +47,7 @@ const additionalShops = periodShops.slice(periodShops.indexOf(',\n') + 2, period
   const missingShops = additionalShops.split('\n')
     .filter(line => {
       const match = line.match(/\{ id: (\d+),/);
-      return match && !new RegExp('\\\\{ id: ' + match[1] + ',').test(s);
+      return match && !new RegExp('\\{ id: ' + match[1] + ',').test(s);
     })
     .join('\n');
   if (missingShops) {
