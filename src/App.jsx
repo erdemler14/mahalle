@@ -62,7 +62,11 @@ const SHOE_MATERIALS = [
 const SHOE_RECIPES = [
   { id: 'kundura', name: 'Günlük kundura', price: 18, recipe: { deri: 1, taban: 1, iplik: 2, civi: 2 } },
   { id: 'deri-ayakkabi', name: 'Kaliteli deri ayakkabı', price: 29, recipe: { deri: 2, taban: 1, iplik: 2, civi: 2 } },
-  { id: 'ayakkabi-taban', name: 'Tamirlik tabanlı ayakkabı', price: 12, recipe: { deri: 1, taban: 2, iplik: 1, civi: 3 } }
+  { id: 'ayakkabi-taban', name: 'Tamirlik tabanlı ayakkabı', price: 12, recipe: { deri: 1, taban: 2, iplik: 1, civi: 3 }, unlockLevel: 1 },
+  { id: 'ince-deri-bot', name: 'İnce deri bot', price: 42, recipe: { deri: 3, taban: 2, iplik: 3, civi: 3 }, unlockLevel: 2 },
+  { id: 'hanim-isyeri-ayakkabisi', name: 'Kadın şehir ayakkabısı', price: 48, recipe: { deri: 3, taban: 1, iplik: 4, civi: 2 }, unlockLevel: 3 },
+  { id: 'el-yapimi-ustalik', name: 'Usta işi el dikişi kundura', price: 68, recipe: { deri: 4, taban: 2, iplik: 5, civi: 3 }, unlockLevel: 4 },
+  { id: 'ozel-siparis-cizme', name: 'Özel sipariş binici çizmesi', price: 95, recipe: { deri: 5, taban: 3, iplik: 6, civi: 4 }, unlockLevel: 5 }
 ];
 const STARTING_CASH = 800;
 const STARTER_ECONOMY_VERSION = 2;
@@ -1521,6 +1525,8 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   const craftShoe = (shoeId) => {
     if (!owned.includes(37) || rented.includes(37)) { tell('Üretim için kunduracı sana ait olmalı ve kirada olmamalı.'); return; }
     const shoe = SHOE_RECIPES.find(item => item.id === shoeId); if (!shoe) return;
+    const workshopLevel = getBusinessSalesLevel(37);
+    if ((shoe.unlockLevel || 1) > workshopLevel) { tell(shoe.name + ' için kunduracı seviyesi ' + shoe.unlockLevel + ' gerekli. Şu an seviye ' + workshopLevel + '.'); return; }
     const state = stockByProperty[37] && typeof stockByProperty[37] === 'object' ? stockByProperty[37] : { materials: {}, products: {} };
     const materials = state.materials || {};
     const productStock = Number(state.products?.[shoe.id]) || 0;
@@ -1988,7 +1994,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
               <h3>1 · Hammadde deposu</h3>
               {SHOE_MATERIALS.map(m => { const amount = Number(materials[m.id]) || 0; const cap = getStockCapacity(37); const ratio = Math.min(100, Math.round(amount / cap * 100)); return <div className="material-stock-card" key={m.id}><div className="material-stock-head"><span>{m.name}</span><strong>{amount} / {cap}</strong></div><div className="material-stock-meter" role="img" aria-label={m.name + ' stok kapasitesi yüzde ' + ratio}><span style={{width: ratio + '%'}} /></div><button className="stock-button" onClick={() => buyShoeMaterial(m.id)} disabled={amount + m.batch > cap}>+{m.batch} · ₺{m.cost}</button></div>; })}
               <h3>2 · Üretim tezgâhı</h3>
-              {SHOE_RECIPES.map(shoe => { const job = pendingProductions['37:' + shoe.id]; const sold = Number(businessStats[37]?.productUnitsSold?.[shoe.id]?.units) || 0; const missing = Object.entries(shoe.recipe).filter(([id, qty]) => (Number(materials[id]) || 0) < qty); return <div className="shoe-product-row" key={shoe.id}><div><strong>{shoe.name}</strong><small>Reçete: {Object.entries(shoe.recipe).map(([id, qty]) => (SHOE_MATERIALS.find(m => m.id === id)?.name || id) + ' ×' + qty).join(' · ')}</small><small>Satış fiyatı: ₺{shoe.price} / çift · Satılan toplam: {sold}</small><small className={missing.length ? 'production-requirements' : 'production-ready'}>{missing.length ? 'Eksik hammadde: ' + missing.map(([id, qty]) => (SHOE_MATERIALS.find(m => m.id === id)?.name || id) + ' ' + Math.max(0, qty - (Number(materials[id]) || 0))).join(', ') : 'Üretime hazır · gerekli hammaddeler mevcut'}</small>{job && <small className="production-pending">Üretimde: {job.units} çift · yaklaşık {Math.max(0, Math.ceil((job.readyAt - productionNow) / 1000))} sn kaldı</small>}</div><button className="stock-button" onClick={() => craftShoe(shoe.id)} disabled={Boolean(job) || missing.length > 0}> {job ? 'ÜRETİLİYOR…' : missing.length ? 'HAMMADDE EKSİK' : '1 ÇİFT ÜRET'} </button></div>; })}
+              {SHOE_RECIPES.map(shoe => { const job = pendingProductions['37:' + shoe.id]; const sold = Number(businessStats[37]?.productUnitsSold?.[shoe.id]?.units) || 0; const missing = Object.entries(shoe.recipe).filter(([id, qty]) => (Number(materials[id]) || 0) < qty); const locked = (shoe.unlockLevel || 1) > getBusinessSalesLevel(37); return <div className={'shoe-product-row ' + (locked ? 'shoe-product-locked' : '')} key={shoe.id}><div><strong>{shoe.name}{locked ? ' 🔒' : ''}</strong><small>Reçete: {Object.entries(shoe.recipe).map(([id, qty]) => (SHOE_MATERIALS.find(m => m.id === id)?.name || id) + ' ×' + qty).join(' · ')}</small><small>Satış fiyatı: ₺{shoe.price} / çift · Satılan toplam: {sold}</small><small className={locked ? 'production-requirements' : missing.length ? 'production-requirements' : 'production-ready'}>{locked ? 'Kilitli · Kunduracı seviye ' + shoe.unlockLevel + ' gerekli' : missing.length ? 'Eksik hammadde: ' + missing.map(([id, qty]) => (SHOE_MATERIALS.find(m => m.id === id)?.name || id) + ' ' + Math.max(0, qty - (Number(materials[id]) || 0))).join(', ') : 'Üretime hazır · gerekli hammaddeler mevcut'}</small>{job && <small className="production-pending">Üretimde: {job.units} çift · yaklaşık {Math.max(0, Math.ceil((job.readyAt - productionNow) / 1000))} sn kaldı</small>}</div><button className="stock-button" onClick={() => craftShoe(shoe.id)} disabled={locked || Boolean(job) || missing.length > 0}>{locked ? 'SEVİYE KİLİDİ' : job ? 'ÜRETİLİYOR…' : missing.length ? 'HAMMADDE EKSİK' : '1 ÇİFT ÜRET'}</button></div>; })}
               <h3>3 · Vitrin stokları</h3>
               {SHOE_RECIPES.map(shoe => <div className="stock-line" key={shoe.id}><span>{shoe.name}</span><strong>{Number(products[shoe.id]) || 0} çift</strong></div>)}
             </div>;
