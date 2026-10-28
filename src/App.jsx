@@ -1436,7 +1436,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const sold = Number(businessStats[propertyId]?.unitsSold) || 0;
     return sold >= 60 ? 5 : sold >= 35 ? 4 : sold >= 15 ? 3 : sold >= 5 ? 2 : 1;
   };
-  const STOCK_CAPACITY_BY_LEVEL = [0, 12, 24, 40, 60, 90];
+  const STOCK_CAPACITY_BY_LEVEL = [0, 24, 40, 60, 90, 130];
   const STOCK_UPGRADE_COST_BY_LEVEL = [0, 0, 35, 80, 160, 300];
   const getInventoryState = (propertyId, value = stockByProperty[propertyId]) => {
     if (value && typeof value === 'object') return { materials: value.materials || {}, products: value.products || {} };
@@ -1448,10 +1448,28 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   const getTotalStock = (propertyId, value = stockByProperty[propertyId]) => Object.values(getInventoryState(propertyId, value).products || {}).reduce((sum, qty) => sum + Math.max(0, Number(qty) || 0), 0);
   const getProductionDuration = (propertyId, productId) => { const seed = String(productId || propertyId).split('').reduce((sum, char) => sum + char.charCodeAt(0), Number(propertyId) || 0); return 2500 + (seed % 6) * 1000; };
   const getPendingUnits = (propertyId) => Object.entries(pendingProductions).reduce((sum, [key, job]) => Number(key.split(':')[0]) === Number(propertyId) ? sum + (Number(job.units) || 0) : sum, 0);
-  const getStockCapacity = (propertyId) => {
-    const level = Math.max(1, Math.min(5, Number(businessStats[propertyId]?.stockCapacityLevel) || 1));
-    return STOCK_CAPACITY_BY_LEVEL[level];
+  const getWarehouseLevel = (propertyId) => Math.max(1, Math.min(5, Number(businessStats[propertyId]?.stockCapacityLevel) || 1));
+  const getWarehouseProfileKey = (propertyId) => {
+    const id = Number(propertyId);
+    if (id === 37) return 'shoe';
+    if ([4,21].includes(id)) return 'lodging';
+    if (id === 15) return 'pharmacy';
+    if ([13,14,18,19,12,25].includes(id)) return 'food';
+    if ([10,26].includes(id)) return 'textile';
+    if ([9,16,32].includes(id)) return 'paper';
+    if (id === 17) return 'wood';
+    if (id === 20) return 'metal';
+    if (id === 29) return 'soap';
+    if (id === 33) return 'service';
+    return 'general';
   };
+  // Each business has its own warehouse. Raw materials and finished goods have separate,
+  // property-specific capacities; neither inventory is shared between businesses.
+  const MATERIAL_WAREHOUSE_BASE = { shoe: 36, lodging: 40, pharmacy: 36, food: 48, textile: 36, paper: 48, wood: 36, metal: 30, soap: 36, service: 30, general: 40 };
+  const PRODUCT_WAREHOUSE_BASE = { shoe: 24, lodging: 20, pharmacy: 24, food: 30, textile: 24, paper: 36, wood: 24, metal: 20, soap: 24, service: 18, general: 30 };
+  const WAREHOUSE_LEVEL_MULTIPLIER = [0, 1, 1.6, 2.4, 3.4, 4.8];
+  const getMaterialCapacity = (propertyId) => Math.round((MATERIAL_WAREHOUSE_BASE[getWarehouseProfileKey(propertyId)] || 40) * WAREHOUSE_LEVEL_MULTIPLIER[getWarehouseLevel(propertyId)]);
+  const getStockCapacity = (propertyId) => Math.round((PRODUCT_WAREHOUSE_BASE[getWarehouseProfileKey(propertyId)] || 30) * WAREHOUSE_LEVEL_MULTIPLIER[getWarehouseLevel(propertyId)]);
   const processBusinessSales = (hours = 1) => {
     let revenue = 0;
     const localStocks = { ...stockByProperty };
@@ -1592,7 +1610,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const totalRawStock = SHOE_MATERIALS.reduce((sum, item) => sum + Math.max(0, Number(shoeState.materials?.[item.id]) || 0), 0);
     const freeCapacity = Math.max(0, capacity - totalRawStock);
     const quantity = Math.min(material.batch, freeCapacity);
-    if (quantity <= 0) { tell('Hammadde deposu dolu (' + totalRawStock + '/' + capacity + ' birim). Üretim yaparak yer açabilir veya depoyu genişletebilirsin.'); return; }
+    if (quantity <= 0) { tell('Bu işletmenin hammadde deposu dolu (' + totalRawStock + '/' + capacity + ' birim). Üretim yaparak yer açabilir veya depoyu genişletebilirsin.'); return; }
     const cost = Math.round(material.cost * quantity / material.batch * 100) / 100;
     if (cash < cost) { tell(material.name + ' için ₺' + cost + ' gerekiyor.'); return; }
     setCash(v => Math.round((v - cost) * 100) / 100);
@@ -2139,12 +2157,12 @@ function App({ session = null, supabase = null, authConfigured = false }) {
               <p className="profession-meta">Hammaddeleri al, ürün seçip üretime başla. Üretimler sıraya girer; ilk hazır ürün vitrine geçer, sonraki ürünler sırayla tamamlanır. Hazır ürünler satıldıkça vitrin stoğu azalır.</p>
               <div className="storage-upgrade-panel"><div><span>DEPO SEVİYESİ {Number(businessStats[37]?.stockCapacityLevel) || 1}/5</span><strong>Ürün başına {getStockCapacity(37)} birim kapasite</strong><small>İşletme seviyesi {getBusinessSalesLevel(37)} · satış yaptıkça yeni depo kademeleri açılır.</small></div><button className="stock-button" onClick={() => upgradeBusinessStorage(37)} disabled={(Number(businessStats[37]?.stockCapacityLevel) || 1) >= 5 || getBusinessSalesLevel(37) < (Number(businessStats[37]?.stockCapacityLevel) || 1) + 1}>GENİŞLET · ₺{STOCK_UPGRADE_COST_BY_LEVEL[(Number(businessStats[37]?.stockCapacityLevel) || 1) + 1] || '—'}</button></div>
               <div className="shoe-inventory-summary">
-                <div><span>HAMMADDE</span><strong>{SHOE_MATERIALS.reduce((sum,m)=>sum+(Number(materials[m.id])||0),0)} / {getStockCapacity(37)}</strong><small>birim depoda</small></div>
+                <div><span>HAMMADDE</span><strong>{SHOE_MATERIALS.reduce((sum,m)=>sum+(Number(materials[m.id])||0),0)} / {getMaterialCapacity(37)}</strong><small>birim depoda</small></div>
                 <div><span>ÜRETİMDE</span><strong>{getPendingUnits(37)}</strong><small>çift kuyrukta</small></div>
                 <div><span>VİTRİN</span><strong>{getTotalStock(37)} / {getStockCapacity(37)}</strong><small>çift satışa hazır</small></div>
               </div>
               <h3>1 · Hammadde deposu</h3>
-              <p className="production-helper">Depo kapasitesi tüm hammadde çeşitleri arasında ortaktır. Tedarik düğmesi, depoda kalan yere sığan miktarı alır. Üretime bastığında reçetedeki hammaddeler hemen düşer.</p>
+              <p className="production-helper">Bu kunduracının kendi hammade deposudur. Kapasite diğer işletmelerle paylaşılmaz; farklı hammaddeler aynı depo alanını kullanır. Üretime bastığında reçetedeki hammaddeler hemen düşer.</p>
               {SHOE_MATERIALS.filter(m => SHOE_RECIPES.filter(shoe => (shoe.unlockLevel || 1) <= getBusinessSalesLevel(37)).some(shoe => Object.prototype.hasOwnProperty.call(shoe.recipe, m.id))).map(m => {
                 const amount = Number(materials[m.id]) || 0;
                 const cap = getStockCapacity(37);
@@ -2188,7 +2206,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
                   <div className="production-level-chip"><strong>SEV. {level}/5</strong><small>{level === 5 ? 'Usta işletme' : Math.max(0, nextTarget - sold) + ' satışla seviye atla'}</small></div>
                 </div>
                 <div className="production-quick-stats">
-                  <div><span>HAMMADDE</span><strong>{totalRaw}/{getStockCapacity(active.id)}</strong></div>
+                  <div><span>HAMMADDE DEPOSU</span><strong>{totalRaw}/{materialCapacity}</strong></div>
                   <div><span>ÜRETİMDE</span><strong>{getPendingUnits(active.id)}</strong></div>
                   <div><span>HAZIR ÜRÜN</span><strong>{getTotalStock(active.id)}/{getStockCapacity(active.id)}</strong></div>
                 </div>
@@ -2209,7 +2227,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
                     const quantity = Math.min(material.batch, freeCapacity);
                     const cost = Math.round(material.cost * quantity / material.batch * 100) / 100;
                     return <div className="production-material-row" key={material.id}>
-                      <div><strong>{material.name}</strong><small>Stokta {amount} · +{quantity} adet ₺{cost}</small></div>
+                      <div><strong>{material.name}</strong><small>Stokta {amount} · +{quantity} adet · ₺{cost}</small></div>
                       <button className="stock-button" onClick={() => buyBusinessMaterial(active.id, material.id)} disabled={quantity <= 0 || cash < cost}>{quantity > 0 ? 'TEDARİK ET' : 'DEPO DOLU'}</button>
                     </div>;
                   })}
