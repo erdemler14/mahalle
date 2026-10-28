@@ -124,6 +124,7 @@ const replacement = `  const settleDailyBusinesses = () => {
       operatingCosts += dailyCost;
       const serviceSale = Boolean(product.service);
       const stock = serviceSale ? 1 : Math.max(0, Number(stockByProperty[propertyId]) || 0);
+      const reputation = Math.min(100, Math.floor((Number(businessStats[propertyId]?.unitsSold) || 0) * 1.5));
       const eventEffect = 0; // City events are disabled until their state is wired into App.jsx.
       const salesChance = Math.max(0.08, Math.min(0.9, (0.34 + (reputation / 100) * 0.12) * (1 + eventEffect)));
       if ((!serviceSale && stock <= 0) || Math.random() > salesChance) {
