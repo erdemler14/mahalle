@@ -1400,14 +1400,11 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   };
   const getUnlockedBusinessMaterials = (propertyId, level = getBusinessSalesLevel(propertyId), product = null) => {
     const profile = getBusinessProfile(propertyId);
-    const products = product ? [product] : (tradeCatalog[propertyId] || []).filter(item => item.price > 0 && (item.unlockLevel || 1) <= level);
+    const products = (tradeCatalog[propertyId] || []).filter(item => item.price > 0 && (item.unlockLevel || 1) <= level);
     const recipeMaterialIds = new Set();
     products.forEach(item => getBusinessRecipe(propertyId, item).forEach(part => recipeMaterialIds.add(part.id)));
-    // Only show supplies used by products that are currently available to this business.
-    const inventory = getInventoryState(propertyId);
-    // Keep previously purchased stock visible even when the player switches products;
-    // hidden stock must never silently consume warehouse capacity.
-    return profile.materials.filter(material => recipeMaterialIds.has(material.id) || (Number(inventory.materials?.[material.id]) || 0) > 0);
+    // Keep the supply list tied to the recipes of products this business can actually make.
+    return profile.materials.filter(material => recipeMaterialIds.has(material.id));
   };
   // Keep production goods at a modest, sustainable gross margin of roughly 28%.
   // Catalog prices remain the minimum floor for established retail/luxury goods.
