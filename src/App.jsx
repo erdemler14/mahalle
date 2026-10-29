@@ -2936,7 +2936,9 @@ function App({ session = null, supabase = null, authConfigured = false }) {
         </div>} />
         <div className="map-legend"><span><i className="legend-dot available" /> SATILIK MÜLK</span><span><i className="legend-dot owned" /> SENİN MÜLKÜN</span><span className="map-hint">SÜRÜKLE: DÖNDÜR · KAYDIR: YAKINLAŞ · BİNAYA TIKLA</span></div>
         <div className="world-caption"><span>İSTANBUL / BEYOĞLU</span><span>GÜN {day} <i>·</i> SAAT {String(hour).padStart(2, '0')}:00</span></div>
-        {activeEconomicEvents().length > 0 && <div className="economic-event-banner" role="status"><strong>TAKVİM ETKİNLİĞİ · {activeEconomicEvents().map(event => event.name).join(' + ')}</strong><span>{activeEconomicEvents()[0].detail}</span></div>}
+        {activeEconomicEvents().length > 0
+          ? <div className="economic-event-banner" role="status"><strong>TAKVİM ETKİNLİĞİ · {activeEconomicEvents().map(event => event.name).join(' + ')}</strong><span>{activeEconomicEvents()[0].detail}</span></div>
+          : <div className="economic-event-banner upcoming-event-banner" role="status"><strong>YAKLAŞAN ETKİNLİK · MAHALLE ŞENLİĞİ</strong><span>Her ayın 8–14. günleri. {day < 8 ? 'Başlamasına ' + (8 - day) + ' oyun günü kaldı.' : 'Bir sonraki şenliğe yaklaşık ' + (30 - day + 8) + ' oyun günü kaldı.'} Pastane ve çiçekçi stoklarını önceden hazırla; etkinlikte stok yoksa satış gerçekleşmez.</span></div>}
       </div>
 
       <aside className={'side-panel hud-side-panel hud-panel-content-' + (activeHudPanel || 'none')} aria-label="Oyun menüsü">
