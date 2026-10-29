@@ -1203,6 +1203,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       {id:'aktar-ot',name:'Şifalı ot ve baharat',batch:8,cost:10},{id:'aktar-kavanoz',name:'Kavanoz ve kâğıt kese',batch:8,cost:7},
       {id:'aktar-yag',name:'Bitkisel yağ ve öz',batch:6,cost:11},{id:'aktar-sabun',name:'Sabun ve bakım bazı',batch:6,cost:10}
     ], recipes: [['aktar-ot',1,'aktar-kavanoz',1],['aktar-sabun',1,'aktar-kavanoz',1],['aktar-ot',2,'aktar-kavanoz',1],['aktar-yag',1,'aktar-kavanoz',1],['aktar-ot',2,'aktar-yag',1]] },
+    flower: { name: 'Çiçekçi', materials: [{id:'cicek-taze',name:'Taze kesme çiçek',batch:10,cost:12},{id:'cicek-yesillik',name:'Yeşillik ve dolgu dalı',batch:10,cost:7},{id:'cicek-saksi',name:'Saksı, toprak ve gübre',batch:8,cost:10},{id:'cicek-kagit',name:'Ambalaj kâğıdı ve kurdele',batch:10,cost:6},{id:'cicek-tel',name:'Aranjman teli ve sünger',batch:8,cost:8}], recipes: [['cicek-taze',3,'cicek-kagit',1],['cicek-saksi',1,'cicek-yesillik',1],['cicek-taze',5,'cicek-tel',1],['cicek-taze',4,'cicek-yesillik',2],['cicek-taze',6,'cicek-kagit',2]] },
     perfumery: { name: 'Kolonyacı ve parfümeri', materials: [
       {id:'par-alkol',name:'Kolonya alkolü',batch:8,cost:10},{id:'par-esans',name:'Parfüm esansı',batch:6,cost:13},
       {id:'par-cam',name:'Cam şişe',batch:8,cost:8},{id:'par-sabun',name:'Sabun ve bakım yağı',batch:6,cost:10},
@@ -1222,6 +1223,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     if ([19,31].includes(id)) return shopSpecificProfiles.restaurant;
     if (id === 23) return shopSpecificProfiles.spice;
     if (id === 28) return shopSpecificProfiles.perfumery;
+    if (id === 34) return businessMaterialProfiles.flower;
     if ([4,21].includes(id)) return businessMaterialProfiles.lodging;
     if ([9,16,32].includes(id)) return businessMaterialProfiles.paper;
     if ([26].includes(id)) return businessMaterialProfiles.textile;
@@ -1295,6 +1297,11 @@ function App({ session = null, supabase = null, authConfigured = false }) {
         {match:/sabun|bakım|bakim/, recipe:[['par-sabun',1],['par-kutu',1]]},
         {match:/hediye|kutu|set/, recipe:[['par-esans',1],['par-kutu',1],['par-cam',1]]},
         {match:/ithal|konserve|erzak/, recipe:[['bak-erzak',1],['bak-cam',1]]}
+      ],
+      34: [
+        {match:/saksı|saksi|toprak|gübre|gubre/, recipe:[['cicek-saksi',1],['cicek-yesillik',1]]},
+        {match:/çelenk|tören|toren|aranjman/, recipe:[['cicek-taze',5],['cicek-tel',1],['cicek-yesillik',2]]},
+        {match:/gül|gul|demet|buket|çiçek|cicek/, recipe:[['cicek-taze',3],['cicek-yesillik',1],['cicek-kagit',1]]}
       ],
       31: [
         {match:/çorba|corba|ekmek/, recipe:[['lok-tahil',1],['lok-meze',1]]},
