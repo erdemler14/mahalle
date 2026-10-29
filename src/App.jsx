@@ -1364,6 +1364,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
 
   const getBusinessProfile = (propertyId) => {
     const id = Number(propertyId);
+    if (BUSINESS_SPECIFIC_PROFILES[id]) return BUSINESS_SPECIFIC_PROFILES[id];
     if (id === 1) return shopSpecificProfiles.grocery;
     if (id === 7) return shopSpecificProfiles.wine;
     if (id === 10) return shopSpecificProfiles.clothing;
@@ -1471,6 +1472,10 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       ]
     };
     const profile = getBusinessProfile(propertyId);
+    const customRule = profile.productRules?.find(entry => entry.match.test(key));
+    if (customRule && customRule.recipe.every(([materialId, qty]) => profile.materials.some(material => material.id === materialId) && qty > 0)) {
+      return customRule.recipe.map(([materialId, qty]) => ({ id: materialId, qty }));
+    }
     const validMaterialIds = new Set(profile.materials.map(material => material.id));
     const specific = (recipeByProduct[id] || []).find(entry => entry.match.test(key));
     if (specific && specific.recipe.every(([materialId, qty]) => validMaterialIds.has(materialId) && qty > 0)) return specific.recipe.map(([materialId, qty]) => ({ id: materialId, qty }));
