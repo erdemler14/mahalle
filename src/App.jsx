@@ -2126,8 +2126,9 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   const updateDailyTask = (taskId, amount = 1) => setDailyTasks(old => old.map(task => task.id === taskId && !task.claimed ? { ...task, progress: Math.min(task.target, (Number(task.progress) || 0) + amount) } : task));
   const makeDailyTasks = () => [
     { id: 'produce', title: 'Üretim hattını çalıştır', detail: 'Üretim kuyruğuna toplam 3 ürün ekle.', target: 3, progress: 0, reward: 55, xp: 15, claimed: false },
+    { id: 'sell-products', title: 'Tezgâhı boş bırakma', detail: 'İşletmelerinde toplam 5 ürün sat.', target: 5, progress: 0, reward: 70, xp: 18, claimed: false },
     { id: 'accept-orders', title: 'Yeni müşteri kazan', detail: '2 müşteri siparişini kabul et.', target: 2, progress: 0, reward: 45, xp: 12, claimed: false },
-    { id: 'deliver-order', title: 'Sözünü tut', detail: 'Bir siparişi zamanında teslim et.', target: 1, progress: 0, reward: 85, xp: 25, claimed: false }
+    { id: 'deliver-order', title: 'Sözünü tut', detail: 'Bir müşteri siparişini teslim et.', target: 1, progress: 0, reward: 85, xp: 25, claimed: false }
   ];
   const createDailyOrders = () => {
     const candidates = owned.filter(id => !rented.includes(id) && (tradeCatalog[id] || []).some(product => product.price > 0 && !product.service && (product.unlockLevel || 1) <= getBusinessSalesLevel(id)));
@@ -2168,7 +2169,9 @@ function App({ session = null, supabase = null, authConfigured = false }) {
         });
       });
     }
-    return ordersForDay.sort(() => Math.random() - 0.5).slice(0, 5);
+    // Level 3, 5 and 7 unlock one extra daily offer each (up to eight).
+    const offerLimit = Math.min(8, 5 + Math.floor(Math.max(0, playerLevel - 1) / 2));
+    return ordersForDay.sort(() => Math.random() - 0.5).slice(0, offerLimit);
   };
   useEffect(() => {
     const hasOrderEligibleBusiness = owned.some(id => !rented.includes(id) && (tradeCatalog[id] || []).some(product => product.price > 0 && (product.unlockLevel || 1) <= getBusinessSalesLevel(id)));
@@ -2235,9 +2238,14 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const task = dailyTasks.find(item => item.id === taskId);
     if (!task || task.progress < task.target || task.claimed) return;
     setCash(old => Math.round((old + task.reward) * 100) / 100);
-    setExperience(old => Math.max(0, Number(old) || 0) + Math.max(0, Number(task.xp) || 0));
+    const previousExperience = Math.max(0, Number(experience) || 0);
+    const gainedExperience = Math.max(0, Number(task.xp) || 0);
+    const previousLevel = 1 + Math.floor(previousExperience / 100);
+    const nextExperience = previousExperience + gainedExperience;
+    const nextLevel = 1 + Math.floor(nextExperience / 100);
+    setExperience(nextExperience);
     setDailyTasks(old => old.map(item => item.id === taskId ? { ...item, claimed: true } : item));
-    tell('Günlük görev tamamlandı: ' + task.title + '. Ödül +₺' + task.reward + ' ve ' + task.xp + ' XP.');
+    tell('Günlük görev tamamlandı: ' + task.title + '. Ödül +₺' + task.reward + ' ve ' + gainedExperience + ' XP.' + (nextLevel > previousLevel ? ' SEVİYE ATLADIN! Artık ' + nextLevel + '. seviyedesin.' : ''));
   };
 
   const advanceHour = (work = false) => {
@@ -2288,6 +2296,8 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     }
     const isWorkingHour = hour >= 8 && hour < 19;
     const hourlySales = isWorkingHour ? processBusinessSales(1) : { revenue: 0, entries: [], salesByProperty: {}, stockChanges: {} };
+    const unitsSoldThisHour = Object.values(hourlySales.salesByProperty || {}).reduce((sum, sale) => sum + (Number(sale.units) || 0), 0);
+    if (unitsSoldThisHour > 0) updateDailyTask('sell-products', unitsSoldThisHour);
     if (hourlySales.stockoutAlerts?.length) {
       const alert = hourlySales.stockoutAlerts[0];
       tell('STOK BİTTİ: ' + alert.propertyName + ' — ' + alert.productName + '. Yeniden üretim yap.');
@@ -3172,8 +3182,10 @@ function App({ session = null, supabase = null, authConfigured = false }) {
           })}
         </section>
         <section className="daily-tasks-panel">
-          <div className="card-label">GÜNLÜK GÖREVLER · SEVİYE {playerLevel} · {levelExperience}/100 XP</div><h2>Bugünün hedefleri</h2>
-          <p className="orders-intro">Hedefleri tamamla, ödülünü kendin topla. Görevler oyun günü değişince yenilenir.</p>
+          <div className="card-label">GÖREV PANOSU · SEVİYE {playerLevel} · {levelExperience}/100 XP</div><h2>Bugünün hedefleri</h2>
+          <div className="daily-xp-track"><div className="daily-xp-copy"><span>SONRAKİ SEVİYE</span><strong>{100 - levelExperience} XP kaldı</strong></div><div className="daily-task-meter"><span style={{width: levelExperience + '%'}} /></div></div>
+          <div className="level-unlock-note">{playerLevel < 7 ? 'Seviye ' + (playerLevel < 3 ? 3 : playerLevel < 5 ? 5 : 7) + ' hedefi: ' + (playerLevel < 3 ? 'ek sipariş fırsatı açılır.' : playerLevel < 5 ? 'bir sipariş daha açılır.' : 'en yüksek günlük sipariş sayısına ulaşırsın.') : 'Günlük sipariş kapasitesinin tamamı açıldı.'}</div>
+          <p className="orders-intro">Üret, satış yap ve siparişleri tamamla. Ödülleri kendin topla; görevler her oyun günü yenilenir.</p>
           {dailyTasks.map(task => <div className="daily-task-row" key={task.id}>
             <div className="daily-task-head"><strong>{task.title}</strong><span>{Math.min(task.progress,task.target)}/{task.target}</span></div><p>{task.detail}</p>
             <div className="daily-task-meter"><span style={{width: Math.min(100, Math.round(task.progress / task.target * 100)) + '%'}} /></div>
