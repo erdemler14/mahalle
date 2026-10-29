@@ -1847,7 +1847,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     for (let unit = 1; unit <= quantity; unit++) {
       const readyAt = previousFinish + duration * unit;
       setTimeout(() => {
-        setStockByProperty(old => { const current = old[37] && typeof old[37] === 'object' ? old[37] : { materials: {}, products: {} }; return { ...old, 37: { materials: current.materials || {}, products: { ...(current.products || {}), [shoe.id]: (Number(current.products?.[shoe.id]) || 0) + 1 } }; });
+        setStockByProperty(old => { const current = old[37] && typeof old[37] === 'object' ? old[37] : { materials: {}, products: {} }; return { ...old, 37: { materials: current.materials || {}, products: { ...(current.products || {}), [shoe.id]: (Number(current.products?.[shoe.id]) || 0) + 1 } } }; });
         setPendingProductions(old => {
           const current = old[pendingKey]; if (!current) return old;
           const remaining = Math.max(0, (Number(current.units) || 0) - 1);
