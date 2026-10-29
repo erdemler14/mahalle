@@ -1042,3 +1042,17 @@ body{overflow:hidden}
 .shoe-workshop .shoe-product-row{align-items:center}
 .shoe-workshop .shoe-product-row .stock-button{max-width:145px;min-width:105px;white-space:normal;line-height:1.4}
 @media(max-width:520px){.shoe-workshop .production-console-head{flex-direction:column}.shoe-workshop .production-level-chip{max-width:none;flex-basis:auto;width:auto}.shoe-workshop .material-stock-card{grid-template-columns:minmax(0,1fr)}.shoe-workshop .material-stock-card .material-stock-head,.shoe-workshop .material-stock-card .material-stock-meter,.shoe-workshop .material-stock-card .stock-button{grid-column:1;grid-row:auto}.shoe-workshop .material-stock-card .stock-button{max-width:none;width:100%}.shoe-workshop .shoe-product-row{flex-direction:column;align-items:stretch}.shoe-workshop .shoe-product-row .stock-button{max-width:none;width:100%}}
+
+
+/* Current shared production-workbench UI for the shoemaker */
+.shoe-production-workbench{display:flex;flex-direction:column;gap:12px;min-width:0;width:100%;box-sizing:border-box}
+.shoe-production-workbench .business-label{display:block;margin:0 0 -5px;color:#aebdc8;font-size:10px}
+.shoe-production-workbench .production-product-select{width:100%;min-width:0;box-sizing:border-box}
+.shoe-selected-recipe{display:flex;flex-direction:column;gap:7px;min-width:0;padding:12px;border:1px solid #344655;border-radius:9px;background:#101b25}
+.shoe-selected-recipe strong{color:#edf3f5;font-size:13px;line-height:1.4}
+.shoe-selected-recipe small{color:#aebdc8;font-size:10px;line-height:1.55;overflow-wrap:anywhere}
+.shoe-selected-recipe .production-ready{color:#9de0c1}
+.shoe-selected-recipe .production-requirements{color:#ffc17b}
+.shoe-production-workbench .production-batch-picker{margin:0}
+.shoe-production-workbench .production-primary-action{width:100%;min-height:48px;white-space:normal;line-height:1.4}
+.shoe-production-workbench .production-action-hint{margin:0;color:#8fa3b5;font-size:10px;line-height:1.55}
