@@ -916,3 +916,16 @@ body{overflow:hidden}
   white-space:normal!important;word-break:normal!important;overflow-wrap:anywhere!important;
   box-sizing:border-box!important;
 }
+
+
+/* Hay Day-style production batches and stockout cues */
+.production-batch-picker{display:flex;flex-direction:column;gap:7px;margin-top:12px;padding:10px;border:1px solid #344655;border-radius:9px;background:#101b25}
+.production-batch-picker>span{font:800 9px 'IBM Plex Mono',monospace;letter-spacing:.06em;color:#a8b8c5}
+.production-batch-picker>div{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.production-batch-picker button{min-width:0;padding:8px 4px;border:1px solid #3a4a57;border-radius:7px;background:#17232e;color:#c5d0d8;font-size:10px;font-weight:700;cursor:pointer}
+.production-batch-picker button.active{background:#214b41;border-color:#70c9a9;color:#baf1d8;box-shadow:inset 0 0 0 1px rgba(112,201,169,.2)}
+.production-stockout-alert{display:flex;align-items:center;gap:9px;margin:10px 0;padding:10px;border:1px solid #9e5546;border-radius:8px;background:rgba(105,43,34,.24)}
+.production-stockout-alert>span{display:flex;align-items:center;justify-content:center;flex:0 0 24px;height:24px;border-radius:50%;background:#9e493a;color:#fff;font-weight:900}
+.production-stockout-alert>div{display:flex;flex-direction:column;gap:3px;min-width:0}
+.production-stockout-alert strong{font-size:10px;letter-spacing:.05em;color:#ffb8a8}
+.production-stockout-alert small{font-size:10px;line-height:1.4;color:#dfc3bd}
