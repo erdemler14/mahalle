@@ -2208,6 +2208,23 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     if (month === 11 && day >= 15 && day <= 30) {
       events.push({ id: 'rainy-season', name: 'Yağışlı günler', detail: 'Yağışlı günlerde kahve, sıcak yemek ve tamir hizmetlerine talep kayıyor.', effect: (p, product) => ({ sales: /kahve|corba|tamir|tamirat|sakatat/i.test((product?.id || '') + ' ' + (product?.name || '')) ? 1.25 : 0.9, chance: 1.04 }) });
     }
+    // Seven-day recurring neighborhood fair: players can prepare inventory before demand spikes.
+    if (day >= 8 && day <= 14) {
+      events.push({ id: 'neighborhood-fair', name: 'Mahalle Şenliği', detail: 'Yedi gün süren mahalle şenliğinde pastane, fırın, kahvehane, çiçekçi ve eğlence yerlerinde talep yükseliyor. Eczane dışındaki sakin ve uzmanlaşmış dükkânlarda müşteri trafiği bir miktar düşüyor; yüksek talep stok yoksa satışa dönüşmez.', effect: (p, product) => {
+        const propertyName = p?.name || '';
+        const productText = (product?.id || '') + ' ' + (product?.name || '');
+        const bakery = /pastane|fırın|firin|unlu mamul|börek|borek/i.test(propertyName + ' ' + productText);
+        const flowers = /çiçek|cicek|buket|çiçekçi|cicekci/i.test(propertyName + ' ' + productText);
+        const cafe = /kahvehane|kahve|kafe|lokanta|gazino|meyhane|restoran/i.test(propertyName);
+        const entertainment = isEntertainment(p);
+        const pharmacy = isPharmacy(p);
+        const winner = bakery || flowers || cafe || entertainment;
+        if (pharmacy) return { sales: 0.94, chance: 0.94 };
+        return winner
+          ? { sales: bakery ? 1.75 : flowers ? 1.65 : 1.4, chance: bakery || flowers ? 1.45 : 1.28 }
+          : { sales: 0.9, chance: 0.9 };
+      } });
+    }
     // Multi-day cultural and neighborhood events create distinct winners and losers.
     if (month === 10 && day >= 12 && day <= 16) {
       events.push({ id: 'beyoglu-film-festival', name: 'Beyoğlu Film Festivali', detail: 'Beş gün süren film gösterimleri ve gece seansları çevredeki gazino, kahvehane, lokanta ve kitapçılara ziyaretçi çekiyor; bazı sakin sokaklarda gürültü artıyor.', effect: (p, product) => {
