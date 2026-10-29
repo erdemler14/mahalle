@@ -1948,7 +1948,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   const getUnlockedBusinessMaterials = (propertyId, level = getBusinessSalesLevel(propertyId), product = null) => {
     const profile = getBusinessProfile(propertyId);
     const professionalOffice = [42, 43, 44, 45, 46].includes(Number(propertyId));
-    const products = (tradeCatalog[propertyId] || []).filter(item => (!professionalOffice || !item.service) && item.price > 0 && (item.unlockLevel || 1) <= level);
+    const products = (tradeCatalog[propertyId] || []).filter(item => (!professionalOffice || !item.service) && item.price > 0 && (item.unlockLevel || 1) <= level && isPlayerProductUnlocked(item));
     const recipeMaterialIds = new Set();
     products.forEach(item => getBusinessRecipe(propertyId, item).forEach(part => recipeMaterialIds.add(part.id)));
     // Keep the supply list tied to the recipes of products this business can actually make.
@@ -2131,10 +2131,10 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     { id: 'deliver-order', title: 'Sözünü tut', detail: 'Bir müşteri siparişini teslim et.', target: 1, progress: 0, reward: 85, xp: 25, claimed: false }
   ];
   const createDailyOrders = () => {
-    const candidates = owned.filter(id => !rented.includes(id) && (tradeCatalog[id] || []).some(product => product.price > 0 && !product.service && (product.unlockLevel || 1) <= getBusinessSalesLevel(id)));
+    const candidates = owned.filter(id => !rented.includes(id) && (tradeCatalog[id] || []).some(product => product.price > 0 && !product.service && (product.unlockLevel || 1) <= getBusinessSalesLevel(id) && isPlayerProductUnlocked(product)));
     const ordersForDay = [];
     candidates.forEach(propertyId => {
-      const catalog = (tradeCatalog[propertyId] || []).filter(product => product.price > 0 && !product.service && (product.unlockLevel || 1) <= getBusinessSalesLevel(propertyId));
+      const catalog = (tradeCatalog[propertyId] || []).filter(product => product.price > 0 && !product.service && (product.unlockLevel || 1) <= getBusinessSalesLevel(propertyId) && isPlayerProductUnlocked(product));
       if (!catalog.length) return;
       const product = catalog[Math.floor(Math.random() * catalog.length)];
       const quantity = 2 + Math.floor(Math.random() * 4);
@@ -2148,7 +2148,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
         const property = properties.find(p => p.id === propertyId);
         const propertyName = property?.name || '';
         const catalog = (tradeCatalog[propertyId] || []).filter(product =>
-          product.price > 0 && !product.service && (product.unlockLevel || 1) <= getBusinessSalesLevel(propertyId)
+          product.price > 0 && !product.service && (product.unlockLevel || 1) <= getBusinessSalesLevel(propertyId) && isPlayerProductUnlocked(product)
         );
         const eligible = catalog.filter(product => {
           const text = (product.id || '') + ' ' + (product.name || '') + ' ' + propertyName;
@@ -2174,7 +2174,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     return ordersForDay.sort(() => Math.random() - 0.5).slice(0, offerLimit);
   };
   useEffect(() => {
-    const hasOrderEligibleBusiness = owned.some(id => !rented.includes(id) && (tradeCatalog[id] || []).some(product => product.price > 0 && (product.unlockLevel || 1) <= getBusinessSalesLevel(id)));
+    const hasOrderEligibleBusiness = owned.some(id => !rented.includes(id) && (tradeCatalog[id] || []).some(product => product.price > 0 && (product.unlockLevel || 1) <= getBusinessSalesLevel(id) && isPlayerProductUnlocked(product)));
     if (ordersDateKey !== currentGameDateKey) {
       // Keep accepted orders alive across the in-game day boundary; their own expiry
       // clock decides when they fail. Refresh only the unaccepted daily offers.
@@ -2456,6 +2456,10 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     for (let index = 1; index < thresholds.length; index++) { if (sold >= thresholds[index]) level = index + 1; else break; }
     return Math.min(15, level);
   };
+  // Global player progression complements each shop's own sales-based mastery.
+  // Catalog tiers 1–2 stay accessible early; tiers 3–5 require player levels 2–4.
+  const getPlayerUnlockLevel = (item) => Math.max(1, Number(item?.playerUnlockLevel) || Math.max(1, (Number(item?.unlockLevel) || 1) - 1));
+  const isPlayerProductUnlocked = (item) => getPlayerUnlockLevel(item) <= playerLevel;
   const STOCK_CAPACITY_BY_LEVEL = [0, 24, 40, 60, 90, 130, 175, 230, 300, 380, 480, 600, 740, 900, 1100, 1350];
   const STOCK_UPGRADE_COST_BY_LEVEL = [0, 0, 35, 80, 160, 300, 550, 950, 1600, 2600, 4100, 6400, 9800, 15000, 23000, 35000];
   const getInventoryState = (propertyId, value = stockByProperty[propertyId]) => {
@@ -2685,6 +2689,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const shoe = SHOE_RECIPES.find(item => item.id === shoeId); if (!shoe) return;
     const level = getBusinessSalesLevel(37);
     if ((shoe.unlockLevel || 1) > level) { tell(shoe.name + ' için kunduracı seviyesi ' + shoe.unlockLevel + ' gerekli. Şu an seviye ' + level + '.'); return; }
+    if (!isPlayerProductUnlocked(shoe)) { tell(shoe.name + ' kilitli. Oyuncu seviyesi ' + getPlayerUnlockLevel(shoe) + ' olduğunda açılacak.'); return; }
     const state = stockByProperty[37] && typeof stockByProperty[37] === 'object' ? stockByProperty[37] : { materials: {}, products: {} };
     const materials = state.materials || {};
     const materialLimit = Object.entries(shoe.recipe).reduce((limit, [id, qty]) => Math.min(limit, Math.floor((Number(materials[id]) || 0) / qty)), Infinity);
@@ -2755,12 +2760,13 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   const stockBusiness = () => {
     if (sendAction('stockBusiness')) return;
     const propertyId = active.id;
-    const availableProducts = (tradeCatalog[propertyId] || []).filter(product => (product.unlockLevel || 1) <= getBusinessSalesLevel(propertyId));
+    const availableProducts = (tradeCatalog[propertyId] || []).filter(product => (product.unlockLevel || 1) <= getBusinessSalesLevel(propertyId) && isPlayerProductUnlocked(product));
     const item = availableProducts.find(product => product.id === businessPlans[propertyId]) || availableProducts[0];
     if (!owned.includes(propertyId) || rented.includes(propertyId)) { tell('İşletmeyi yönetmek için sahibi olmalı ve kiraya vermemiş olmalısın.'); return; }
     if (!item || item.price <= 0) { tell('Önce satışa sunacağın ürün veya hizmeti seç.'); return; }
     const level = getBusinessSalesLevel(propertyId);
     if ((item.unlockLevel || 1) > level) { tell(item.name + ' için işletme seviyesi ' + item.unlockLevel + ' gerekli. Şu an seviye ' + level + '.'); return; }
+    if (!isPlayerProductUnlocked(item)) { tell(item.name + ' kilitli. Oyuncu seviyesi ' + getPlayerUnlockLevel(item) + ' olduğunda açılacak.'); return; }
     const inventory = getInventoryState(propertyId);
     const recipe = getBusinessRecipe(propertyId, item);
     const materialLimit = recipe.reduce((limit, part) => Math.min(limit, Math.floor((Number(inventory.materials?.[part.id]) || 0) / part.qty)), Infinity);
@@ -3251,7 +3257,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
               </div>
               <h3 className="production-section-title">1 · Hammadde deposu</h3>
               <p className="production-helper">Bu kunduracının kendi hammade deposudur. Kapasite diğer işletmelerle paylaşılmaz; farklı hammaddeler aynı depo alanını kullanır. Üretime bastığında reçetedeki hammaddeler hemen düşer.</p>
-              {SHOE_MATERIALS.filter(m => SHOE_RECIPES.filter(shoe => (shoe.unlockLevel || 1) <= getBusinessSalesLevel(37)).some(shoe => Object.prototype.hasOwnProperty.call(shoe.recipe, m.id))).map(m => {
+              {SHOE_MATERIALS.filter(m => SHOE_RECIPES.filter(shoe => (shoe.unlockLevel || 1) <= getBusinessSalesLevel(37) && isPlayerProductUnlocked(shoe)).some(shoe => Object.prototype.hasOwnProperty.call(shoe.recipe, m.id))).map(m => {
                 const amount = Number(materials[m.id]) || 0;
                 const cap = getMaterialCapacity(37);
                 const totalRaw = SHOE_MATERIALS.reduce((sum,item)=>sum+(Number(materials[item.id])||0),0);
@@ -3266,7 +3272,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
               })}
               <h3 className="production-section-title">2 · Üretim tezgâhı</h3>
               {(() => {
-                const unlockedShoes = SHOE_RECIPES.filter(shoe => (shoe.unlockLevel || 1) <= getBusinessSalesLevel(37));
+                const unlockedShoes = SHOE_RECIPES.filter(shoe => (shoe.unlockLevel || 1) <= getBusinessSalesLevel(37) && isPlayerProductUnlocked(shoe));
                 const selectedShoe = unlockedShoes.find(shoe => shoe.id === selectedShoeId) || unlockedShoes[0];
                 if (!selectedShoe) return <p className="production-helper">Üretim için önce işletme seviyesini yükselt.</p>;
                 const job = pendingProductions['37:' + selectedShoe.id];
@@ -3294,14 +3300,14 @@ function App({ session = null, supabase = null, authConfigured = false }) {
                 </div>;
               })()}
               <h3 className="production-section-title">3 · Vitrin stokları</h3>
-              {SHOE_RECIPES.filter(shoe => (shoe.unlockLevel || 1) <= getBusinessSalesLevel(37) || (Number(products[shoe.id]) || 0) > 0 || !!pendingProductions['37:' + shoe.id]).map(shoe => <div className="stock-line" key={shoe.id}><span>{shoe.name}</span><strong>{Number(products[shoe.id]) || 0} çift</strong></div>)}
+              {SHOE_RECIPES.filter(shoe => (shoe.unlockLevel || 1) <= getBusinessSalesLevel(37) && isPlayerProductUnlocked(shoe) || (Number(products[shoe.id]) || 0) > 0 || !!pendingProductions['37:' + shoe.id]).map(shoe => <div className="stock-line" key={shoe.id}><span>{shoe.name}</span><strong>{Number(products[shoe.id]) || 0} çift</strong></div>)}
             </div>;
           })()}
           {owned.includes(active.id) && !rented.includes(active.id) && active.id !== 37 && (tradeCatalog[active.id] || []).some(item => item.price > 0) && <div className="business-plan production-console">
             {(() => {
               const level = getBusinessSalesLevel(active.id);
               const allProducts = (tradeCatalog[active.id] || []).filter(item => item.price > 0);
-              const availableProducts = allProducts.filter(item => (item.unlockLevel || 1) <= level);
+              const availableProducts = allProducts.filter(item => (item.unlockLevel || 1) <= level && isPlayerProductUnlocked(item));
               const selectedProduct = availableProducts.find(item => item.id === businessPlans[active.id]) || availableProducts[0];
               const profile = getBusinessProfile(active.id);
               const inventory = getInventoryState(active.id);
@@ -3320,14 +3326,14 @@ function App({ session = null, supabase = null, authConfigured = false }) {
               if ([42, 43, 44, 45, 46].includes(Number(active.id))) {
                 const serviceProducts = (tradeCatalog[active.id] || []).filter(item => item.service && item.price > 0);
                 const serviceLevel = getBusinessSalesLevel(active.id);
-                const selectedService = serviceProducts.find(item => item.id === businessPlans[active.id]) || serviceProducts.find(item => (item.unlockLevel || 1) <= serviceLevel) || serviceProducts[0];
+                const selectedService = serviceProducts.find(item => item.id === businessPlans[active.id]) || serviceProducts.find(item => (item.unlockLevel || 1) <= serviceLevel && isPlayerProductUnlocked(item)) || serviceProducts[0];
                 const stats = businessStats[active.id] || { unitsSold: 0, revenue: 0, productUnitsSold: {} };
                 return <div className="service-console">
                   <div className="production-console-head"><div><span className="card-label">MESLEKİ HİZMET OFİSİ</span><h3>{profile.name}</h3><p>Ürün, hammadde ve depo yönetimi yok. Hizmet seç; müşteri talebi geldikçe ücret doğrudan kasaya yazılır.</p></div><div className="production-level-chip"><strong>SEV. {serviceLevel}/15</strong><small>{stats.unitsSold} hizmet tamamlandı</small></div></div>
                   <div className="production-quick-stats"><div><span>TOPLAM HİZMET GELİRİ</span><strong>₺{Number(stats.revenue || 0).toLocaleString('tr-TR',{maximumFractionDigits:2})}</strong></div><div><span>HİZMET SAYISI</span><strong>{Number(stats.unitsSold)||0}</strong></div><div><span>TEDARİK GİDERİ</span><strong>₺0</strong></div></div>
-                  <div className="production-materials-head"><strong>Hizmet kataloğu</strong><span>{serviceProducts.filter(item => (item.unlockLevel || 1) <= serviceLevel).length}/{serviceProducts.length} açık</span></div>
+                  <div className="production-materials-head"><strong>Hizmet kataloğu</strong><span>{serviceProducts.filter(item => (item.unlockLevel || 1) <= serviceLevel && isPlayerProductUnlocked(item)).length}/{serviceProducts.length} açık</span></div>
                   <p className="service-catalog-intro">Bir hizmet kartını seçerek ofisinin ana hizmetini belirle. Her ofiste tek bir hizmet grubu etkin olur; stok veya ambalaj gerekmez.</p>
-                  <div className="service-catalog-list">{serviceProducts.map(item => { const itemStats = stats.productUnitsSold?.[item.id] || {}; const unlocked = (item.unlockLevel || 1) <= serviceLevel; const chosen = businessPlans[active.id] === item.id; return <div className={`service-catalog-row ${chosen ? 'service-catalog-row-selected' : ''}`} key={item.id}><div className="service-catalog-copy"><strong>{unlocked ? '◈' : '🔒'} {item.name}</strong><small>{unlocked ? `Tarife ₺${getBusinessSalePrice(active.id,item).toLocaleString('tr-TR',{maximumFractionDigits:2})} · Tamamlanan ${Number(itemStats.units)||0}` : `İşletme seviyesi ${item.unlockLevel} ile açılır`}</small></div><button className="stock-button" disabled={!unlocked} onClick={() => selectBusinessPlan(item.id)}>{chosen ? '✓ SEÇİLİ' : unlocked ? 'HİZMETİ SEÇ' : 'KİLİTLİ'}</button></div>; })}</div>
+                  <div className="service-catalog-list">{serviceProducts.map(item => { const itemStats = stats.productUnitsSold?.[item.id] || {}; const unlocked = (item.unlockLevel || 1) <= serviceLevel && isPlayerProductUnlocked(item); const chosen = businessPlans[active.id] === item.id; return <div className={`service-catalog-row ${chosen ? 'service-catalog-row-selected' : ''}`} key={item.id}><div className="service-catalog-copy"><strong>{unlocked ? '◈' : '🔒'} {item.name}</strong><small>{unlocked ? `Tarife ₺${getBusinessSalePrice(active.id,item).toLocaleString('tr-TR',{maximumFractionDigits:2})} · Tamamlanan ${Number(itemStats.units)||0}` : `İşletme seviyesi ${item.unlockLevel} ile açılır`}</small></div><button className="stock-button" disabled={!unlocked} onClick={() => selectBusinessPlan(item.id)}>{chosen ? '✓ SEÇİLİ' : unlocked ? 'HİZMETİ SEÇ' : 'KİLİTLİ'}</button></div>; })}</div>
                   <div className="mastery-panel"><div className="mastery-head"><span className="card-label">MESLEKİ İTİBAR</span><strong>SEV. {serviceLevel}/15</strong></div><div className="mastery-name">{serviceLevel >= 10 ? 'Mahallenin aranan uzmanı' : serviceLevel >= 5 ? 'Yerleşik meslek ofisi' : serviceLevel >= 2 ? 'Tanınırlık kazanıyor' : 'Yeni açılmış ofis'}</div><div className="mastery-meter"><span style={{width: Math.min(100,serviceLevel/15*100)+'%'}} /></div><div className="mastery-foot"><span>{Number(stats.unitsSold)||0} hizmet tamamlandı</span><span>{serviceLevel >= 15 ? 'En üst seviye' : 'Hizmet verdikçe gelişir'}</span></div></div>
                 </div>;
               }
@@ -3341,6 +3347,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
                   <div><span>ÜRETİMDE</span><strong>{getPendingUnits(active.id)}</strong></div>
                   <div><span>HAZIR ÜRÜN</span><strong>{getTotalStock(active.id)}/{getStockCapacity(active.id)}</strong></div>
                 </div>
+                {allProducts.some(item => (item.unlockLevel || 1) <= level && !isPlayerProductUnlocked(item)) && <div className="global-unlock-list"><strong>SEVİYEYLE AÇILAN ÜRÜNLER</strong>{allProducts.filter(item => (item.unlockLevel || 1) <= level && !isPlayerProductUnlocked(item)).slice(0, 3).map(item => <div key={item.id}><span>🔒 {item.name}</span><small>Oyuncu seviyesi {getPlayerUnlockLevel(item)}</small></div>)}</div>}
                 <label className="business-label" htmlFor="business-plan-select">Üretilecek ürün</label>
                 <select id="business-plan-select" className="profession-select production-product-select" value={selectedProduct?.id || ''} onChange={e => selectBusinessPlan(e.target.value)}>
                   {availableProducts.map(item => <option key={item.id} value={item.id}>{item.name} · ₺{getBusinessSalePrice(active.id, item).toLocaleString('tr-TR', {maximumFractionDigits:2})}</option>)}
