@@ -1875,7 +1875,8 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   };
   const getUnlockedBusinessMaterials = (propertyId, level = getBusinessSalesLevel(propertyId), product = null) => {
     const profile = getBusinessProfile(propertyId);
-    const products = (tradeCatalog[propertyId] || []).filter(item => !item.service && item.price > 0 && (item.unlockLevel || 1) <= level);
+    const professionalOffice = [42, 43, 44, 45, 46].includes(Number(propertyId));
+    const products = (tradeCatalog[propertyId] || []).filter(item => (!professionalOffice || !item.service) && item.price > 0 && (item.unlockLevel || 1) <= level);
     const recipeMaterialIds = new Set();
     products.forEach(item => getBusinessRecipe(propertyId, item).forEach(part => recipeMaterialIds.add(part.id)));
     // Keep the supply list tied to the recipes of products this business can actually make.
