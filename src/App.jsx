@@ -1086,6 +1086,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   const [dailyTasks, setDailyTasks] = useState(() => Array.isArray(saved.dailyTasks) ? saved.dailyTasks : []);
   const [dailyTasksDateKey, setDailyTasksDateKey] = useState(() => typeof saved.dailyTasksDateKey === 'string' ? saved.dailyTasksDateKey : '');
   const [experience, setExperience] = useState(() => Math.max(0, Number(saved.experience) || 0));
+  // Always initialize the development map before save/load effects can reference it.
   const [developments, setDevelopments] = useState(() => saved.developments && typeof saved.developments === 'object' ? saved.developments : {});
   const playerLevel = 1 + Math.floor(experience / 100);
   const levelExperience = experience % 100;
