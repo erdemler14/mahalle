@@ -1489,7 +1489,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       const business = settleDailyBusinesses();
       const maintenance = portfolio.reduce((sum, p) => sum + Math.max(0.01, Math.round((getMarketValue(p) * 0.003 / 365) * 100) / 100), 0);
       const dailyCost = DAILY_LIVING_COST + maintenance + business.costs;
-      const dailyRent = Math.round(dailyRentIncome * 100) / 100;
+      const dailyRent = Math.round((properties.filter(p => owned.includes(p.id) && rented.includes(p.id)).reduce((sum, p) => sum + Number(p.rent || 0) / 30, 0) + Object.entries(unitRented).reduce((sum, [key, activeRent]) => { if (!activeRent) return sum; const [pid] = key.split(':'); const p = properties.find(item => item.id === Number(pid)); const unitOwner = unitOwners[key]; return sum + (p && unitOwner?.playerId === playerId ? Number(p.rent || 0) / (p.units || 1) / 30 : 0); }, 0)) * 100) / 100;
       const dailyNet = dailyRent + business.revenue - dailyCost;
       setCash(v => Math.round((v + dailyNet) * 100) / 100);
       setDay(nextDay);
@@ -1764,7 +1764,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     }
     const maintenance = portfolio.reduce((sum, p) => sum + Math.max(0.01, Math.round((getMarketValue(p) * 0.003 / 365) * 100) / 100), 0);
     const upkeep = DAILY_LIVING_COST + maintenance + business.costs;
-    const rent = Math.round(dailyRentIncome * 100) / 100;
+    const rent = Math.round((properties.filter(p => owned.includes(p.id) && rented.includes(p.id)).reduce((sum, p) => sum + Number(p.rent || 0) / 30, 0) + Object.entries(unitRented).reduce((sum, [key, activeRent]) => { if (!activeRent) return sum; const [pid] = key.split(':'); const p = properties.find(item => item.id === Number(pid)); const unitOwner = unitOwners[key]; return sum + (p && unitOwner?.playerId === playerId ? Number(p.rent || 0) / (p.units || 1) / 30 : 0); }, 0)) * 100) / 100;
     const net = rent + business.revenue + sales.revenue - upkeep;
     setCash(v => Math.round((v + net) * 100) / 100);
     setDay(nextDay);
@@ -2052,7 +2052,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     }
     setRented(v => [...v, active.id]);
     if (shopPropertyId === active.id) setShopPropertyId(null);
-    tell(`${active.name} kiraya verildi. ${rented.length === 0 ? '✦ HEDEF TAMAMLANDI: İlk kira gelirini başlattın! ' : ''}Günlük kira geliri: ${(active.rent / 30).toFixed(2)}; her yeni günde otomatik tahsil edilir.`);
+    tell(`${active.name} kiraya verildi. Günlük kira: ₺${(active.rent / 30).toFixed(2)}. Gelir her oyun gününün sonunda, saat 05.00'ten 06.00'ya geçerken kasaya eklenir.`);
   };
 
   const toggleShop = () => {
