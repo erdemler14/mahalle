@@ -3088,7 +3088,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     if (typeof window !== 'undefined' && !window.confirm(`${property.name} mülkünü ₺${salePrice.toLocaleString('tr-TR')} bedelle satmak istiyor musun? Mevcut işletme stoğu satışa dahil değil ve sıfırlanacak.`)) return;
     if (session && supabase) {
       try {
-        const { data, error } = await supabase.rpc('release_property', { p_property_id: property.id });
+        const { data, error } = await supabase.rpc('release_property', { p_property_id: property.id, p_market_value: getMarketValue(property) });
         if (error) throw error;
         const result = Array.isArray(data) ? data[0] : data;
         if (!result || !Number.isFinite(Number(result.cash))) throw new Error('Sunucudan geçerli satış sonucu alınamadı.');
