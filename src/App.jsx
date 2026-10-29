@@ -2258,7 +2258,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       const nextMonth = nextMonthRaw > 12 ? 1 : nextMonthRaw;
       const business = settleDailyBusinesses();
       const maintenance = portfolio.reduce((sum, p) => sum + Math.max(0.01, Math.round((getMarketValue(p) * 0.003 / 365) * 100) / 100), 0);
-      const dailyCost = DAILY_LIVING_COST + maintenance + business.costs + sales.officialFees;
+      const dailyCost = DAILY_LIVING_COST + maintenance + business.costs;
       const dailyRent = Math.round((properties.filter(p => owned.includes(p.id) && rented.includes(p.id)).reduce((sum, p) => sum + Number(p.rent || 0) / 30, 0) + Object.entries(unitRented).reduce((sum, [key, activeRent]) => { if (!activeRent) return sum; const [pid] = key.split(':'); const p = properties.find(item => item.id === Number(pid)); const unitOwner = unitOwners[key]; return sum + (p && unitOwner?.playerId === playerId ? Number(p.rent || 0) / (p.units || 1) / 30 : 0); }, 0)) * 100) / 100;
       const dryCleanOwned = owned.includes(41) && !rented.includes(41);
       let dryCleanDelta = 0;
@@ -2276,7 +2276,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
           setBusinessAlert({ type: 'raid', title: 'KURU TEMİZLEMEYE BASKIN!', amount: dryCleanDelta, message: 'Denetim ekipleri kayıt dışı işlemleri tespit etti. Ceza ve el koyma bedeli kasandan düşüldü.' });
         }
       }
-      const reportRows = [...dailySalesLog, ...sales.officialFeeEntries.map(text => ({ text, kind: 'daily' }))];
+      const reportRows = [...dailySalesLog];
       if (business.entries.length) reportRows.push(...business.entries.map(text => ({ text, kind: 'daily' })));
       const daySalesRevenue = Math.max(0, Number(dailySalesRevenue) || 0);
       setZReport({ date: `${day}.${String(month).padStart(2, '0')}.${year}`, nextDate: `${nextDay}.${String(nextMonth).padStart(2, '0')}.${nextMonthRaw > 12 ? year + 1 : year}`, rows: reportRows, totalRevenue: daySalesRevenue, costs: Number(dailyCost) || 0, rent: Number(dailyRent) || 0, net: Number(dailyRent + daySalesRevenue - dailyCost + dryCleanDelta) || 0, dryCleanDelta });
