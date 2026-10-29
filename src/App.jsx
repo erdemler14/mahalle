@@ -83,7 +83,9 @@ const properties = [
     30: "Crespi Apartmanı’nda üst katların pencereleri Sıraselviler’e bakardı; yeni kiracılar taşındıkça apartmanın girişinde farklı diller ve alışkanlıklar buluşurdu.",
     31: "Şeref Usta’nın lokantası akşamları da canlı kalırdı; tiyatrodan çıkanlar ve geç saatte çalışanlar evlerine dönmeden önce sıcak bir tabak yemek yerdi.",
     32: "Papadopulos’un matbaa ve kırtasiyesinde okul defterleriyle ticari evraklar aynı tezgahta satılır, acil ilan ve davetiyeler kısa sürede basılırdı.",
-    34: "Çiçekçi dükkânının önünde mevsimine göre karanfil, gül ve sümbül dizilirdi; buketler nişanlara, ziyaretlere ve tiyatro açılışlarına gönderilirdi."
+    33: "Şevket Efendi’nin berberhanesinde ustura her sabah bilenir, müşteriler tıraş olurken mahalle haberlerini ve limana gelen gemileri konuşurdu.",
+    34: "Çiçekçi dükkânının önünde mevsimine göre karanfil, gül ve sümbül dizilirdi; buketler nişanlara, ziyaretlere ve tiyatro açılışlarına gönderilirdi.",
+    35: "Haliç Gazinosu’nda akşamları fasıl heyeti sahne alır, mutfaktan meze tabakları çıkar, masalarda tüccarlar ve tiyatro müdavimleri şehrin gündemini tartışırdı."
   };
   properties.forEach(property => { if (propertyStories[property.id]) property.history = propertyStories[property.id]; });
 
