@@ -68,8 +68,8 @@ s = s.replace(
 );
 
 s = s.replace(
-  "function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', onSelect, hour, overlay }) {",
-  "function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', onSelect, hour, overlay, developments = {} }) {"
+  "function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', onSelect, onUniversity, hour, overlay }) {",
+  "function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', onSelect, onUniversity, hour, overlay, developments = {} }) {"
 );
 s = s.replace(
   "      const h = p.floors * floorHeight;",
@@ -79,8 +79,8 @@ s = s.replace("for (let floor = 1; floor < p.floors; floor++) {", "for (let floo
 s = s.replace("for (let floor = 0; floor < p.floors; floor++) {", "for (let floor = 0; floor < buildingFloors; floor++) {");
 s = s.replace("  }, [owned, ownerByProperty, playerId]);", "  }, [owned, ownerByProperty, playerId, developments]);");
 s = s.replace(
-  "<CityScene selected={selected} owned={owned} ownerByProperty={ownerByProperty} playerId={playerId} onSelect={selectProperty} hour={hour} overlay={",
-  "<CityScene selected={selected} owned={owned} ownerByProperty={ownerByProperty} playerId={playerId} onSelect={selectProperty} hour={hour} developments={developments} overlay={"
+  "<CityScene selected={selected} owned={owned} ownerByProperty={ownerByProperty} playerId={playerId} onSelect={selectProperty} onUniversity={() => setActiveHudPanel(v => v === 'university' ? null : 'university')} hour={hour} overlay={",
+  "<CityScene selected={selected} owned={owned} ownerByProperty={ownerByProperty} playerId={playerId} onSelect={selectProperty} onUniversity={() => setActiveHudPanel(v => v === 'university' ? null : 'university')} hour={hour} developments={developments} overlay={"
 );
 
 const buyAnchor = "          {owned.includes(active.id) && <button className=\"rent-button\" onClick={toggleRent}>{rented.includes(active.id) ? 'KİRACIYI ÇIKAR' : 'KİRACI BUL VE KİRAYA VER'}</button>}";
