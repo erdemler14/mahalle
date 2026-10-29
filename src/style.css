@@ -1266,3 +1266,7 @@ body{overflow:hidden}
 .map-camera-tools button{width:34px;height:32px;border:1px solid #ded5c4;border-radius:6px;background:#fffdf7;color:#35443b;font-size:18px;line-height:1;cursor:pointer}
 .map-zoom-controls button{min-height:40px}
 @media(max-width:680px){.map-camera-toolbar{top:8px;left:8px;gap:5px;max-width:calc(100% - 64px)}.map-view-presets{gap:3px;padding:4px}.map-view-presets button{padding:7px 8px;font-size:11px;min-height:34px}.map-camera-tools button{width:36px;height:34px}.map-hint{display:none}.map-zoom-controls{top:8px;right:8px;gap:5px;padding:4px}.map-zoom-controls button{width:36px;height:36px;min-height:36px}}
+
+.map-camera-tools button.active{background:#dce8dc;border-color:#718d75;color:#243f32;box-shadow:inset 0 0 0 1px #718d75}
+.map-camera-tools button{min-width:36px;padding:0 8px;white-space:nowrap}
+@media(max-width:680px){.map-camera-tools button{min-width:36px;padding:0 7px;font-size:13px}}
