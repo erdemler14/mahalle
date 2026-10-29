@@ -36,20 +36,24 @@ const properties = [
   { id: 31, name: 'Şeref Usta’nın Lokantası', type: 'İşletme', price: 5670, rent: 77, x: -5.5, z: 17.2, color: '#c7a18e', floors: 2, style: 'Sokak köşesinde eski usul lokanta' },
   { id: 32, name: 'Papadopulos Matbaa ve Kırtasiyesi', type: 'Atölye', price: 4185, rent: 54, x: 5.5, z: 17.2, color: '#b8b0a4', floors: 3, style: 'Baskı atölyesi ve kırtasiye' },
   { id: 33, name: 'Şevket Efendi’nin Berberhanesi', type: 'İşletme', price: 1980, rent: 42, x: 0, z: 20.5, color: '#b6a18c', floors: 2, style: 'Pera usulü berber dükkânı, pirinç aynalar ve ahşap koltuk' },
-  { id: 34, name: 'Çiçekçi Dükkânı', type: 'Ticaret', price: 2475, rent: 38, x: 20.5, z: 18.4, color: '#c4b6a6', floors: 2, style: 'Vitrininde çiçekler ve saksılar bulunan küçük çiçekçi' }
+  { id: 34, name: 'Çiçekçi Dükkânı', type: 'Ticaret', price: 2475, rent: 38, x: 20.5, z: 18.4, color: '#c4b6a6', floors: 2, style: 'Vitrininde çiçekler ve saksılar bulunan küçük çiçekçi' },
+  { id: 35, name: 'Haliç Gazinosu', type: 'İşletme', price: 3350, rent: 245, x: 21.2, z: 12.2, color: '#a88c73', floors: 2, style: 'Haliç kıyısında teraslı, deniz manzaralı gazino' }
 ];
 
 // Galata-style irregular street frontages: narrow blocks, staggered facades and varied angles.
 properties.forEach((property, index) => {
   const frontage = Math.floor(index / 8);
   const slot = index % 8;
-  const baseX = [-8.5, 8.5, -18.5, 18.5][frontage];
+  const baseX = [-8.5, 8.5, -18.5, 18.5][frontage % 4];
   const staggerX = [0.15, -0.65, 0.55, -0.25, 0.8, -0.45, 0.35, -0.1][slot];
   const staggerZ = [0.0, 0.7, -0.45, 0.35, -0.8, 0.55, -0.2, 0.25][(index * 3) % 8];
   property.x = baseX + staggerX * (frontage < 2 ? 0.85 : 1.35);
   property.z = -21.2 + slot * 5.85 + staggerZ;
   property.rotation = [0, -0.08, 0.045, 0.11, -0.055, 0.025, -0.1, 0.06][(index * 5 + 2) % 8];
 });
+// Keep the new waterfront businesses on the eastern edge of the walkable district.
+Object.assign(properties.find(property => property.id === 34), { x: 20.4, z: 18.4, rotation: -0.04 });
+Object.assign(properties.find(property => property.id === 35), { x: 21.1, z: 11.8, rotation: -0.08 });
 
 const SAVE_KEY = 'mahalle-save-v1';
 const SAVE_BACKUP_KEY = 'mahalle-save-v1-backup';
@@ -152,6 +156,60 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
     ground.position.y = -0.08;
     ground.receiveShadow = true;
     scene.add(ground);
+
+    // Haliç waterfront: open water, stone quay, promenade and small mooring posts.
+    const halicWaterMat = new THREE.MeshStandardMaterial({
+      color: '#477f91', roughness: 0.28, metalness: 0.12,
+      transparent: true, opacity: 0.94
+    });
+    const halicWater = new THREE.Mesh(new THREE.PlaneGeometry(42, 72, 1, 1), halicWaterMat);
+    halicWater.rotation.x = -Math.PI / 2;
+    halicWater.position.set(47.5, -0.12, 0);
+    halicWater.receiveShadow = true;
+    scene.add(halicWater);
+
+    const quayMat = new THREE.MeshStandardMaterial({ color: '#b6ad9c', roughness: 0.96 });
+    const quayEdgeMat = new THREE.MeshStandardMaterial({ color: '#77766f', roughness: 0.9 });
+    const quay = new THREE.Mesh(new THREE.BoxGeometry(5.2, 0.18, 72), quayMat);
+    quay.position.set(22.9, 0.02, 0);
+    quay.receiveShadow = true;
+    scene.add(quay);
+    const quayLip = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.28, 72), quayEdgeMat);
+    quayLip.position.set(25.45, 0.09, 0);
+    quayLip.castShadow = true;
+    scene.add(quayLip);
+
+    const quayTileMat = new THREE.MeshStandardMaterial({ color: '#c9c0b0', roughness: 1 });
+    for (let z = -34; z <= 34; z += 2.2) {
+      const tile = new THREE.Mesh(new THREE.BoxGeometry(4.7, 0.035, 1.95), quayTileMat);
+      tile.position.set(22.9, 0.125, z);
+      tile.receiveShadow = true;
+      scene.add(tile);
+    }
+    const mooringMat = new THREE.MeshStandardMaterial({ color: '#4c4942', metalness: 0.35, roughness: 0.65 });
+    for (const z of [-30, -21, -12, -3, 6, 15, 24, 33]) {
+      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.14, 0.72, 8), mooringMat);
+      post.position.set(25.0, 0.34, z);
+      post.castShadow = true;
+      scene.add(post);
+      const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.08, 8), quayEdgeMat);
+      cap.position.set(25.0, 0.74, z);
+      scene.add(cap);
+    }
+
+    // A small period-style passenger boat gives the inlet a readable scale.
+    const ferry = new THREE.Group();
+    const hullMat = new THREE.MeshStandardMaterial({ color: '#463c34', roughness: 0.72 });
+    const cabinMat = new THREE.MeshStandardMaterial({ color: '#e1d4bb', roughness: 0.88 });
+    const hull = new THREE.Mesh(new THREE.BoxGeometry(1.45, 0.42, 4.6), hullMat);
+    hull.position.y = 0.02; ferry.add(hull);
+    const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.62, 1.75), cabinMat);
+    cabin.position.set(0, 0.48, -0.15); ferry.add(cabin);
+    const chimney = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.12, 0.55, 8), new THREE.MeshStandardMaterial({ color: '#6d4b37', roughness: 0.85 }));
+    chimney.position.set(0, 1.02, 0.65); ferry.add(chimney);
+    ferry.position.set(34.5, 0.15, -12);
+    ferry.rotation.y = 0.22;
+    scene.add(ferry);
 
     // Procedural, tileable cobblestone texture adds surface detail without hundreds of extra meshes.
     const cobbleCanvas = document.createElement('canvas');
