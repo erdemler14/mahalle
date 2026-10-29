@@ -1740,10 +1740,13 @@ function App({ session = null, supabase = null, authConfigured = false }) {
 
   const getBusinessSalesLevel = (propertyId) => {
     const sold = Number(businessStats[propertyId]?.unitsSold) || 0;
-    return sold >= 60 ? 5 : sold >= 35 ? 4 : sold >= 15 ? 3 : sold >= 5 ? 2 : 1;
+    const thresholds = [0, 5, 15, 35, 60, 100, 150, 220, 310, 430, 580, 760, 980, 1250, 1600];
+    let level = 1;
+    for (let index = 1; index < thresholds.length; index++) { if (sold >= thresholds[index]) level = index + 1; else break; }
+    return Math.min(15, level);
   };
-  const STOCK_CAPACITY_BY_LEVEL = [0, 24, 40, 60, 90, 130];
-  const STOCK_UPGRADE_COST_BY_LEVEL = [0, 0, 35, 80, 160, 300];
+  const STOCK_CAPACITY_BY_LEVEL = [0, 24, 40, 60, 90, 130, 175, 230, 300, 380, 480, 600, 740, 900, 1100, 1350];
+  const STOCK_UPGRADE_COST_BY_LEVEL = [0, 0, 35, 80, 160, 300, 550, 950, 1600, 2600, 4100, 6400, 9800, 15000, 23000, 35000];
   const getInventoryState = (propertyId, value = stockByProperty[propertyId]) => {
     if (value && typeof value === 'object') return { materials: value.materials || {}, products: value.products || {} };
     const qty = Math.max(0, Number(value) || 0);
@@ -1754,7 +1757,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   const getTotalStock = (propertyId, value = stockByProperty[propertyId]) => Object.values(getInventoryState(propertyId, value).products || {}).reduce((sum, qty) => sum + Math.max(0, Number(qty) || 0), 0);
   const getProductionDuration = (propertyId, productId) => { const seed = String(productId || propertyId).split('').reduce((sum, char) => sum + char.charCodeAt(0), Number(propertyId) || 0); return 2500 + (seed % 6) * 1000; };
   const getPendingUnits = (propertyId) => Object.entries(pendingProductions).reduce((sum, [key, job]) => Number(key.split(':')[0]) === Number(propertyId) ? sum + (Number(job.units) || 0) : sum, 0);
-  const getWarehouseLevel = (propertyId) => Math.max(1, Math.min(5, Number(businessStats[propertyId]?.stockCapacityLevel) || 1));
+  const getWarehouseLevel = (propertyId) => Math.max(1, Math.min(15, Number(businessStats[propertyId]?.stockCapacityLevel) || 1));
   const getWarehouseProfileKey = (propertyId) => {
     const id = Number(propertyId);
     if (id === 37) return 'shoe';
@@ -1773,7 +1776,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   // property-specific capacities; neither inventory is shared between businesses.
   const MATERIAL_WAREHOUSE_BASE = { shoe: 36, lodging: 40, pharmacy: 36, food: 48, textile: 36, paper: 48, wood: 36, metal: 30, soap: 36, service: 30, general: 40 };
   const PRODUCT_WAREHOUSE_BASE = { shoe: 24, lodging: 20, pharmacy: 24, food: 30, textile: 24, paper: 36, wood: 24, metal: 20, soap: 24, service: 18, general: 30 };
-  const WAREHOUSE_LEVEL_MULTIPLIER = [0, 1, 1.6, 2.4, 3.4, 4.8];
+  const WAREHOUSE_LEVEL_MULTIPLIER = [0, 1, 1.55, 2.25, 3.15, 4.3, 5.7, 7.4, 9.5, 12, 15, 18.5, 22.5, 27, 32.5, 39];
   const getMaterialCapacity = (propertyId) => Math.round((MATERIAL_WAREHOUSE_BASE[getWarehouseProfileKey(propertyId)] || 40) * WAREHOUSE_LEVEL_MULTIPLIER[getWarehouseLevel(propertyId)]);
   const getStockCapacity = (propertyId) => Math.round((PRODUCT_WAREHOUSE_BASE[getWarehouseProfileKey(propertyId)] || 30) * WAREHOUSE_LEVEL_MULTIPLIER[getWarehouseLevel(propertyId)]);
   const processBusinessSales = (hours = 1) => {
@@ -1994,16 +1997,16 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     if (sendAction('upgradeBusinessStorage', propertyId)) return;
     if (!owned.includes(propertyId) || rented.includes(propertyId)) { tell('Depoyu genişletmek için işletme sana ait olmalı ve kirada olmamalı.'); return; }
     const stats = businessStats[propertyId] || { unitsSold: 0, stockCapacityLevel: 1 };
-    const currentLevel = Math.max(1, Math.min(5, Number(stats.stockCapacityLevel) || 1));
+    const currentLevel = Math.max(1, Math.min(15, Number(stats.stockCapacityLevel) || 1));
     const businessLevel = getBusinessSalesLevel(propertyId);
-    if (currentLevel >= 5) { tell('Depo en yüksek seviyede.'); return; }
+    if (currentLevel >= 15) { tell('Depo en yüksek seviye olan 15. kademede.'); return; }
     if (businessLevel < currentLevel + 1) { tell('Sonraki depo seviyesi için işletme seviyen ' + (currentLevel + 1) + ' olmalı. Şu an ' + businessLevel + '. seviyedesin. Daha fazla ürün sat.'); return; }
     const nextLevel = currentLevel + 1;
     const cost = STOCK_UPGRADE_COST_BY_LEVEL[nextLevel];
     if (cash < cost) { tell('Depo genişletmek için ₺' + cost + ' gerekiyor.'); return; }
     setCash(value => Math.round((value - cost) * 100) / 100);
     setBusinessStats(old => { const prev = old[propertyId] || { unitsSold: 0, revenue: 0, stockInvested: 0 }; return { ...old, [propertyId]: { ...prev, stockCapacityLevel: nextLevel, storageUpgradeSpent: (Number(prev.storageUpgradeSpent) || 0) + cost } }; });
-    tell('Depo genişletildi: seviye ' + nextLevel + ', kapasite ' + STOCK_CAPACITY_BY_LEVEL[nextLevel] + ' birim. Ödenen: ₺' + cost + '.');
+    tell('Depo genişletildi: seviye ' + nextLevel + '/15. Hammadde kapasitesi ' + getMaterialCapacity(propertyId) + ', ürün kapasitesi ' + getStockCapacity(propertyId) + ' birim oldu. Ödenen: ₺' + cost.toLocaleString('tr-TR') + '.');
   };
 
   const buyBusinessMaterial = (propertyId, materialId) => {
@@ -2491,7 +2494,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
             const state = stockByProperty[37] && typeof stockByProperty[37] === 'object' ? stockByProperty[37] : { materials: {}, products: {} };
             const materials = state.materials || {}; const products = state.products || {};
             return <div className="business-plan production-console shoe-workshop"><div className="production-console-head"><div><span className="card-label">ÜRETİM ATÖLYESİ</span><h3>Kunduracı</h3><p>Ürünü seç, gerekli hammaddeleri tedarik et ve üretimi sıraya koy. Her çift için malzemeler üretim başında depodan düşer.</p></div><div className="production-level-chip"><strong>SEV. {getBusinessSalesLevel(37)}/5</strong><small>{Math.max(0, [0,5,15,35,60][getBusinessSalesLevel(37)] - (Number(businessStats[37]?.unitsSold)||0))} satışla seviye atla</small></div></div>
-              <div className="storage-upgrade-panel"><div><span>DEPO SEVİYESİ {Number(businessStats[37]?.stockCapacityLevel) || 1}/5</span><strong>Ürün başına {getStockCapacity(37)} birim kapasite</strong><small>İşletme seviyesi {getBusinessSalesLevel(37)} · satış yaptıkça yeni depo kademeleri açılır.</small></div><button className="stock-button" onClick={() => upgradeBusinessStorage(37)} disabled={(Number(businessStats[37]?.stockCapacityLevel) || 1) >= 5 || getBusinessSalesLevel(37) < (Number(businessStats[37]?.stockCapacityLevel) || 1) + 1}>GENİŞLET · ₺{STOCK_UPGRADE_COST_BY_LEVEL[(Number(businessStats[37]?.stockCapacityLevel) || 1) + 1] || '—'}</button></div>
+              <div className="storage-upgrade-panel"><div><span>DEPO SEVİYESİ {Number(businessStats[37]?.stockCapacityLevel) || 1}/15</span><strong>Ürün başına {getStockCapacity(37)} birim kapasite</strong><small>İşletme seviyesi {getBusinessSalesLevel(37)} · satış yaptıkça yeni depo kademeleri açılır.</small></div><button className="stock-button" onClick={() => upgradeBusinessStorage(37)} disabled={(Number(businessStats[37]?.stockCapacityLevel) || 1) >= 15 || getBusinessSalesLevel(37) < (Number(businessStats[37]?.stockCapacityLevel) || 1) + 1}>GENİŞLET · ₺{STOCK_UPGRADE_COST_BY_LEVEL[(Number(businessStats[37]?.stockCapacityLevel) || 1) + 1] || '—'}</button></div>
               <div className="shoe-inventory-summary production-quick-stats">
                 <div><span>HAMMADDE</span><strong>{SHOE_MATERIALS.reduce((sum,m)=>sum+(Number(materials[m.id])||0),0)} / {getMaterialCapacity(37)}</strong><small>birim depoda</small></div>
                 <div><span>ÜRETİMDE</span><strong>{getPendingUnits(37)}</strong><small>çift kuyrukta</small></div>
@@ -2606,7 +2609,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
                 <details className="production-details">
                   <summary>İşletme raporu ve stok ayrıntıları</summary>
                   <div className="production-detail-body">
-                    <div className="storage-upgrade-panel"><div><span>DEPO SEVİYESİ {Number(businessStats[active.id]?.stockCapacityLevel) || 1}/5</span><strong>Ürün başına {getStockCapacity(active.id)} adet kapasite</strong><small>İşletme seviyesi {level} · sonraki kademe için satış yap.</small></div><button className="stock-button" onClick={() => upgradeBusinessStorage(active.id)} disabled={(Number(businessStats[active.id]?.stockCapacityLevel) || 1) >= 5 || level < (Number(businessStats[active.id]?.stockCapacityLevel) || 1) + 1}>GENİŞLET · ₺{STOCK_UPGRADE_COST_BY_LEVEL[(Number(businessStats[active.id]?.stockCapacityLevel) || 1) + 1] || '—'}</button></div>
+                    <div className="storage-upgrade-panel"><div><span>DEPO SEVİYESİ {Number(businessStats[active.id]?.stockCapacityLevel) || 1}/15</span><strong>Ürün başına {getStockCapacity(active.id)} adet kapasite</strong><small>İşletme seviyesi {level} · sonraki kademe için satış yap.</small></div><button className="stock-button" onClick={() => upgradeBusinessStorage(active.id)} disabled={(Number(businessStats[active.id]?.stockCapacityLevel) || 1) >= 15 || level < (Number(businessStats[active.id]?.stockCapacityLevel) || 1) + 1}>GENİŞLET · ₺{STOCK_UPGRADE_COST_BY_LEVEL[(Number(businessStats[active.id]?.stockCapacityLevel) || 1) + 1] || '—'}</button></div>
                     {(() => { const stats = businessStats[active.id] || { unitsSold: 0, revenue: 0, stockInvested: 0 }; const masteryBonus = (level - 1) * 3; const reputation = Math.min(100, Math.floor(stats.unitsSold * 1.5)); const reputationLabel = reputation >= 75 ? 'Mahallenin sevilen yeri' : reputation >= 40 ? 'Düzenli müşteri kitlesi' : reputation >= 10 ? 'Adı duyulmaya başladı' : 'Müşteri kazanıyor'; const ratio = level >= 5 ? 100 : Math.min(100, Math.round(stats.unitsSold / nextTarget * 100)); return <div className="mastery-panel"><div className="mastery-head"><span className="card-label">İŞLETME USTALIĞI</span><strong>SEV. {level} · +%{masteryBonus} SATIŞ</strong></div><div className="mastery-name">{['Yeni açıldı', 'Mahalle esnafı', 'Tanıdık dükkan', 'Yerleşik işletme', 'Mahallenin gözdesi'][level - 1]}</div><div className="mastery-meter"><span style={{width: ratio + '%'}} /></div><div className="mastery-foot"><span>{stats.unitsSold} ürün satıldı</span><span>{level >= 5 ? 'En yüksek ustalık' : nextTarget + ' satışa ilerle'}</span></div><div className="reputation-row"><div><span>MAHALLE İTİBARI</span><strong>{reputation}/100 · {reputationLabel}</strong></div><b>+{Math.round(reputation * 0.12)} puan satış fırsatı</b></div><div className="reputation-meter"><span style={{width: reputation + '%'}} /></div><div className="mastery-stats"><div><span>Toplam hasılat</span><strong>₺{stats.revenue.toLocaleString('tr-TR', {maximumFractionDigits: 2})}</strong></div><div><span>Stok yatırımı</span><strong>₺{stats.stockInvested.toLocaleString('tr-TR', {maximumFractionDigits: 2})}</strong></div><div><span>Hasılat − stok</span><strong>₺{(stats.revenue - stats.stockInvested).toLocaleString('tr-TR', {maximumFractionDigits: 2})}</strong></div></div></div>; })()}
                     <div className="product-sales-panel"><div className="card-label">ÜRÜN BAZINDA STOK VE SATIŞ</div>{availableProducts.map(product => { const soldUnits = Number(businessStats[active.id]?.productUnitsSold?.[product.id]?.units) || 0; const stock = getProductStock(active.id, product.id); const queued = pendingProductions[active.id + ':' + product.id]; return <div className="stock-line product-inventory-row" key={product.id}><span>{product.name}<small className="product-stock-meta">Hazır {stock} · Üretimde {queued?.units || 0} · Satılan {soldUnits}</small></span></div>; })}</div>
                   </div>
