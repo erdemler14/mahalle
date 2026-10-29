@@ -774,6 +774,60 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
       tree.position.set(x, 0, z); scene.add(tree);
     }
 
+    // Pera street details: timber benches, stone planters and municipal notice boards.
+    const benchWood = new THREE.MeshStandardMaterial({ color: '#72513a', roughness: 0.96 });
+    const benchIron = new THREE.MeshStandardMaterial({ color: '#39423d', roughness: 0.82, metalness: 0.18 });
+    const planterStone = new THREE.MeshStandardMaterial({ color: '#aaa18f', roughness: 1 });
+    const planterSoil = new THREE.MeshStandardMaterial({ color: '#65523e', roughness: 1 });
+    const planterLeaf = new THREE.MeshStandardMaterial({ color: '#687b5c', roughness: 1 });
+    const posterWood = new THREE.MeshStandardMaterial({ color: '#4b392c', roughness: 0.98 });
+    const posterPaper = new THREE.MeshStandardMaterial({ color: '#e2d2b1', roughness: 1 });
+    for (const [x, z, rot] of [[-6.82,-10.8,0],[6.82,10.8,Math.PI]]) {
+      const bench = new THREE.Group();
+      const seat = new THREE.Mesh(new THREE.BoxGeometry(1.05,0.07,0.28),benchWood);
+      seat.position.y=0.42; bench.add(seat);
+      for (let slat=0;slat<3;slat++) {
+        const backSlat = new THREE.Mesh(new THREE.BoxGeometry(1.05,0.065,0.055),benchWood);
+        backSlat.position.set(0,0.61+slat*0.12,-0.105); bench.add(backSlat);
+      }
+      for (const side of [-1,1]) {
+        const leg = new THREE.Mesh(new THREE.BoxGeometry(0.065,0.43,0.24),benchIron);
+        leg.position.set(side*0.39,0.21,0); bench.add(leg);
+        const arm = new THREE.Mesh(new THREE.BoxGeometry(0.055,0.2,0.3),benchIron);
+        arm.position.set(side*0.47,0.51,0); bench.add(arm);
+      }
+      bench.position.set(x,0,z); bench.rotation.y=rot; scene.add(bench);
+    }
+    for (const [x,z] of [[-6.85,-4.6],[6.85,4.6],[-6.85,14.2],[6.85,-14.2]]) {
+      const planter = new THREE.Group();
+      const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.28,0.22,0.34,10),planterStone);
+      pot.position.y=0.17; planter.add(pot);
+      const soil = new THREE.Mesh(new THREE.CylinderGeometry(0.22,0.22,0.035,10),planterSoil);
+      soil.position.y=0.34; planter.add(soil);
+      for (let leaf=0;leaf<5;leaf++) {
+        const sprig = new THREE.Mesh(new THREE.IcosahedronGeometry(0.16,0),planterLeaf);
+        const angle=leaf*Math.PI*2/5;
+        sprig.position.set(Math.cos(angle)*0.12,0.48+(leaf%2)*0.08,Math.sin(angle)*0.12);
+        sprig.scale.set(0.8,1.3,0.75); planter.add(sprig);
+      }
+      planter.position.set(x,0,z); scene.add(planter);
+    }
+    // Period municipal notice board: paper notices instead of modern advertising panels.
+    const noticeBoard = new THREE.Group();
+    const noticeFrame = new THREE.Mesh(new THREE.BoxGeometry(0.78,1.12,0.09),posterWood);
+    noticeFrame.position.y=0.92; noticeBoard.add(noticeFrame);
+    const noticePaper = new THREE.Mesh(new THREE.BoxGeometry(0.64,0.91,0.025),posterPaper);
+    noticePaper.position.set(0,0.94,0.058); noticeBoard.add(noticePaper);
+    for (let row=0;row<5;row++) {
+      const rule = new THREE.Mesh(new THREE.BoxGeometry(row===0?0.42:0.48,0.018,0.012),posterWood);
+      rule.position.set(0,1.23-row*0.13,0.078); noticeBoard.add(rule);
+    }
+    for (const side of [-1,1]) {
+      const leg = new THREE.Mesh(new THREE.BoxGeometry(0.065,0.62,0.065),posterWood);
+      leg.position.set(side*0.27,0.31,0); noticeBoard.add(leg);
+    }
+    noticeBoard.position.set(6.9,0,-0.1); noticeBoard.rotation.y=-0.12; scene.add(noticeBoard);
+
     // Small, low-poly pedestrians give the street a continuous sense of life.
     const pedestrians = [];
     const coatColors = ['#303943', '#51413b', '#555b48', '#796044', '#393b42', '#765b58', '#46584e', '#6d6b63', '#343d49'];
