@@ -1215,3 +1215,17 @@ body{overflow:hidden}
 .event-chain-progress{height:4px;background:rgba(255,255,255,.1);border-radius:9px;overflow:hidden}
 .event-chain-progress span{display:block;height:100%;background:#d7b875;transition:width .2s ease}
 .event-chain-card>small{font-size:10px;color:#b9b9b3}
+
+
+/* Clearer order cards with a direct path to production */
+.customer-order-stock-meter{height:4px;background:rgba(255,255,255,.09);border-radius:8px;overflow:hidden;margin:-3px 0 4px}
+.customer-order-stock-meter span{display:block;height:100%;background:#83b994;border-radius:8px;transition:width .2s ease}
+.customer-order-top b.order-kind-event{color:#e7c47d}
+.order-primary-button,.order-production-button{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;min-height:39px;margin-top:5px}
+.order-primary-button span:last-child,.order-production-button span:last-child{margin-left:auto;font-size:15px}
+.order-production-button{background:#e3c17a!important;color:#25231f!important;border:1px solid rgba(255,255,255,.16)!important;font-weight:750;box-shadow:0 4px 14px rgba(0,0,0,.14)}
+.order-production-hint{display:flex;gap:9px;align-items:center;padding:10px;border-radius:9px;background:rgba(213,172,91,.1);border:1px solid rgba(213,172,91,.22);margin:5px 0}
+.order-production-icon{width:28px;height:28px;flex:0 0 28px;display:grid;place-items:center;border-radius:8px;background:rgba(213,172,91,.16);color:#e4c27d;font-size:17px}
+.order-production-hint div{display:flex;flex-direction:column;gap:3px;min-width:0}
+.order-production-hint strong{font-size:11px;color:#e8d2a4}
+.order-production-hint small{font-size:10px;line-height:1.45;color:#c3c4c1}

@@ -2214,6 +2214,15 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       setEventChain({ periodKey: eventPeriodKey, deliveries: 0, claimedMilestones: [] });
     }
   }, [eventPeriodKey, day, eventChain.periodKey]);
+  const openOrderProduction = (order) => {
+    if (!order || !owned.includes(order.propertyId) || rented.includes(order.propertyId)) {
+      tell('Bu sipariş için önce ilgili işletmenin sahibi olmalısın.');
+      return;
+    }
+    setSelected(order.propertyId);
+    setActiveHudPanel('business');
+    tell(order.propertyName + ' üretim ekranı açıldı. Gerekli ürün ve hammaddeleri buradan hazırlayabilirsin.');
+  };
   const acceptCustomerOrder = (orderId) => {
     const order = orders.find(item => item.id === orderId);
     if (!order || order.status !== 'available') return;
@@ -3211,12 +3220,15 @@ function App({ session = null, supabase = null, authConfigured = false }) {
             const hoursLeft = Math.max(0, Number(order.expiresAt) - gameHourIndex());
             const statusLabel = order.status === 'completed' ? 'TESLİM EDİLDİ' : order.status === 'expired' ? 'SÜRESİ DOLDU' : order.status === 'accepted' ? 'KABUL EDİLDİ' : 'YENİ TALEP';
             return <article className={'customer-order-card order-' + order.status} key={order.id}>
-              <div className="customer-order-top"><span>{order.propertyName}</span><b>{order.eventOrder ? 'ŞENLİK SİPARİŞİ' : statusLabel}</b></div><h3>{order.productName}</h3>
-              {order.eventOrder && <div className="event-order-note">Süreli etkinlik · Yüksek ödül · {Math.max(0, Number(order.expiresAt) - gameHourIndex())} oyun saati kaldı</div>}
-              <div className="customer-order-meta"><span>İstenen: <strong>{order.quantity}</strong></span><span>Hazır stok: <strong>{stock}</strong></span></div>
-              <div className="customer-order-reward"><strong>₺{Number(order.reward).toLocaleString('tr-TR')}</strong><span>{order.status === 'completed' ? 'Ödül alındı' : order.status === 'expired' ? 'Fırsat kaçtı' : hoursLeft + ' oyun saati kaldı'}</span></div>
-              {order.status === 'available' && <button className="stock-button" onClick={() => acceptCustomerOrder(order.id)}>SİPARİŞİ KABUL ET</button>}
-              {order.status === 'accepted' && <button className="stock-button" onClick={() => deliverCustomerOrder(order.id)} disabled={stock < order.quantity}>{stock < order.quantity ? 'ÜRETİM GEREKİYOR' : 'SİPARİŞİ TESLİM ET'}</button>}
+              <div className="customer-order-top"><span>{order.propertyName}</span><b className={order.eventOrder ? 'order-kind-event' : ''}>{order.eventOrder ? 'ŞENLİK SİPARİŞİ' : statusLabel}</b></div><h3>{order.productName}</h3>
+              {order.eventOrder && <div className="event-order-note"><span>✦</span> Süreli etkinlik · Ek ödül · {Math.max(0, Number(order.expiresAt) - gameHourIndex())} oyun saati kaldı</div>}
+              <div className="customer-order-meta"><span>İstenen miktar <strong>{order.quantity} adet</strong></span><span>Hazır stok <strong>{stock} / {order.quantity}</strong></span></div>
+              <div className="customer-order-stock-meter"><span style={{width: Math.min(100, stock / Math.max(1, order.quantity) * 100) + '%'}} /></div>
+              <div className="customer-order-reward"><strong>₺{Number(order.reward).toLocaleString('tr-TR')}</strong><span>{order.status === 'completed' ? 'Ödül tahsil edildi' : order.status === 'expired' ? 'Süre doldu' : hoursLeft + ' oyun saati kaldı'}</span></div>
+              {order.status === 'available' && <button className="stock-button order-primary-button" onClick={() => acceptCustomerOrder(order.id)}>SİPARİŞİ KABUL ET <span>→</span></button>}
+              {order.status === 'accepted' && stock < order.quantity && <div className="order-production-hint"><span className="order-production-icon">↗</span><div><strong>Üretim gerekiyor</strong><small>{order.quantity - stock} adet daha hazırla. İşletmenin üretim ekranına doğrudan geçebilirsin.</small></div></div>}
+              {order.status === 'accepted' && stock < order.quantity && owned.includes(order.propertyId) && !rented.includes(order.propertyId) && <button className="stock-button order-production-button" onClick={() => openOrderProduction(order)}><span>⚒</span> ÜRETİME GİT <span>↗</span></button>}
+              {order.status === 'accepted' && stock >= order.quantity && <button className="stock-button order-primary-button" onClick={() => deliverCustomerOrder(order.id)}>SİPARİŞİ TESLİM ET <span>✓</span></button>}
             </article>;
           })}
         </section>
