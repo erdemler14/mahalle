@@ -3063,7 +3063,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   };
 
   snapshotRef.current = { owners: ownerByProperty, marketValues, hostName: playerName.trim() || 'Ev sahibi' };
-  actionRefs.current = { advanceHour, sleepUntilMorning, clockTick: () => advanceHour(hour >= 8 && hour < 19), selectBusinessPlan, stockBusiness, buy, toggleRent, toggleShop, makeWine, resetGame, selectProperty, changeProfession };
+  actionRefs.current = { advanceHour, sleepUntilMorning, clockTick: () => advanceHour(false), selectBusinessPlan, stockBusiness, buy, toggleRent, toggleShop, makeWine, resetGame, selectProperty, changeProfession };
   useEffect(() => {
     if (multiplayerRole === 'guest') return undefined;
     const timer = window.setInterval(() => actionRefs.current.clockTick?.(), 4000);
