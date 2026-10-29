@@ -628,6 +628,39 @@ body{overflow:hidden}
 .hud-dock button:hover,.hud-dock button.active{background:#283542;border-color:#536578;color:#f2cc78}
 .hud-dismiss{position:absolute;z-index:61;top:59px;right:14px;width:34px;height:34px;border:1px solid #465665;border-radius:9px;background:#17222d;color:#f2f0e8;font-size:24px;cursor:pointer}
 .hud-side-panel{display:none!important}
+
+/* Customer orders and daily objectives */
+.hud-panel-orders .hud-side-panel>.orders-panel,
+.hud-panel-orders .hud-side-panel>.daily-tasks-panel{display:block!important}
+.hud-side-panel>.orders-panel,.hud-side-panel>.daily-tasks-panel{display:none!important}
+.orders-panel h2,.daily-tasks-panel h2{margin:5px 0 7px;color:#f2e9d7;font-family:Georgia,serif;font-size:24px;font-weight:600}
+.orders-intro{margin:0 0 13px;color:#aab8c4;font-size:11px;line-height:1.55}
+.orders-empty{padding:14px;border:1px dashed #455464;border-radius:10px;color:#aab8c4;font-size:12px;line-height:1.55}
+.customer-order-card{display:flex;flex-direction:column;gap:9px;margin:0 0 10px;padding:12px;border:1px solid #344657;border-radius:11px;background:linear-gradient(145deg,rgba(34,48,61,.92),rgba(19,28,38,.94))}
+.customer-order-card.order-completed{opacity:.65;border-color:#52745c}
+.customer-order-card.order-expired{opacity:.5;border-color:#754b48}
+.customer-order-top,.customer-order-meta,.customer-order-reward,.daily-task-head,.daily-task-foot{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.customer-order-top{font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:#aebdca}
+.customer-order-top b{font-size:8px;color:#e9ca86}
+.customer-order-card h3{margin:0;color:#f5f0e5;font-size:15px;line-height:1.35}
+.customer-order-meta{font-size:10px;color:#aab8c4}
+.customer-order-meta strong{color:#f0d7a0}
+.customer-order-reward{padding-top:8px;border-top:1px solid #354452}
+.customer-order-reward strong{font-size:20px;color:#9ed0a8}
+.customer-order-reward span{font-size:10px;color:#aab8c4}
+.customer-order-card .stock-button{width:100%;min-height:36px}
+.daily-task-row{margin-top:10px;padding:11px;border:1px solid #344657;border-radius:10px;background:rgba(24,36,47,.85)}
+.daily-task-head strong{font-size:12px;color:#f0e8d8}
+.daily-task-head span{font-size:11px;color:#e6c981;white-space:nowrap}
+.daily-task-row p{margin:5px 0 9px;font-size:10px;color:#aab8c4}
+.daily-task-meter{height:5px;overflow:hidden;border-radius:9px;background:#354452}
+.daily-task-meter span{display:block;height:100%;border-radius:9px;background:#91b89b;transition:width .2s ease}
+.daily-task-foot{margin-top:9px}
+.daily-task-foot>span{font-size:10px;color:#d7c28e}
+.daily-task-foot .stock-button{min-width:98px;padding:7px 9px;font-size:9px}
+.daily-task-foot .stock-button:disabled{opacity:.45;cursor:not-allowed}
+@media(max-width:680px){.orders-panel h2,.daily-tasks-panel h2{font-size:21px}.customer-order-card{padding:10px}}
+
 .hud-panel-open .hud-side-panel{position:absolute;z-index:55;top:104px;right:14px;bottom:88px;display:flex!important;flex-direction:column;gap:10px;width:min(420px,calc(100% - 28px));max-width:none;overflow:auto;padding:13px;border:1px solid #3c4b5b;border-radius:14px;background:rgba(17,25,34,.97);box-shadow:0 18px 55px #0008;backdrop-filter:blur(18px);box-sizing:border-box}
 .hud-side-panel>section{display:none!important}
 .hud-panel-cash .hud-side-panel>.balance-card{display:block!important}
