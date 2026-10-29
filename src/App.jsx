@@ -1072,6 +1072,9 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   const [ordersDateKey, setOrdersDateKey] = useState(() => typeof saved.ordersDateKey === 'string' ? saved.ordersDateKey : '');
   const [dailyTasks, setDailyTasks] = useState(() => Array.isArray(saved.dailyTasks) ? saved.dailyTasks : []);
   const [dailyTasksDateKey, setDailyTasksDateKey] = useState(() => typeof saved.dailyTasksDateKey === 'string' ? saved.dailyTasksDateKey : '');
+  const [experience, setExperience] = useState(() => Math.max(0, Number(saved.experience) || 0));
+  const playerLevel = 1 + Math.floor(experience / 100);
+  const levelExperience = experience % 100;
   const [selectedShoeId, setSelectedShoeId] = useState('kundura');
   const [productionNow, setProductionNow] = useState(Date.now());
   useEffect(() => {
@@ -1927,10 +1930,11 @@ function App({ session = null, supabase = null, authConfigured = false }) {
           if (typeof state.ordersDateKey === 'string') setOrdersDateKey(state.ordersDateKey);
           if (Array.isArray(state.dailyTasks)) setDailyTasks(state.dailyTasks);
           if (typeof state.dailyTasksDateKey === 'string') setDailyTasksDateKey(state.dailyTasksDateKey);
+          if (Number.isFinite(Number(state.experience))) setExperience(Math.max(0, Number(state.experience) || 0));
           if (Array.isArray(state.log)) setLog(state.log.slice(0, 5));
           if (state.developments && typeof state.developments === 'object') setDevelopments(state.developments);
         } else {
-          const initialState = { version: 2, economyVersion: STARTER_ECONOMY_VERSION, playerName: displayName, steps, cash: STARTING_CASH, owned: [], rented, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, log: log.slice(0, 5), developments };
+          const initialState = { version: 2, economyVersion: STARTER_ECONOMY_VERSION, playerName: displayName, steps, cash: STARTING_CASH, owned: [], rented, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, experience, log: log.slice(0, 5), developments };
           const { error } = await supabase.from('player_saves').upsert({ user_id: userId, state: initialState, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
           if (error) throw error;
           setPlayerName(displayName);
@@ -1961,11 +1965,11 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const state = {
       version: 2, economyVersion: STARTER_ECONOMY_VERSION, playerName, steps, cash, owned, rented, selected, showPortfolio, professionId, marketValues,
       hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty,
-      businessStats, pendingProductions, log: log.slice(0, 5), developments
+      businessStats, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, experience, log: log.slice(0, 5), developments
     };
     supabase.from('player_saves').upsert({ user_id: session.user.id, state, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
       .then(({ error }) => { if (error) setMultiplayerStatus('Kayıt eşitlenemedi · ' + error.message); });
-  }, [session?.user?.id, supabase, cloudReady, playerName, steps, cash, owned, rented, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, log, developments]);
+  }, [session?.user?.id, supabase, cloudReady, playerName, steps, cash, owned, rented, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, experience, log, developments]);
 
 
   const tell = (text) => {
@@ -2060,6 +2064,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const task = dailyTasks.find(item => item.id === taskId);
     if (!task || task.progress < task.target || task.claimed) return;
     setCash(old => Math.round((old + task.reward) * 100) / 100);
+    setExperience(old => Math.max(0, Number(old) || 0) + Math.max(0, Number(task.xp) || 0));
     setDailyTasks(old => old.map(item => item.id === taskId ? { ...item, claimed: true } : item));
     tell('Günlük görev tamamlandı: ' + task.title + '. Ödül +₺' + task.reward + ' ve ' + task.xp + ' XP.');
   };
@@ -2936,7 +2941,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
           })}
         </section>
         <section className="daily-tasks-panel">
-          <div className="card-label">GÜNLÜK GÖREVLER</div><h2>Bugünün hedefleri</h2>
+          <div className="card-label">GÜNLÜK GÖREVLER · SEVİYE {playerLevel} · {levelExperience}/100 XP</div><h2>Bugünün hedefleri</h2>
           <p className="orders-intro">Hedefleri tamamla, ödülünü kendin topla. Görevler oyun günü değişince yenilenir.</p>
           {dailyTasks.map(task => <div className="daily-task-row" key={task.id}>
             <div className="daily-task-head"><strong>{task.title}</strong><span>{Math.min(task.progress,task.target)}/{task.target}</span></div><p>{task.detail}</p>
