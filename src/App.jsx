@@ -1674,6 +1674,34 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     if (month === 11 && day >= 15 && day <= 30) {
       events.push({ id: 'rainy-season', name: 'Yağışlı günler', detail: 'Yağışlı günlerde kahve, sıcak yemek ve tamir hizmetlerine talep kayıyor.', effect: (p, product) => ({ sales: /kahve|corba|tamir|tamirat|sakatat/i.test((product?.id || '') + ' ' + (product?.name || '')) ? 1.25 : 0.9, chance: 1.04 }) });
     }
+    // Multi-day cultural and neighborhood events create distinct winners and losers.
+    if (month === 10 && day >= 12 && day <= 16) {
+      events.push({ id: 'beyoglu-film-festival', name: 'Beyoğlu Film Festivali', detail: 'Beş gün süren film gösterimleri ve gece seansları çevredeki gazino, kahvehane, lokanta ve kitapçılara ziyaretçi çekiyor; bazı sakin sokaklarda gürültü artıyor.', effect: (p, product) => {
+        const entertainment = isEntertainment(p);
+        const food = isFood(product);
+        const books = isBookshop(p) || /kitap|sinema|film|dergi/i.test((product?.id || '') + ' ' + (product?.name || ''));
+        const busy = entertainment || food || books;
+        return { sales: busy ? (entertainment ? 1.55 : food ? 1.32 : 1.25) : 0.94, chance: entertainment ? 1.35 : busy ? 1.16 : 0.94 };
+      } });
+    }
+    if (month === 4 && day >= 10 && day <= 14) {
+      events.push({ id: 'beyoglu-book-days', name: 'Beyoğlu Kitap Günleri', detail: 'Pasajlarda düzenlenen kitap günleri kitabevleri ve kırtasiyeleri canlandırıyor; yeme-içme trafiği de bir miktar artıyor.', effect: (p, product) => {
+        const books = isBookshop(p) || /kitap|defter|kalem|kırtasiye|kirtasiye/i.test((product?.id || '') + ' ' + (product?.name || ''));
+        return { sales: books ? 1.65 : isFood(product) ? 1.12 : 0.96, chance: books ? 1.4 : 1.02 };
+      } });
+    }
+    if (month === 6 && day >= 20 && day <= 23) {
+      events.push({ id: 'street-music-week', name: 'Sokak Müzikleri Haftası', detail: 'Meydandaki açık hava konserleri kahvehane, gazino ve lokantalara müşteri getiriyor; bazı dükkânlarda kalabalık nedeniyle alışveriş zorlaşıyor.', effect: (p, product) => {
+        const entertainment = isEntertainment(p);
+        return { sales: entertainment ? 1.42 : isFood(product) ? 1.22 : 0.92, chance: entertainment ? 1.25 : isFood(product) ? 1.12 : 0.95 };
+      } });
+    }
+    if (month === 3 && day >= 5 && day <= 7) {
+      events.push({ id: 'spring-flower-market', name: 'Bahar Çiçek Pazarı', detail: 'Üç günlük çiçek pazarı çiçekçi ve bahçıvanları hareketlendiriyor; meydan çevresindeki geçişler kalabalıklaşıyor.', effect: (p, product) => {
+        const flowers = /cicek|çiçek|buket|gul-demeti|saksi-cicegi/i.test((p?.name || '') + ' ' + (product?.id || '') + ' ' + (product?.name || ''));
+        return { sales: flowers ? 1.85 : isFood(product) ? 1.08 : 0.96, chance: flowers ? 1.55 : 1.02 };
+      } });
+    }
     return events;
   };
   const getEconomicEventEffect = (property, product) => activeEconomicEvents().reduce((total, event) => {
