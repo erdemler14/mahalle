@@ -37,7 +37,8 @@ const properties = [
   { id: 32, name: 'Papadopulos Matbaa ve Kırtasiyesi', type: 'Atölye', price: 4185, rent: 54, x: 5.5, z: 17.2, color: '#b8b0a4', floors: 3, style: 'Baskı atölyesi ve kırtasiye' },
   { id: 33, name: 'Şevket Efendi’nin Berberhanesi', type: 'İşletme', price: 1980, rent: 42, x: 0, z: 20.5, color: '#b6a18c', floors: 2, style: 'Pera usulü berber dükkânı, pirinç aynalar ve ahşap koltuk' },
   { id: 34, name: 'Çiçekçi Dükkânı', type: 'Ticaret', price: 2475, rent: 38, x: 20.5, z: 18.4, color: '#c4b6a6', floors: 2, style: 'Vitrininde çiçekler ve saksılar bulunan küçük çiçekçi' },
-  { id: 35, name: 'Haliç Gazinosu', type: 'İşletme', price: 3350, rent: 245, x: 21.2, z: 12.2, color: '#a88c73', floors: 2, style: 'Haliç kıyısında teraslı, deniz manzaralı gazino' }
+  { id: 35, name: 'Haliç Gazinosu', type: 'İşletme', price: 3350, rent: 245, x: 21.2, z: 12.2, color: '#a88c73', floors: 2, style: 'Haliç kıyısında teraslı, deniz manzaralı gazino' },
+  { id: 36, name: 'Kohen Hemşireler Kitabevi', type: 'Ticaret', price: 4200, rent: 82, x: 20.7, z: 5.3, color: '#bca98e', floors: 2, style: '1918’de Kohen kardeşler tarafından kurulan, yabancı dilde kitap ve nadir yayınlarıyla tanınan tarihî Tünel Pasajı kitabevi' }
 ];
 
 // Galata-style irregular street frontages: narrow blocks, staggered facades and varied angles.
@@ -54,6 +55,7 @@ properties.forEach((property, index) => {
 // Keep the new waterfront businesses on the eastern edge of the walkable district.
 Object.assign(properties.find(property => property.id === 34), { x: 20.4, z: 18.4, rotation: -0.04 });
 Object.assign(properties.find(property => property.id === 35), { x: 21.1, z: 11.8, rotation: -0.08 });
+Object.assign(properties.find(property => property.id === 36), { x: 20.7, z: 5.3, rotation: -0.05 });
 
 const SAVE_KEY = 'mahalle-save-v1';
 const SAVE_BACKUP_KEY = 'mahalle-save-v1-backup';
