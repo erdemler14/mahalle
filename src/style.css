@@ -1201,3 +1201,17 @@ body{overflow:hidden}
 .global-unlock-list>strong{display:block;margin-bottom:7px;color:#d9cba9;font-size:9px;letter-spacing:.8px}
 .global-unlock-list>div{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-top:1px solid rgba(255,255,255,.06);font-size:10px;color:#bdc8d1}
 .global-unlock-list small{flex-shrink:0;color:#d9cba9;font-size:9px}
+
+
+/* Timed neighborhood event and milestone chain */
+.event-chain-card{margin:12px 0 16px;padding:13px;border:1px solid rgba(216,177,96,.35);border-radius:12px;background:linear-gradient(145deg,rgba(105,76,31,.22),rgba(32,38,43,.72));display:flex;flex-direction:column;gap:8px}
+.event-chain-kicker{font-size:9px;letter-spacing:.8px;color:#d7b875;font-weight:700}
+.event-chain-card>strong{font-size:14px;color:#f1e7cf}
+.event-chain-card p{font-size:11px;line-height:1.5;color:#c3c5c3;margin:0}
+.event-chain-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:3px 0}
+.event-chain-steps span{padding:8px 5px;border:1px solid rgba(255,255,255,.12);border-radius:8px;text-align:center;font-size:12px;font-weight:700;color:#f1dfb5}
+.event-chain-steps span.done{background:rgba(89,145,102,.22);border-color:rgba(119,184,133,.55);color:#b9e3c0}
+.event-chain-steps small{display:block;margin-top:4px;font-size:9px;font-weight:500;color:#b7b8b5}
+.event-chain-progress{height:4px;background:rgba(255,255,255,.1);border-radius:9px;overflow:hidden}
+.event-chain-progress span{display:block;height:100%;background:#d7b875;transition:width .2s ease}
+.event-chain-card>small{font-size:10px;color:#b9b9b3}

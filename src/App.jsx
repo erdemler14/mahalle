@@ -1124,6 +1124,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   const [ordersDateKey, setOrdersDateKey] = useState(() => typeof saved.ordersDateKey === 'string' ? saved.ordersDateKey : '');
   const [dailyTasks, setDailyTasks] = useState(() => Array.isArray(saved.dailyTasks) ? saved.dailyTasks : []);
   const [dailyTasksDateKey, setDailyTasksDateKey] = useState(() => typeof saved.dailyTasksDateKey === 'string' ? saved.dailyTasksDateKey : '');
+  const [eventChain, setEventChain] = useState(() => saved.eventChain && typeof saved.eventChain === 'object' ? saved.eventChain : { periodKey: '', deliveries: 0, claimedMilestones: [] });
   const [experience, setExperience] = useState(() => Math.max(0, Number(saved.experience) || 0));
   // Always initialize the development map before save/load effects can reference it.
   const [developments, setDevelopments] = useState(() => saved.developments && typeof saved.developments === 'object' ? saved.developments : {});
@@ -2001,12 +2002,12 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       }
       window.localStorage.setItem(saveKey, JSON.stringify({
         version: 3, economyVersion: STARTER_ECONOMY_VERSION, playerName, steps, cash, owned, rented, unitOwners, unitRented, buildingLevels, selected, showPortfolio, professionId, marketValues,
-        hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, log: log.slice(0, 5)
+        hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, eventChain, log: log.slice(0, 5)
       }));
     } catch {
       // The game remains playable if browser storage is disabled or full.
     }
-  }, [playerName, steps, cash, owned, rented, unitOwners, unitRented, buildingLevels, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, log]);
+  }, [playerName, steps, cash, owned, rented, unitOwners, unitRented, buildingLevels, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, eventChain, log]);
 
   useEffect(() => {
     if (!session || !supabase) { setCloudReady(true); return undefined; }
@@ -2073,6 +2074,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
           if (typeof state.ordersDateKey === 'string') setOrdersDateKey(state.ordersDateKey);
           if (Array.isArray(state.dailyTasks)) setDailyTasks(state.dailyTasks);
           if (typeof state.dailyTasksDateKey === 'string') setDailyTasksDateKey(state.dailyTasksDateKey);
+          if (state.eventChain && typeof state.eventChain === 'object') setEventChain(state.eventChain);
           if (Number.isFinite(Number(state.experience))) setExperience(Math.max(0, Number(state.experience) || 0));
           if (Array.isArray(state.log)) setLog(state.log.slice(0, 5));
           if (state.developments && typeof state.developments === 'object') setDevelopments(state.developments);
@@ -2108,11 +2110,11 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const state = {
       version: 2, economyVersion: STARTER_ECONOMY_VERSION, playerName, steps, cash, owned, rented, selected, showPortfolio, professionId, marketValues,
       hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty,
-      businessStats, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, experience, dailySalesLog, dailySalesRevenue, careerReputation, enrolledCourse, certificates, log: log.slice(0, 5), developments
+      businessStats, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, eventChain, experience, dailySalesLog, dailySalesRevenue, careerReputation, enrolledCourse, certificates, log: log.slice(0, 5), developments
     };
     supabase.from('player_saves').upsert({ user_id: session.user.id, state, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
       .then(({ error }) => { if (error) setMultiplayerStatus('Kayıt eşitlenemedi · ' + error.message); });
-  }, [session?.user?.id, supabase, cloudReady, playerName, steps, cash, owned, rented, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, experience, dailySalesLog, dailySalesRevenue, careerReputation, enrolledCourse, certificates, log, developments]);
+  }, [session?.user?.id, supabase, cloudReady, playerName, steps, cash, owned, rented, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, eventChain, experience, dailySalesLog, dailySalesRevenue, careerReputation, enrolledCourse, certificates, log, developments]);
 
 
   const tell = (text) => {
@@ -2206,6 +2208,12 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       return changed ? next : old;
     });
   }, [year, month, day, hour]);
+  const eventPeriodKey = year + '-' + month;
+  useEffect(() => {
+    if (day >= 8 && day <= 14 && eventChain.periodKey !== eventPeriodKey) {
+      setEventChain({ periodKey: eventPeriodKey, deliveries: 0, claimedMilestones: [] });
+    }
+  }, [eventPeriodKey, day, eventChain.periodKey]);
   const acceptCustomerOrder = (orderId) => {
     const order = orders.find(item => item.id === orderId);
     if (!order || order.status !== 'available') return;
@@ -2232,7 +2240,24 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     });
     setOrders(old => old.map(item => item.id === orderId ? { ...item, status: 'completed' } : item));
     updateDailyTask('deliver-order', 1);
-    tell('Sipariş teslim edildi: ' + order.quantity + ' adet ' + order.productName + '. Ödül +₺' + order.reward.toLocaleString('tr-TR') + '.');
+    if (order.eventOrder) {
+      const nextDeliveries = (eventChain.periodKey === eventPeriodKey ? Number(eventChain.deliveries) || 0 : 0) + 1;
+      const milestones = [1, 2, 3];
+      const milestoneRewards = { 1: 100, 2: 200, 3: 400 };
+      const reached = milestones.find(step => step === nextDeliveries && !(eventChain.periodKey === eventPeriodKey && (eventChain.claimedMilestones || []).includes(step)));
+      setEventChain({ periodKey: eventPeriodKey, deliveries: nextDeliveries, claimedMilestones: [...(eventChain.periodKey === eventPeriodKey ? eventChain.claimedMilestones || [] : []), ...(reached ? [reached] : [])] });
+      if (reached) {
+        const bonus = milestoneRewards[reached];
+        setCash(oldCash => Math.round((oldCash + bonus) * 100) / 100);
+        const bonusXp = reached * 10;
+        setExperience(oldXp => Math.max(0, Number(oldXp) || 0) + bonusXp);
+        tell('Mahalle Şenliği zinciri: ' + reached + '/3 aşama! Ek ödül +₺' + bonus + ' ve ' + bonusXp + ' XP.');
+      } else {
+        tell('Etkinlik siparişi teslim edildi. Şenlik zinciri: ' + Math.min(3, nextDeliveries) + '/3 aşama.');
+      }
+    } else {
+      tell('Sipariş teslim edildi: ' + order.quantity + ' adet ' + order.productName + '. Ödül +₺' + order.reward.toLocaleString('tr-TR') + '.');
+    }
   };
   const claimDailyTask = (taskId) => {
     const task = dailyTasks.find(item => item.id === taskId);
@@ -3171,6 +3196,14 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       <aside className={'side-panel hud-side-panel hud-panel-content-' + (activeHudPanel || 'none')} aria-label="Oyun menüsü">
         <section className="orders-panel">
           <div className="card-label">MAHALLE PAZARI · SİPARİŞLER</div><h2>Müşteri talepleri</h2>
+          <div className="event-chain-card">
+            <div className="event-chain-kicker">SÜRELİ ETKİNLİK · HER AYIN 8–14. GÜNLERİ</div>
+            <strong>Mahalle Şenliği: Sipariş Zinciri</strong>
+            <p>Şenlik siparişlerini teslim ederek 3 aşamalı zinciri tamamla. Normal sipariş ödülüne ek olarak her aşamada bonus kazanırsın.</p>
+            <div className="event-chain-steps">{[1,2,3].map(step => <span key={step} className={(eventChain.periodKey === eventPeriodKey && (eventChain.claimedMilestones || []).includes(step) ? 'done' : '')}>{step === 1 ? '₺100' : step === 2 ? '₺200' : '₺400'}<small>{step * 10} XP</small></span>)}</div>
+            <div className="event-chain-progress"><span style={{width: (Math.min(3, eventChain.periodKey === eventPeriodKey ? Number(eventChain.deliveries) || 0 : 0) / 3 * 100) + '%'}} /></div>
+            <small>{Math.min(3, eventChain.periodKey === eventPeriodKey ? Number(eventChain.deliveries) || 0 : 0)}/3 şenlik siparişi teslim edildi · {day >= 8 && day <= 14 ? 'Etkinlik devam ediyor' : day < 8 ? 'Etkinlik yakında başlayacak' : 'Etkinlik sona erdi'}</small>
+          </div>
           <p className="orders-intro">Siparişi kabul et, ürünleri üret ve süresi dolmadan teslim et.</p>
           {orders.length === 0 && <div className="orders-empty">Bugün uygun sipariş yok. İşletme satın alıp işletmeye başladığında müşteri talepleri burada görünür.</div>}
           {orders.map(order => {
