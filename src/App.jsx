@@ -3062,7 +3062,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const profile = getBusinessProfile(propertyId);
     const recipe = getBusinessRecipe(propertyId, product);
     const inventory = getInventoryState(propertyId);
-    const unlocked = new Set(getUnlockedBusinessMaterials(propertyId).map(item => item.id));
+    const unlocked = new Set(getUnlockedBusinessMaterials(propertyId, getBusinessSalesLevel(propertyId), product).map(item => item.id));
     const capacity = getMaterialCapacity(propertyId);
     const currentTotal = Object.entries(inventory.materials || {}).reduce((sum,[id,amount]) => sum + (unlocked.has(id) ? Math.max(0,Number(amount)||0) : 0),0);
     const freeCapacity = Math.max(0,capacity-currentTotal);
@@ -3074,12 +3074,12 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       const have = Math.max(0,Number(inventory.materials?.[part.id])||0);
       return { ...part, material, missing: Math.max(0,part.qty*batch-have) };
     }).filter(part => part.missing > 0);
-    if (!deficits.length) { tell('Bu üretim partisi için gerekli tüm hammaddeler hazır. Doğrudan üretime başlayabilirsin.'); return; }
+    if (!deficits.length) { tell('Seçili üretim miktarı (' + batch + ') için gerekli tüm hammaddeler hazır. Doğrudan üretime başlayabilirsin.'); return; }
     if (deficits.some(part => !part.material || !unlocked.has(part.id))) { tell('Bu ürün için gereken hammaddelerden bazıları henüz açılmamış.'); return; }
     const neededSpace = deficits.reduce((sum,part)=>sum+part.missing,0);
-    if (neededSpace > freeCapacity) { tell('Depoda bu üretimin tüm eksik hammaddelerine yer yok. Depoyu genişlet veya daha küçük üretim partisi seç.'); return; }
+    if (neededSpace > freeCapacity) { tell('Bu parti için ' + neededSpace + ' birim boş hammadde alanı gerekiyor; depoda yalnızca ' + freeCapacity + ' birim yer var. Üretim partisini küçült veya depoyu genişlet.'); return; }
     const totalCost = Math.round(deficits.reduce((sum,part)=>sum+part.material.cost*part.missing/part.material.batch,0)*100)/100;
-    if (cash < totalCost) { tell('Toplu tedarik ₺'+totalCost.toLocaleString('tr-TR')+' tutuyor; bakiyen ₺'+cash.toLocaleString('tr-TR')+'. Daha küçük üretim partisi seç veya para biriktir.'); return; }
+    if (cash < totalCost) { tell('Seçili ' + batch + ' adetlik üretim için toplu tedarik ₺'+totalCost.toLocaleString('tr-TR')+' tutuyor; bakiyen ₺'+cash.toLocaleString('tr-TR')+'. Üretim partisini küçült veya para biriktir.'); return; }
     const nextMaterials = { ...(inventory.materials||{}) };
     deficits.forEach(part => { nextMaterials[part.id]=(Number(nextMaterials[part.id])||0)+part.missing; });
     setCash(value=>Math.round((value-totalCost)*100)/100);
@@ -3703,7 +3703,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
                   {missing.length > 0 && <small className="production-missing">Eksik: {missing.map(part => { const material = profile.materials.find(m => m.id === part.id); return (material?.name || part.id) + ' ×' + (part.qty - (Number(inventory.materials?.[part.id]) || 0)); }).join(', ')}</small>}
                   {pending && <small className="production-queue-note">Kuyrukta {pending.units} adet · sıradaki {Math.max(0, Math.ceil((pending.readyAt - productionNow) / 1000))} sn</small>}
                 </div>}
-                <div className="production-materials-head production-materials-toolbar"><div><strong>Hammaddeler</strong><span>{unlockedMaterials.length} çeşit açık</span></div><button type="button" className="bulk-supply-button" onClick={() => buyRecipeMaterials(active.id, selectedProduct)} disabled={!selectedProduct || !missing.length}>⚡ Eksikleri topluca tedarik et</button></div>
+                <div className="production-materials-head production-materials-toolbar"><div><strong>Hammaddeler</strong><span>{unlockedMaterials.length} çeşit açık</span></div><button type="button" className="bulk-supply-button" onClick={() => buyRecipeMaterials(active.id, selectedProduct, productionBatch)} disabled={!selectedProduct}>⚡ Eksikleri topluca tedarik et</button></div>
                 <div className="production-materials-list">
                   {unlockedMaterials.map(material => {
                     const amount = Number(inventory.materials?.[material.id]) || 0;

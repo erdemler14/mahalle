@@ -1304,3 +1304,5 @@ body{overflow:hidden}
 .auto-supply-toggle{flex:0 0 auto;min-height:36px;padding:8px 10px;border:1px solid #c7bca7;border-radius:8px;background:#fffdf8;color:#4b473d;font-size:10px;font-weight:800;cursor:pointer;white-space:nowrap}
 .auto-supply-enabled .auto-supply-toggle{border-color:#789774;background:#dce9d8;color:#2f5132}
 @media(max-width:480px){.auto-supply-panel{align-items:stretch;flex-direction:column}.auto-supply-toggle{width:100%;min-height:40px}}
+
+.bulk-supply-button:disabled{opacity:.48;cursor:not-allowed}
