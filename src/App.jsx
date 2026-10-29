@@ -1264,6 +1264,13 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   // Canonical product catalog: only the active commercial properties below are exposed.
   // Each shop has a distinct range; older expansion catalogs with colliding IDs are overridden.
   const canonicalCatalog = {
+    3: [
+      {id:'ambar-depolama',name:'Sandık ve yük depolama hizmeti',cost:10,price:23,units:8,service:true},
+      {id:'ambar-yukleme',name:'Yükleme ve hamal hizmeti',cost:12,price:27,units:8,service:true},
+      {id:'ambar-sevkiyat',name:'Karaköy içi sevkiyat',cost:16,price:36,units:6,service:true},
+      {id:'ambar-sandik',name:'Tahta sevk sandığı',cost:14,price:31,units:6},
+      {id:'ambar-toptan',name:'Ticari mal kabul ve tasnif paketi',cost:20,price:45,units:4,service:true}
+    ],
     1: [
       {id:'bakkal-bakliyat',name:'Bakliyat ve kuru erzak',cost:12,price:24,units:8},
       {id:'bakkal-sarkuteri',name:'Peynir, zeytin ve şarküteri',cost:16,price:34,units:6},
@@ -1545,6 +1552,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   // Distinct supply chains for every active commercial property. Similar businesses may sell
   // related goods, but their procurement items remain specific to the shop and its operating model.
   const BUSINESS_SPECIFIC_PROFILES = {
+    3: { name:'Karaköy levazımat ambarı', materials:[{id:'ambar-cuva',name:'Keten yük çuvalı ve bağlama ipi',batch:8,cost:8},{id:'ambar-sandik',name:'Tahta yük sandığı',batch:6,cost:12},{id:'ambar-kantar',name:'Kantar, mühür ve sevk etiketi',batch:8,cost:7},{id:'ambar-koruma',name:'Yağlı bez ve yük koruma örtüsü',batch:6,cost:9}], recipes:[['ambar-cuva',1,'ambar-kantar',1],['ambar-sandik',1,'ambar-koruma',1]], productRules:[{match:/depo|ambar|saklama|yük|yuk|taşıma|tasima/i,recipe:[['ambar-cuva',1],['ambar-sandik',1],['ambar-kantar',1]]}] },
     1: { name:'Bakkal ve şarküteri', materials:[{id:'el-bakkal-erzak',name:'Bakliyat ve kuru erzak çuvalı',batch:8,cost:12},{id:'el-bakkal-sarku',name:'Peynir, zeytin ve şarküteri kasası',batch:6,cost:14},{id:'el-bakkal-cay',name:'Çay ve kahve paketi',batch:8,cost:10},{id:'el-bakkal-konserve',name:'Konserve ve turşu kavanozu',batch:8,cost:9},{id:'el-bakkal-kagit',name:'Kesekağıdı ve tartı ambalajı',batch:10,cost:5}], recipes:[['el-bakkal-erzak',1,'el-bakkal-kagit',1],['el-bakkal-sarku',1,'el-bakkal-kagit',1],['el-bakkal-cay',1,'el-bakkal-konserve',1]], productRules:[{match:/peynir|zeytin|pastirma|şarküteri|sarkuteri/i,recipe:[['el-bakkal-sarku',1],['el-bakkal-kagit',1]]},{match:/kahve|çay|cay|kakao/i,recipe:[['el-bakkal-cay',1],['el-bakkal-kagit',1]]},{match:/konserve|turşu|tursu|erzak|bakliyat/i,recipe:[['el-bakkal-erzak',1],['el-bakkal-konserve',1]]}] },
     4: { name:'Ticaret hanı ve konaklama', materials:[{id:'sahin-han-carsaf',name:'Yıkanmış çarşaf ve yatak takımı',batch:6,cost:14},{id:'sahin-han-temizlik',name:'Oda temizliği ve sabun sarfı',batch:8,cost:8},{id:'sahin-han-kahvalti',name:'Kahvaltılık erzak tepsisi',batch:6,cost:12},{id:'sahin-han-lamba',name:'Lamba yağı ve ısıtma yakıtı',batch:8,cost:9},{id:'sahin-han-ikram',name:'Misafir ikramı ve oda suyu',batch:8,cost:7}], recipes:[['sahin-han-carsaf',1,'sahin-han-temizlik',1],['sahin-han-kahvalti',1,'sahin-han-ikram',1],['sahin-han-lamba',1,'sahin-han-temizlik',1]], productRules:[{match:/kahvaltı|kahvalti|ikram|oda suyu/i,recipe:[['sahin-han-kahvalti',1],['sahin-han-ikram',1]]},{match:/çarşaf|carsaf|yatak|temizlik|sabun/i,recipe:[['sahin-han-carsaf',1],['sahin-han-temizlik',1]]}] },
     7: { name:'Şarap ve erzak mahzeni', materials:[{id:'vuc-uzum',name:'Şaraplık üzüm ve şıra',batch:8,cost:14},{id:'vuc-sise',name:'Şişe, mantar ve mühür',batch:8,cost:10},{id:'vuc-meze',name:'Olgun peynir ve zeytin sandığı',batch:6,cost:13},{id:'vuc-kiler',name:'Kuru erzak ve bakliyat',batch:8,cost:10},{id:'vuc-etiket',name:'Mahzen etiketi ve sargı',batch:10,cost:6}], recipes:[['vuc-uzum',1,'vuc-sise',1],['vuc-kiler',1,'vuc-etiket',1],['vuc-meze',1,'vuc-kiler',1]], productRules:[{match:/şarap|sarap|üzüm|uzum|şıra|sira|mahzen|fıçı|fici/i,recipe:[['vuc-uzum',1],['vuc-sise',1],['vuc-etiket',1]]},{match:/peynir|zeytin|meze/i,recipe:[['vuc-meze',1],['vuc-kiler',1]]},{match:/erzak|bakliyat|kuru/i,recipe:[['vuc-kiler',1],['vuc-etiket',1]]}] },
