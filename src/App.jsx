@@ -1620,6 +1620,23 @@ function App({ session = null, supabase = null, authConfigured = false }) {
 
   const getBusinessProfile = (propertyId) => {
     const id = Number(propertyId);
+    // Explicit high-priority mappings for venues whose legacy inventory was previously generic.
+    if (id === 35) return {
+      name:'Haliç Gazinosu',
+      materials:[
+        {id:'halic-mutfak',name:'Gazino mutfağı meze ve sıcak yemek stoğu',batch:8,cost:14},
+        {id:'halic-icecek',name:'Şerbet, limonata ve içecek fıçısı',batch:8,cost:11},
+        {id:'halic-servis',name:'Masa örtüsü, tabak ve servis takımı',batch:8,cost:10},
+        {id:'halic-sahne',name:'Nota, sahne aksesuarı ve müzik sarfı',batch:6,cost:13},
+        {id:'halic-yakit',name:'Mutfak ve sahne aydınlatma yakıtı',batch:8,cost:9}
+      ],
+      recipes:[['halic-mutfak',1,'halic-servis',1],['halic-icecek',1,'halic-servis',1],['halic-sahne',1,'halic-yakit',1]],
+      productRules:[
+        {match:/meze|lokum|akide|helva|badem|yemek|atıştırmalık|atistirmalik/i,recipe:[['halic-mutfak',1],['halic-servis',1]]},
+        {match:/limonata|şerbet|serbet|içecek|icecek|şarap|sarap/i,recipe:[['halic-icecek',1],['halic-servis',1]]},
+        {match:/müzik|muzik|sahne|musiki|bilet|gazino|giriş|giris/i,recipe:[['halic-sahne',1],['halic-yakit',1]]}
+      ]
+    };
     if (BUSINESS_SPECIFIC_PROFILES[id]) return BUSINESS_SPECIFIC_PROFILES[id];
     if (id === 1) return shopSpecificProfiles.grocery;
     if (id === 7) return shopSpecificProfiles.wine;
