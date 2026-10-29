@@ -1672,7 +1672,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       const stats = old[order.propertyId] || {};
       const productStats = stats.productUnitsSold || {};
       const itemStats = productStats[order.productId] || {};
-      return { ...old, [order.propertyId]: { ...stats, unitsSold: (Number(stats.unitsSold) || 0) + order.quantity, revenue: Math.round(((Number(stats.revenue) || 0) + order.reward) * 100) / 100, productUnitsSold: { ...productStats, [order.productId]: { ...itemStats, units: (Number(itemStats.units) || 0) + order.quantity, revenue: Math.round(((Number(itemStats.revenue) || 0) + order.reward) * 100) / 100 } } };
+      return { ...old, [order.propertyId]: { ...stats, unitsSold: (Number(stats.unitsSold) || 0) + order.quantity, revenue: Math.round(((Number(stats.revenue) || 0) + order.reward) * 100) / 100, productUnitsSold: { ...productStats, [order.productId]: { ...itemStats, units: (Number(itemStats.units) || 0) + order.quantity, revenue: Math.round(((Number(itemStats.revenue) || 0) + order.reward) * 100) / 100 } } } };
     });
     setOrders(old => old.map(item => item.id === orderId ? { ...item, status: 'completed' } : item));
     updateDailyTask('deliver-order', 1);
