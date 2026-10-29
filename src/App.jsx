@@ -850,14 +850,18 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
       camera.lookAt(target);
     };
     cameraControlRef.current = (action, property) => {
-      if (action === 'in') radiusGoal = clamp(radiusGoal * 0.82, 5.5, 40);
-      else if (action === 'out') radiusGoal = clamp(radiusGoal * 1.22, 5.5, 55);
+      if (action === 'in') radiusGoal = clamp(radiusGoal * 0.82, 6.5, 40);
+      else if (action === 'out') radiusGoal = clamp(radiusGoal * 1.22, 6.5, 55);
       else if (action === 'focus' && property) {
         targetGoal.set(clamp(property.x || 0, -34, 34), 0, clamp(property.z || 0, -34, 34));
-        radiusGoal = Math.min(radiusGoal, 13);
-        phiGoal = 0.72;
+        radiusGoal = Math.min(radiusGoal, 15);
+        phiGoal = 0.78;
+      } else if (action === 'view') {
+        if (property === 'street') { phiGoal = 1.08; radiusGoal = Math.min(radiusGoal, 21); }
+        else if (property === 'top') { phiGoal = 0.32; radiusGoal = Math.max(radiusGoal, 25); }
+        else { phiGoal = 0.76; thetaGoal = Math.PI / 4; radiusGoal = Math.max(radiusGoal, 29); }
       } else {
-        radiusGoal = 43; thetaGoal = Math.PI / 4; phiGoal = 0.78; targetGoal.set(0, 0, 0);
+        radiusGoal = 43; thetaGoal = Math.PI / 4; phiGoal = 0.76; targetGoal.set(0, 0, 0);
       }
     };
     const activePointers = new Map();
@@ -873,8 +877,8 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
       dragging = true;
       if (activePointers.size === 1) {
         moved = false; lastX = event.clientX; lastY = event.clientY;
-        // Mouse: left drag rotates, right/shift drag pans. Touch: one finger rotates.
-        dragMode = event.pointerType === 'touch' ? 'rotate' : (event.button === 2 || event.shiftKey ? 'pan' : 'rotate');
+        // Familiar city-builder controls: left mouse / one finger pans; right mouse rotates.
+        dragMode = event.pointerType === 'touch' ? 'pan' : (event.button === 2 ? 'rotate' : 'pan');
       } else {
         moved = true;
         pinchDistance = pointerDistance();
@@ -938,8 +942,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
         while (obj && obj.userData.propertyId == null) obj = obj.parent;
         if (obj?.userData.propertyId != null) { selectRef.current(obj.userData.propertyId); selectedBuilding = true; break; }
       }
-      // Clicking open street/ground is a quick zoom-out gesture; wheel and drag still work.
-      if (!selectedBuilding) radiusGoal = clamp(radiusGoal * 1.18, 5.5, 55);
+      // Empty-space clicks do not unexpectedly change the camera; use explicit zoom controls.
     };
     renderer.domElement.addEventListener('pointerdown', onPointerDown);
     renderer.domElement.addEventListener('pointermove', onPointerMove);
@@ -1051,7 +1054,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
     };
   }, [owned, ownerByProperty, playerId]);
 
-  return <div className="scene-host" ref={host} aria-label="Beyoğlu 1923 3D mahalle sahnesi"><div className="scene-building-overlay" ref={overlayRef}>{overlay}</div><div className="map-zoom-controls"><button type="button" aria-label="Yakınlaştır" title="Yakınlaştır" onClick={() => cameraControlRef.current?.('in')}>＋</button><button type="button" aria-label="Uzaklaştır" title="Uzaklaştır" onClick={() => cameraControlRef.current?.('out')}>−</button><button type="button" aria-label="Seçili binaya git" title="Seçili binaya git" onClick={() => cameraControlRef.current?.('focus', properties.find(item => item.id === selected))}>⌖</button><button type="button" aria-label="Haritayı sıfırla" title="Haritayı sıfırla" onClick={() => cameraControlRef.current?.('reset')}>⌂</button><button type="button" aria-label="Üniversite ve meslek eğitimleri" title="Üniversite ve meslek eğitimleri" onClick={() => onUniversity?.()}>▤</button></div><div className="map-hint">Binaya tıkla: seç · Ara: mülk bul · Sürükle: haritayı döndür · Sağ tuş: taşı</div></div>;
+  return <div className="scene-host" ref={host} aria-label="Beyoğlu 1923 3D mahalle sahnesi"><div className="scene-building-overlay" ref={overlayRef}>{overlay}</div><div className="map-view-presets" role="group" aria-label="Kamera açısı"><button type="button" title="İzometrik görünüm" aria-label="İzometrik görünüm" onClick={() => cameraControlRef.current?.('view','iso')}>İzometrik</button><button type="button" title="Sokak görünümü" aria-label="Sokak görünümü" onClick={() => cameraControlRef.current?.('view','street')}>Sokak</button><button type="button" title="Yukarıdan görünüm" aria-label="Yukarıdan görünüm" onClick={() => cameraControlRef.current?.('view','top')}>Üstten</button></div><div className="map-zoom-controls"><button type="button" aria-label="Yakınlaştır" title="Yakınlaştır" onClick={() => cameraControlRef.current?.('in')}>＋</button><button type="button" aria-label="Uzaklaştır" title="Uzaklaştır" onClick={() => cameraControlRef.current?.('out')}>−</button><button type="button" aria-label="Seçili binaya odaklan" title="Seçili binaya odaklan" onClick={() => cameraControlRef.current?.('focus', properties.find(item => item.id === selected))}>⌖</button><button type="button" aria-label="Genel görünüme dön" title="Genel görünüme dön" onClick={() => cameraControlRef.current?.('reset')}>⌂</button><button type="button" aria-label="Üniversite ve meslek eğitimleri" title="Üniversite ve meslek eğitimleri" onClick={() => onUniversity?.()}>▤</button></div><div className="map-hint">Sol tuş / tek parmak: taşı · Sağ tuş: döndür · Tekerlek / iki parmak: yakınlaştır</div></div>;
 }
 
 function App({ session = null, supabase = null, authConfigured = false }) {
