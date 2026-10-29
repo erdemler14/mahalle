@@ -626,26 +626,46 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
     const trouserColors = ['#343638', '#484641', '#575148', '#3b4146'];
     const hatColors = ['#292c30', '#494137', '#5a5145'];
     const skinColors = ['#c99671', '#b77e5d', '#d3a17f', '#8f6048'];
-    const makePedestrian = (axis, lane, phase, speed, direction, coatColor, hasHat, outfit = 0) => {
+    const makePedestrian = (axis, lane, phase, speed, direction, coatColor, hasHat, outfit = 0, female = false) => {
       const person = new THREE.Group();
-      const coat = new THREE.MeshStandardMaterial({ color: coatColor, roughness: 0.96 });
+      const outfitColors = ['#76515b', '#536d68', '#9a7950', '#625a78', '#8b6250', '#52647a'];
+      const clothingColor = female ? outfitColors[outfit % outfitColors.length] : coatColor;
+      const coat = new THREE.MeshStandardMaterial({ color: clothingColor, roughness: 0.96 });
       const skin = new THREE.MeshStandardMaterial({ color: skinColors[Math.floor(Math.random() * skinColors.length)], roughness: 1 });
       const trousers = new THREE.MeshStandardMaterial({ color: trouserColors[outfit % trouserColors.length], roughness: 1 });
       const shoes = new THREE.MeshStandardMaterial({ color: '#302f2c', roughness: 1 });
-      const torso = new THREE.Mesh(new THREE.BoxGeometry(0.23, 0.38, 0.14), coat);
+      const torso = new THREE.Mesh(new THREE.BoxGeometry(female ? 0.21 : 0.23, 0.38, 0.14), coat);
       torso.position.y = 0.64;
       person.add(torso);
+      if (female) {
+        // Long, period-appropriate skirt: wider hem, narrow waist.
+        const skirt = new THREE.Mesh(new THREE.CylinderGeometry(0.205, 0.13, 0.38, 8, 1), coat);
+        skirt.position.y = 0.405;
+        person.add(skirt);
+        // A small collar and hair tucked beneath the hat make the silhouette distinct at street scale.
+        const hair = new THREE.MeshStandardMaterial({ color: ['#382c25', '#514037', '#6b4935'][outfit % 3], roughness: 1 });
+        const bun = new THREE.Mesh(new THREE.SphereGeometry(0.065, 7, 6), hair);
+        bun.position.set(0, 0.94, -0.055);
+        person.add(bun);
+      }
       const head = new THREE.Mesh(new THREE.SphereGeometry(0.105, 9, 7), skin);
       head.position.y = 0.91;
       person.add(head);
-      if (hasHat) {
-        const hatMaterial = new THREE.MeshStandardMaterial({ color: hatColors[outfit % hatColors.length], roughness: 1 });
-        const brim = new THREE.Mesh(new THREE.CylinderGeometry(outfit % 4 === 0 ? 0.155 : 0.14, outfit % 4 === 0 ? 0.155 : 0.14, 0.035, 8), hatMaterial);
+      if (hasHat || female) {
+        const hatMaterial = new THREE.MeshStandardMaterial({ color: female ? ['#51433b', '#625747', '#393d43', '#79654f'][outfit % 4] : hatColors[outfit % hatColors.length], roughness: 1 });
+        const brimRadius = female ? 0.19 : (outfit % 4 === 0 ? 0.155 : 0.14);
+        const brim = new THREE.Mesh(new THREE.CylinderGeometry(brimRadius, brimRadius, female ? 0.025 : 0.035, 8), hatMaterial);
         brim.position.y = 1.015;
         person.add(brim);
-        const crown = new THREE.Mesh(new THREE.CylinderGeometry(outfit % 4 === 0 ? 0.105 : 0.09, 0.105, outfit % 4 === 0 ? 0.085 : 0.11, 8), hatMaterial);
-        crown.position.y = 1.08;
+        const crown = new THREE.Mesh(new THREE.CylinderGeometry(female ? 0.075 : (outfit % 4 === 0 ? 0.105 : 0.09), female ? 0.09 : 0.105, female ? 0.07 : (outfit % 4 === 0 ? 0.085 : 0.11), 8), hatMaterial);
+        crown.position.y = female ? 1.06 : 1.08;
         person.add(crown);
+        if (female) {
+          const ribbon = new THREE.Mesh(new THREE.TorusGeometry(0.076, 0.008, 4, 8), new THREE.MeshStandardMaterial({ color: outfitColors[outfit % outfitColors.length], roughness: 1 }));
+          ribbon.rotation.x = Math.PI / 2;
+          ribbon.position.y = 1.075;
+          person.add(ribbon);
+        }
       }
       const makeLimb = (x, y, material, width, height, depth) => {
         const pivot = new THREE.Group();
@@ -656,8 +676,8 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
         person.add(pivot);
         return pivot;
       };
-      const leftLeg = makeLimb(-0.065, 0.43, trousers, 0.085, 0.28, 0.095);
-      const rightLeg = makeLimb(0.065, 0.43, trousers, 0.085, 0.28, 0.095);
+      const leftLeg = makeLimb(-0.065, 0.43, female ? coat : trousers, female ? 0.065 : 0.085, 0.28, 0.095);
+      const rightLeg = makeLimb(0.065, 0.43, female ? coat : trousers, female ? 0.065 : 0.085, 0.28, 0.095);
       const leftShoe = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.055, 0.15), shoes);
       leftShoe.position.set(-0.065, 0.035, 0.025); person.add(leftShoe);
       const rightShoe = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.055, 0.15), shoes);
@@ -671,11 +691,13 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
     };
     const mainStreetLanes = [-2.65, -1.55, 1.25, 2.55];
     for (let i = 0; i < 18; i++) {
-      makePedestrian('z', mainStreetLanes[i % mainStreetLanes.length], (i * 0.137) % 1, 0.022 + (i % 3) * 0.004, i % 2 === 0 ? 1 : -1, coatColors[i % coatColors.length], i % 4 !== 1, i);
+      const female = i % 3 === 0; // Keep a visible, mixed crowd rather than an all-male street.
+      makePedestrian('z', mainStreetLanes[i % mainStreetLanes.length], (i * 0.137) % 1, 0.022 + (i % 3) * 0.004, i % 2 === 0 ? 1 : -1, coatColors[i % coatColors.length], female || i % 4 !== 1, i, female);
     }
     const crossStreetLanes = [-1.1, 1.8, 2.65];
     for (let i = 0; i < 12; i++) {
-      makePedestrian('x', crossStreetLanes[i % crossStreetLanes.length], (i * 0.173 + 0.09) % 1, 0.015 + (i % 2) * 0.004, i % 2 === 0 ? 1 : -1, coatColors[(i + 2) % coatColors.length], i % 3 !== 1, i + 2);
+      const female = i % 3 === 1;
+      makePedestrian('x', crossStreetLanes[i % crossStreetLanes.length], (i * 0.173 + 0.09) % 1, 0.015 + (i % 2) * 0.004, i % 2 === 0 ? 1 : -1, coatColors[(i + 2) % coatColors.length], female || i % 3 !== 1, i + 2, female);
     }
 
     const raycaster = new THREE.Raycaster();
