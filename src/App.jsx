@@ -54,6 +54,15 @@ properties.forEach((property, index) => {
 const SAVE_KEY = 'mahalle-save-v1';
 const SAVE_BACKUP_KEY = 'mahalle-save-v1-backup';
 const DAILY_LIVING_COST = 0.5;
+// Safe defaults for the property-tax calculations used by the deployed game bundle.
+const PROPERTY_TAX_RATES = Object.freeze({
+  Konut: 0.0010,
+  Depo: 0.0015,
+  Ticaret: 0.0020,
+  Atölye: 0.0020,
+  İşletme: 0.0022
+});
+const PROPERTY_TAX_PROGRESSIVE = Object.freeze([1, 1, 1.25, 1.25, 1.6, 1.6, 1.6, 2, 2, 2, 2, 2.5]);
 const SHOE_MATERIALS = [
   { id: 'deri', name: 'İşlenmiş deri', batch: 4, cost: 24 },
   { id: 'taban', name: 'Ayakkabı tabanı', batch: 4, cost: 16 },
