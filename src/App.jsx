@@ -1552,6 +1552,40 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   // Distinct supply chains for every active commercial property. Similar businesses may sell
   // related goods, but their procurement items remain specific to the shop and its operating model.
   const BUSINESS_SPECIFIC_PROFILES = {
+    55: {
+      name:'Pansiyon tedariki',
+      materials:[
+        {id:'pans-yatak',name:'Çarşaf, yastık kılıfı ve nevresim',batch:6,cost:12},
+        {id:'pans-temizlik',name:'Kat temizliği ve dezenfektan',batch:8,cost:8},
+        {id:'pans-kahvalti',name:'Kahvaltılık peynir, zeytin ve yumurta',batch:6,cost:14},
+        {id:'pans-banyo',name:'Sabun, şampuan ve banyo sarfı',batch:8,cost:9},
+        {id:'pans-camasir',name:'Çamaşır yıkama ve ütü sarfı',batch:6,cost:10}
+      ],
+      recipes:[['pans-yatak',1,'pans-temizlik',1],['pans-kahvalti',1,'pans-banyo',1]],
+      productRules:[
+        {match:/kahvaltı|kahvalti|yemek/i,recipe:[['pans-kahvalti',1]]},
+        {match:/oda|konaklama|gecelik/i,recipe:[['pans-yatak',1],['pans-temizlik',1],['pans-banyo',1]]}
+      ]
+    },
+    56: {
+      name:'Otel işletmesi',
+      materials:[
+        {id:'otel-nevresim',name:'Otel tipi çarşaf, nevresim ve yastık kılıfı',batch:8,cost:18},
+        {id:'otel-temizlik',name:'Kat hizmetleri temizlik ve dezenfeksiyon ürünleri',batch:8,cost:12},
+        {id:'otel-banyo',name:'Şampuan, duş jeli, sabun ve buklet seti',batch:8,cost:14},
+        {id:'otel-camasir',name:'Çamaşırhane deterjanı ve ütü sarfı',batch:8,cost:13},
+        {id:'otel-mutfak',name:'Mutfak erzağı, süt ürünleri ve kahvaltılık',batch:8,cost:20},
+        {id:'otel-icecek',name:'Su, kahve, çay ve minibar içecekleri',batch:8,cost:16},
+        {id:'otel-bakim',name:'Teknik bakım parçaları ve ampuller',batch:6,cost:15},
+        {id:'otel-amenity',name:'Misafir terliği ve kişisel bakım seti',batch:8,cost:11}
+      ],
+      recipes:[['otel-nevresim',1,'otel-temizlik',1],['otel-banyo',1,'otel-camasir',1],['otel-mutfak',1,'otel-icecek',1]],
+      productRules:[
+        {match:/oda|suit|konaklama|gecelik/i,recipe:[['otel-nevresim',1],['otel-temizlik',1],['otel-banyo',1],['otel-amenity',1]]},
+        {match:/yemek|kahvaltı|kahvalti|restoran/i,recipe:[['otel-mutfak',1],['otel-icecek',1]]},
+        {match:/bakım|bakim|temizlik/i,recipe:[['otel-temizlik',1],['otel-bakim',1]]}
+      ]
+    },
     3: { name:'Karaköy levazımat ambarı', materials:[{id:'ambar-cuva',name:'Keten yük çuvalı ve bağlama ipi',batch:8,cost:8},{id:'ambar-sandik',name:'Tahta yük sandığı',batch:6,cost:12},{id:'ambar-kantar',name:'Kantar, mühür ve sevk etiketi',batch:8,cost:7},{id:'ambar-koruma',name:'Yağlı bez ve yük koruma örtüsü',batch:6,cost:9}], recipes:[['ambar-cuva',1,'ambar-kantar',1],['ambar-sandik',1,'ambar-koruma',1]], productRules:[{match:/depo|ambar|saklama|yük|yuk|taşıma|tasima/i,recipe:[['ambar-cuva',1],['ambar-sandik',1],['ambar-kantar',1]]}] },
     1: { name:'Bakkal ve şarküteri', materials:[{id:'el-bakkal-erzak',name:'Bakliyat ve kuru erzak çuvalı',batch:8,cost:12},{id:'el-bakkal-sarku',name:'Peynir, zeytin ve şarküteri kasası',batch:6,cost:14},{id:'el-bakkal-cay',name:'Çay ve kahve paketi',batch:8,cost:10},{id:'el-bakkal-konserve',name:'Konserve ve turşu kavanozu',batch:8,cost:9},{id:'el-bakkal-kagit',name:'Kesekağıdı ve tartı ambalajı',batch:10,cost:5}], recipes:[['el-bakkal-erzak',1,'el-bakkal-kagit',1],['el-bakkal-sarku',1,'el-bakkal-kagit',1],['el-bakkal-cay',1,'el-bakkal-konserve',1]], productRules:[{match:/peynir|zeytin|pastirma|şarküteri|sarkuteri/i,recipe:[['el-bakkal-sarku',1],['el-bakkal-kagit',1]]},{match:/kahve|çay|cay|kakao/i,recipe:[['el-bakkal-cay',1],['el-bakkal-kagit',1]]},{match:/konserve|turşu|tursu|erzak|bakliyat/i,recipe:[['el-bakkal-erzak',1],['el-bakkal-konserve',1]]}] },
     4: { name:'Ticaret hanı ve konaklama', materials:[{id:'sahin-han-carsaf',name:'Yıkanmış çarşaf ve yatak takımı',batch:6,cost:14},{id:'sahin-han-temizlik',name:'Oda temizliği ve sabun sarfı',batch:8,cost:8},{id:'sahin-han-kahvalti',name:'Kahvaltılık erzak tepsisi',batch:6,cost:12},{id:'sahin-han-lamba',name:'Lamba yağı ve ısıtma yakıtı',batch:8,cost:9},{id:'sahin-han-ikram',name:'Misafir ikramı ve oda suyu',batch:8,cost:7}], recipes:[['sahin-han-carsaf',1,'sahin-han-temizlik',1],['sahin-han-kahvalti',1,'sahin-han-ikram',1],['sahin-han-lamba',1,'sahin-han-temizlik',1]], productRules:[{match:/kahvaltı|kahvalti|ikram|oda suyu/i,recipe:[['sahin-han-kahvalti',1],['sahin-han-ikram',1]]},{match:/çarşaf|carsaf|yatak|temizlik|sabun/i,recipe:[['sahin-han-carsaf',1],['sahin-han-temizlik',1]]}] },
