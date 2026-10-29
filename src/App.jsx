@@ -1155,16 +1155,80 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     general: { name: 'Ticari mal', materials: [{id:'toptan',name:'Toptan mal kolisi',batch:8,cost:12},{id:'ambalaj',name:'Kâğıt ve ambalaj',batch:8,cost:7},{id:'cam',name:'Cam, teneke ve kavanoz',batch:6,cost:9}], recipes: [['toptan',1,'ambalaj',1],['toptan',1,'cam',1],['toptan',2,'ambalaj',1],['toptan',2,'cam',1],['toptan',3,'ambalaj',2]] },
     service: { name: 'Hizmet', materials: [{id:'sabun-berber',name:'Sabun ve tıraş malzemesi',batch:8,cost:8},{id:'kolonya-berber',name:'Kolonya ve bakım ürünü',batch:6,cost:9},{id:'alet-berber',name:'Ustura ve bakım aleti',batch:4,cost:12}], recipes: [['sabun-berber',1,'kolonya-berber',1],['sabun-berber',1,'alet-berber',1],['kolonya-berber',1,'alet-berber',1],['sabun-berber',2,'kolonya-berber',1],['kolonya-berber',2,'alet-berber',1]] }
   };
+  // Business-specific supply chains: recipes follow the actual product range of each shop,
+  // rather than every shop drawing from the same generic "food" or "trade" list.
+  const shopSpecificProfiles = {
+    grocery: { name: 'Bakkal ve şarküteri', materials: [
+      {id:'bak-koku',name:'Kolonya ve esans',batch:6,cost:10},{id:'bak-cam',name:'Cam şişe ve kavanoz',batch:6,cost:9},
+      {id:'bak-sabun',name:'Sabun bazı ve bakım yağı',batch:6,cost:10},{id:'bak-erzak',name:'Toptan erzak kolisi',batch:8,cost:12},
+      {id:'bak-kahve',name:'Kahve ve kakao',batch:6,cost:12},{id:'bak-ambalaj',name:'Kâğıt ve hediye ambalajı',batch:8,cost:7}
+    ], recipes: [['bak-koku',1,'bak-cam',1],['bak-sabun',1,'bak-ambalaj',1],['bak-erzak',1,'bak-cam',1],['bak-kahve',1,'bak-cam',1],['bak-koku',2,'bak-cam',1]] },
+    wine: { name: 'Şarap ve erzak', materials: [
+      {id:'sarap-sira',name:'Şıra ve üzüm',batch:8,cost:12},{id:'sarap-sise',name:'Şişe ve mantar',batch:8,cost:9},
+      {id:'sarap-etiket',name:'Etiket ve ambalaj',batch:8,cost:7},{id:'sarap-erzak',name:'Kuru erzak',batch:8,cost:10},
+      {id:'sarap-meze',name:'Zeytin ve peynir',batch:6,cost:12}
+    ], recipes: [['sarap-sira',1,'sarap-sise',1],['sarap-sira',2,'sarap-sise',1],['sarap-erzak',1,'sarap-etiket',1],['sarap-meze',1,'sarap-erzak',1],['sarap-sira',3,'sarap-sise',2]] },
+    clothing: { name: 'Konfeksiyon ve perakende', materials: [
+      {id:'konf-kumas',name:'Kumaş topu',batch:6,cost:12},{id:'konf-iplik',name:'İplik ve düğme',batch:8,cost:8},
+      {id:'konf-aksesuar',name:'Dantel ve aksesuar',batch:6,cost:10},{id:'konf-ithal',name:'Toptan ithal eşya',batch:6,cost:15},
+      {id:'konf-kagit',name:'Kitap ve kâğıt ürünleri',batch:8,cost:9}
+    ], recipes: [['konf-kumas',1,'konf-iplik',1],['konf-ithal',1,'konf-aksesuar',1],['konf-kagit',1,'konf-ithal',1],['konf-kumas',2,'konf-iplik',2],['konf-kumas',2,'konf-aksesuar',2]] },
+    coffee: { name: 'Kahvehane ve kafe', materials: [
+      {id:'kahve-cekirdek',name:'Kahve çekirdeği ve çay',batch:8,cost:12},{id:'kahve-seker',name:'Şeker ve süt',batch:8,cost:9},
+      {id:'kahve-surup',name:'Şerbet ve tatlı malzemesi',batch:6,cost:10},{id:'kahve-kakao',name:'Kakao ve ithal kahve',batch:6,cost:14},
+      {id:'kahve-ikram',name:'Fincan ve servis malzemesi',batch:8,cost:7}
+    ], recipes: [['kahve-cekirdek',1,'kahve-ikram',1],['kahve-seker',1,'kahve-surup',1],['kahve-kakao',1,'kahve-ikram',1],['kahve-surup',2,'kahve-seker',1],['kahve-kakao',2,'kahve-ikram',1]] },
+    bakery: { name: 'Fırın', materials: [
+      {id:'fir-un',name:'Un ve tahıl',batch:8,cost:8},{id:'fir-maya',name:'Maya ve tuz',batch:8,cost:7},
+      {id:'fir-yag',name:'Tereyağı ve süt',batch:6,cost:10},{id:'fir-seker',name:'Şeker ve tatlı malzemesi',batch:8,cost:9},
+      {id:'fir-ambalaj',name:'Kâğıt torba ve ambalaj',batch:8,cost:6}
+    ], recipes: [['fir-un',2,'fir-maya',1],['fir-un',1,'fir-yag',1],['fir-un',1,'fir-seker',1],['fir-yag',2,'fir-seker',1],['fir-un',2,'fir-yag',2]] },
+    butcher: { name: 'Kasap', materials: [
+      {id:'kas-et',name:'Taze et',batch:6,cost:16},{id:'kas-kemik',name:'Kemik ve sakatat',batch:6,cost:10},
+      {id:'kas-baharat',name:'Tuz ve baharat',batch:8,cost:7},{id:'kas-kagit',name:'Kasap kâğıdı ve ambalaj',batch:8,cost:6},
+      {id:'kas-yag',name:'Yağ ve iç yağı',batch:6,cost:9}
+    ], recipes: [['kas-et',1,'kas-kagit',1],['kas-kemik',1,'kas-baharat',1],['kas-et',2,'kas-kagit',1],['kas-et',1,'kas-yag',1],['kas-et',2,'kas-baharat',1]] },
+    greengrocer: { name: 'Manav', materials: [
+      {id:'man-sebze',name:'Mevsim sebzesi',batch:8,cost:9},{id:'man-meyve',name:'Taze meyve',batch:8,cost:11},
+      {id:'man-sepet',name:'Sepet ve sandık',batch:8,cost:7},{id:'man-kurutma',name:'Kurutmalık ve konserve malzemesi',batch:6,cost:10}
+    ], recipes: [['man-sebze',1,'man-sepet',1],['man-meyve',1,'man-sepet',1],['man-sebze',2,'man-sepet',1],['man-meyve',2,'man-kurutma',1],['man-meyve',2,'man-sebze',1]] },
+    restaurant: { name: 'Lokanta ve mutfak', materials: [
+      {id:'lok-et',name:'Et ve taze sebze',batch:6,cost:13},{id:'lok-tahil',name:'Tahıl ve ekmek',batch:8,cost:8},
+      {id:'lok-yag',name:'Yemeklik yağ ve süt',batch:6,cost:9},{id:'lok-baharat',name:'Baharat ve ot',batch:8,cost:7},
+      {id:'lok-meze',name:'Meze ve çorbalık malzeme',batch:6,cost:10}
+    ], recipes: [['lok-et',1,'lok-tahil',1],['lok-meze',1,'lok-baharat',1],['lok-et',1,'lok-yag',1],['lok-tahil',1,'lok-meze',1],['lok-et',2,'lok-baharat',1]] },
+    spice: { name: 'Baharat ve nebatat', materials: [
+      {id:'aktar-ot',name:'Şifalı ot ve baharat',batch:8,cost:10},{id:'aktar-kavanoz',name:'Kavanoz ve kâğıt kese',batch:8,cost:7},
+      {id:'aktar-yag',name:'Bitkisel yağ ve öz',batch:6,cost:11},{id:'aktar-sabun',name:'Sabun ve bakım bazı',batch:6,cost:10}
+    ], recipes: [['aktar-ot',1,'aktar-kavanoz',1],['aktar-sabun',1,'aktar-kavanoz',1],['aktar-ot',2,'aktar-kavanoz',1],['aktar-yag',1,'aktar-kavanoz',1],['aktar-ot',2,'aktar-yag',1]] },
+    perfumery: { name: 'Kolonyacı ve parfümeri', materials: [
+      {id:'par-alkol',name:'Kolonya alkolü',batch:8,cost:10},{id:'par-esans',name:'Parfüm esansı',batch:6,cost:13},
+      {id:'par-cam',name:'Cam şişe',batch:8,cost:8},{id:'par-sabun',name:'Sabun ve bakım yağı',batch:6,cost:10},
+      {id:'par-kutu',name:'Etiket ve hediye kutusu',batch:8,cost:7}
+    ], recipes: [['par-alkol',1,'par-esans',1],['par-sabun',1,'par-kutu',1],['par-alkol',1,'par-cam',1],['par-esans',2,'par-cam',1],['par-esans',2,'par-cam',1]] }
+  };
   const getBusinessProfile = (propertyId) => {
-    if ([4,21].includes(Number(propertyId))) return businessMaterialProfiles.lodging;
-    if (propertyId === 15) return businessMaterialProfiles.pharmacy;
-    if ([13,14,18,19,12,25].includes(Number(propertyId))) return businessMaterialProfiles.food;
-    if ([10,26].includes(Number(propertyId))) return businessMaterialProfiles.textile;
-    if ([9,16,32].includes(Number(propertyId))) return businessMaterialProfiles.paper;
-    if ([17].includes(Number(propertyId))) return businessMaterialProfiles.wood;
-    if ([20].includes(Number(propertyId))) return businessMaterialProfiles.metal;
-    if ([29].includes(Number(propertyId))) return businessMaterialProfiles.soap;
-    if ([33].includes(Number(propertyId))) return businessMaterialProfiles.service;
+    const id = Number(propertyId);
+    if (id === 1) return shopSpecificProfiles.grocery;
+    if (id === 7) return shopSpecificProfiles.wine;
+    if (id === 10) return shopSpecificProfiles.clothing;
+    if ([12,25].includes(id)) return shopSpecificProfiles.coffee;
+    if (id === 13) return shopSpecificProfiles.bakery;
+    if (id === 14) return shopSpecificProfiles.butcher;
+    if (id === 15) return businessMaterialProfiles.pharmacy;
+    if (id === 18) return shopSpecificProfiles.greengrocer;
+    if ([19,31].includes(id)) return shopSpecificProfiles.restaurant;
+    if (id === 23) return shopSpecificProfiles.spice;
+    if (id === 28) return shopSpecificProfiles.perfumery;
+    if ([4,21].includes(id)) return businessMaterialProfiles.lodging;
+    if ([9,16,32].includes(id)) return businessMaterialProfiles.paper;
+    if ([26].includes(id)) return businessMaterialProfiles.textile;
+    if ([17].includes(id)) return businessMaterialProfiles.wood;
+    if ([20].includes(id)) return businessMaterialProfiles.metal;
+    if ([29].includes(id)) return businessMaterialProfiles.soap;
+    if ([33].includes(id)) return businessMaterialProfiles.service;
+    if ([13,14,18,19,12,25].includes(id)) return businessMaterialProfiles.food;
+    if ([10,26].includes(id)) return businessMaterialProfiles.textile;
     return businessMaterialProfiles.general;
   };
   const getBusinessRecipe = (propertyId, product) => {
@@ -2258,7 +2322,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
               const nextTarget = thresholds[level];
               return <>
                 <div className="production-console-head">
-                  <div><span className="card-label">ÜRETİM ATÖLYESİ</span><h3>{profile.name}</h3><p>Ürün seç, eksik hammaddeni al ve üretime bas.</p></div>
+                  <div><span className="card-label">ÜRETİM ATÖLYESİ</span><h3>{profile.name}</h3><p>Ürünü seç; o ürüne ait hammaddeleri tedarik et ve üretimi sıraya koy.</p></div>
                   <div className="production-level-chip"><strong>SEV. {level}/5</strong><small>{level === 5 ? 'Usta işletme' : Math.max(0, nextTarget - sold) + ' satışla seviye atla'}</small></div>
                 </div>
                 <div className="production-quick-stats">
