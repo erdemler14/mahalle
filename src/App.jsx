@@ -2178,7 +2178,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       const nextMonth = nextMonthRaw > 12 ? 1 : nextMonthRaw;
       const business = settleDailyBusinesses();
       const maintenance = portfolio.reduce((sum, p) => sum + Math.max(0.01, Math.round((getMarketValue(p) * 0.003 / 365) * 100) / 100), 0);
-      const dailyCost = DAILY_LIVING_COST + maintenance + business.costs;
+      const dailyCost = DAILY_LIVING_COST + maintenance + business.costs + sales.officialFees;
       const dailyRent = Math.round((properties.filter(p => owned.includes(p.id) && rented.includes(p.id)).reduce((sum, p) => sum + Number(p.rent || 0) / 30, 0) + Object.entries(unitRented).reduce((sum, [key, activeRent]) => { if (!activeRent) return sum; const [pid] = key.split(':'); const p = properties.find(item => item.id === Number(pid)); const unitOwner = unitOwners[key]; return sum + (p && unitOwner?.playerId === playerId ? Number(p.rent || 0) / (p.units || 1) / 30 : 0); }, 0)) * 100) / 100;
       const dryCleanOwned = owned.includes(41) && !rented.includes(41);
       let dryCleanDelta = 0;
@@ -2196,7 +2196,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
           setBusinessAlert({ type: 'raid', title: 'KURU TEMİZLEMEYE BASKIN!', amount: dryCleanDelta, message: 'Denetim ekipleri kayıt dışı işlemleri tespit etti. Ceza ve el koyma bedeli kasandan düşüldü.' });
         }
       }
-      const reportRows = [...dailySalesLog];
+      const reportRows = [...dailySalesLog, ...sales.officialFeeEntries.map(text => ({ text, kind: 'daily' }))];
       if (business.entries.length) reportRows.push(...business.entries.map(text => ({ text, kind: 'daily' })));
       const daySalesRevenue = Math.max(0, Number(dailySalesRevenue) || 0);
       setZReport({ date: `${day}.${String(month).padStart(2, '0')}.${year}`, nextDate: `${nextDay}.${String(nextMonth).padStart(2, '0')}.${nextMonthRaw > 12 ? year + 1 : year}`, rows: reportRows, totalRevenue: daySalesRevenue, costs: Number(dailyCost) || 0, rent: Number(dailyRent) || 0, net: Number(dailyRent + daySalesRevenue - dailyCost + dryCleanDelta) || 0, dryCleanDelta });
@@ -2477,12 +2477,30 @@ function App({ session = null, supabase = null, authConfigured = false }) {
         }
       });
     });
-    return { revenue: Math.round(revenue * 100) / 100, entries, salesByProperty, stockChanges: localStocks, stockoutAlerts };
+    const officialFees = Object.entries(salesByProperty).reduce((sum, [propertyId, sale]) => {
+      if (![42,43,44,45,46].includes(Number(propertyId))) return sum;
+      return sum + Object.entries(sale.products || {}).reduce((subtotal, [productId, itemSale]) => {
+        const product = (tradeCatalog[Number(propertyId)] || []).find(item => item.id === productId);
+        return subtotal + (product?.service ? Number(itemSale.revenue || 0) * 0.04 : 0);
+      }, 0);
+    }, 0);
+    const roundedOfficialFees = Math.round(officialFees * 100) / 100;
+    const officialFeeEntries = roundedOfficialFees > 0 ? [`Mesleki hizmetlerden damga vergisi ve işlem harcı (%4) -₺${roundedOfficialFees.toFixed(2)}`] : [];
+    return { revenue: Math.round(revenue * 100) / 100, officialFees: roundedOfficialFees, officialFeeEntries, entries, salesByProperty, stockChanges: localStocks, stockoutAlerts };
   };
 
   const settleDailyBusinesses = () => {
     let operatingCosts = 0;
     const entries = [];
+    const professionalFees = {42:1.2,43:1.4,44:1.5,45:1.1,46:1.0};
+    owned.forEach(propertyId => {
+      if (rented.includes(propertyId) || !professionalFees[propertyId]) return;
+      const property = properties.find(item => item.id === propertyId);
+      if (!property) return;
+      const fee = professionalFees[propertyId];
+      operatingCosts += fee;
+      entries.push(`${property.name}: ruhsat, kayıt ve mesleki evrak gideri -₺${fee.toFixed(2)}`);
+    });
     owned.forEach(propertyId => {
       if (rented.includes(propertyId)) return;
       const property = properties.find(item => item.id === propertyId);
@@ -2527,9 +2545,10 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const maintenance = portfolio.reduce((sum, p) => sum + Math.max(0.01, Math.round((getMarketValue(p) * 0.003 / 365) * 100) / 100), 0);
     const upkeep = DAILY_LIVING_COST + maintenance + business.costs;
     const rent = Math.round((properties.filter(p => owned.includes(p.id) && rented.includes(p.id)).reduce((sum, p) => sum + Number(p.rent || 0) / 30, 0) + Object.entries(unitRented).reduce((sum, [key, activeRent]) => { if (!activeRent) return sum; const [pid] = key.split(':'); const p = properties.find(item => item.id === Number(pid)); const unitOwner = unitOwners[key]; return sum + (p && unitOwner?.playerId === playerId ? Number(p.rent || 0) / (p.units || 1) / 30 : 0); }, 0)) * 100) / 100;
-    const net = rent + business.revenue + sales.revenue - upkeep;
+    const totalCosts = upkeep + sales.officialFees;
+    const net = rent + business.revenue + sales.revenue - totalCosts;
     const reportRows = [...dailySalesLog, ...sales.entries.map(text => ({ text, kind: 'sale' })), ...business.entries.map(text => ({ text, kind: 'daily' }))];
-    setZReport({ date: `${day}.${String(month).padStart(2, '0')}.${year}`, nextDate: `${nextDay}.${String(nextMonth).padStart(2, '0')}.${nextMonthRaw > 12 ? year + 1 : year}`, rows: reportRows, totalRevenue: Math.round(((Number(dailySalesRevenue) || 0) + sales.revenue + business.revenue) * 100) / 100, costs: upkeep, rent, net });
+    setZReport({ date: `${day}.${String(month).padStart(2, '0')}.${year}`, nextDate: `${nextDay}.${String(nextMonth).padStart(2, '0')}.${nextMonthRaw > 12 ? year + 1 : year}`, rows: [...reportRows, ...sales.officialFeeEntries.map(text => ({ text, kind: 'daily' }))], totalRevenue: Math.round(((Number(dailySalesRevenue) || 0) + sales.revenue + business.revenue) * 100) / 100, costs: totalCosts, rent, net });
     setDailySalesLog([]);
     setDailySalesRevenue(0);
     setCash(v => Math.round((v + net) * 100) / 100);
