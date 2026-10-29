@@ -1833,7 +1833,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     if (id === 34) return businessMaterialProfiles.flower;
     if (id === 36) return businessMaterialProfiles.paper;
     if (id === 39) return shopSpecificProfiles.coffee;
-    if (id === 40) return businessMaterialProfiles.service;
+    // ID 40 has a dedicated hamam procurement profile above; do not fall back to generic service supplies.
     if (id === 41) return shopSpecificProfiles.dryclean;
     if ([4,21].includes(id)) return businessMaterialProfiles.lodging;
     if ([9,16,32].includes(id)) return businessMaterialProfiles.paper;
