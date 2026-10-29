@@ -41,7 +41,12 @@ const properties = [
   { id: 36, name: 'Kohen Hemşireler Kitabevi', type: 'Ticaret', price: 2100, rent: 42, x: 20.7, z: 5.3, color: '#bca98e', floors: 2, width: 2.35, depth: 1.9, style: 'Tünel Pasajı içinde dar cepheli, küçük tarihî kitabevi', history: '1918’de açılan tarihî kitabevinden esinlenir; yabancı dilde kitap, roman, sözlük ve kırtasiye ürünleriyle tanınır.' },
   { id: 39, name: 'Sokrat Kıraathanesi', type: 'İşletme', price: 2850, rent: 52, x: -20.5, z: -5.3, color: '#c5b9a4', floors: 2, width: 2.5, depth: 2.1, style: 'Sokrat adıyla bilinen mahalle kıraathanesi', history: 'Dönemin mahalle kahvehanelerini temsil eder; kahve, çay, şerbet ve küçük tatlılar sunar.' },
   { id: 40, name: 'Tarihi Mahalle Hamamı', type: 'İşletme', price: 8200, rent: 165, x: -20.5, z: 5.3, color: '#b9aa94', floors: 1, width: 4.0, depth: 3.2, style: 'Yüksek kubbeli, geniş soyunmalık ve sıcaklık bölümleri olan tarihî hamam', history: 'Geç Osmanlı İstanbul’undaki mahalle hamamlarından esinlenen, yıkanma ve kese hizmeti sunan kamusal yapı.' },
-  { id: 41, name: 'Pera Buharlı Kuru Temizleme', type: 'İşletme', price: 3650, rent: 68, x: 27.2, z: 22.5, color: '#b9c5c5', floors: 2, width: 2.8, depth: 2.3, style: 'Pirinç askılıklı, geniş vitrinli ve arka bölümünde buharlı ütüleme yapılan şehirli kuru temizleme dükkânı', history: '1910’ların Pera’sındaki modern şehir hizmetlerinden esinlenir. Görünürde takım elbise, palto ve hassas kumaş temizliği yapar; ancak kasasındaki olağan dışı nakit hareketleri onu mahallenin en riskli yatırımlarından biri hâline getirir.' }
+  { id: 41, name: 'Pera Buharlı Kuru Temizleme', type: 'İşletme', price: 3650, rent: 68, x: 27.2, z: 22.5, color: '#b9c5c5', floors: 2, width: 2.8, depth: 2.3, style: 'Pirinç askılıklı, geniş vitrinli ve arka bölümünde buharlı ütüleme yapılan şehirli kuru temizleme dükkânı', history: '1910’ların Pera’sındaki modern şehir hizmetlerinden esinlenir. Görünürde takım elbise, palto ve hassas kumaş temizliği yapar; ancak kasasındaki olağan dışı nakit hareketleri onu mahallenin en riskli yatırımlarından biri hâline getirir.' },
+  { id: 42, name: 'Dr. Cemil Bey Muayenehanesi', type: 'İşletme', price: 4850, rent: 82, x: -27.5, z: -15.5, color: '#b8c8b7', floors: 2, width: 2.6, depth: 2.2, style: 'Bekleme odalı, ahşap kapılı hekim muayenehanesi', history: 'Mahalle hekimliği ve ev ziyaretleri geleneğinden esinlenir.' },
+  { id: 43, name: 'Avukat Nihat Bey Hukuk Bürosu', type: 'İşletme', price: 4450, rent: 76, x: -22.5, z: -15.5, color: '#b9b6ca', floors: 2, width: 2.6, depth: 2.2, style: 'Hukuk kitapları, yazı masası ve müvekkil kabul odası', history: 'Dava takibi, dilekçe ve sözleşme hizmeti sunan dönem hukuk bürosu.' },
+  { id: 44, name: 'Diş Tabibi Rauf Bey Kliniği', type: 'İşletme', price: 4250, rent: 72, x: -17.5, z: -15.5, color: '#c9c7b8', floors: 2, width: 2.5, depth: 2.1, style: 'Dişçi koltuğu ve küçük tedavi odası bulunan klinik', history: 'Dönemin diş tabipliği ve ağız sağlığı hizmetlerinden esinlenir.' },
+  { id: 45, name: 'Mühendislik ve Mimarlık Bürosu', type: 'İşletme', price: 4650, rent: 78, x: -12.5, z: -15.5, color: '#c7b8a5', floors: 2, width: 2.7, depth: 2.2, style: 'Rulo planlar, çizim masası ve teknik kitaplık', history: 'Yapı keşfi, proje çizimi ve teknik danışmanlık sunar.' },
+  { id: 46, name: 'SMMM ve Muhasebe Yazıhanesi', type: 'İşletme', price: 3950, rent: 66, x: -7.5, z: -15.5, color: '#c5b8a8', floors: 2, width: 2.5, depth: 2.1, style: 'Defterler, hesap cetvelleri ve evrak dolabı bulunan yazıhane', history: 'Esnaf defterleri, hesap tutma ve vergi evrakı hizmeti sunar.' }
 ];
 
 // Galata-style irregular street frontages: narrow blocks, staggered facades and varied angles.
@@ -1270,6 +1275,41 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   // Canonical product catalog: only the active commercial properties below are exposed.
   // Each shop has a distinct range; older expansion catalogs with colliding IDs are overridden.
   const canonicalCatalog = {
+    42: [
+      {id:'dr-muayene',name:'Genel hekim muayenesi',cost:0,price:28,units:0,service:true},
+      {id:'dr-ev',name:'Ev ziyareti ve hasta değerlendirmesi',cost:0,price:46,units:0,service:true},
+      {id:'dr-rapor',name:'Sağlık raporu ve reçete düzenleme',cost:0,price:18,units:0,service:true},
+      {id:'dr-tedavi',name:'Küçük müdahale ve pansuman',cost:0,price:38,units:0,service:true},
+      {id:'dr-takip',name:'Kontrol muayenesi',cost:0,price:16,units:0,service:true}
+    ],
+    43: [
+      {id:'av-danisma',name:'Hukuki danışma görüşmesi',cost:0,price:24,units:0,service:true},
+      {id:'av-dilekce',name:'Dilekçe ve ihtarname hazırlanması',cost:0,price:38,units:0,service:true},
+      {id:'av-sozlesme',name:'Sözleşme hazırlanması',cost:0,price:52,units:0,service:true},
+      {id:'av-dava',name:'Dava ve duruşma takibi',cost:0,price:85,units:0,service:true},
+      {id:'av-tapu',name:'Tapu ve ticari işlem danışmanlığı',cost:0,price:46,units:0,service:true}
+    ],
+    44: [
+      {id:'dis-muayene',name:'Diş muayenesi',cost:0,price:22,units:0,service:true},
+      {id:'dis-cekim',name:'Diş çekimi',cost:0,price:48,units:0,service:true},
+      {id:'dis-dolgu',name:'Dolgu tedavisi',cost:0,price:62,units:0,service:true},
+      {id:'dis-temiz',name:'Diş taşı temizliği',cost:0,price:36,units:0,service:true},
+      {id:'dis-protez',name:'Protez ve ölçü işlemi',cost:0,price:75,units:0,service:true}
+    ],
+    45: [
+      {id:'muh-proje',name:'Mimari proje çizimi',cost:0,price:95,units:0,service:true},
+      {id:'muh-kesif',name:'Yapı keşfi ve metraj',cost:0,price:48,units:0,service:true},
+      {id:'muh-ruhsat',name:'İmar ve ruhsat dosyası hazırlığı',cost:0,price:68,units:0,service:true},
+      {id:'muh-tadilat',name:'Tadilat planı ve teknik danışmanlık',cost:0,price:42,units:0,service:true},
+      {id:'muh-denetim',name:'Şantiye kontrol ziyareti',cost:0,price:34,units:0,service:true}
+    ],
+    46: [
+      {id:'smmm-defter',name:'Esnaf defteri tutma',cost:0,price:32,units:0,service:true},
+      {id:'smmm-beyan',name:'Vergi beyannamesi hazırlama',cost:0,price:28,units:0,service:true},
+      {id:'smmm-hesap',name:'Aylık hesap ve kasa mutabakatı',cost:0,price:24,units:0,service:true},
+      {id:'smmm-ucret',name:'Ücret ve bordro hesabı',cost:0,price:22,units:0,service:true},
+      {id:'smmm-ticari',name:'Ticari defter açılış ve kapanış işlemi',cost:0,price:38,units:0,service:true}
+    ],
     3: [
       {id:'ambar-depolama',name:'Sandık ve yük depolama hizmeti',cost:10,price:23,units:8,service:true},
       {id:'ambar-yukleme',name:'Yükleme ve hamal hizmeti',cost:12,price:27,units:8,service:true},
@@ -2374,19 +2414,19 @@ function App({ session = null, supabase = null, authConfigured = false }) {
         const inventory = getInventoryState(propertyId, localStocks[propertyId]);
         const products = { ...(inventory.products || {}) };
         (tradeCatalog[propertyId] || []).filter(item => item.price > 0).forEach(product => {
-          const serviceSale = false;
+          const serviceSale = Boolean(product.service);
           const stock = Math.max(0, Number(products[product.id]) || 0);
           const soldBefore = Number(businessStats[propertyId]?.productUnitsSold?.[product.id]?.units) || 0;
           const reputation = Math.min(100, Math.floor(soldBefore * 1.5));
           const eventEffect = getEconomicEventEffect(property, product);
           const salesChance = Math.min(0.92, (0.34 + (reputation / 100) * 0.12) * eventEffect.chance);
           if ((!serviceSale && stock <= 0) || Math.random() > salesChance) return;
-          const sold = Math.min(stock, 1 + (Math.random() > 0.72 ? 1 : 0));
+          const sold = serviceSale ? 1 : Math.min(stock, 1 + (Math.random() > 0.72 ? 1 : 0));
           const baseMultiplier = 1;
           const masteryLevel = soldBefore >= 60 ? 5 : soldBefore >= 35 ? 4 : soldBefore >= 15 ? 3 : soldBefore >= 5 ? 2 : 1;
           const salePrice = getBusinessSalePrice(propertyId, product);
           const takings = Math.round(sold * salePrice * (1 + (masteryLevel - 1) * 0.02) * eventEffect.sales * 100) / 100;
-          products[product.id] = stock - sold;
+          if (!serviceSale) products[product.id] = stock - sold;
           addSale(propertyId, product.id, sold, takings, property.name + ': ' + sold + ' adet ' + product.name + ' satıldı (+₺' + takings.toFixed(2) + ')');
         });
         localStocks[propertyId] = { ...inventory, products };
