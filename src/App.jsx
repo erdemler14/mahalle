@@ -1693,6 +1693,8 @@ function App({ session = null, supabase = null, authConfigured = false }) {
 
   const getBusinessProfile = (propertyId) => {
     const id = Number(propertyId);
+    // Professional offices sell time and expertise, not physical inventory.
+    if ([42, 43, 44, 45, 46].includes(id)) return { name: ({42:'Dr. Deniz Hanım Muayenehanesi',43:'Avukat Nihat Bey Hukuk Bürosu',44:'Diş Tabibi Rauf Bey Kliniği',45:'Mühendislik ve Mimarlık Bürosu',46:'SMMM ve Muhasebe Yazıhanesi'})[id], materials: [], recipes: [], productRules: [] };
     // The playable property IDs end at 41; hotel-like lodging venues are IDs 4 and 21.
     // Do not rely on obsolete IDs 55/56 that are not present in the property registry.
     if (id === 4) return {
@@ -1774,6 +1776,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   };
   const getBusinessRecipe = (propertyId, product) => {
     const id = Number(propertyId);
+    if (product?.service) return [];
     const key = String((product?.id || '') + ' ' + (product?.name || '')).toLocaleLowerCase('tr-TR');
     // Explicit product-to-supply recipes prevent a shop's entire range from sharing one generic recipe.
     const recipeByProduct = {
@@ -1872,7 +1875,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   };
   const getUnlockedBusinessMaterials = (propertyId, level = getBusinessSalesLevel(propertyId), product = null) => {
     const profile = getBusinessProfile(propertyId);
-    const products = (tradeCatalog[propertyId] || []).filter(item => item.price > 0 && (item.unlockLevel || 1) <= level);
+    const products = (tradeCatalog[propertyId] || []).filter(item => !item.service && item.price > 0 && (item.unlockLevel || 1) <= level);
     const recipeMaterialIds = new Set();
     products.forEach(item => getBusinessRecipe(propertyId, item).forEach(part => recipeMaterialIds.add(part.id)));
     // Keep the supply list tied to the recipes of products this business can actually make.
@@ -2542,7 +2545,8 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   const selectBusinessPlan = (plan) => {
     if (sendAction('selectBusinessPlan', plan)) return;
     setBusinessPlans(old => ({ ...old, [active.id]: plan }));
-    tell(`${active.name}: satış grubu ${(tradeCatalog[active.id] || []).find(item => item.id === plan)?.name || 'seçilmedi'} olarak ayarlandı. Satış için ayrıca stok almalısın.`);
+    const item = (tradeCatalog[active.id] || []).find(product => product.id === plan);
+    tell(item?.service ? `${active.name}: ${item.name} hizmeti seçildi. Ürün stoğu ve hammadde gerekmez; müşteri talebi geldikçe hizmet geliri oluşur.` : `${active.name}: satış grubu ${item?.name || 'seçilmedi'} olarak ayarlandı. Satış için ayrıca stok almalısın.`);
   };
 
   const workAtSelectedBusiness = () => {
@@ -3201,6 +3205,24 @@ function App({ session = null, supabase = null, authConfigured = false }) {
               const sold = Number(businessStats[active.id]?.unitsSold) || 0;
               const thresholds = [0, 5, 15, 35, 60];
               const nextTarget = thresholds[level];
+              if ([42, 43, 44, 45, 46].includes(Number(active.id))) {
+                const serviceProducts = (tradeCatalog[active.id] || []).filter(item => item.service && item.price > 0);
+                const serviceLevel = getBusinessSalesLevel(active.id);
+                const selectedService = serviceProducts.find(item => item.id === businessPlans[active.id]) || serviceProducts.find(item => (item.unlockLevel || 1) <= serviceLevel) || serviceProducts[0];
+                const stats = businessStats[active.id] || { unitsSold: 0, revenue: 0, productUnitsSold: {} };
+                return <div className="service-console">
+                  <div className="production-console-head"><div><span className="card-label">MESLEKİ HİZMET OFİSİ</span><h3>{profile.name}</h3><p>Ürün, hammadde ve depo yönetimi yok. Hizmet seç; müşteri talebi geldikçe ücret doğrudan kasaya yazılır.</p></div><div className="production-level-chip"><strong>SEV. {serviceLevel}/15</strong><small>{stats.unitsSold} hizmet tamamlandı</small></div></div>
+                  <div className="production-quick-stats"><div><span>TOPLAM HİZMET GELİRİ</span><strong>₺{Number(stats.revenue || 0).toLocaleString('tr-TR',{maximumFractionDigits:2})}</strong></div><div><span>HİZMET SAYISI</span><strong>{Number(stats.unitsSold)||0}</strong></div><div><span>TEDARİK GİDERİ</span><strong>₺0</strong></div></div>
+                  <label className="business-label" htmlFor="professional-service-select">Sunulacak hizmet</label>
+                  <select id="professional-service-select" className="profession-select production-product-select" value={selectedService?.id || ''} onChange={e => selectBusinessPlan(e.target.value)}>
+                    {serviceProducts.map(item => <option key={item.id} value={item.id} disabled={(item.unlockLevel || 1) > serviceLevel}>{(item.unlockLevel || 1) > serviceLevel ? '🔒 ' : ''}{item.name} · ₺{getBusinessSalePrice(active.id,item).toLocaleString('tr-TR',{maximumFractionDigits:2})}{(item.unlockLevel || 1) > serviceLevel ? ` · Seviye ${item.unlockLevel} gerekli` : ''}</option>)}
+                  </select>
+                  {selectedService && <div className="service-offer-card"><div><span className="card-label">HİZMET TARİFESİ</span><h4>{selectedService.name}</h4></div><strong>₺{getBusinessSalePrice(active.id,selectedService).toLocaleString('tr-TR',{maximumFractionDigits:2})}</strong><p>Her müşteri işlemi tek hizmet olarak sayılır. Satış ihtimali mesleki ofisin gelişim seviyesi ve mahalle talebine göre değişir.</p></div>}
+                  <div className="production-materials-head"><strong>Hizmet kataloğu</strong><span>{serviceProducts.filter(item => (item.unlockLevel || 1) <= serviceLevel).length}/{serviceProducts.length} açık</span></div>
+                  <div className="service-catalog-list">{serviceProducts.map(item => { const itemStats = stats.productUnitsSold?.[item.id] || {}; const unlocked = (item.unlockLevel || 1) <= serviceLevel; return <div className="service-catalog-row" key={item.id}><div><strong>{unlocked ? '◈' : '🔒'} {item.name}</strong><small>{unlocked ? `Tarife ₺${getBusinessSalePrice(active.id,item).toLocaleString('tr-TR',{maximumFractionDigits:2})} · Tamamlanan ${Number(itemStats.units)||0}` : `İşletme seviyesi ${item.unlockLevel} ile açılır`}</small></div><button className="stock-button" disabled={!unlocked} onClick={() => selectBusinessPlan(item.id)}>{businessPlans[active.id] === item.id ? 'SEÇİLİ HİZMET' : unlocked ? 'HİZMETİ SEÇ' : 'KİLİTLİ'}</button></div>; })}</div>
+                  <div className="mastery-panel"><div className="mastery-head"><span className="card-label">MESLEKİ İTİBAR</span><strong>SEV. {serviceLevel}/15</strong></div><div className="mastery-name">{serviceLevel >= 10 ? 'Mahallenin aranan uzmanı' : serviceLevel >= 5 ? 'Yerleşik meslek ofisi' : serviceLevel >= 2 ? 'Tanınırlık kazanıyor' : 'Yeni açılmış ofis'}</div><div className="mastery-meter"><span style={{width: Math.min(100,serviceLevel/15*100)+'%'}} /></div><div className="mastery-foot"><span>{Number(stats.unitsSold)||0} hizmet tamamlandı</span><span>{serviceLevel >= 15 ? 'En üst seviye' : 'Hizmet verdikçe gelişir'}</span></div></div>
+                </div>;
+              }
               return <>
                 <div className="production-console-head">
                   <div><span className="card-label">ÜRETİM ATÖLYESİ</span><h3>{profile.name}</h3><p>Ürünü seç; o ürüne ait hammaddeleri tedarik et ve üretimi sıraya koy.</p></div>
