@@ -558,19 +558,43 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
         displaySill.position.set(-w * 0.12, 0.22, d / 2 + 0.07); group.add(displaySill);
 
         // Small product silhouettes make shop windows feel stocked without expensive assets.
-        const displayColors = p.id === 15 ? ['#d8d0b9', '#78908a', '#b3a17e'] :
-          [7, 23, 29].includes(p.id) ? ['#8c5947', '#c7a56b', '#6f8060'] :
-          [12, 25, 31].includes(p.id) ? ['#9b7959', '#e0c99c', '#6f8b83'] :
-          [9, 32].includes(p.id) ? ['#c6b89c', '#8d9aab', '#b56e55'] :
-          ['#c7a56b', '#8c9a7c', '#b56e55'];
+        const shopLabel = String(p.name || '').toLocaleLowerCase('tr-TR');
+        const productKind = /fırın|pastane|ekmek|tatlı|şekerleme/.test(shopLabel) ? 'bakery' :
+          /eczane|aktar|şifa|ilaç/.test(shopLabel) ? 'pharmacy' :
+          /kumaş|terzi|manifatura|tekstil/.test(shopLabel) ? 'fabric' :
+          /kitap|kırtasiye|sahaf/.test(shopLabel) ? 'books' :
+          /kahve|kahvehane|meyhane|şarap|içki/.test(shopLabel) ? 'cafe' :
+          /çiçek|bahçe/.test(shopLabel) ? 'flowers' : 'general';
+        const displayColors = productKind === 'bakery' ? ['#c69b5c','#e0c58c','#a66d45'] :
+          productKind === 'pharmacy' ? ['#7e9b86','#d8c9a8','#b7c8c0'] :
+          productKind === 'fabric' ? ['#8e5d59','#526b77','#c2a66f'] :
+          productKind === 'books' ? ['#70483a','#b79b70','#3e5147'] :
+          productKind === 'cafe' ? ['#604638','#c6a46c','#eee0c4'] :
+          productKind === 'flowers' ? ['#9a6c79','#b5a86f','#71866b'] : ['#c7a56b','#8c9a7c','#b56e55'];
         for (let itemIndex = 0; itemIndex < 3; itemIndex++) {
-          const item = new THREE.Mesh(
-            new THREE.BoxGeometry(0.13, 0.17 + (itemIndex % 2) * 0.06, 0.12),
-            new THREE.MeshStandardMaterial({ color: displayColors[itemIndex], roughness: 0.88 })
-          );
+          const color = new THREE.MeshStandardMaterial({ color: displayColors[itemIndex], roughness: 0.88 });
+          let item;
+          if (productKind === 'bakery') {
+            item = new THREE.Mesh(new THREE.SphereGeometry(0.095, 8, 6), color);
+            item.scale.set(1.25, 0.72, 0.9);
+          } else if (productKind === 'pharmacy' || productKind === 'cafe') {
+            item = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.055, 0.18, 8), color);
+          } else if (productKind === 'fabric') {
+            item = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.065, 0.2, 8), color);
+            item.rotation.z = Math.PI / 2;
+          } else if (productKind === 'flowers') {
+            item = new THREE.Mesh(new THREE.SphereGeometry(0.085, 7, 6), color);
+          } else {
+            item = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.17 + (itemIndex % 2) * 0.06, 0.12), color);
+          }
           item.position.set(-w * 0.31 + itemIndex * 0.3, 0.34 + (itemIndex % 2) * 0.025, d / 2 + 0.13);
           item.castShadow = true;
           group.add(item);
+          if (productKind === 'pharmacy' || productKind === 'cafe') {
+            const stopper = new THREE.Mesh(new THREE.CylinderGeometry(0.022,0.022,0.035,8), darkWood);
+            stopper.position.set(item.position.x, item.position.y + 0.105, item.position.z);
+            group.add(stopper);
+          }
         }
         for (const x of [-w * 0.12 - storefrontW / 2, -w * 0.12 + storefrontW / 2]) {
           const post = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.78, 0.09), darkWood);
@@ -737,12 +761,38 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
     const tram = new THREE.Group();
     const tramBody = new THREE.Mesh(new THREE.BoxGeometry(1.25, 1.05, 2.6), new THREE.MeshStandardMaterial({ color: '#8b5145', roughness: 0.8 }));
     tramBody.position.y = 0.78; tramBody.castShadow = true; tram.add(tramBody);
-    const tramRoof = new THREE.Mesh(new THREE.BoxGeometry(1.32, 0.12, 2.68), new THREE.MeshStandardMaterial({ color: '#e6ddc9' }));
+    const tramLowerPanel = new THREE.Mesh(new THREE.BoxGeometry(1.27,0.23,2.62),new THREE.MeshStandardMaterial({color:'#4d5147',roughness:0.86}));
+    tramLowerPanel.position.y=0.38; tram.add(tramLowerPanel);
+    const tramGoldLine = new THREE.Mesh(new THREE.BoxGeometry(1.28,0.035,2.63),new THREE.MeshStandardMaterial({color:'#c4a66e',metalness:0.28,roughness:0.62}));
+    tramGoldLine.position.y=0.53; tram.add(tramGoldLine);
+    const tramRoof = new THREE.Mesh(new THREE.BoxGeometry(1.32, 0.12, 2.68), new THREE.MeshStandardMaterial({ color: '#e6ddc9', roughness:0.92 }));
     tramRoof.position.y = 1.36; tram.add(tramRoof);
-    const tramWindowMat = new THREE.MeshStandardMaterial({ color: '#9eaca8', metalness: 0.1, roughness: 0.35 });
+    const tramWindowMat = new THREE.MeshStandardMaterial({ color: '#9eaca8', metalness: 0.1, roughness: 0.35, emissive:'#b79c67',emissiveIntensity:0.08 });
     for (let i = 0; i < 3; i++) {
       const win = new THREE.Mesh(new THREE.BoxGeometry(0.29, 0.34, 0.035), tramWindowMat);
       win.position.set(-0.4 + i * 0.4, 0.91, 1.315); tram.add(win);
+      const frame = new THREE.Mesh(new THREE.BoxGeometry(0.33,0.045,0.055),new THREE.MeshStandardMaterial({color:'#e3d5b8',roughness:0.9}));
+      frame.position.set(-0.4+i*0.4,1.1,1.34);tram.add(frame);
+    }
+    const tramDoor = new THREE.Mesh(new THREE.BoxGeometry(0.25,0.7,0.05),new THREE.MeshStandardMaterial({color:'#594236',roughness:0.9}));
+    tramDoor.position.set(0.48,0.72,-0.52);tram.add(tramDoor);
+    const tramDoorGlass = new THREE.Mesh(new THREE.BoxGeometry(0.15,0.28,0.025),tramWindowMat);
+    tramDoorGlass.position.set(0.48,0.9,-0.49);tram.add(tramDoorGlass);
+    const tramLampMat = new THREE.MeshStandardMaterial({color:'#f2dfad',emissive:'#e6b967',emissiveIntensity:0.4,roughness:0.4});
+    for(const x of [-0.38,0.38]){
+      const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.075,8,6),tramLampMat);
+      lamp.position.set(x,0.62,1.35);tram.add(lamp);
+    }
+    const routeBoard = new THREE.Mesh(new THREE.BoxGeometry(0.42,0.19,0.055),new THREE.MeshStandardMaterial({color:'#34463b',roughness:0.9}));
+    routeBoard.position.set(0,1.48,1.34);tram.add(routeBoard);
+    const routeNumber = new THREE.Mesh(new THREE.BoxGeometry(0.16,0.08,0.018),new THREE.MeshStandardMaterial({color:'#e8d6ac',roughness:0.8}));
+    routeNumber.position.set(0,1.48,1.38);tram.add(routeNumber);
+    const tramWheelMat = new THREE.MeshStandardMaterial({color:'#393a36',metalness:0.45,roughness:0.6});
+    for(const z of [-0.78,0.78])for(const x of [-0.5,0.5]){
+      const wheel=new THREE.Mesh(new THREE.CylinderGeometry(0.16,0.16,0.075,10),tramWheelMat);
+      wheel.rotation.z=Math.PI/2;wheel.position.set(x,0.22,z);tram.add(wheel);
+      const hub=new THREE.Mesh(new THREE.CylinderGeometry(0.055,0.055,0.085,8),new THREE.MeshStandardMaterial({color:'#b6a16f',metalness:0.45,roughness:0.5}));
+      hub.rotation.z=Math.PI/2;hub.position.set(x*1.03,0.22,z);tram.add(hub);
     }
     tram.position.set(0, 0, -15);
     scene.add(tram);
