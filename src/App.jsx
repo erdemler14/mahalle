@@ -46,7 +46,8 @@ const properties = [
   { id: 43, name: 'Avukat Nihat Bey Hukuk Bürosu', type: 'İşletme', price: 4450, rent: 76, x: -22.5, z: -15.5, color: '#b9b6ca', floors: 2, width: 2.6, depth: 2.2, style: 'Hukuk kitapları, yazı masası ve müvekkil kabul odası', history: 'Dava takibi, dilekçe ve sözleşme hizmeti sunan dönem hukuk bürosu.' },
   { id: 44, name: 'Diş Tabibi Rauf Bey Kliniği', type: 'İşletme', price: 4250, rent: 72, x: -17.5, z: -15.5, color: '#c9c7b8', floors: 2, width: 2.5, depth: 2.1, style: 'Dişçi koltuğu ve küçük tedavi odası bulunan klinik', history: 'Dönemin diş tabipliği ve ağız sağlığı hizmetlerinden esinlenir.' },
   { id: 45, name: 'Mühendislik ve Mimarlık Bürosu', type: 'İşletme', price: 4650, rent: 78, x: -12.5, z: -15.5, color: '#c7b8a5', floors: 2, width: 2.7, depth: 2.2, style: 'Rulo planlar, çizim masası ve teknik kitaplık', history: 'Yapı keşfi, proje çizimi ve teknik danışmanlık sunar.' },
-  { id: 46, name: 'SMMM ve Muhasebe Yazıhanesi', type: 'İşletme', price: 3950, rent: 66, x: -7.5, z: -15.5, color: '#c5b8a8', floors: 2, width: 2.5, depth: 2.1, style: 'Defterler, hesap cetvelleri ve evrak dolabı bulunan yazıhane', history: 'Esnaf defterleri, hesap tutma ve vergi evrakı hizmeti sunar.' }
+  { id: 46, name: 'SMMM ve Muhasebe Yazıhanesi', type: 'İşletme', price: 3950, rent: 66, x: -7.5, z: -15.5, color: '#c5b8a8', floors: 2, width: 2.5, depth: 2.1, style: 'Defterler, hesap cetvelleri ve evrak dolabı bulunan yazıhane', history: 'Esnaf defterleri, hesap tutma ve vergi evrakı hizmeti sunar.' },
+  { id: 47, name: 'Beyoğlu Ticaret ve Meslek Mektebi', type: 'İşletme', price: 12800, rent: 180, x: -2.5, z: -15.5, color: '#b7c4cf', floors: 3, width: 3.2, depth: 2.7, style: 'Üç katlı tarihî eğitim binası, amfiler ve meslek sınıfları', history: 'Hekimlik, hukuk, eczacılık ve teknik meslekler için uzun süreli ücretli eğitimler sunar.' }
 ];
 
 // Galata-style irregular street frontages: narrow blocks, staggered facades and varied angles.
@@ -1058,6 +1059,9 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   const [businessAlert, setBusinessAlert] = useState(null);
   const [dailySalesLog, setDailySalesLog] = useState(() => Array.isArray(saved.dailySalesLog) ? saved.dailySalesLog : []);
   const [dailySalesRevenue, setDailySalesRevenue] = useState(() => Math.max(0, Number(saved.dailySalesRevenue) || 0));
+  const [careerReputation, setCareerReputation] = useState(() => Math.max(0, Math.min(100, Number(saved.careerReputation) || 0)));
+  const [enrolledCourse, setEnrolledCourse] = useState(() => saved.enrolledCourse && typeof saved.enrolledCourse === 'object' ? saved.enrolledCourse : null);
+  const [certificates, setCertificates] = useState(() => Array.isArray(saved.certificates) ? saved.certificates : []);
   const [zReport, setZReport] = useState(null);
   useEffect(() => { if (!zReport) return; const timer = setTimeout(() => setZReport(null), 15000); return () => clearTimeout(timer); }, [zReport]);
   const [showPortfolio, setShowPortfolio] = useState(() => Boolean(saved.showPortfolio));
@@ -1883,6 +1887,22 @@ function App({ session = null, supabase = null, authConfigured = false }) {
 
   const profession = professionOptions.find(p => p.id === professionId) || professionOptions.find(p => p.id === 'amele');
   const active = properties.find(p => p.id === selected) || properties[0];
+  const universityCourses = [{"id":"law","name":"Hukuk Usulü ve Dava Takibi Sertifikası","profession":"avukat","cost":1800,"hours":72,"rep":8,"detail":"Dilekçe, delil, duruşma ve dosya yönetimi."},{"id":"medical","name":"Klinik Uygulamalar ve Hasta Bakımı","profession":"doktor","cost":2200,"hours":96,"rep":8,"detail":"Klinik uygulama, hasta güvenliği ve kayıt disiplini."},{"id":"pharmacy","name":"Eczacılık ve İlaç Hazırlama Sertifikası","profession":"eczaci","cost":2000,"hours":84,"rep":8,"detail":"İlaç hazırlama, reçete okuma ve eczane kayıtları."},{"id":"engineering","name":"Yapı Keşfi ve Teknik Çizim","profession":"demirci","cost":1500,"hours":60,"rep":6,"detail":"Metraj, çizim, malzeme ve saha kontrolü."},{"id":"accounting","name":"Ticari Muhasebe ve Defter Tutma","profession":"matbaaci","cost":1200,"hours":48,"rep":5,"detail":"Esnaf defteri, kasa mutabakatı ve ticari kayıt."},{"id":"medicine","name":"Hekimlik Esasları ve Klinik Pratik","profession":"doktor","cost":2600,"hours":120,"rep":10,"detail":"Uzun süreli temel tıp eğitimi ve klinik uygulama."}];
+  const startUniversityCourse = course => {
+    if (enrolledCourse) { tell('Devam eden eğitimin var. Önce onu tamamlamalısın.'); return; }
+    if (certificates.some(c => c.id === course.id)) { tell('Bu sertifikayı zaten aldın.'); return; }
+    if (cash < course.cost) { tell('Eğitim ücreti için ₺' + course.cost + ' gerekiyor.'); return; }
+    setCash(v => Math.round((v - course.cost) * 100) / 100);
+    setEnrolledCourse({ ...course, startedAt: gameHourIndex(), endsAt: gameHourIndex() + course.hours });
+    tell(course.name + ' başladı. Tamamlamak için ' + course.hours + ' oyun saati gerekiyor.');
+  };
+  const claimUniversityCertificate = () => {
+    if (!enrolledCourse || gameHourIndex() < enrolledCourse.endsAt) { tell('Eğitim henüz tamamlanmadı. Derslere devam et.'); return; }
+    setCertificates(old => [...old, { id: enrolledCourse.id, name: enrolledCourse.name, profession: enrolledCourse.profession, earnedAt: gameHourIndex() }]);
+    setCareerReputation(old => Math.min(100, old + enrolledCourse.rep));
+    tell('Sertifika alındı: ' + enrolledCourse.name + '. Mesleki itibar +' + enrolledCourse.rep + '.');
+    setEnrolledCourse(null);
+  };
   const portfolioDetail = portfolioDetailId == null ? null : properties.find(p => p.id === portfolioDetailId) || null;
   const portfolio = properties.filter(p => owned.includes(p.id));
   const rentedProperties = portfolio.filter(p => rented.includes(p.id));
@@ -1978,7 +1998,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
           if (Array.isArray(state.log)) setLog(state.log.slice(0, 5));
           if (state.developments && typeof state.developments === 'object') setDevelopments(state.developments);
         } else {
-          const initialState = { version: 2, economyVersion: STARTER_ECONOMY_VERSION, playerName: displayName, steps, cash: STARTING_CASH, owned: [], rented, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, experience, log: log.slice(0, 5), developments };
+          const initialState = { version: 2, economyVersion: STARTER_ECONOMY_VERSION, playerName: displayName, steps, cash: STARTING_CASH, owned: [], rented, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, experience, careerReputation, enrolledCourse, certificates, log: log.slice(0, 5), developments };
           const { error } = await supabase.from('player_saves').upsert({ user_id: userId, state: initialState, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
           if (error) throw error;
           setPlayerName(displayName);
@@ -2009,11 +2029,11 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const state = {
       version: 2, economyVersion: STARTER_ECONOMY_VERSION, playerName, steps, cash, owned, rented, selected, showPortfolio, professionId, marketValues,
       hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty,
-      businessStats, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, experience, dailySalesLog, dailySalesRevenue, log: log.slice(0, 5), developments
+      businessStats, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, experience, dailySalesLog, dailySalesRevenue, careerReputation, enrolledCourse, certificates, log: log.slice(0, 5), developments
     };
     supabase.from('player_saves').upsert({ user_id: session.user.id, state, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
       .then(({ error }) => { if (error) setMultiplayerStatus('Kayıt eşitlenemedi · ' + error.message); });
-  }, [session?.user?.id, supabase, cloudReady, playerName, steps, cash, owned, rented, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, experience, dailySalesLog, dailySalesRevenue, log, developments]);
+  }, [session?.user?.id, supabase, cloudReady, playerName, steps, cash, owned, rented, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, experience, dailySalesLog, dailySalesRevenue, careerReputation, enrolledCourse, certificates, log, developments]);
 
 
   const tell = (text) => {
@@ -2958,7 +2978,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     <header className="topbar hud-topbar">
       <a className="wordmark" href="#" aria-label="Mahalle ana sayfa"><span className="mark">M.</span><span>MAHALLE</span></a>
       <div className="top-center"><span className="live-dot" /> BEYOĞLU · {String(hour).padStart(2, '0')}:00</div>
-      <div className="top-actions"><button className="reset-button" onClick={resetGame}>YENİ OYUN ↻</button><button className="avatar-button" onClick={() => setShowPortfolio(v => !v)} aria-label="Portföyü aç">CC</button></div>
+      <div className="top-actions"><button className="reset-button" onClick={() => { setSelected(47); setActiveHudPanel(activeHudPanel === "university" ? null : "university"); }}>ÜNİVERSİTE</button><button className="reset-button" onClick={resetGame}>YENİ OYUN ↻</button><button className="avatar-button" onClick={() => setShowPortfolio(v => !v)} aria-label="Portföyü aç">CC</button></div>
     </header>
 
     <button type="button" className="hud-cash" aria-label="Cepteki sermaye ayrıntıları" onClick={() => setActiveHudPanel(activeHudPanel === 'cash' ? null : 'cash')}><span>₺</span><strong>{cash.toLocaleString('tr-TR', { maximumFractionDigits: 2 })}</strong><small>{cash > 0 ? 'SERMAYE' : 'SERMAYE BİTTİ'}</small></button>
@@ -3293,6 +3313,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
         </div>
       </div>
     )}
+    {activeHudPanel === 'university' && <div role="dialog" aria-modal="false" style={{position:'fixed',zIndex:99980,top:76,right:18,width:'min(540px,calc(100vw - 36px))',maxHeight:'78vh',overflowY:'auto',background:'#f7f2e8',color:'#29251f',border:'2px solid #8c754d',borderRadius:14,boxShadow:'0 18px 60px rgba(0,0,0,.35)',padding:18}}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:12}}><div><div style={{fontSize:11,letterSpacing:2}}>BEYOĞLU · MESLEK EĞİTİMİ</div><h2 style={{margin:'5px 0'}}>Ticaret ve Meslek Mektebi</h2></div><button onClick={()=>setActiveHudPanel(null)}>Kapat</button></div><p>Ücretini öde, oyun zamanında derslere devam et ve sertifikanı al. Eğitim uzun sürer; itibar artışı sınırlı ama kalıcıdır.</p><div style={{padding:10,background:'#e8e1d2',borderRadius:8,marginBottom:12}}>Mesleki itibar <strong>{careerReputation}/100</strong> · Sertifikalar <strong>{certificates.length}</strong></div>{enrolledCourse && <div style={{padding:12,border:'1px solid #8c754d',borderRadius:8,marginBottom:12}}><strong>Devam eden: {enrolledCourse.name}</strong><p>{Math.max(0,enrolledCourse.endsAt-gameHourIndex())} oyun saati kaldı</p><button onClick={claimUniversityCertificate} disabled={gameHourIndex()<enrolledCourse.endsAt}>SERTİFİKAYI AL</button></div>}{universityCourses.map(course=><div key={course.id} style={{padding:'12px 0',borderBottom:'1px solid #ddd3c1'}}><strong>{course.name}</strong><p style={{fontSize:13,margin:'5px 0'}}>{course.detail}</p><div style={{fontSize:12,marginBottom:7}}>Süre: {course.hours} oyun saati · Ücret: ₺{course.cost.toLocaleString('tr-TR')} · İtibar: +{course.rep}</div><button disabled={Boolean(enrolledCourse)||certificates.some(c=>c.id===course.id)||cash<course.cost} onClick={()=>startUniversityCourse(course)}>{certificates.some(c=>c.id===course.id)?'SERTİFİKA ALINDI':enrolledCourse?'EĞİTİMDE':'EĞİTİME KAYDOL'}</button></div>)}</div>}
     {businessAlert && (
       <div role="dialog" aria-modal="true" aria-labelledby="business-alert-title" onClick={() => setBusinessAlert(null)} style={{ position: 'fixed', inset: 0, zIndex: 100000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, background: 'rgba(12, 16, 22, 0.78)', backdropFilter: 'blur(5px)' }}>
         <div onClick={event => event.stopPropagation()} style={{ position: 'relative', width: 'min(440px, 100%)', borderRadius: 18, overflow: 'hidden', background: '#f7f2e8', color: '#27231f', boxShadow: '0 24px 90px rgba(0,0,0,.5)', border: businessAlert.type === 'raid' ? '2px solid #a52d26' : '2px solid #b28a3c' }}>
