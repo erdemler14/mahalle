@@ -811,11 +811,14 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
       pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
       raycaster.setFromCamera(pointer, camera);
       const hits = raycaster.intersectObjects(buildingMeshes, true);
+      let selectedBuilding = false;
       for (const hit of hits) {
         let obj = hit.object;
         while (obj && obj.userData.propertyId == null) obj = obj.parent;
-        if (obj?.userData.propertyId != null) { selectRef.current(obj.userData.propertyId); break; }
+        if (obj?.userData.propertyId != null) { selectRef.current(obj.userData.propertyId); selectedBuilding = true; break; }
       }
+      // Clicking open street/ground is a quick zoom-out gesture; wheel and drag still work.
+      if (!selectedBuilding) radiusGoal = clamp(radiusGoal * 1.18, 5.5, 55);
     };
     renderer.domElement.addEventListener('pointerdown', onPointerDown);
     renderer.domElement.addEventListener('pointermove', onPointerMove);
@@ -986,6 +989,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   const [stockByProperty, setStockByProperty] = useState(() => saved.stockByProperty && typeof saved.stockByProperty === 'object' ? saved.stockByProperty : {});
   const [businessStats, setBusinessStats] = useState(() => saved.businessStats && typeof saved.businessStats === 'object' ? saved.businessStats : {});
   const [pendingProductions, setPendingProductions] = useState({});
+  const [productionBatch, setProductionBatch] = useState('1');
   const [productionNow, setProductionNow] = useState(Date.now());
   useEffect(() => { if (!Object.keys(pendingProductions).length) return; const timer = setInterval(() => setProductionNow(Date.now()), 250); return () => clearInterval(timer); }, [pendingProductions]);
   const productionTimersRef = useRef({});
@@ -1354,6 +1358,10 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     }
     const isWorkingHour = hour >= 8 && hour < 19;
     const hourlySales = isWorkingHour ? processBusinessSales(1) : { revenue: 0, entries: [], salesByProperty: {}, stockChanges: {} };
+    if (hourlySales.stockoutAlerts?.length) {
+      const alert = hourlySales.stockoutAlerts[0];
+      tell('STOK BİTTİ: ' + alert.propertyName + ' — ' + alert.productName + '. Yeniden üretim yap.');
+    }
     if (Object.keys(hourlySales.salesByProperty).length) setStockByProperty(old => ({ ...old, ...hourlySales.stockChanges }));
     if (Object.keys(hourlySales.salesByProperty).length) {
       setBusinessStats(old => {
@@ -1547,7 +1555,21 @@ function App({ session = null, supabase = null, authConfigured = false }) {
         localStocks[propertyId] = { ...inventory, products };
       });
     }
-    return { revenue: Math.round(revenue * 100) / 100, entries, salesByProperty, stockChanges: localStocks };
+    const stockoutAlerts = [];
+    Object.entries(salesByProperty).forEach(([propertyId, sale]) => {
+      const property = properties.find(item => item.id === Number(propertyId));
+      Object.entries(sale.products || {}).forEach(([productId]) => {
+        const before = getProductStock(Number(propertyId), productId, stockByProperty[propertyId]);
+        const after = getProductStock(Number(propertyId), productId, localStocks[propertyId]);
+        if (before > 0 && after <= 0) {
+          const product = Number(propertyId) === 37
+            ? SHOE_RECIPES.find(item => item.id === productId)
+            : (tradeCatalog[propertyId] || []).find(item => item.id === productId);
+          stockoutAlerts.push({ propertyId: Number(propertyId), productId, propertyName: property?.name || 'İşletme', productName: product?.name || productId });
+        }
+      });
+    });
+    return { revenue: Math.round(revenue * 100) / 100, entries, salesByProperty, stockChanges: localStocks, stockoutAlerts };
   };
 
   const settleDailyBusinesses = () => {
@@ -1579,6 +1601,10 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const nextMonth = nextMonthRaw > 12 ? 1 : nextMonthRaw;
     const business = settleDailyBusinesses();
     const sales = processBusinessSales(11);
+    if (sales.stockoutAlerts?.length) {
+      const alert = sales.stockoutAlerts[0];
+      tell('STOK BİTTİ: ' + alert.propertyName + ' — ' + alert.productName + '. Yeniden üretim yap.');
+    }
     setStockByProperty(old => ({ ...old, ...sales.stockChanges }));
     if (Object.keys(sales.salesByProperty).length) {
       setBusinessStats(old => {
@@ -1728,44 +1754,51 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     if ((item.unlockLevel || 1) > level) { tell(item.name + ' için işletme seviyesi ' + item.unlockLevel + ' gerekli. Şu an seviye ' + level + '.'); return; }
     const inventory = getInventoryState(propertyId);
     const recipe = getBusinessRecipe(propertyId, item);
-    const missing = recipe.filter(part => (Number(inventory.materials?.[part.id])||0) < part.qty);
-    if (missing.length) { tell('Hammadde eksik: ' + missing.map(part => { const material=getBusinessProfile(propertyId).materials.find(m=>m.id===part.id); return (material?.name||part.id)+' '+Math.max(0,part.qty-(Number(inventory.materials?.[part.id])||0)); }).join(', ') + '. Önce tedarik et.'); return; }
+    const materialLimit = recipe.reduce((limit, part) => Math.min(limit, Math.floor((Number(inventory.materials?.[part.id]) || 0) / part.qty)), Infinity);
     const capacity = getStockCapacity(propertyId);
-    if (getTotalStock(propertyId) + getPendingUnits(propertyId) + 1 > capacity) { tell('Vitrin deposu dolu. Kapasite ' + capacity + ' adet; satış bekle veya depoyu genişlet.'); return; }
+    const capacityLimit = Math.max(0, capacity - getTotalStock(propertyId) - getPendingUnits(propertyId));
+    const requested = productionBatch === 'max' ? Math.min(materialLimit, capacityLimit) : Math.max(1, Number(productionBatch) || 1);
+    const quantity = Math.min(requested, materialLimit, capacityLimit);
+    if (quantity <= 0) {
+      if (capacityLimit <= 0) tell('Ürün deposu dolu. Satış yapıldıkça yer açılır veya depo yükseltilebilir.');
+      else tell('Hammadde yetersiz. Üretim için gereken miktarları aşağıdan tedarik et.');
+      return;
+    }
+    if (quantity < requested) tell('Depo veya hammadde sınırı nedeniyle ' + quantity + ' adet üretim kuyruğa alınıyor.');
     const nextMaterials = { ...inventory.materials };
-    recipe.forEach(part => { nextMaterials[part.id] = (Number(nextMaterials[part.id])||0)-part.qty; });
+    recipe.forEach(part => { nextMaterials[part.id] = (Number(nextMaterials[part.id]) || 0) - part.qty * quantity; });
     const pendingKey = propertyId + ':' + item.id;
     const duration = getProductionDuration(propertyId, item.id);
     const existingJob = pendingProductions[pendingKey];
     const now = Date.now();
-    const firstReadyAt = existingJob && Number(existingJob.units) > 0 ? (Number(existingJob.readyAt) || now + duration) : now + duration;
-    const completionAt = existingJob && Number(existingJob.units) > 0
-      ? Math.max(now, Number(existingJob.finishAt) || Number(existingJob.readyAt) || now) + duration
-      : now + duration;
-    setStockByProperty(old => { const state=getInventoryState(propertyId,old[propertyId]); return { ...old, [propertyId]: { materials: nextMaterials, products: state.products } }; });
+    const existingUnits = Number(existingJob?.units) || 0;
+    const firstReadyAt = existingUnits > 0 ? (Number(existingJob.readyAt) || now + duration) : now + duration;
+    const previousFinish = existingUnits > 0 ? Math.max(now, Number(existingJob.finishAt) || Number(existingJob.readyAt) || now) : now;
+    const completionAt = previousFinish + duration * quantity;
+    setStockByProperty(old => { const state = getInventoryState(propertyId, old[propertyId]); return { ...old, [propertyId]: { materials: nextMaterials, products: state.products } }; });
     setPendingProductions(old => {
       const current = old[pendingKey];
       const currentUnits = Number(current?.units) || 0;
-      const currentFirstReady = currentUnits > 0 ? (Number(current.readyAt) || firstReadyAt) : firstReadyAt;
-      return { ...old, [pendingKey]: { units: currentUnits + 1, readyAt: currentFirstReady, finishAt: completionAt, duration, name: item.name, propertyId, productId: item.id } };
+      return { ...old, [pendingKey]: { units: currentUnits + quantity, readyAt: currentUnits > 0 ? (Number(current.readyAt) || firstReadyAt) : firstReadyAt, finishAt: completionAt, duration, name: item.name, propertyId, productId: item.id } };
     });
-    setTimeout(() => {
-      setStockByProperty(old => {
-        const state = getInventoryState(propertyId, old[propertyId]);
-        return { ...old, [propertyId]: { materials: state.materials, products: { ...state.products, [item.id]: (Number(state.products?.[item.id]) || 0) + 1 } } };
-      });
-      setPendingProductions(old => {
-        const current = old[pendingKey];
-        if (!current) return old;
-        const remaining = Math.max(0, (Number(current.units) || 0) - 1);
-        if (remaining > 0) return { ...old, [pendingKey]: { ...current, units: remaining, readyAt: Math.min((Number(current.readyAt) || Date.now()) + (Number(current.duration) || duration), Number(current.finishAt) || Infinity) } };
-        const next = { ...old };
-        delete next[pendingKey];
-        return next;
-      });
-      tell('Üretim tamamlandı: ' + item.name + '. Vitrin stoğuna 1 birim eklendi.');
-    }, Math.max(0, completionAt - Date.now()));
-    tell((existingJob ? 'Üretim kuyruğa eklendi: ' : 'Üretim başladı: ') + item.name + '. Hammadde depodan düşüldü; ilk ürün yaklaşık ' + Math.max(1, Math.ceil((firstReadyAt - now) / 1000)) + ' saniye içinde hazır olacak.');
+    for (let unit = 1; unit <= quantity; unit++) {
+      const readyAt = previousFinish + duration * unit;
+      setTimeout(() => {
+        setStockByProperty(old => {
+          const state = getInventoryState(propertyId, old[propertyId]);
+          return { ...old, [propertyId]: { materials: state.materials, products: { ...state.products, [item.id]: (Number(state.products?.[item.id]) || 0) + 1 } } };
+        });
+        setPendingProductions(old => {
+          const current = old[pendingKey];
+          if (!current) return old;
+          const remaining = Math.max(0, (Number(current.units) || 0) - 1);
+          if (remaining > 0) return { ...old, [pendingKey]: { ...current, units: remaining, readyAt: Math.min((Number(current.readyAt) || Date.now()) + (Number(current.duration) || duration), Number(current.finishAt) || Infinity) } };
+          const next = { ...old }; delete next[pendingKey]; return next;
+        });
+        if (unit === quantity) tell('Üretim tamamlandı: ' + item.name + '. ' + quantity + ' adet ürün depoya eklendi.');
+      }, Math.max(0, readyAt - Date.now()));
+    }
+    tell((existingUnits > 0 ? 'Üretim kuyruğuna eklendi: ' : 'Üretim başladı: ') + item.name + ' ×' + quantity + '. İlk ürün yaklaşık ' + Math.max(1, Math.ceil((firstReadyAt - now) / 1000)) + ' sn içinde hazır.');
   };
   const buy = async () => {
     if (active.type === 'Konut' && active.units) {
@@ -2255,7 +2288,11 @@ function App({ session = null, supabase = null, authConfigured = false }) {
                     </div>;
                   })}
                 </div>
-                <button className="stock-button production-primary-action" onClick={stockBusiness} disabled={!canProduce}>{pending ? 'KUYRUĞA 1 ADET EKLE' : '1 ADET ÜRET'}</button>
+                {selectedProduct && getProductStock(active.id, selectedProduct.id) === 0 && !pending && <div className="production-stockout-alert"><span>!</span><div><strong>STOK TÜKENDİ</strong><small>{selectedProduct.name} satışta yok. Üretim kuyruğuna ekleyerek stoğu yenile.</small></div></div>}
+                <div className="production-batch-picker"><span>ÜRETİM PARTİSİ</span><div>
+                  {[['1','1 adet'],['5','5 adet'],['10','10 adet'],['max','Maks.']].map(([value,label]) => <button type="button" key={value} className={String(productionBatch) === value ? 'active' : ''} onClick={() => setProductionBatch(value)}>{label}</button>)}
+                </div></div>
+                <button className="stock-button production-primary-action" onClick={stockBusiness} disabled={!canProduce}>{pending ? 'KUYRUĞA ' + (productionBatch === 'max' ? 'MAKS.' : productionBatch) + ' ADET EKLE' : (productionBatch === 'max' ? 'MAKSİMUM ÜRET' : productionBatch + ' ADET ÜRET')}</button>
                 {!canProduce && <p className="production-action-hint">{missing.length ? 'Üretime başlamak için eksik hammaddeleri tedarik et.' : 'Hazır ürün deposu dolu. Önce satış bekle veya depoyu genişlet.'}</p>}
                 <details className="production-details">
                   <summary>İşletme raporu ve stok ayrıntıları</summary>
