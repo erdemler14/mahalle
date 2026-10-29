@@ -1089,3 +1089,65 @@ body{overflow:hidden}
 .shoe-production-workbench .production-batch-picker{margin:0}
 .shoe-production-workbench .production-primary-action{width:100%;min-height:48px;white-space:normal;line-height:1.4}
 .shoe-production-workbench .production-action-hint{margin:0;color:#8fa3b5;font-size:10px;line-height:1.55}
+
+
+/* Calm, compact Apple-inspired game chrome */
+.fullscreen-game .hud-topbar{
+  height:54px;padding:0 22px;align-items:center;
+  background:linear-gradient(180deg,rgba(13,18,25,.78),rgba(13,18,25,.16));
+  backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+}
+.fullscreen-game .wordmark{font-size:13px;letter-spacing:.8px;gap:9px;color:#f4f5f7}
+.fullscreen-game .wordmark .mark{width:27px;height:27px;border-radius:9px}
+.fullscreen-game .top-center{padding:7px 11px;border:1px solid rgba(255,255,255,.1);border-radius:999px;background:rgba(255,255,255,.055);font-size:10px;letter-spacing:.45px}
+.fullscreen-game .top-actions{gap:8px}
+.fullscreen-game .reset-button{padding:8px 12px;border-radius:999px;border-color:rgba(255,255,255,.13);background:rgba(255,255,255,.055);color:#d5dbe2;font:500 10px -apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif;letter-spacing:0}
+.fullscreen-game .reset-button:hover{background:rgba(255,255,255,.13);border-color:rgba(255,255,255,.2);color:#fff}
+.fullscreen-game .world-topline{
+  top:66px;left:18px;right:auto;width:auto;max-width:calc(100% - 36px);
+  min-height:0;height:42px;padding:5px 7px 5px 12px;gap:10px;flex-wrap:nowrap;
+  display:flex;justify-content:flex-start;align-items:center;
+  border:1px solid rgba(255,255,255,.14);border-radius:14px;
+  background:rgba(22,29,38,.62);box-shadow:0 8px 28px rgba(0,0,0,.12);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  color:rgba(239,243,247,.65);font-size:9px;letter-spacing:.45px;
+}
+.fullscreen-game .world-topline .property-finder{
+  flex:0 1 260px;width:260px;min-width:170px;max-width:260px;height:30px;
+  gap:8px;padding:0 10px;border:1px solid rgba(255,255,255,.09);border-radius:10px;
+  background:rgba(255,255,255,.075);color:#d9e0e8;box-shadow:none;
+}
+.fullscreen-game .world-topline .property-finder>span{font-size:16px;color:#aebdcb}
+.fullscreen-game .world-topline .property-finder input,
+.fullscreen-game .world-topline .property-finder select{
+  color:#f0f3f6;font:400 12px -apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif;letter-spacing:0
+}
+.fullscreen-game .world-topline .property-finder input::placeholder{color:#9aa6b3}
+.fullscreen-game .world-topline .property-finder:focus-within{border-color:rgba(139,184,255,.55);box-shadow:0 0 0 3px rgba(91,150,245,.13)}
+.fullscreen-game .world-topline .world-year{font:500 10px -apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif;letter-spacing:0;color:#c7d0da}
+.fullscreen-game .hud-side-panel{
+  border:1px solid rgba(255,255,255,.12)!important;border-radius:20px!important;
+  background:rgba(24,31,41,.88)!important;box-shadow:0 20px 70px rgba(0,0,0,.32)!important;
+  backdrop-filter:blur(28px) saturate(145%)!important;-webkit-backdrop-filter:blur(28px) saturate(145%)!important;
+  padding:16px!important;gap:12px!important
+}
+.fullscreen-game.hud-panel-open .hud-side-panel{top:112px;right:18px;bottom:86px;width:min(390px,calc(100% - 36px));}
+.fullscreen-game .hud-side-panel button,.fullscreen-game .hud-side-panel input,.fullscreen-game .hud-side-panel select{
+  border-radius:11px
+}
+.fullscreen-game .hud-side-panel .section-heading{border-bottom-color:rgba(255,255,255,.09)}
+.fullscreen-game .hud-side-panel h2,.fullscreen-game .hud-side-panel h3{letter-spacing:-.35px}
+.fullscreen-game .hud-side-panel .stock-button{font:500 11px -apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif;letter-spacing:0}
+.fullscreen-game .hud-side-panel .property-note{border-radius:12px}
+@media(max-width:680px){
+  .fullscreen-game .hud-topbar{height:48px;padding:0 10px}
+  .fullscreen-game .wordmark{font-size:11px;gap:6px}
+  .fullscreen-game .wordmark .mark{width:24px;height:24px}
+  .fullscreen-game .top-center{padding:6px 8px;font-size:9px}
+  .fullscreen-game .top-actions{gap:5px}
+  .fullscreen-game .reset-button{padding:7px 9px;font-size:9px}
+  .fullscreen-game .world-topline{top:56px;left:9px;max-width:calc(100% - 18px);height:38px;padding:4px 6px 4px 8px;gap:7px}
+  .fullscreen-game .world-topline .property-finder{flex-basis:190px;width:190px;min-width:120px;max-width:190px;height:28px;padding:0 8px}
+  .fullscreen-game .world-topline .property-finder input{font-size:11px}
+  .fullscreen-game.hud-panel-open .hud-side-panel{top:101px;right:9px;bottom:74px;width:calc(100% - 18px);padding:13px!important;border-radius:17px!important}
+}
