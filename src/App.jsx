@@ -991,6 +991,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   const [businessStats, setBusinessStats] = useState(() => saved.businessStats && typeof saved.businessStats === 'object' ? saved.businessStats : {});
   const [pendingProductions, setPendingProductions] = useState({});
   const [productionBatch, setProductionBatch] = useState('1');
+  const [selectedShoeId, setSelectedShoeId] = useState('kundura');
   const [productionNow, setProductionNow] = useState(Date.now());
   useEffect(() => { if (!Object.keys(pendingProductions).length) return; const timer = setInterval(() => setProductionNow(Date.now()), 250); return () => clearInterval(timer); }, [pendingProductions]);
   const productionTimersRef = useRef({});
@@ -1811,48 +1812,52 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     setBusinessStats(old => { const prev = old[37] || { unitsSold: 0, revenue: 0, stockInvested: 0 }; return { ...old, 37: { ...prev, stockInvested: Math.round((prev.stockInvested + cost) * 100) / 100 } }; });
     tell('Tedarik tamamlandı: ' + material.name + ' +' + quantity + ' birim. Maliyet ₺' + cost + '.');
   };
-  const craftShoe = (shoeId) => {
+  const craftShoe = (shoeId, requestedBatch = productionBatch) => {
     if (!owned.includes(37) || rented.includes(37)) { tell('Üretim için kunduracı sana ait olmalı ve kirada olmamalı.'); return; }
     const shoe = SHOE_RECIPES.find(item => item.id === shoeId); if (!shoe) return;
-    const workshopLevel = getBusinessSalesLevel(37);
-    if ((shoe.unlockLevel || 1) > workshopLevel) { tell(shoe.name + ' için kunduracı seviyesi ' + shoe.unlockLevel + ' gerekli. Şu an seviye ' + workshopLevel + '.'); return; }
+    const level = getBusinessSalesLevel(37);
+    if ((shoe.unlockLevel || 1) > level) { tell(shoe.name + ' için kunduracı seviyesi ' + shoe.unlockLevel + ' gerekli. Şu an seviye ' + level + '.'); return; }
     const state = stockByProperty[37] && typeof stockByProperty[37] === 'object' ? stockByProperty[37] : { materials: {}, products: {} };
     const materials = state.materials || {};
-    const productStock = Number(state.products?.[shoe.id]) || 0;
-    const capacity = getMaterialCapacity(37);
-    if (getTotalStock(37) + getPendingUnits(37) + 1 > capacity) { tell('Vitrin deposu dolu: kapasite ' + capacity + ' çift. Üretim kuyruğu dahil stok sınırına ulaşıldı.'); return; }
-    const missing = Object.entries(shoe.recipe).filter(([id, qty]) => (Number(materials[id]) || 0) < qty);
-    if (missing.length) { tell('Hammadde eksik: ' + missing.map(([id, qty]) => (SHOE_MATERIALS.find(m => m.id === id)?.name || id) + ' ' + qty).join(', ') + '. Önce tedarik et.'); return; }
-    const next = { ...materials }; Object.entries(shoe.recipe).forEach(([id, qty]) => { next[id] = (Number(next[id]) || 0) - qty; });
+    const materialLimit = Object.entries(shoe.recipe).reduce((limit, [id, qty]) => Math.min(limit, Math.floor((Number(materials[id]) || 0) / qty)), Infinity);
+    const productCapacity = Math.max(0, getStockCapacity(37) - getTotalStock(37) - getPendingUnits(37));
+    const requested = requestedBatch === 'max' ? Math.min(materialLimit, productCapacity) : Math.max(1, Number(requestedBatch) || 1);
+    const quantity = Math.min(requested, materialLimit, productCapacity);
+    if (quantity <= 0) {
+      if (productCapacity <= 0) tell('Vitrin deposu dolu. Satış oldukça yer açılır veya depo genişletilebilir.');
+      else tell('Hammadde yetersiz: ' + Object.entries(shoe.recipe).filter(([id, qty]) => (Number(materials[id]) || 0) < qty).map(([id, qty]) => (SHOE_MATERIALS.find(m => m.id === id)?.name || id) + ' ×' + Math.max(0, qty - (Number(materials[id]) || 0))).join(', '));
+      return;
+    }
+    if (quantity < requested) tell('Hammadde veya vitrin kapasitesi nedeniyle ' + quantity + ' çift üretim kuyruğa alınacak.');
+    const next = { ...materials };
+    Object.entries(shoe.recipe).forEach(([id, qty]) => { next[id] = (Number(next[id]) || 0) - qty * quantity; });
     const pendingKey = '37:' + shoe.id;
     const duration = getProductionDuration(37, shoe.id);
     const existingJob = pendingProductions[pendingKey];
     const now = Date.now();
-    const firstReadyAt = existingJob && Number(existingJob.units) > 0 ? (Number(existingJob.readyAt) || now + duration) : now + duration;
-    const completionAt = existingJob && Number(existingJob.units) > 0
-      ? Math.max(now, Number(existingJob.finishAt) || Number(existingJob.readyAt) || now) + duration
-      : now + duration;
+    const existingUnits = Number(existingJob?.units) || 0;
+    const firstReadyAt = existingUnits > 0 ? (Number(existingJob.readyAt) || now + duration) : now + duration;
+    const previousFinish = existingUnits > 0 ? Math.max(now, Number(existingJob.finishAt) || Number(existingJob.readyAt) || now) : now;
+    const completionAt = previousFinish + duration * quantity;
     setStockByProperty(old => { const current = old[37] && typeof old[37] === 'object' ? old[37] : { materials: {}, products: {} }; return { ...old, 37: { materials: next, products: current.products || {} } }; });
     setPendingProductions(old => {
-      const current = old[pendingKey];
-      const currentUnits = Number(current?.units) || 0;
-      const currentFirstReady = currentUnits > 0 ? (Number(current.readyAt) || firstReadyAt) : firstReadyAt;
-      return { ...old, [pendingKey]: { units: currentUnits + 1, readyAt: currentFirstReady, finishAt: completionAt, duration, name: shoe.name, propertyId: 37, productId: shoe.id } };
+      const current = old[pendingKey]; const currentUnits = Number(current?.units) || 0;
+      return { ...old, [pendingKey]: { units: currentUnits + quantity, readyAt: currentUnits > 0 ? (Number(current.readyAt) || firstReadyAt) : firstReadyAt, finishAt: completionAt, duration, name: shoe.name, propertyId: 37, productId: shoe.id } };
     });
-    setTimeout(() => {
-      setStockByProperty(old => { const current = old[37] && typeof old[37] === 'object' ? old[37] : { materials: {}, products: {} }; return { ...old, 37: { materials: current.materials || {}, products: { ...(current.products || {}), [shoe.id]: (Number(current.products?.[shoe.id]) || 0) + 1 } } }; });
-      setPendingProductions(old => {
-        const current = old[pendingKey];
-        if (!current) return old;
-        const remaining = Math.max(0, (Number(current.units) || 0) - 1);
-        if (remaining > 0) return { ...old, [pendingKey]: { ...current, units: remaining, readyAt: Math.min((Number(current.readyAt) || Date.now()) + (Number(current.duration) || duration), Number(current.finishAt) || Infinity) } };
-        const next = { ...old };
-        delete next[pendingKey];
-        return next;
-      });
-      tell('Üretim tamamlandı: 1 çift ' + shoe.name + '. Vitrine eklendi.');
-    }, Math.max(0, completionAt - Date.now()));
-    tell((existingJob ? 'Üretim kuyruğa eklendi: ' : 'Üretim başladı: ') + shoe.name + '. Hammadde depodan düşüldü; ilk çift yaklaşık ' + Math.max(1, Math.ceil((firstReadyAt - now) / 1000)) + ' saniye içinde hazır olacak.');
+    for (let unit = 1; unit <= quantity; unit++) {
+      const readyAt = previousFinish + duration * unit;
+      setTimeout(() => {
+        setStockByProperty(old => { const current = old[37] && typeof old[37] === 'object' ? old[37] : { materials: {}, products: {} }; return { ...old, 37: { materials: current.materials || {}, products: { ...(current.products || {}), [shoe.id]: (Number(current.products?.[shoe.id]) || 0) + 1 } }; });
+        setPendingProductions(old => {
+          const current = old[pendingKey]; if (!current) return old;
+          const remaining = Math.max(0, (Number(current.units) || 0) - 1);
+          if (remaining > 0) return { ...old, [pendingKey]: { ...current, units: remaining, readyAt: Math.min((Number(current.readyAt) || Date.now()) + (Number(current.duration) || duration), Number(current.finishAt) || Infinity) } };
+          const nextJobs = { ...old }; delete nextJobs[pendingKey]; return nextJobs;
+        });
+        if (unit === quantity) tell('Üretim tamamlandı: ' + quantity + ' çift ' + shoe.name + '. Vitrine eklendi.');
+      }, Math.max(0, readyAt - Date.now()));
+    }
+    tell((existingUnits > 0 ? 'Üretim kuyruğuna eklendi: ' : 'Üretim başladı: ') + shoe.name + ' ×' + quantity + '. İlk çift yaklaşık ' + Math.max(1, Math.ceil((firstReadyAt - now) / 1000)) + ' saniye içinde hazır olacak.');
   };
 
   const upgradeBusinessStorage = (propertyId) => {
@@ -2378,7 +2383,34 @@ function App({ session = null, supabase = null, authConfigured = false }) {
                 </div>;
               })}
               <h3 className="production-section-title">2 · Üretim tezgâhı</h3>
-              {SHOE_RECIPES.filter(shoe => (shoe.unlockLevel || 1) <= getBusinessSalesLevel(37)).map(shoe => { const job = pendingProductions['37:' + shoe.id]; const sold = Number(businessStats[37]?.productUnitsSold?.[shoe.id]?.units) || 0; const missing = Object.entries(shoe.recipe).filter(([id, qty]) => (Number(materials[id]) || 0) < qty); const locked = (shoe.unlockLevel || 1) > getBusinessSalesLevel(37); return <div className={'shoe-product-row ' + (locked ? 'shoe-product-locked' : '')} key={shoe.id}><div><strong>{shoe.name}{locked ? ' 🔒' : ''}</strong><small>Reçete: {Object.entries(shoe.recipe).map(([id, qty]) => (SHOE_MATERIALS.find(m => m.id === id)?.name || id) + ' ×' + qty).join(' · ')}</small><small>Satış fiyatı: ₺{shoe.price} / çift · Tahmini hammadde maliyeti: ₺{Object.entries(shoe.recipe).reduce((sum,[id,qty])=>{const m=SHOE_MATERIALS.find(item=>item.id===id);return sum+(m?m.cost/m.batch*qty:0)},0).toLocaleString('tr-TR',{maximumFractionDigits:2})} · Brüt fark: ₺{(shoe.price-Object.entries(shoe.recipe).reduce((sum,[id,qty])=>{const m=SHOE_MATERIALS.find(item=>item.id===id);return sum+(m?m.cost/m.batch*qty:0)},0)).toLocaleString('tr-TR',{maximumFractionDigits:2})}</small><small>Satılan toplam: {sold}</small><small className={locked ? 'production-requirements' : missing.length ? 'production-requirements' : 'production-ready'}>{locked ? 'Kilitli · Kunduracı seviye ' + shoe.unlockLevel + ' gerekli' : missing.length ? 'Eksik hammadde: ' + missing.map(([id, qty]) => (SHOE_MATERIALS.find(m => m.id === id)?.name || id) + ' ' + Math.max(0, qty - (Number(materials[id]) || 0))).join(', ') : 'Üretime hazır · gerekli hammaddeler mevcut'}</small>{job && <small className="production-pending">Kuyrukta: {job.units} çift · sıradaki {Math.max(0, Math.ceil((job.readyAt - productionNow) / 1000))} sn · son çift {Math.max(0, Math.ceil(((job.finishAt || job.readyAt) - productionNow) / 1000))} sn</small>}</div><button className="stock-button" onClick={() => craftShoe(shoe.id)} disabled={locked || missing.length > 0}>{locked ? 'SEVİYE KİLİDİ' : missing.length ? 'HAMMADDE EKSİK' : job ? 'KUYRUĞA 1 ÇİFT EKLE' : '1 ÇİFT ÜRET'}</button></div>; })}
+              {(() => {
+                const unlockedShoes = SHOE_RECIPES.filter(shoe => (shoe.unlockLevel || 1) <= getBusinessSalesLevel(37));
+                const selectedShoe = unlockedShoes.find(shoe => shoe.id === selectedShoeId) || unlockedShoes[0];
+                if (!selectedShoe) return <p className="production-helper">Üretim için önce işletme seviyesini yükselt.</p>;
+                const job = pendingProductions['37:' + selectedShoe.id];
+                const missing = Object.entries(selectedShoe.recipe).filter(([id, qty]) => (Number(materials[id]) || 0) < qty);
+                const materialLimit = Object.entries(selectedShoe.recipe).reduce((limit,[id,qty])=>Math.min(limit,Math.floor((Number(materials[id])||0)/qty)),Infinity);
+                const productCapacity = Math.max(0,getStockCapacity(37)-getTotalStock(37)-getPendingUnits(37));
+                const requested = productionBatch === 'max' ? Math.min(materialLimit,productCapacity) : Math.max(1,Number(productionBatch)||1);
+                const quantity = Math.min(requested,materialLimit,productCapacity);
+                const cost = Object.entries(selectedShoe.recipe).reduce((sum,[id,qty])=>{const m=SHOE_MATERIALS.find(item=>item.id===id);return sum+(m?m.cost/m.batch*qty:0)},0);
+                return <div className="shoe-production-workbench">
+                  <label className="business-label" htmlFor="shoe-product-select">Üretilecek ürün</label>
+                  <select id="shoe-product-select" className="profession-select production-product-select" value={selectedShoe.id} onChange={e=>setSelectedShoeId(e.target.value)}>
+                    {unlockedShoes.map(shoe=><option key={shoe.id} value={shoe.id}>{shoe.name}</option>)}
+                  </select>
+                  <div className="shoe-selected-recipe">
+                    <strong>{selectedShoe.name}</strong>
+                    <small>Gerekli hammaddeler: {Object.entries(selectedShoe.recipe).map(([id,qty])=>(SHOE_MATERIALS.find(m=>m.id===id)?.name||id)+' × '+qty).join(' · ')}</small>
+                    <small>Satış fiyatı: ₺{selectedShoe.price}/çift · Tahmini maliyet: ₺{cost.toLocaleString('tr-TR',{maximumFractionDigits:2})} · Brüt fark: ₺{(selectedShoe.price-cost).toLocaleString('tr-TR',{maximumFractionDigits:2})}</small>
+                    {job && <small className="production-pending">Kuyrukta {job.units} çift · sıradaki {Math.max(0,Math.ceil((job.readyAt-productionNow)/1000))} sn</small>}
+                    <small className={missing.length?'production-requirements':'production-ready'}>{missing.length?'Eksik hammadde: '+missing.map(([id,qty])=>(SHOE_MATERIALS.find(m=>m.id===id)?.name||id)+' × '+Math.max(0,qty-(Number(materials[id])||0))).join(', '):'Üretim için gerekli hammaddeler mevcut'}</small>
+                  </div>
+                  <div className="production-batch-picker"><span>ÜRETİM PARTİSİ</span><div>{[['1','1 çift'],['5','5 çift'],['10','10 çift'],['max','Maks.']].map(([value,label])=><button type="button" key={value} className={String(productionBatch)===value?'active':''} onClick={()=>setProductionBatch(value)}>{label}</button>)}</div></div>
+                  <button className="stock-button production-primary-action" onClick={()=>craftShoe(selectedShoe.id,productionBatch)} disabled={missing.length>0||quantity<=0}>{quantity<=0?(productCapacity<=0?'VİTRİN DEPOSU DOLU':'HAMMADDE EKSİK'):(job?'KUYRUĞA '+quantity+' ÇİFT EKLE':quantity+' ÇİFT ÜRET')}</button>
+                  <p className="production-action-hint">{quantity>0?quantity+' çift üretilebilir. Üretim başında gerekli hammaddeler depodan düşer.':productCapacity<=0?'Vitrin deposu dolu; satış bekle veya depoyu genişlet.':'Hammadde tedarik et veya daha küçük parti seç.'}</p>
+                </div>;
+              })()}
               <h3 className="production-section-title">3 · Vitrin stokları</h3>
               {SHOE_RECIPES.filter(shoe => (shoe.unlockLevel || 1) <= getBusinessSalesLevel(37) || (Number(products[shoe.id]) || 0) > 0 || !!pendingProductions['37:' + shoe.id]).map(shoe => <div className="stock-line" key={shoe.id}><span>{shoe.name}</span><strong>{Number(products[shoe.id]) || 0} çift</strong></div>)}
             </div>;
