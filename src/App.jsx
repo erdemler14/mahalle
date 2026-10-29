@@ -1383,9 +1383,10 @@ function App({ session = null, supabase = null, authConfigured = false }) {
         {match:/yemek|günün|gunun|et/, recipe:[['lok-et',1],['lok-yag',1]]}
       ]
     };
-    const specific = (recipeByProduct[id] || []).find(entry => entry.match.test(key));
-    if (specific) return specific.recipe.map(([materialId, qty]) => ({ id: materialId, qty }));
     const profile = getBusinessProfile(propertyId);
+    const validMaterialIds = new Set(profile.materials.map(material => material.id));
+    const specific = (recipeByProduct[id] || []).find(entry => entry.match.test(key));
+    if (specific && specific.recipe.every(([materialId, qty]) => validMaterialIds.has(materialId) && qty > 0)) return specific.recipe.map(([materialId, qty]) => ({ id: materialId, qty }));
     const recipe = profile.recipes[Math.min(4, Math.max(0, (Number(product?.unlockLevel) || 1) - 1))] || profile.recipes[0];
     return [{id:recipe[0],qty:recipe[1]},{id:recipe[2],qty:recipe[3]}];
   };
