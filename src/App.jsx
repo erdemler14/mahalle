@@ -1107,7 +1107,8 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     28: [{ id: 'kolonya', name: 'Kolonya ve koku', cost: 12, price: 4.2, units: 8 }, { id: 'parfum', name: 'Parfüm ve esans', cost: 18, price: 6.5, units: 6 }, { id: 'sabun-parfum', name: 'Sabun ve bakım seti', cost: 14, price: 4.8, units: 8 }],
     29: [{ id: 'sabun-imalat', name: 'Sabun üretimi', cost: 14, price: 6, units: 6, production: true }, { id: 'temizlik', name: 'Temizlik malzemesi', cost: 10, price: 3.8, units: 8 }],
     31: [{ id: 'lokanta-galata', name: 'Günün yemeği', cost: 16, price: 6.5, units: 8 }, { id: 'meze', name: 'Meze ve sıcak çorba', cost: 11, price: 4.5, units: 8 }],
-    32: [{ id: 'baski-galata', name: 'Basılı ilan ve evrak', cost: 14, price: 5, units: 8 }, { id: 'kirtasiye-galata', name: 'Defter ve kırtasiye', cost: 10, price: 3.8, units: 8 }]
+    32: [{ id: 'baski-galata', name: 'Basılı ilan ve evrak', cost: 14, price: 5, units: 8 }, { id: 'kirtasiye-galata', name: 'Defter ve kırtasiye', cost: 10, price: 3.8, units: 8 }],
+    34: [{ id: 'buketi', name: 'Mevsim çiçekleri buketi', cost: 10, price: 4, units: 8 }, { id: 'saksi-cicegi', name: 'Saksı çiçeği', cost: 12, price: 4.8, units: 6 }, { id: 'cenaze-celengi', name: 'Çelenk ve tören aranjmanı', cost: 18, price: 7, units: 4 }, { id: 'gul-demeti', name: 'Gül demeti', cost: 14, price: 5.5, units: 6 }]
   };
 
   // Commercial ownership is independent of the character's former profession.
