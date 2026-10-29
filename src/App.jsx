@@ -1302,6 +1302,9 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     if (id === 23) return shopSpecificProfiles.spice;
     if (id === 28) return shopSpecificProfiles.perfumery;
     if (id === 34) return businessMaterialProfiles.flower;
+    if (id === 36) return businessMaterialProfiles.paper;
+    if (id === 39) return shopSpecificProfiles.coffee;
+    if (id === 40) return businessMaterialProfiles.service;
     if ([4,21].includes(id)) return businessMaterialProfiles.lodging;
     if ([9,16,32].includes(id)) return businessMaterialProfiles.paper;
     if ([26].includes(id)) return businessMaterialProfiles.textile;
