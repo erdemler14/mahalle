@@ -559,18 +559,23 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
 
         // Small product silhouettes make shop windows feel stocked without expensive assets.
         const shopLabel = String(p.name || '').toLocaleLowerCase('tr-TR');
-        const productKind = /fırın|pastane|ekmek|tatlı|şekerleme/.test(shopLabel) ? 'bakery' :
-          /eczane|aktar|şifa|ilaç/.test(shopLabel) ? 'pharmacy' :
+        // Match the actual Pera businesses by their property IDs first; names vary historically.
+        const productKind = ({13:'bakery',15:'pharmacy',16:'books',26:'fabric',34:'flowers',36:'books',39:'cafe',12:'cafe',25:'cafe',40:'hamam',41:'dryclean',43:'office',45:'office'})[p.id] ||
+          (/fırın|pastane|ekmek|tatlı|şekerleme/.test(shopLabel) ? 'bakery' :
+          /eczane|eczahanesi|aktar|şifa|ilaç/.test(shopLabel) ? 'pharmacy' :
           /kumaş|terzi|manifatura|tekstil/.test(shopLabel) ? 'fabric' :
-          /kitap|kırtasiye|sahaf/.test(shopLabel) ? 'books' :
-          /kahve|kahvehane|meyhane|şarap|içki/.test(shopLabel) ? 'cafe' :
-          /çiçek|bahçe/.test(shopLabel) ? 'flowers' : 'general';
+          /kitap|kırtasiye|sahaf|kitabevi/.test(shopLabel) ? 'books' :
+          /kahve|kahvehane|kıraathane|meyhane|şarap|içki/.test(shopLabel) ? 'cafe' :
+          /çiçek|bahçe/.test(shopLabel) ? 'flowers' : 'general');
         const displayColors = productKind === 'bakery' ? ['#c69b5c','#e0c58c','#a66d45'] :
           productKind === 'pharmacy' ? ['#7e9b86','#d8c9a8','#b7c8c0'] :
           productKind === 'fabric' ? ['#8e5d59','#526b77','#c2a66f'] :
           productKind === 'books' ? ['#70483a','#b79b70','#3e5147'] :
           productKind === 'cafe' ? ['#604638','#c6a46c','#eee0c4'] :
-          productKind === 'flowers' ? ['#9a6c79','#b5a86f','#71866b'] : ['#c7a56b','#8c9a7c','#b56e55'];
+          productKind === 'flowers' ? ['#9a6c79','#b5a86f','#71866b'] :
+          productKind === 'hamam' ? ['#b5a78c','#d4c5a4','#8e9b91'] :
+          productKind === 'dryclean' ? ['#6e7f8c','#a9a8a0','#6c5145'] :
+          productKind === 'office' ? ['#80694e','#b7a27c','#3f4d4b'] : ['#c7a56b','#8c9a7c','#b56e55'];
         for (let itemIndex = 0; itemIndex < 3; itemIndex++) {
           const color = new THREE.MeshStandardMaterial({ color: displayColors[itemIndex], roughness: 0.88 });
           let item;
@@ -583,13 +588,30 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
             item = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.065, 0.2, 8), color);
             item.rotation.z = Math.PI / 2;
           } else if (productKind === 'flowers') {
-            item = new THREE.Mesh(new THREE.SphereGeometry(0.085, 7, 6), color);
+            item = new THREE.Mesh(new THREE.SphereGeometry(0.105, 7, 6), color);
+            item.scale.set(1,0.8,1);
+          } else if (productKind === 'books' || productKind === 'office') {
+            item = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.2 + (itemIndex % 2) * 0.07, 0.13), color);
+            item.rotation.z = itemIndex === 1 ? 0.08 : 0;
+          } else if (productKind === 'hamam') {
+            item = new THREE.Mesh(new THREE.CylinderGeometry(0.11,0.11,0.12,10),color);
+          } else if (productKind === 'dryclean') {
+            item = new THREE.Mesh(new THREE.BoxGeometry(0.16,0.25,0.045),color);
           } else {
-            item = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.17 + (itemIndex % 2) * 0.06, 0.12), color);
+            item = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.2 + (itemIndex % 2) * 0.06, 0.13), color);
           }
           item.position.set(-w * 0.31 + itemIndex * 0.3, 0.34 + (itemIndex % 2) * 0.025, d / 2 + 0.13);
           item.castShadow = true;
           group.add(item);
+          if (productKind === 'dryclean') {
+            const hanger = new THREE.Mesh(new THREE.ConeGeometry(0.13,0.1,3),new THREE.MeshStandardMaterial({color:'#a18a63',roughness:0.7}));
+            hanger.position.set(item.position.x,item.position.y+0.17,item.position.z);
+            hanger.rotation.y=Math.PI;group.add(hanger);
+          }
+          if (productKind === 'flowers') {
+            const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.012,0.018,0.16,5),new THREE.MeshStandardMaterial({color:'#647854',roughness:1}));
+            stem.position.set(item.position.x,item.position.y-0.12,item.position.z);group.add(stem);
+          }
           if (productKind === 'pharmacy' || productKind === 'cafe') {
             const stopper = new THREE.Mesh(new THREE.CylinderGeometry(0.022,0.022,0.035,8), darkWood);
             stopper.position.set(item.position.x, item.position.y + 0.105, item.position.z);
