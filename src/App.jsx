@@ -1051,6 +1051,9 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   useEffect(() => { const property = properties.find(p => p.id === selected); if (property) setMapSearch(property.name); }, [selected]);
   const [notice, setNotice] = useState('');
   const [businessAlert, setBusinessAlert] = useState(null);
+  const [dailySalesLog, setDailySalesLog] = useState(() => Array.isArray(saved.dailySalesLog) ? saved.dailySalesLog : []);
+  const [zReport, setZReport] = useState(null);
+  useEffect(() => { if (!zReport) return; const timer = setTimeout(() => setZReport(null), 15000); return () => clearTimeout(timer); }, [zReport]);
   const [showPortfolio, setShowPortfolio] = useState(() => Boolean(saved.showPortfolio));
   const [portfolioDetailId, setPortfolioDetailId] = useState(null);
   const [professionId, setProfessionId] = useState(() => ['kolonyaci', 'leblebici', 'terzi', 'matbaaci', 'kahveci', 'firinci', 'kasap', 'eczaci', 'kitapci', 'marangoz', 'manav', 'lokantaci', 'demirci', 'amele'].includes(saved.professionId) ? saved.professionId : 'amele');
@@ -1965,11 +1968,11 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const state = {
       version: 2, economyVersion: STARTER_ECONOMY_VERSION, playerName, steps, cash, owned, rented, selected, showPortfolio, professionId, marketValues,
       hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty,
-      businessStats, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, experience, log: log.slice(0, 5), developments
+      businessStats, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, experience, dailySalesLog, log: log.slice(0, 5), developments
     };
     supabase.from('player_saves').upsert({ user_id: session.user.id, state, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
       .then(({ error }) => { if (error) setMultiplayerStatus('Kayıt eşitlenemedi · ' + error.message); });
-  }, [session?.user?.id, supabase, cloudReady, playerName, steps, cash, owned, rented, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, experience, log, developments]);
+  }, [session?.user?.id, supabase, cloudReady, playerName, steps, cash, owned, rented, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, experience, dailySalesLog, log, developments]);
 
 
   const tell = (text) => {
@@ -2125,6 +2128,10 @@ function App({ session = null, supabase = null, authConfigured = false }) {
           setBusinessAlert({ type: 'raid', title: 'KURU TEMİZLEMEYE BASKIN!', amount: dryCleanDelta, message: 'Denetim ekipleri kayıt dışı işlemleri tespit etti. Ceza ve el koyma bedeli kasandan düşüldü.' });
         }
       }
+      const reportRows = [...dailySalesLog];
+      if (business.entries.length) reportRows.push(...business.entries.map(text => ({ text, kind: 'daily' })));
+      setZReport({ date: `${day}.${String(month).padStart(2, '0')}.${year}`, nextDate: `${nextDay}.${String(nextMonth).padStart(2, '0')}.${nextMonthRaw > 12 ? year + 1 : year}`, rows: reportRows, totalRevenue: Number(business.revenue) || 0, costs: Number(dailyCost) || 0, rent: Number(dailyRent) || 0, net: Number(dailyRent + business.revenue - dailyCost + dryCleanDelta) || 0, dryCleanDelta });
+      setDailySalesLog([]);
       const dailyNet = dailyRent + business.revenue - dailyCost + dryCleanDelta;
       setCash(v => Math.round((v + dailyNet) * 100) / 100);
       setDay(nextDay);
@@ -2143,6 +2150,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       const alert = hourlySales.stockoutAlerts[0];
       tell('STOK BİTTİ: ' + alert.propertyName + ' — ' + alert.productName + '. Yeniden üretim yap.');
     }
+    if (hourlySales.entries.length) setDailySalesLog(old => [...old, ...hourlySales.entries.map(text => ({ text, kind: 'sale' }))].slice(-80));
     if (Object.keys(hourlySales.salesByProperty).length) setStockByProperty(old => ({ ...old, ...hourlySales.stockChanges }));
     if (Object.keys(hourlySales.salesByProperty).length) {
       setBusinessStats(old => {
@@ -3218,6 +3226,25 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     <footer className="footer"><span>MAHALLE <i>©</i> 1923</span><span>GEÇMİŞİN İÇİNDE BİR GELECEK KUR.</span><span>PROTOTİP 0.4.0</span></footer>
     <div className="economy-note">Kayıt bu tarayıcıda otomatik saklanır. Ekonomi değerleri oynanabilir prototip varsayımlarıdır; doğrulanmış 1923 ücret ve fiyat verileri değildir.</div>
     {notice && <div className="toast" key={noticeId} role="status">{notice}</div>}
+    {zReport && (
+      <div role="dialog" aria-modal="false" aria-labelledby="z-report-title" style={{ position:'fixed', inset:0, zIndex:99990, display:'flex', alignItems:'center', justifyContent:'center', padding:18, pointerEvents:'none' }}>
+        <div style={{ pointerEvents:'auto', width:'min(560px, 100%)', maxHeight:'78vh', overflow:'auto', borderRadius:16, background:'#f7f2e8', color:'#29251f', border:'2px solid #8c754d', boxShadow:'0 18px 70px rgba(0,0,0,.42)' }}>
+          <div style={{ padding:'18px 22px', background:'#303c32', color:'#f8f1df', display:'flex', justifyContent:'space-between', gap:12, alignItems:'center' }}>
+            <div><div style={{fontSize:11,letterSpacing:2,opacity:.8}}>MAHALLE DEFTERİ · GÜN SONU</div><h2 id="z-report-title" style={{margin:'5px 0 0',fontSize:25}}>Z Raporu</h2><div style={{fontSize:12,opacity:.8}}>{zReport.date} günü kapanışı</div></div>
+            <button onClick={() => setZReport(null)} style={{background:'transparent',border:'1px solid #cfc5ad',color:'inherit',borderRadius:8,padding:'7px 10px',cursor:'pointer'}}>Kapat</button>
+          </div>
+          <div style={{padding:'16px 22px'}}>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(2,minmax(0,1fr))',gap:8,marginBottom:14}}>
+              <div style={{background:'#e8e1d2',padding:12,borderRadius:10}}><div style={{fontSize:11,opacity:.7}}>İŞLETME GELİRİ</div><strong style={{fontSize:20}}>₺{Number(zReport.totalRevenue).toLocaleString('tr-TR',{maximumFractionDigits:2})}</strong></div>
+              <div style={{background:'#e8e1d2',padding:12,borderRadius:10}}><div style={{fontSize:11,opacity:.7}}>GÜNÜN NETİ</div><strong style={{fontSize:20,color:zReport.net>=0?'#286142':'#9d332b'}}>₺{Number(zReport.net).toLocaleString('tr-TR',{maximumFractionDigits:2})}</strong></div>
+            </div>
+            <div style={{fontWeight:700,marginBottom:8}}>Satış dökümü</div>
+            {zReport.rows.length ? <div style={{maxHeight:230,overflowY:'auto',fontSize:13,lineHeight:1.55}}>{zReport.rows.map((row,i)=><div key={i} style={{padding:'6px 0',borderBottom:'1px solid #ddd3c1'}}>{typeof row==='string'?row:row.text}</div>)}</div> : <div style={{padding:12,background:'#eee7d9',borderRadius:8,fontSize:13}}>Bugün kaydedilmiş satış yok.</div>}
+            <div style={{display:'flex',justifyContent:'space-between',gap:12,marginTop:14,fontSize:12,opacity:.75}}><span>15 saniye sonra kapanır</span><span>Oyun akışı engellenmez</span></div>
+          </div>
+        </div>
+      </div>
+    )}
     {businessAlert && (
       <div role="dialog" aria-modal="true" aria-labelledby="business-alert-title" onClick={() => setBusinessAlert(null)} style={{ position: 'fixed', inset: 0, zIndex: 100000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, background: 'rgba(12, 16, 22, 0.78)', backdropFilter: 'blur(5px)' }}>
         <div onClick={event => event.stopPropagation()} style={{ position: 'relative', width: 'min(440px, 100%)', borderRadius: 18, overflow: 'hidden', background: '#f7f2e8', color: '#27231f', boxShadow: '0 24px 90px rgba(0,0,0,.5)', border: businessAlert.type === 'raid' ? '2px solid #a52d26' : '2px solid #b28a3c' }}>
