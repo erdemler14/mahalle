@@ -1151,3 +1151,32 @@ body{overflow:hidden}
   .fullscreen-game .world-topline .property-finder input{font-size:11px}
   .fullscreen-game.hud-panel-open .hud-side-panel{top:101px;right:9px;bottom:74px;width:calc(100% - 18px);padding:13px!important;border-radius:17px!important}
 }
+
+
+/* Compact, always-ready property search — restrained Apple-like HUD */
+.fullscreen-game .world-topline .property-finder{
+  flex: 0 1 260px;
+  min-width: 150px;
+  max-width: 260px;
+  height: 30px;
+  padding: 0 9px;
+  gap: 7px;
+  background: rgba(245,247,249,.94);
+  border: 1px solid rgba(160,174,188,.28);
+  border-radius: 9px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.08);
+  backdrop-filter: blur(12px);
+}
+.fullscreen-game .world-topline .property-finder>span{font-size:15px;color:#647487}
+.fullscreen-game .world-topline .property-finder input{
+  min-width:0;
+  height:28px;
+  font: 500 12px -apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif;
+  letter-spacing:0;
+  color:#202b37;
+}
+.fullscreen-game .world-topline .property-finder small{font:600 8px -apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif;letter-spacing:.2px;color:#778391}
+.fullscreen-game .world-topline .property-finder:focus-within{border-color:rgba(89,139,204,.65);box-shadow:0 0 0 3px rgba(89,139,204,.12)}
+@media(max-width:680px){
+  .fullscreen-game .world-topline .property-finder{flex:1 1 100%;width:100%;max-width:none;min-width:0;height:32px}
+}
