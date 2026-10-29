@@ -1630,7 +1630,18 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   };
   useEffect(() => {
     const hasOrderEligibleBusiness = owned.some(id => !rented.includes(id) && (tradeCatalog[id] || []).some(product => product.price > 0 && (product.unlockLevel || 1) <= getBusinessSalesLevel(id)));
-    if (ordersDateKey !== currentGameDateKey || (orders.length === 0 && hasOrderEligibleBusiness)) {
+    if (ordersDateKey !== currentGameDateKey) {
+      // Keep accepted orders alive across the in-game day boundary; their own expiry
+      // clock decides when they fail. Refresh only the unaccepted daily offers.
+      const now = gameHourIndex();
+      setOrders(old => {
+        const activeAccepted = old.filter(order =>
+          order.status === 'accepted' && Number(order.expiresAt) > now
+        );
+        return [...activeAccepted, ...createDailyOrders()];
+      });
+      setOrdersDateKey(currentGameDateKey);
+    } else if (orders.length === 0 && hasOrderEligibleBusiness) {
       setOrders(createDailyOrders());
       setOrdersDateKey(currentGameDateKey);
     }
