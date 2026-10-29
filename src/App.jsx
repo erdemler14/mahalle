@@ -3065,10 +3065,18 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   snapshotRef.current = { owners: ownerByProperty, marketValues, hostName: playerName.trim() || 'Ev sahibi' };
   actionRefs.current = { advanceHour, sleepUntilMorning, clockTick: () => advanceHour(false), selectBusinessPlan, stockBusiness, buy, toggleRent, toggleShop, makeWine, resetGame, selectProperty, changeProfession };
   useEffect(() => {
-    if (multiplayerRole === 'guest') return undefined;
-    const timer = window.setInterval(() => actionRefs.current.clockTick?.(), 4000);
+    // Each player has a private calendar and economy, so guests also advance their own clock.
+    // Keep the latest callback in actionRefs to avoid stale closures without resetting the timer.
+    const timer = window.setInterval(() => {
+      try {
+        const tick = actionRefs.current.clockTick;
+        if (typeof tick === 'function') tick();
+      } catch (error) {
+        console.error('Mahalle oyun saati ilerletilemedi:', error);
+      }
+    }, 4000);
     return () => window.clearInterval(timer);
-  }, [multiplayerRole]);
+  }, []);
   useEffect(() => {
     if (multiplayerRole === 'host' && connectionRef.current?.open) connectionRef.current.send({ type: 'world-state', owners: ownerByProperty, marketValues, hostName: playerName.trim() || 'Ev sahibi' });
   }, [multiplayerRole, ownerByProperty, marketValues, playerName]);
