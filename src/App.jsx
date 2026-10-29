@@ -53,7 +53,7 @@ properties.forEach((property, index) => {
 
 const SAVE_KEY = 'mahalle-save-v1';
 const SAVE_BACKUP_KEY = 'mahalle-save-v1-backup';
-const DAILY_LIVING_COST = 2.5;
+const DAILY_LIVING_COST = 0.5;
 const SHOE_MATERIALS = [
   { id: 'deri', name: 'İşlenmiş deri', batch: 4, cost: 24 },
   { id: 'taban', name: 'Ayakkabı tabanı', batch: 4, cost: 16 },
