@@ -1248,3 +1248,9 @@ body{overflow:hidden}
 .map-view-presets button:hover,.map-view-presets button:focus-visible{background:#e5eee8;border-color:#9caf9f;outline:none}
 .map-hint{max-width:calc(100% - 120px);line-height:1.4}
 @media(max-width:680px){.map-view-presets{left:8px;top:8px;gap:3px;padding:4px;border-radius:9px}.map-view-presets button{padding:8px 7px;font-size:10px}.map-zoom-controls{top:8px;right:8px}.map-hint{max-width:calc(100% - 100px);font-size:9px}}
+
+
+/* Pera period finish: restrained warm materials, fine sign details and readable scene controls */
+.scene-host{background:linear-gradient(180deg,#c8d0cb 0%,#e2d7c2 58%,#c4b8a3 100%)}
+.map-view-presets{background:rgba(246,240,226,.94);border-color:rgba(94,73,53,.22)}
+.map-view-presets button{font-family:Georgia,'Times New Roman',serif;letter-spacing:.01em}

@@ -442,11 +442,14 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
       const d = Number(p.depth) || ([2, 8, 21, 24, 27].includes(p.id) ? 2.35 : 1.9);
       const floorHeight = isGrandFacade ? 0.91 : 0.88;
       const h = p.floors * floorHeight;
-      const facadeColors = ['#d9c8ad', '#c6b8a4', '#c7c0b3', '#d5c4a8', '#d4cbb9', '#c9b6a2', '#d8cbb4', '#c7c2b5', '#cbbca6', '#d7c8b0', '#d0c3af', '#bfae98'];
-      const baseColor = ownerInfo ? (ownerInfo.playerId === currentPlayerId ? '#b9c8b2' : '#b8c8d9') : (isOwned ? '#b9c8b2' : facadeColors[idx % facadeColors.length]);
+      // Muted Pera palette: lime plaster, faded ochre, dusty rose and blue-grey masonry.
+      const facadeColors = ['#d7c5a8', '#b9b1a1', '#c9b7a8', '#d8c8ad', '#c1c6bf', '#c9ad9d', '#d6c7b6', '#b8b7ad', '#d3c0a4', '#c4b4a2', '#d2c9b8', '#b7a899', '#c5c8c0', '#cdb7a7'];
+      const baseColor = ownerInfo ? (ownerInfo.playerId === currentPlayerId ? '#b9c8b2' : '#b8c8d9') : (isOwned ? '#b9c8b2' : facadeColors[(idx * 5 + p.id * 3) % facadeColors.length]);
       const mat = new THREE.MeshStandardMaterial({ color: baseColor, roughness: 0.94 });
-      const trimMat = new THREE.MeshStandardMaterial({ color: isTimberHouse ? '#665044' : '#e9deca', roughness: 0.92 });
-      const darkWood = new THREE.MeshStandardMaterial({ color: '#513d31', roughness: 0.92 });
+      const trimMat = new THREE.MeshStandardMaterial({ color: isTimberHouse ? '#665044' : (isGrandFacade ? '#e5d7bd' : '#e2d3b9'), roughness: 0.94 });
+      const darkWood = new THREE.MeshStandardMaterial({ color: isTimberHouse ? '#4a3025' : '#594033', roughness: 0.96 });
+      const fadedWood = new THREE.MeshStandardMaterial({ color: '#78604a', roughness: 1 });
+      const ironDetail = new THREE.MeshStandardMaterial({ color: '#353d3b', roughness: 0.8, metalness: 0.22 });
       const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
       body.position.y = h / 2;
       body.castShadow = true; body.receiveShadow = true; group.add(body);
@@ -493,6 +496,19 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
           sill.position.set(x, y - 0.24, d / 2 + 0.05); group.add(sill);
           const mullion = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.42, 0.055), trimMat);
           mullion.position.set(x, y, d / 2 + 0.055); group.add(mullion);
+          // Narrow painted timber shutters and lintels echo late-Ottoman Pera apartment windows.
+          if (floor > 0 && (p.id + floor + col) % 3 !== 0) {
+            for (const side of [-1, 1]) {
+              const shutter = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.39, 0.035), fadedWood);
+              shutter.position.set(x + side * 0.225, y, d / 2 + 0.035);
+              group.add(shutter);
+              const shutterSlat = new THREE.Mesh(new THREE.BoxGeometry(0.067, 0.025, 0.012), darkWood);
+              shutterSlat.position.set(x + side * 0.225, y - 0.06, d / 2 + 0.056);
+              group.add(shutterSlat);
+            }
+            const lintel = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.045, 0.075), trimMat);
+            lintel.position.set(x, y + 0.29, d / 2 + 0.04); group.add(lintel);
+          }
         }
       }
 
@@ -566,12 +582,21 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
         doorPanel.position.set(w * 0.32, 0.43, d / 2 + 0.12); group.add(doorPanel);
 
         const signCanvas = document.createElement('canvas');
-        signCanvas.width = 512; signCanvas.height = 128;
+        signCanvas.width = 512; signCanvas.height = 160;
         const ctx = signCanvas.getContext('2d');
-        ctx.fillStyle = p.id === 7 ? '#49362b' : p.id === 12 ? '#314538' : '#3d3027';
-        ctx.fillRect(0, 0, 512, 128);
-        ctx.strokeStyle = '#d5bd8c'; ctx.lineWidth = 5; ctx.strokeRect(8, 8, 496, 112);
-        ctx.fillStyle = '#f0dfb7'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        // Painted shop signs, restrained brass edging and period-inspired serif lettering.
+        const signPalettes = [
+          ['#35443b', '#d8c29a', '#efe2c5'], ['#49352d', '#c5a16d', '#f0dfbb'],
+          ['#344652', '#cbb98f', '#eee1c8'], ['#6a3f36', '#d5b98b', '#f4e4c8'],
+          ['#4d4a3e', '#c6b48b', '#eee0c4'], ['#554456', '#d0b68c', '#f0dfc3']
+        ];
+        const signPalette = signPalettes[(p.id * 7) % signPalettes.length];
+        ctx.fillStyle = signPalette[0];
+        ctx.fillRect(0, 0, 512, 160);
+        ctx.strokeStyle = signPalette[1]; ctx.lineWidth = 4; ctx.strokeRect(8, 8, 496, 144);
+        ctx.strokeStyle = signPalette[1]; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(28, 22); ctx.lineTo(484, 22); ctx.moveTo(28, 138); ctx.lineTo(484, 138); ctx.stroke();
+        ctx.fillStyle = signPalette[2]; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         // Storefronts use their actual in-world business names, not generic category labels.
         const displayName = String(p.name || 'Mahalle Dükkanı').normalize('NFC').toLocaleUpperCase('tr-TR');
         const words = displayName.split(/\s+/);
@@ -584,20 +609,26 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
         }
         if (line) lines.push(line);
         const signLines = lines.slice(0, 2);
-        ctx.font = 'bold ' + (signLines.some(text => text.length > 16) ? '25px' : signLines.some(text => text.length > 11) ? '30px' : '36px') + ' Georgia, serif';
-        if (signLines.length === 1) ctx.fillText(signLines[0], 256, 64, 470);
+        ctx.font = '600 ' + (signLines.some(text => text.length > 16) ? '23px' : signLines.some(text => text.length > 11) ? '28px' : '34px') + ' Georgia, "Times New Roman", serif';
+        if (signLines.length === 1) ctx.fillText(signLines[0], 256, 80, 462);
         else {
-          ctx.fillText(signLines[0], 256, 43, 470);
-          ctx.fillText(signLines[1], 256, 84, 470);
+          ctx.fillText(signLines[0], 256, 59, 462);
+          ctx.fillText(signLines[1], 256, 101, 462);
         }
         const signTexture = new THREE.CanvasTexture(signCanvas);
         signTexture.colorSpace = THREE.SRGBColorSpace;
         const signMat = new THREE.MeshStandardMaterial({ map: signTexture, roughness: 0.8 });
-        const signBoard = new THREE.Mesh(new THREE.BoxGeometry(w * 0.86, 0.28, 0.07), signMat);
-        signBoard.position.set(0, 1.16, d / 2 + 0.09); group.add(signBoard);
+        const signBoard = new THREE.Mesh(new THREE.BoxGeometry(w * 0.86, 0.34, 0.07), signMat);
+        signBoard.position.set(0, 1.17, d / 2 + 0.09); group.add(signBoard);
+        const signBracketMat = ironDetail;
+        for (const side of [-1, 1]) {
+          const bracket = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.17, 0.12), signBracketMat);
+          bracket.position.set(side * w * 0.37, 1.0, d / 2 + 0.12); group.add(bracket);
+        }
 
         if ([1, 7, 10, 12, 23, 25, 28, 31].includes(p.id)) {
-          const awningColors = p.id === 7 ? ['#8b5145', '#e2c9a0'] : ['#a55f48', '#ead9b8'];
+          const awningPalette = { 1:['#6c7c68','#e2d2b5'], 7:['#854c3f','#e0c9a6'], 10:['#596d78','#e0d2b7'], 12:['#596c57','#e5d8be'], 23:['#8b5945','#e4d0b0'], 25:['#6d7770','#e4d8c2'], 28:['#7c5147','#e5d1b1'], 31:['#687b73','#e4d6ba'] };
+          const awningColors = awningPalette[p.id] || ['#8b5145', '#e2c9a0'];
           for (let stripe = 0; stripe < 6; stripe++) {
             const awning = new THREE.Mesh(new THREE.BoxGeometry(w * 0.86 / 6, 0.07, 0.38), new THREE.MeshStandardMaterial({ color: awningColors[stripe % 2], roughness: 0.95 }));
             awning.position.set(-w * 0.43 + (stripe + 0.5) * (w * 0.86 / 6), 1.0, d / 2 + 0.28);
@@ -610,9 +641,11 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
       }
 
       // The commercial street corner has a shallow pediment, while smaller houses retain restrained roof details.
-      if (p.id === 10) {
-        const pediment = new THREE.Mesh(new THREE.ConeGeometry(w * 0.58, 0.42, 3), trimMat);
-        pediment.rotation.y = Math.PI; pediment.position.set(0, h + 0.24, d / 2); pediment.scale.z = 0.45; group.add(pediment);
+      if (p.id === 10 || isGrandFacade) {
+        const pediment = new THREE.Mesh(new THREE.ConeGeometry(w * (p.id === 10 ? 0.58 : 0.42), p.id === 10 ? 0.42 : 0.28, 3), trimMat);
+        pediment.rotation.y = Math.PI; pediment.position.set(0, h + (p.id === 10 ? 0.24 : 0.16), d / 2); pediment.scale.z = 0.45; group.add(pediment);
+        const crest = new THREE.Mesh(new THREE.SphereGeometry(0.075, 8, 6), ironDetail);
+        crest.position.set(0, h + (p.id === 10 ? 0.45 : 0.29), d / 2 + 0.06); group.add(crest);
       }
       group.position.set(p.x, 0, p.z);
       // Face each main frontage toward the street.
