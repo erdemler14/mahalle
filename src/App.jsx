@@ -2999,6 +2999,38 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     setBusinessStats(old => { const previous = old[propertyId] || { unitsSold: 0, revenue: 0, stockInvested: 0 }; return { ...old, [propertyId]: { ...previous, stockInvested: Math.round(((Number(previous.stockInvested)||0) + cost)*100)/100 } }; });
     tell('Tedarik tamamlandı: ' + material.name + ' +' + quantity + ' birim, ₺' + cost + '.');
   };
+  const buyRecipeMaterials = (propertyId, product, requestedBatch = productionBatch) => {
+    if (!product) return;
+    if (!owned.includes(propertyId) || rented.includes(propertyId)) { tell('Toplu tedarik için işletmenin sahibi olmalı ve kiraya vermemiş olmalısın.'); return; }
+    const profile = getBusinessProfile(propertyId);
+    const recipe = getBusinessRecipe(propertyId, product);
+    const inventory = getInventoryState(propertyId);
+    const unlocked = new Set(getUnlockedBusinessMaterials(propertyId).map(item => item.id));
+    const capacity = getMaterialCapacity(propertyId);
+    const currentTotal = Object.entries(inventory.materials || {}).reduce((sum,[id,amount]) => sum + (unlocked.has(id) ? Math.max(0,Number(amount)||0) : 0),0);
+    const freeCapacity = Math.max(0,capacity-currentTotal);
+    const productCapacity = Math.max(0,getStockCapacity(propertyId)-getTotalStock(propertyId)-getPendingUnits(propertyId));
+    const batch = requestedBatch === 'max' ? productCapacity : Math.min(Math.max(1,Number(requestedBatch)||1),productCapacity);
+    if (batch <= 0) { tell('Hazır ürün deposunda yer yok. Önce satış bekle veya ürün deposunu genişlet.'); return; }
+    const deficits = recipe.map(part => {
+      const material = profile.materials.find(item => item.id === part.id);
+      const have = Math.max(0,Number(inventory.materials?.[part.id])||0);
+      return { ...part, material, missing: Math.max(0,part.qty*batch-have) };
+    }).filter(part => part.missing > 0);
+    if (!deficits.length) { tell('Bu üretim partisi için gerekli tüm hammaddeler hazır. Doğrudan üretime başlayabilirsin.'); return; }
+    if (deficits.some(part => !part.material || !unlocked.has(part.id))) { tell('Bu ürün için gereken hammaddelerden bazıları henüz açılmamış.'); return; }
+    const neededSpace = deficits.reduce((sum,part)=>sum+part.missing,0);
+    if (neededSpace > freeCapacity) { tell('Depoda bu üretimin tüm eksik hammaddelerine yer yok. Depoyu genişlet veya daha küçük üretim partisi seç.'); return; }
+    const totalCost = Math.round(deficits.reduce((sum,part)=>sum+part.material.cost*part.missing/part.material.batch,0)*100)/100;
+    if (cash < totalCost) { tell('Toplu tedarik ₺'+totalCost.toLocaleString('tr-TR')+' tutuyor; bakiyen ₺'+cash.toLocaleString('tr-TR')+'. Daha küçük üretim partisi seç veya para biriktir.'); return; }
+    const nextMaterials = { ...(inventory.materials||{}) };
+    deficits.forEach(part => { nextMaterials[part.id]=(Number(nextMaterials[part.id])||0)+part.missing; });
+    setCash(value=>Math.round((value-totalCost)*100)/100);
+    setStockByProperty(old=>{ const state=getInventoryState(propertyId,old[propertyId]); return {...old,[propertyId]:{materials:nextMaterials,products:state.products}}; });
+    setBusinessStats(old=>{const previous=old[propertyId]||{unitsSold:0,revenue:0,stockInvested:0};return {...old,[propertyId]:{...previous,stockInvested:Math.round(((Number(previous.stockInvested)||0)+totalCost)*100)/100}};});
+    tell('Toplu tedarik tamamlandı: '+deficits.map(part=>part.material.name+' +'+part.missing).join(', ')+'. Toplam ₺'+totalCost.toLocaleString('tr-TR')+'. Üretime geçebilirsin.');
+  };
+
   const stockBusiness = () => {
     if (sendAction('stockBusiness')) return;
     const propertyId = active.id;
@@ -3613,7 +3645,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
                   {missing.length > 0 && <small className="production-missing">Eksik: {missing.map(part => { const material = profile.materials.find(m => m.id === part.id); return (material?.name || part.id) + ' ×' + (part.qty - (Number(inventory.materials?.[part.id]) || 0)); }).join(', ')}</small>}
                   {pending && <small className="production-queue-note">Kuyrukta {pending.units} adet · sıradaki {Math.max(0, Math.ceil((pending.readyAt - productionNow) / 1000))} sn</small>}
                 </div>}
-                <div className="production-materials-head"><strong>Hammaddeler</strong><span>{unlockedMaterials.length} çeşit açık</span></div>
+                <div className="production-materials-head production-materials-toolbar"><div><strong>Hammaddeler</strong><span>{unlockedMaterials.length} çeşit açık</span></div><button type="button" className="bulk-supply-button" onClick={() => buyRecipeMaterials(active.id, selectedProduct)} disabled={!selectedProduct || !missing.length}>⚡ Eksikleri topluca tedarik et</button></div>
                 <div className="production-materials-list">
                   {unlockedMaterials.map(material => {
                     const amount = Number(inventory.materials?.[material.id]) || 0;

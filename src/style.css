@@ -1283,3 +1283,12 @@ body{overflow:hidden}
 .building-history-action:hover{background:#e2d3b8}
 @keyframes building-story-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 @media(max-width:680px){.building-history-popover{left:9px;bottom:48px;width:calc(100% - 18px);padding:14px 14px 12px}.building-history-popover h3{font-size:16px}.building-history-popover p{font-size:11px;line-height:1.5}}
+
+
+/* One-click supply for all missing ingredients in the selected production batch */
+.production-materials-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.production-materials-toolbar>div{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.bulk-supply-button{border:1px solid #a6b7a0;border-radius:8px;background:#e5ecdf;color:#304632;padding:9px 12px;font-size:11px;font-weight:800;letter-spacing:.15px;cursor:pointer;min-height:36px}
+.bulk-supply-button:hover:not(:disabled){background:#d6e3d0;border-color:#81997c}
+.bulk-supply-button:disabled{opacity:.48;cursor:not-allowed}
+@media(max-width:560px){.production-materials-toolbar{align-items:stretch}.bulk-supply-button{width:100%;min-height:42px}}
