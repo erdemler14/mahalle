@@ -1697,7 +1697,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     return [{id:recipe[0],qty:recipe[1]},{id:recipe[2],qty:recipe[3]}];
   };
   const getBusinessRecipeCost = (propertyId, product) => {
-    if (!product) return 0;
+    if (!product || product.service) return 0;
     const profile = getBusinessProfile(propertyId);
     return Math.round(getBusinessRecipe(propertyId, product).reduce((sum, part) => {
       const material = profile.materials.find(item => item.id === part.id);
@@ -1716,6 +1716,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   // Catalog prices remain the minimum floor for established retail/luxury goods.
   const getBusinessSalePrice = (propertyId, product) => {
     if (!product) return 0;
+    if (product.service) return Math.round((Number(product.price) || 0) * 100) / 100;
     const recipeCost = getBusinessRecipeCost(propertyId, product);
     return Math.round(Math.max(Number(product.price) || 0, recipeCost * 1.38) * 100) / 100;
   };
@@ -1869,10 +1870,10 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     { id: 'deliver-order', title: 'Sözünü tut', detail: 'Bir siparişi zamanında teslim et.', target: 1, progress: 0, reward: 85, xp: 25, claimed: false }
   ];
   const createDailyOrders = () => {
-    const candidates = owned.filter(id => !rented.includes(id) && (tradeCatalog[id] || []).some(product => product.price > 0 && (product.unlockLevel || 1) <= getBusinessSalesLevel(id)));
+    const candidates = owned.filter(id => !rented.includes(id) && (tradeCatalog[id] || []).some(product => product.price > 0 && !product.service && (product.unlockLevel || 1) <= getBusinessSalesLevel(id)));
     const ordersForDay = [];
     candidates.forEach(propertyId => {
-      const catalog = (tradeCatalog[propertyId] || []).filter(product => product.price > 0 && (product.unlockLevel || 1) <= getBusinessSalesLevel(propertyId));
+      const catalog = (tradeCatalog[propertyId] || []).filter(product => product.price > 0 && !product.service && (product.unlockLevel || 1) <= getBusinessSalesLevel(propertyId));
       if (!catalog.length) return;
       const product = catalog[Math.floor(Math.random() * catalog.length)];
       const quantity = 2 + Math.floor(Math.random() * 4);
