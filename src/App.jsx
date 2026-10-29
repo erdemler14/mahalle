@@ -39,8 +39,8 @@ const properties = [
   { id: 34, name: 'Çiçekçi Dükkânı', type: 'Ticaret', price: 2475, rent: 38, x: 20.5, z: 18.4, color: '#c4b6a6', floors: 2, style: 'Vitrininde çiçekler ve saksılar bulunan küçük çiçekçi' },
   { id: 35, name: 'Haliç Gazinosu', type: 'İşletme', price: 3350, rent: 245, x: 21.2, z: 12.2, color: '#a88c73', floors: 2, style: 'Haliç kıyısında teraslı, deniz manzaralı gazino' },
   { id: 36, name: 'Kohen Hemşireler Kitabevi', type: 'Ticaret', price: 2100, rent: 42, x: 20.7, z: 5.3, color: '#bca98e', floors: 2, width: 2.35, depth: 1.9, style: 'Tünel Pasajı içinde dar cepheli, küçük tarihî kitabevi' },
-  { id: 37, name: 'Sokrat Kıraathanesi', type: 'İşletme', price: 2850, rent: 52, x: -20.5, z: -5.3, color: '#c5b9a4', floors: 2, width: 2.5, depth: 2.1, style: 'Sokrat adıyla bilinen mahalle kıraathanesi' },
-  { id: 38, name: 'Tarihi Mahalle Hamamı', type: 'İşletme', price: 8200, rent: 165, x: -20.5, z: 5.3, color: '#b9aa94', floors: 1, width: 4.0, depth: 3.2, style: 'Yüksek kubbeli, geniş soyunmalık ve sıcaklık bölümleri olan tarihî hamam' }
+  { id: 39, name: 'Sokrat Kıraathanesi', type: 'İşletme', price: 2850, rent: 52, x: -20.5, z: -5.3, color: '#c5b9a4', floors: 2, width: 2.5, depth: 2.1, style: 'Sokrat adıyla bilinen mahalle kıraathanesi' },
+  { id: 40, name: 'Tarihi Mahalle Hamamı', type: 'İşletme', price: 8200, rent: 165, x: -20.5, z: 5.3, color: '#b9aa94', floors: 1, width: 4.0, depth: 3.2, style: 'Yüksek kubbeli, geniş soyunmalık ve sıcaklık bölümleri olan tarihî hamam' }
 ];
 
 // Galata-style irregular street frontages: narrow blocks, staggered facades and varied angles.
@@ -58,8 +58,8 @@ properties.forEach((property, index) => {
 Object.assign(properties.find(property => property.id === 34), { x: 20.4, z: 18.4, rotation: -0.04 });
 Object.assign(properties.find(property => property.id === 35), { x: 21.1, z: 11.8, rotation: -0.08 });
 Object.assign(properties.find(property => property.id === 36), { x: 20.7, z: 5.3, rotation: -0.05 });
-Object.assign(properties.find(property => property.id === 37), { x: -20.5, z: -5.3, rotation: 0.02 });
-Object.assign(properties.find(property => property.id === 38), { x: -20.5, z: 5.3, rotation: 0.01 });
+Object.assign(properties.find(property => property.id === 39), { x: -20.5, z: -5.3, rotation: 0.02 });
+Object.assign(properties.find(property => property.id === 40), { x: -20.5, z: 5.3, rotation: 0.01 });
 
 const SAVE_KEY = 'mahalle-save-v1';
 const SAVE_BACKUP_KEY = 'mahalle-save-v1-backup';
@@ -389,9 +389,9 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
     const addBuilding = (p, idx, isOwned, ownerInfo, currentPlayerId) => {
       const group = new THREE.Group();
       const isShopfront = ['Ticaret', 'İşletme'].includes(p.type) || [1, 4, 7, 9, 10, 12].includes(p.id);
-      const isGrandFacade = p.floors >= 4 || [4, 8, 10, 21, 24, 27, 38].includes(p.id);
+      const isGrandFacade = p.floors >= 4 || [4, 8, 10, 21, 24, 27, 40].includes(p.id);
       const isTimberHouse = [6, 11, 22, 30].includes(p.id);
-      const w = Number(p.width) || ([4, 10, 21, 24, 27, 38].includes(p.id) ? 2.75 : [9, 25, 31, 37].includes(p.id) ? 2.45 : 2.05);
+      const w = Number(p.width) || ([4, 10, 21, 24, 27, 40].includes(p.id) ? 2.75 : [9, 25, 31, 39].includes(p.id) ? 2.45 : 2.05);
       const d = Number(p.depth) || ([2, 8, 21, 24, 27].includes(p.id) ? 2.35 : 1.9);
       const floorHeight = isGrandFacade ? 0.91 : 0.88;
       const h = p.floors * floorHeight;
