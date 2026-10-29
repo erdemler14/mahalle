@@ -1009,18 +1009,28 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
       camera.lookAt(target);
     };
     cameraControlRef.current = (action, property) => {
-      if (action === 'in') radiusGoal = clamp(radiusGoal * 0.82, 6.5, 40);
-      else if (action === 'out') radiusGoal = clamp(radiusGoal * 1.22, 6.5, 55);
+      if (action === 'in') radiusGoal = clamp(radiusGoal * 0.84, 8, 40);
+      else if (action === 'out') radiusGoal = clamp(radiusGoal * 1.18, 8, 48);
       else if (action === 'focus' && property) {
-        targetGoal.set(clamp(property.x || 0, -34, 34), 0, clamp(property.z || 0, -34, 34));
-        radiusGoal = Math.min(radiusGoal, 15);
-        phiGoal = 0.78;
+        targetGoal.set(clamp(property.x || 0, -34, 34), 0.8, clamp(property.z || 0, -34, 34));
+        radiusGoal = 13;
+        phiGoal = 0.82;
       } else if (action === 'view') {
-        if (property === 'street') { phiGoal = 1.08; radiusGoal = Math.min(radiusGoal, 21); }
-        else if (property === 'top') { phiGoal = 0.32; radiusGoal = Math.max(radiusGoal, 25); }
-        else { phiGoal = 0.76; thetaGoal = Math.PI / 4; radiusGoal = Math.max(radiusGoal, 29); }
+        if (property === 'street') { phiGoal = 1.12; radiusGoal = 25; thetaGoal = 0; targetGoal.set(0,0,0); }
+        else if (property === 'top') { phiGoal = 0.34; radiusGoal = 34; thetaGoal = 0; targetGoal.set(0,0,0); }
+        else { phiGoal = 0.72; thetaGoal = Math.PI / 4; radiusGoal = 34; targetGoal.set(0,0,0); }
+      } else if (action === 'rotate') {
+        thetaGoal += (property === 'left' ? -1 : 1) * Math.PI / 8;
+      } else if (action === 'tilt') {
+        phiGoal = clamp(phiGoal + (property === 'up' ? -0.12 : 0.12), 0.3, 1.18);
+      } else if (action === 'pan') {
+        const step = radiusGoal * 0.12;
+        if (property === 'left') targetGoal.x = clamp(targetGoal.x - step, -34, 34);
+        else if (property === 'right') targetGoal.x = clamp(targetGoal.x + step, -34, 34);
+        else if (property === 'up') targetGoal.z = clamp(targetGoal.z - step, -34, 34);
+        else if (property === 'down') targetGoal.z = clamp(targetGoal.z + step, -34, 34);
       } else {
-        radiusGoal = 43; thetaGoal = Math.PI / 4; phiGoal = 0.76; targetGoal.set(0, 0, 0);
+        radiusGoal = 34; thetaGoal = Math.PI / 4; phiGoal = 0.72; targetGoal.set(0, 0, 0);
       }
     };
     const activePointers = new Map();
@@ -1213,7 +1223,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
     };
   }, [owned, ownerByProperty, playerId]);
 
-  return <div className="scene-host" ref={host} aria-label="Beyoğlu 1923 3D mahalle sahnesi"><div className="scene-building-overlay" ref={overlayRef}>{overlay}</div><div className="map-view-presets" role="group" aria-label="Kamera açısı"><button type="button" title="İzometrik görünüm" aria-label="İzometrik görünüm" onClick={() => cameraControlRef.current?.('view','iso')}>İzometrik</button><button type="button" title="Sokak görünümü" aria-label="Sokak görünümü" onClick={() => cameraControlRef.current?.('view','street')}>Sokak</button><button type="button" title="Yukarıdan görünüm" aria-label="Yukarıdan görünüm" onClick={() => cameraControlRef.current?.('view','top')}>Üstten</button></div><div className="map-zoom-controls"><button type="button" aria-label="Yakınlaştır" title="Yakınlaştır" onClick={() => cameraControlRef.current?.('in')}>＋</button><button type="button" aria-label="Uzaklaştır" title="Uzaklaştır" onClick={() => cameraControlRef.current?.('out')}>−</button><button type="button" aria-label="Seçili binaya odaklan" title="Seçili binaya odaklan" onClick={() => cameraControlRef.current?.('focus', properties.find(item => item.id === selected))}>⌖</button><button type="button" aria-label="Genel görünüme dön" title="Genel görünüme dön" onClick={() => cameraControlRef.current?.('reset')}>⌂</button><button type="button" aria-label="Üniversite ve meslek eğitimleri" title="Üniversite ve meslek eğitimleri" onClick={() => onUniversity?.()}>▤</button></div><div className="map-hint">Sol tuş / tek parmak: taşı · Sağ tuş: döndür · Tekerlek / iki parmak: yakınlaştır</div></div>;
+  return <div className="scene-host" ref={host} aria-label="Beyoğlu 1923 3D mahalle sahnesi"><div className="scene-building-overlay" ref={overlayRef}>{overlay}</div><div className="map-camera-toolbar"><div className="map-view-presets" role="group" aria-label="Kamera görünümü"><button type="button" title="Mahallenin genel görünümü" onClick={() => cameraControlRef.current?.('view','iso')}>Mahalle</button><button type="button" title="Sokak seviyesine yaklaş" onClick={() => cameraControlRef.current?.('view','street')}>Sokak</button><button type="button" title="Yukarıdan plan görünümü" onClick={() => cameraControlRef.current?.('view','top')}>Üstten</button></div><div className="map-camera-tools"><button type="button" aria-label="Sola döndür" title="Sola döndür" onClick={() => cameraControlRef.current?.('rotate','left')}>↶</button><button type="button" aria-label="Sağa döndür" title="Sağa döndür" onClick={() => cameraControlRef.current?.('rotate','right')}>↷</button><button type="button" aria-label="Açıyı yükselt" title="Açıyı yükselt" onClick={() => cameraControlRef.current?.('tilt','up')}>↑</button><button type="button" aria-label="Açıyı alçalt" title="Açıyı alçalt" onClick={() => cameraControlRef.current?.('tilt','down')}>↓</button></div></div><div className="map-zoom-controls"><button type="button" aria-label="Yakınlaştır" title="Yakınlaştır" onClick={() => cameraControlRef.current?.('in')}>＋</button><button type="button" aria-label="Uzaklaştır" title="Uzaklaştır" onClick={() => cameraControlRef.current?.('out')}>−</button><button type="button" aria-label="Seçili binaya odaklan" title="Seçili binaya odaklan" onClick={() => cameraControlRef.current?.('focus', properties.find(item => item.id === selected))}>⌖</button><button type="button" aria-label="Haritayı ortala" title="Haritayı ortala" onClick={() => cameraControlRef.current?.('reset')}>⌂</button><button type="button" aria-label="Üniversite ve meslek eğitimleri" title="Üniversite ve meslek eğitimleri" onClick={() => onUniversity?.()}>▤</button></div><div className="map-hint">Sürükle: taşı · Sağ tuş: döndür · Tekerlek: yakınlaştır · Oklar: kamera açısı</div></div>;
 }
 
 function App({ session = null, supabase = null, authConfigured = false }) {
