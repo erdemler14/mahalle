@@ -40,7 +40,8 @@ const properties = [
   { id: 35, name: 'Haliç Gazinosu', type: 'İşletme', price: 3350, rent: 245, x: 21.2, z: 12.2, color: '#a88c73', floors: 2, style: 'Haliç kıyısında teraslı, deniz manzaralı gazino' },
   { id: 36, name: 'Kohen Hemşireler Kitabevi', type: 'Ticaret', price: 2100, rent: 42, x: 20.7, z: 5.3, color: '#bca98e', floors: 2, width: 2.35, depth: 1.9, style: 'Tünel Pasajı içinde dar cepheli, küçük tarihî kitabevi', history: '1918’de açılan tarihî kitabevinden esinlenir; yabancı dilde kitap, roman, sözlük ve kırtasiye ürünleriyle tanınır.' },
   { id: 39, name: 'Sokrat Kıraathanesi', type: 'İşletme', price: 2850, rent: 52, x: -20.5, z: -5.3, color: '#c5b9a4', floors: 2, width: 2.5, depth: 2.1, style: 'Sokrat adıyla bilinen mahalle kıraathanesi', history: 'Dönemin mahalle kahvehanelerini temsil eder; kahve, çay, şerbet ve küçük tatlılar sunar.' },
-  { id: 40, name: 'Tarihi Mahalle Hamamı', type: 'İşletme', price: 8200, rent: 165, x: -20.5, z: 5.3, color: '#b9aa94', floors: 1, width: 4.0, depth: 3.2, style: 'Yüksek kubbeli, geniş soyunmalık ve sıcaklık bölümleri olan tarihî hamam', history: 'Geç Osmanlı İstanbul’undaki mahalle hamamlarından esinlenen, yıkanma ve kese hizmeti sunan kamusal yapı.' }
+  { id: 40, name: 'Tarihi Mahalle Hamamı', type: 'İşletme', price: 8200, rent: 165, x: -20.5, z: 5.3, color: '#b9aa94', floors: 1, width: 4.0, depth: 3.2, style: 'Yüksek kubbeli, geniş soyunmalık ve sıcaklık bölümleri olan tarihî hamam', history: 'Geç Osmanlı İstanbul’undaki mahalle hamamlarından esinlenen, yıkanma ve kese hizmeti sunan kamusal yapı.' },
+  { id: 41, name: 'Pera Buharlı Kuru Temizleme', type: 'İşletme', price: 3650, rent: 68, x: 27.2, z: 22.5, color: '#b9c5c5', floors: 2, width: 2.8, depth: 2.3, style: 'Pirinç askılıklı, geniş vitrinli ve arka bölümünde buharlı ütüleme yapılan şehirli kuru temizleme dükkânı', history: '1910’ların Pera’sındaki modern şehir hizmetlerinden esinlenir. Görünürde takım elbise, palto ve hassas kumaş temizliği yapar; ancak kasasındaki olağan dışı nakit hareketleri onu mahallenin en riskli yatırımlarından biri hâline getirir.' }
 ];
 
 // Galata-style irregular street frontages: narrow blocks, staggered facades and varied angles.
@@ -60,6 +61,7 @@ Object.assign(properties.find(property => property.id === 35), { x: 21.1, z: 11.
 Object.assign(properties.find(property => property.id === 36), { x: 20.7, z: 5.3, rotation: -0.05 });
 Object.assign(properties.find(property => property.id === 39), { x: -20.5, z: -5.3, rotation: 0.02 });
 Object.assign(properties.find(property => property.id === 40), { x: -20.5, z: 5.3, rotation: 0.01 });
+Object.assign(properties.find(property => property.id === 41), { x: 27.2, z: 22.5, rotation: -0.03 });
 
 const SAVE_KEY = 'mahalle-save-v1';
 const SAVE_BACKUP_KEY = 'mahalle-save-v1-backup';
@@ -1185,7 +1187,8 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     34: [{ id: 'buketi', name: 'Mevsim çiçekleri buketi', cost: 10, price: 4, units: 8 }, { id: 'saksi-cicegi', name: 'Saksı çiçeği', cost: 12, price: 4.8, units: 6 }, { id: 'cenaze-celengi', name: 'Çelenk ve tören aranjmanı', cost: 18, price: 7, units: 4 }, { id: 'gul-demeti', name: 'Gül demeti', cost: 14, price: 5.5, units: 6 }],
     36: [{id:'kitap-kohen',name:'Yabancı dilde roman',cost:12,price:4.2,units:8},{id:'sozluk-kohen',name:'Sözlük ve dil kitabı',cost:16,price:5.5,units:6},{id:'kirtasiye-kohen',name:'Defter, kalem ve mürekkep',cost:8,price:3,units:10},{id:'nadir-eser-kohen',name:'Nadir ve ciltli eser',cost:24,price:8,units:4}],
     39: [{id:'kahve-sokrat',name:'Türk kahvesi',cost:8,price:3,units:10},{id:'cay-sokrat',name:'Çay ve şerbet',cost:6,price:2.5,units:10},{id:'tatli-sokrat',name:'Lokum ve küçük tatlı',cost:8,price:3.2,units:8}],
-    40: [{id:'hamam-giris',name:'Hamam giriş ücreti',cost:5,price:3.5,units:12},{id:'kese',name:'Kese ve köpük hizmeti',cost:7,price:5,units:8},{id:'hamam-havlu',name:'Havlu ve peştamal',cost:8,price:3.5,units:8}]
+    40: [{id:'hamam-giris',name:'Hamam giriş ücreti',cost:5,price:3.5,units:12},{id:'kese',name:'Kese ve köpük hizmeti',cost:7,price:5,units:8},{id:'hamam-havlu',name:'Havlu ve peştamal',cost:8,price:3.5,units:8}],
+    41: [{id:'takim-temizleme',name:'Takım elbise temizliği',cost:12,price:6,units:8},{id:'palto-temizleme',name:'Palto ve kaban temizliği',cost:14,price:7,units:6},{id:'ipek-temizleme',name:'İpek ve hassas kumaş bakımı',cost:18,price:9,units:4},{id:'utu-paket',name:'Ütüleme ve paketleme',cost:8,price:4,units:10}]
   };
 
   // Commercial ownership is independent of the character's former profession.
@@ -1238,6 +1241,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   // Business-specific supply chains: recipes follow the actual product range of each shop,
   // rather than every shop drawing from the same generic "food" or "trade" list.
   const shopSpecificProfiles = {
+    dryclean: { name: 'Kuru temizleme', materials: [{id:'dry-solvent',name:'Temizleme sıvısı',batch:6,cost:12},{id:'dry-steam',name:'Buhar ve ütüleme sarfı',batch:8,cost:7},{id:'dry-care',name:'Hassas kumaş bakım ürünü',batch:6,cost:10},{id:'dry-wrap',name:'Kâğıt ve giysi kılıfı',batch:10,cost:5}], recipes: [['dry-solvent',1,'dry-steam',1],['dry-solvent',1,'dry-care',1],['dry-steam',1,'dry-wrap',1]] },
     grocery: { name: 'Bakkal ve şarküteri', materials: [
       {id:'bak-koku',name:'Kolonya ve esans',batch:6,cost:10},{id:'bak-cam',name:'Cam şişe ve kavanoz',batch:6,cost:9},
       {id:'bak-sabun',name:'Sabun bazı ve bakım yağı',batch:6,cost:10},{id:'bak-erzak',name:'Toptan erzak kolisi',batch:8,cost:12},
@@ -1305,6 +1309,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     if (id === 36) return businessMaterialProfiles.paper;
     if (id === 39) return shopSpecificProfiles.coffee;
     if (id === 40) return businessMaterialProfiles.service;
+    if (id === 41) return shopSpecificProfiles.dryclean;
     if ([4,21].includes(id)) return businessMaterialProfiles.lodging;
     if ([9,16,32].includes(id)) return businessMaterialProfiles.paper;
     if ([26].includes(id)) return businessMaterialProfiles.textile;
@@ -1378,6 +1383,11 @@ function App({ session = null, supabase = null, authConfigured = false }) {
         {match:/sabun|bakım|bakim/, recipe:[['par-sabun',1],['par-kutu',1]]},
         {match:/hediye|kutu|set/, recipe:[['par-esans',1],['par-kutu',1],['par-cam',1]]},
         {match:/ithal|konserve|erzak/, recipe:[['bak-erzak',1],['bak-cam',1]]}
+      ],
+      41: [
+        {match:/takım|takim|palto|kaban|temizleme/, recipe:[['dry-solvent',1],['dry-steam',1]]},
+        {match:/ipek|hassas|kumaş|kumas/, recipe:[['dry-solvent',1],['dry-care',1]]},
+        {match:/ütü|utu|paket/, recipe:[['dry-steam',1],['dry-wrap',1]]}
       ],
       34: [
         {match:/saksı|saksi|toprak|gübre|gubre/, recipe:[['cicek-saksi',1],['cicek-yesillik',1]]},
@@ -1568,7 +1578,21 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       const maintenance = portfolio.reduce((sum, p) => sum + Math.max(0.01, Math.round((getMarketValue(p) * 0.003 / 365) * 100) / 100), 0);
       const dailyCost = DAILY_LIVING_COST + maintenance + business.costs;
       const dailyRent = Math.round((properties.filter(p => owned.includes(p.id) && rented.includes(p.id)).reduce((sum, p) => sum + Number(p.rent || 0) / 30, 0) + Object.entries(unitRented).reduce((sum, [key, activeRent]) => { if (!activeRent) return sum; const [pid] = key.split(':'); const p = properties.find(item => item.id === Number(pid)); const unitOwner = unitOwners[key]; return sum + (p && unitOwner?.playerId === playerId ? Number(p.rent || 0) / (p.units || 1) / 30 : 0); }, 0)) * 100) / 100;
-      const dailyNet = dailyRent + business.revenue - dailyCost;
+      const dryCleanOwned = owned.includes(41) && !rented.includes(41);
+      let dryCleanDelta = 0;
+      let dryCleanNews = '';
+      if (dryCleanOwned) {
+        // High, irregular fictional profits are balanced by a real risk of costly raids.
+        const roll = Math.random();
+        if (roll < 0.17) {
+          dryCleanDelta = Math.round(250 + Math.random() * 1750);
+          dryCleanNews = ` Pera Buharlı Kuru Temizleme'de olağan dışı nakit tahsilatı: +₺${dryCleanDelta.toLocaleString('tr-TR')}! Bu kazanç şüpheleri de artırıyor.`;
+        } else if (roll > 0.91) {
+          dryCleanDelta = -Math.round(450 + Math.random() * 3550);
+          dryCleanNews = ` KURU TEMİZLEMEYE BASKIN! Kayıt dışı işlemler tespit edildi; ceza ve el koyma toplamı -₺${Math.abs(dryCleanDelta).toLocaleString('tr-TR')}.`;
+        }
+      }
+      const dailyNet = dailyRent + business.revenue - dailyCost + dryCleanDelta;
       setCash(v => Math.round((v + dailyNet) * 100) / 100);
       setDay(nextDay);
       setMonth(nextMonth);
@@ -1577,7 +1601,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       if (nextMonthRaw > 12) setYear(v => v + 1);
       setHour(6);
       setWorkHours(0);
-      tell(`Yeni gün başladı. Kira +₺${dailyRent.toFixed(2)}, gün içi işletme satışları kasaya işlendi, yaşam ve bakım -₺${(DAILY_LIVING_COST + maintenance).toFixed(2)}, işletme gideri -₺${business.costs.toFixed(2)}; net ₺${dailyNet.toFixed(2)}.${business.entries.length ? ' ' + business.entries.slice(0, 3).join(' · ') : ''}`);
+      tell(`Yeni gün başladı. Kira +₺${dailyRent.toFixed(2)}, gün içi işletme satışları kasaya işlendi, yaşam ve bakım -₺${(DAILY_LIVING_COST + maintenance).toFixed(2)}, işletme gideri -₺${business.costs.toFixed(2)}; net ₺${dailyNet.toFixed(2)}.${business.entries.length ? ' ' + business.entries.slice(0, 3).join(' · ') : ''}${dryCleanNews}`);
       return;
     }
     const isWorkingHour = hour >= 8 && hour < 19;
