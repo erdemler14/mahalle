@@ -1122,6 +1122,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   const [productionBatch, setProductionBatch] = useState('1');
   const [orders, setOrders] = useState(() => Array.isArray(saved.orders) ? saved.orders : []);
   const [ordersDateKey, setOrdersDateKey] = useState(() => typeof saved.ordersDateKey === 'string' ? saved.ordersDateKey : '');
+  const [focusedOrderId, setFocusedOrderId] = useState(null);
   const [dailyTasks, setDailyTasks] = useState(() => Array.isArray(saved.dailyTasks) ? saved.dailyTasks : []);
   const [dailyTasksDateKey, setDailyTasksDateKey] = useState(() => typeof saved.dailyTasksDateKey === 'string' ? saved.dailyTasksDateKey : '');
   const [eventChain, setEventChain] = useState(() => saved.eventChain && typeof saved.eventChain === 'object' ? saved.eventChain : { periodKey: '', deliveries: 0, claimedMilestones: [] });
@@ -2245,8 +2246,12 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       return;
     }
     setSelected(order.propertyId);
+    setBusinessPlans(oldPlans => ({ ...oldPlans, [order.propertyId]: order.productId }));
+    setFocusedOrderId(order.id);
+    setProductionBatch(String(Math.min(10, Math.max(1, Number(order.quantity) - getProductStock(order.propertyId, order.productId)))));
     setActiveHudPanel('business');
-    tell(order.propertyName + ' üretim ekranı açıldı. Gerekli ürün ve hammaddeleri buradan hazırlayabilirsin.');
+    const ready = getProductStock(order.propertyId, order.productId);
+    tell(order.productName + ' üretim ekranı açıldı. Sipariş için ' + Math.max(0, Number(order.quantity) - ready) + ' adet daha gerekiyor; doğru ürün seçildi.');
   };
   const acceptCustomerOrder = (orderId) => {
     const order = orders.find(item => item.id === orderId);
@@ -3413,6 +3418,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
                   <div><span className="card-label">ÜRETİM ATÖLYESİ</span><h3>{profile.name}</h3><p>Ürünü seç; o ürüne ait hammaddeleri tedarik et ve üretimi sıraya koy.</p></div>
                   <div className="production-level-chip"><strong>SEV. {level}/5</strong><small>{level === 5 ? 'Usta işletme' : Math.max(0, nextTarget - sold) + ' satışla seviye atla'}</small></div>
                 </div>
+                {(() => { const order = orders.find(item => item.id === focusedOrderId && item.status === 'accepted' && item.propertyId === active.id); if (!order) return null; const ready = getProductStock(active.id, order.productId); const needed = Math.max(0, Number(order.quantity) - ready); return <div className="focused-order-production"><div className="focused-order-top"><span>↗ SİPARİŞTEN ÜRETİME</span><button type="button" onClick={() => setFocusedOrderId(null)} aria-label="Sipariş hedefini kapat">×</button></div><strong>{order.productName} · {order.propertyName}</strong><div className="focused-order-count"><span>Hazır <b>{ready}</b></span><span>Hedef <b>{order.quantity}</b></span><span>Üretilecek <b>{needed}</b></span></div><div className="customer-order-stock-meter"><span style={{width: Math.min(100, ready / Math.max(1, order.quantity) * 100) + '%'}} /></div><small>Ürün otomatik seçildi. Aşağıda eksik hammaddeleri tedarik edip üretimi başlatabilirsin.</small></div>; })()}
                 <div className="production-quick-stats">
                   <div><span>HAMMADDE DEPOSU</span><strong>{totalRaw}/{materialCapacity}</strong></div>
                   <div><span>ÜRETİMDE</span><strong>{getPendingUnits(active.id)}</strong></div>

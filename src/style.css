@@ -1229,3 +1229,14 @@ body{overflow:hidden}
 .order-production-hint div{display:flex;flex-direction:column;gap:3px;min-width:0}
 .order-production-hint strong{font-size:11px;color:#e8d2a4}
 .order-production-hint small{font-size:10px;line-height:1.45;color:#c3c4c1}
+
+
+/* Context carried from an accepted order into its production screen */
+.focused-order-production{margin:12px 0;padding:13px;border:1px solid rgba(215,184,117,.45);border-radius:12px;background:rgba(215,184,117,.09);display:flex;flex-direction:column;gap:9px}
+.focused-order-top{display:flex;align-items:center;justify-content:space-between;color:#d9bb7b;font-size:10px;letter-spacing:.65px;font-weight:800}
+.focused-order-top button{border:0;background:transparent;color:inherit;font-size:20px;line-height:1;padding:0 3px;cursor:pointer}
+.focused-order-production>strong{font-size:14px;color:var(--text-primary,#eee7d8)}
+.focused-order-count{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.focused-order-count span{padding:8px;border-radius:8px;background:rgba(0,0,0,.12);font-size:10px;color:var(--text-secondary,#bbb)}
+.focused-order-count b{display:block;font-size:16px;margin-top:3px;color:var(--text-primary,#f5ead5)}
+.focused-order-production>small{font-size:11px;line-height:1.45;color:var(--text-secondary,#bbb)}
