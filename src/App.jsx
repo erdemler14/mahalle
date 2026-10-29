@@ -1293,6 +1293,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   const [businessPlans, setBusinessPlans] = useState(() => saved.businessPlans && typeof saved.businessPlans === 'object' ? saved.businessPlans : {});
   const [stockByProperty, setStockByProperty] = useState(() => saved.stockByProperty && typeof saved.stockByProperty === 'object' ? saved.stockByProperty : {});
   const [businessStats, setBusinessStats] = useState(() => saved.businessStats && typeof saved.businessStats === 'object' ? saved.businessStats : {});
+  const [autoSupplyByProperty, setAutoSupplyByProperty] = useState(() => saved.autoSupplyByProperty && typeof saved.autoSupplyByProperty === 'object' ? saved.autoSupplyByProperty : {});
   const [pendingProductions, setPendingProductions] = useState(() => saved.pendingProductions && typeof saved.pendingProductions === 'object' ? saved.pendingProductions : {});
   const productionProcessingRef = useRef({});
   const [productionBatch, setProductionBatch] = useState('1');
@@ -2205,12 +2206,12 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       }
       window.localStorage.setItem(saveKey, JSON.stringify({
         version: 3, economyVersion: STARTER_ECONOMY_VERSION, playerName, steps, cash, owned, rented, unitOwners, unitRented, buildingLevels, selected, showPortfolio, professionId, marketValues,
-        hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, eventChain, log: log.slice(0, 5)
+        hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, autoSupplyByProperty, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, eventChain, log: log.slice(0, 5)
       }));
     } catch {
       // The game remains playable if browser storage is disabled or full.
     }
-  }, [playerName, steps, cash, owned, rented, unitOwners, unitRented, buildingLevels, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, eventChain, log]);
+  }, [playerName, steps, cash, owned, rented, unitOwners, unitRented, buildingLevels, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, autoSupplyByProperty, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, eventChain, log]);
 
   useEffect(() => {
     if (!session || !supabase) { setCloudReady(true); return undefined; }
@@ -2271,6 +2272,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
           if (Number.isFinite(state.wineBottles)) setWineBottles(state.wineBottles);
           if (state.businessPlans && typeof state.businessPlans === 'object') setBusinessPlans(state.businessPlans);
           if (state.stockByProperty && typeof state.stockByProperty === 'object') setStockByProperty(state.stockByProperty);
+          if (state.autoSupplyByProperty && typeof state.autoSupplyByProperty === 'object') setAutoSupplyByProperty(state.autoSupplyByProperty);
           if (state.businessStats && typeof state.businessStats === 'object') setBusinessStats(state.businessStats);
           if (state.pendingProductions && typeof state.pendingProductions === 'object') setPendingProductions(state.pendingProductions);
           if (Array.isArray(state.orders)) setOrders(state.orders);
@@ -2282,7 +2284,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
           if (Array.isArray(state.log)) setLog(state.log.slice(0, 5));
           if (state.developments && typeof state.developments === 'object') setDevelopments(state.developments);
         } else {
-          const initialState = { version: 2, economyVersion: STARTER_ECONOMY_VERSION, playerName: displayName, steps, cash: STARTING_CASH, owned: [], rented, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, experience, careerReputation, enrolledCourse, certificates, log: log.slice(0, 5), developments };
+          const initialState = { version: 2, economyVersion: STARTER_ECONOMY_VERSION, playerName: displayName, steps, cash: STARTING_CASH, owned: [], rented, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, autoSupplyByProperty, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, experience, careerReputation, enrolledCourse, certificates, log: log.slice(0, 5), developments };
           const { error } = await supabase.from('player_saves').upsert({ user_id: userId, state: initialState, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
           if (error) throw error;
           setPlayerName(displayName);
@@ -2313,11 +2315,11 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const state = {
       version: 2, economyVersion: STARTER_ECONOMY_VERSION, playerName, steps, cash, owned, rented, selected, showPortfolio, professionId, marketValues,
       hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty,
-      businessStats, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, eventChain, experience, dailySalesLog, dailySalesRevenue, careerReputation, enrolledCourse, certificates, log: log.slice(0, 5), developments
+      businessStats, autoSupplyByProperty, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, eventChain, experience, dailySalesLog, dailySalesRevenue, careerReputation, enrolledCourse, certificates, log: log.slice(0, 5), developments
     };
     supabase.from('player_saves').upsert({ user_id: session.user.id, state, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
       .then(({ error }) => { if (error) setMultiplayerStatus('Kayıt eşitlenemedi · ' + error.message); });
-  }, [session?.user?.id, supabase, cloudReady, playerName, steps, cash, owned, rented, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, eventChain, experience, dailySalesLog, dailySalesRevenue, careerReputation, enrolledCourse, certificates, log, developments]);
+  }, [session?.user?.id, supabase, cloudReady, playerName, steps, cash, owned, rented, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, autoSupplyByProperty, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, eventChain, experience, dailySalesLog, dailySalesRevenue, careerReputation, enrolledCourse, certificates, log, developments]);
 
 
   const tell = (text) => {
@@ -2545,7 +2547,62 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     }
     if (hourlySales.entries.length) setDailySalesLog(old => [...old, ...hourlySales.entries.map(text => ({ text, kind: 'sale' }))].slice(-80));
     if (hourlySales.revenue > 0) setDailySalesRevenue(old => Math.round(((Number(old) || 0) + hourlySales.revenue) * 100) / 100);
-    if (Object.keys(hourlySales.salesByProperty).length) setStockByProperty(old => ({ ...old, ...hourlySales.stockChanges }));
+    // Optional auto-replenishment: when selected product stock falls to 2 or fewer units,
+    // top up enough ingredients for a small batch and enqueue production if budget/storage allow.
+    const autoStockChanges = { ...hourlySales.stockChanges };
+    const autoPendingChanges = { ...pendingProductions };
+    const autoStatsChanges = {};
+    let autoCashSpent = 0;
+    const autoNotes = [];
+    owned.forEach(propertyId => {
+      if (!autoSupplyByProperty[propertyId] || rented.includes(propertyId)) return;
+      const products = (tradeCatalog[propertyId] || []).filter(product => (product.unlockLevel || 1) <= getBusinessSalesLevel(propertyId) && isPlayerProductUnlocked(product));
+      const product = products.find(item => item.id === businessPlans[propertyId]) || products[0];
+      if (!product || product.service || !getBusinessRecipe(propertyId, product).length) return;
+      const inventory = getInventoryState(propertyId, autoStockChanges[propertyId] || stockByProperty[propertyId]);
+      const pendingKey = propertyId + ':' + product.id;
+      const pending = autoPendingChanges[pendingKey];
+      const readyStock = Math.max(0, Number(inventory.products?.[product.id]) || 0);
+      if (readyStock + (Number(pending?.units) || 0) > 2) return;
+      const profile = getBusinessProfile(propertyId);
+      const recipe = getBusinessRecipe(propertyId, product);
+      const unlocked = new Set(getUnlockedBusinessMaterials(propertyId).map(item => item.id));
+      const capacity = getMaterialCapacity(propertyId);
+      const currentRaw = Object.entries(inventory.materials || {}).reduce((sum,[id,amount]) => sum + (unlocked.has(id) ? Math.max(0,Number(amount)||0) : 0),0);
+      const productSpace = Math.max(0,getStockCapacity(propertyId)-getTotalStock(propertyId, inventory)-getPendingUnits(propertyId));
+      const batch = Math.min(5, productSpace);
+      if (batch <= 0) return;
+      const deficits = recipe.map(part => {
+        const material = profile.materials.find(item => item.id === part.id);
+        const have = Math.max(0,Number(inventory.materials?.[part.id])||0);
+        return { ...part, material, missing: Math.max(0,part.qty*batch-have) };
+      }).filter(part => part.missing > 0);
+      if (deficits.some(part => !part.material || !unlocked.has(part.id))) return;
+      if (currentRaw + deficits.reduce((sum,part)=>sum+part.missing,0) > capacity) return;
+      const cost = Math.round(deficits.reduce((sum,part)=>sum+part.material.cost*part.missing/part.material.batch,0)*100)/100;
+      if (cash - autoCashSpent < cost) return;
+      const nextMaterials = { ...(inventory.materials || {}) };
+      deficits.forEach(part => { nextMaterials[part.id]=(Number(nextMaterials[part.id])||0)+part.missing; });
+      recipe.forEach(part => { nextMaterials[part.id]=(Number(nextMaterials[part.id])||0)-part.qty*batch; });
+      autoCashSpent += cost;
+      const now = Date.now();
+      const duration = getProductionDuration(propertyId, product.id);
+      const existingUnits = Number(pending?.units) || 0;
+      const readyAt = existingUnits > 0 ? (Number(pending.readyAt) || now + duration) : now + duration;
+      const finishAt = (existingUnits > 0 ? Math.max(now,Number(pending.finishAt)||Number(pending.readyAt)||now) : now) + duration*batch;
+      autoPendingChanges[pendingKey] = { units: existingUnits+batch, readyAt, finishAt, duration, name: product.name, propertyId, productId: product.id };
+      autoStockChanges[propertyId] = { materials: nextMaterials, products: inventory.products || {} };
+      const previous = businessStats[propertyId] || { unitsSold: 0, revenue: 0, stockInvested: 0 };
+      autoStatsChanges[propertyId] = { ...previous, stockInvested: Math.round(((Number(previous.stockInvested)||0)+cost)*100)/100 };
+      autoNotes.push(propertyId);
+    });
+    if (autoCashSpent > 0) {
+      setCash(value => Math.round((value-autoCashSpent)*100)/100);
+      setStockByProperty(old => ({ ...old, ...autoStockChanges }));
+      setPendingProductions(autoPendingChanges);
+      setBusinessStats(old => ({ ...old, ...autoStatsChanges }));
+      if (autoNotes.length) tell('Otomatik tedarik ve üretim kuyruğu: ' + autoNotes.map(id => properties.find(item => item.id === id)?.name || 'İşletme').join(', ') + '. Gider ₺' + autoCashSpent.toLocaleString('tr-TR') + '.');
+    } else if (Object.keys(hourlySales.salesByProperty).length) setStockByProperty(old => ({ ...old, ...hourlySales.stockChanges }));
     if (Object.keys(hourlySales.salesByProperty).length) {
       setBusinessStats(old => {
         const next = { ...old };
@@ -3580,7 +3637,8 @@ function App({ session = null, supabase = null, authConfigured = false }) {
                     {job && <small className="production-pending">Kuyrukta {job.units} çift · sıradaki {Math.max(0,Math.ceil((job.readyAt-productionNow)/1000))} sn</small>}
                     <small className={missing.length?'production-requirements':'production-ready'}>{missing.length?'Eksik hammadde: '+missing.map(([id,qty])=>(SHOE_MATERIALS.find(m=>m.id===id)?.name||id)+' × '+Math.max(0,qty-(Number(materials[id])||0))).join(', '):'Üretim için gerekli hammaddeler mevcut'}</small>
                   </div>
-                  <div className="production-batch-picker"><span>ÜRETİM PARTİSİ</span><div>{[['1','1 çift'],['5','5 çift'],['10','10 çift'],['max','Maks.']].map(([value,label])=><button type="button" key={value} className={String(productionBatch)===value?'active':''} onClick={()=>setProductionBatch(value)}>{label}</button>)}</div></div>
+                  <div className={`auto-supply-panel ${autoSupplyByProperty[active.id] ? 'auto-supply-enabled' : ''}`}><div className="auto-supply-copy"><span className="auto-supply-icon">↻</span><div><strong>Otomatik tedarik ve üretim</strong><small>Stok 2 adede düştüğünde, yeterli bakiye ve depo alanı varsa 5 adede kadar üretim başlatır.</small></div></div><button type="button" className="auto-supply-toggle" aria-pressed={Boolean(autoSupplyByProperty[active.id])} onClick={() => setAutoSupplyByProperty(old => ({ ...old, [active.id]: !old[active.id] }))}>{autoSupplyByProperty[active.id] ? 'AÇIK · KAPAT' : 'KAPALI · AÇ'}</button></div>
+                <div className="production-batch-picker"><span>ÜRETİM PARTİSİ</span><div>{[['1','1 çift'],['5','5 çift'],['10','10 çift'],['max','Maks.']].map(([value,label])=><button type="button" key={value} className={String(productionBatch)===value?'active':''} onClick={()=>setProductionBatch(value)}>{label}</button>)}</div></div>
                   <button className="stock-button production-primary-action" onClick={()=>craftShoe(selectedShoe.id,productionBatch)} disabled={missing.length>0||quantity<=0}>{quantity<=0?(productCapacity<=0?'VİTRİN DEPOSU DOLU':'HAMMADDE EKSİK'):(job?'KUYRUĞA '+quantity+' ÇİFT EKLE':quantity+' ÇİFT ÜRET')}</button>
                   <p className="production-action-hint">{quantity>0?quantity+' çift üretilebilir. Üretim başında gerekli hammaddeler depodan düşer.':productCapacity<=0?'Vitrin deposu dolu; satış bekle veya depoyu genişlet.':'Hammadde tedarik et veya daha küçük parti seç.'}</p>
                 </div>;

@@ -1292,3 +1292,15 @@ body{overflow:hidden}
 .bulk-supply-button:hover:not(:disabled){background:#d6e3d0;border-color:#81997c}
 .bulk-supply-button:disabled{opacity:.48;cursor:not-allowed}
 @media(max-width:560px){.production-materials-toolbar{align-items:stretch}.bulk-supply-button{width:100%;min-height:42px}}
+
+
+/* Per-business opt-in automatic restocking and production */
+.auto-supply-panel{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:12px 0;padding:12px 13px;border:1px solid #d9d0c0;border-radius:10px;background:#f8f4eb;color:#3d3a31}
+.auto-supply-panel.auto-supply-enabled{border-color:#91aa8e;background:#edf4e8}
+.auto-supply-copy{display:flex;align-items:flex-start;gap:10px;min-width:0}
+.auto-supply-icon{display:flex;align-items:center;justify-content:center;flex:0 0 30px;width:30px;height:30px;border-radius:8px;background:#e5e0d4;color:#4c634d;font-size:22px}
+.auto-supply-copy strong{display:block;font-size:12px;line-height:1.4}
+.auto-supply-copy small{display:block;margin-top:3px;font-size:11px;line-height:1.45;color:#70695d}
+.auto-supply-toggle{flex:0 0 auto;min-height:36px;padding:8px 10px;border:1px solid #c7bca7;border-radius:8px;background:#fffdf8;color:#4b473d;font-size:10px;font-weight:800;cursor:pointer;white-space:nowrap}
+.auto-supply-enabled .auto-supply-toggle{border-color:#789774;background:#dce9d8;color:#2f5132}
+@media(max-width:480px){.auto-supply-panel{align-items:stretch;flex-direction:column}.auto-supply-toggle{width:100%;min-height:40px}}
