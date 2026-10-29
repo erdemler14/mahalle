@@ -1329,7 +1329,10 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const recipeMaterialIds = new Set();
     products.forEach(item => getBusinessRecipe(propertyId, item).forEach(part => recipeMaterialIds.add(part.id)));
     // Only show supplies used by products that are currently available to this business.
-    return profile.materials.filter(material => recipeMaterialIds.has(material.id));
+    const inventory = getInventoryState(propertyId);
+    // Keep previously purchased stock visible even when the player switches products;
+    // hidden stock must never silently consume warehouse capacity.
+    return profile.materials.filter(material => recipeMaterialIds.has(material.id) || (Number(inventory.materials?.[material.id]) || 0) > 0);
   };
   // Keep production goods at a modest, sustainable gross margin of roughly 28%.
   // Catalog prices remain the minimum floor for established retail/luxury goods.
@@ -1876,7 +1879,9 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const inventory = getInventoryState(propertyId);
     const current = Math.max(0, Number(inventory.materials?.[materialId]) || 0);
     const capacity = getMaterialCapacity(propertyId);
-    const quantity = Math.min(material.batch, Math.max(0, capacity - Object.values(inventory.materials || {}).reduce((sum,n)=>sum+(Number(n)||0),0)));
+    const validMaterialIds = new Set(profile.materials.map(item => item.id));
+    const totalRawStock = Object.entries(inventory.materials || {}).reduce((sum, [id, amount]) => sum + (validMaterialIds.has(id) ? Math.max(0, Number(amount) || 0) : 0), 0);
+    const quantity = Math.min(material.batch, Math.max(0, capacity - totalRawStock));
     if (quantity <= 0) { tell('Hammadde deposu dolu. Depoyu genişlet veya üretim yap.'); return; }
     const cost = Math.round(material.cost * quantity / material.batch * 100) / 100;
     if (cash < cost) { tell(material.name + ' tedariki için ₺' + cost + ' gerekiyor.'); return; }
