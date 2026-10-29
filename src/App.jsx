@@ -1068,6 +1068,10 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   const [pendingProductions, setPendingProductions] = useState(() => saved.pendingProductions && typeof saved.pendingProductions === 'object' ? saved.pendingProductions : {});
   const productionProcessingRef = useRef({});
   const [productionBatch, setProductionBatch] = useState('1');
+  const [orders, setOrders] = useState(() => Array.isArray(saved.orders) ? saved.orders : []);
+  const [ordersDateKey, setOrdersDateKey] = useState(() => typeof saved.ordersDateKey === 'string' ? saved.ordersDateKey : '');
+  const [dailyTasks, setDailyTasks] = useState(() => Array.isArray(saved.dailyTasks) ? saved.dailyTasks : []);
+  const [dailyTasksDateKey, setDailyTasksDateKey] = useState(() => typeof saved.dailyTasksDateKey === 'string' ? saved.dailyTasksDateKey : '');
   const [selectedShoeId, setSelectedShoeId] = useState('kundura');
   const [productionNow, setProductionNow] = useState(Date.now());
   useEffect(() => {
@@ -1484,12 +1488,12 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       }
       window.localStorage.setItem(saveKey, JSON.stringify({
         version: 3, economyVersion: STARTER_ECONOMY_VERSION, playerName, steps, cash, owned, rented, unitOwners, unitRented, buildingLevels, selected, showPortfolio, professionId, marketValues,
-        hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, pendingProductions, log: log.slice(0, 5)
+        hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, log: log.slice(0, 5)
       }));
     } catch {
       // The game remains playable if browser storage is disabled or full.
     }
-  }, [playerName, steps, cash, owned, rented, unitOwners, unitRented, buildingLevels, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, pendingProductions, log]);
+  }, [playerName, steps, cash, owned, rented, unitOwners, unitRented, buildingLevels, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, log]);
 
   useEffect(() => {
     if (!session || !supabase) { setCloudReady(true); return undefined; }
@@ -1552,10 +1556,14 @@ function App({ session = null, supabase = null, authConfigured = false }) {
           if (state.stockByProperty && typeof state.stockByProperty === 'object') setStockByProperty(state.stockByProperty);
           if (state.businessStats && typeof state.businessStats === 'object') setBusinessStats(state.businessStats);
           if (state.pendingProductions && typeof state.pendingProductions === 'object') setPendingProductions(state.pendingProductions);
+          if (Array.isArray(state.orders)) setOrders(state.orders);
+          if (typeof state.ordersDateKey === 'string') setOrdersDateKey(state.ordersDateKey);
+          if (Array.isArray(state.dailyTasks)) setDailyTasks(state.dailyTasks);
+          if (typeof state.dailyTasksDateKey === 'string') setDailyTasksDateKey(state.dailyTasksDateKey);
           if (Array.isArray(state.log)) setLog(state.log.slice(0, 5));
           if (state.developments && typeof state.developments === 'object') setDevelopments(state.developments);
         } else {
-          const initialState = { version: 2, economyVersion: STARTER_ECONOMY_VERSION, playerName: displayName, steps, cash: STARTING_CASH, owned: [], rented, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, pendingProductions, log: log.slice(0, 5), developments };
+          const initialState = { version: 2, economyVersion: STARTER_ECONOMY_VERSION, playerName: displayName, steps, cash: STARTING_CASH, owned: [], rented, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, log: log.slice(0, 5), developments };
           const { error } = await supabase.from('player_saves').upsert({ user_id: userId, state: initialState, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
           if (error) throw error;
           setPlayerName(displayName);
@@ -1590,13 +1598,92 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     };
     supabase.from('player_saves').upsert({ user_id: session.user.id, state, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
       .then(({ error }) => { if (error) setMultiplayerStatus('Kayıt eşitlenemedi · ' + error.message); });
-  }, [session?.user?.id, supabase, cloudReady, playerName, steps, cash, owned, rented, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, pendingProductions, log, developments]);
+  }, [session?.user?.id, supabase, cloudReady, playerName, steps, cash, owned, rented, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, log, developments]);
 
 
   const tell = (text) => {
     setNotice(text);
     setNoticeId(v => v + 1);
     setLog(old => [{ id: Date.now(), text }, ...old].slice(0, 5));
+  };
+
+  const gameHourIndex = (y = year, m = month, d = day, h = hour) => (((y * 12 + (m - 1)) * 30 + (d - 1)) * 24 + h);
+  const currentGameDateKey = year + '-' + month + '-' + day;
+  const updateDailyTask = (taskId, amount = 1) => setDailyTasks(old => old.map(task => task.id === taskId && !task.claimed ? { ...task, progress: Math.min(task.target, (Number(task.progress) || 0) + amount) } : task));
+  const makeDailyTasks = () => [
+    { id: 'produce', title: 'Üretim hattını çalıştır', detail: 'Üretim kuyruğuna toplam 3 ürün ekle.', target: 3, progress: 0, reward: 55, xp: 15, claimed: false },
+    { id: 'accept-orders', title: 'Yeni müşteri kazan', detail: '2 müşteri siparişini kabul et.', target: 2, progress: 0, reward: 45, xp: 12, claimed: false },
+    { id: 'deliver-order', title: 'Sözünü tut', detail: 'Bir siparişi zamanında teslim et.', target: 1, progress: 0, reward: 85, xp: 25, claimed: false }
+  ];
+  const createDailyOrders = () => {
+    const candidates = owned.filter(id => !rented.includes(id) && (tradeCatalog[id] || []).some(product => product.price > 0 && (product.unlockLevel || 1) <= getBusinessSalesLevel(id)));
+    const ordersForDay = [];
+    candidates.forEach(propertyId => {
+      const catalog = (tradeCatalog[propertyId] || []).filter(product => product.price > 0 && (product.unlockLevel || 1) <= getBusinessSalesLevel(propertyId));
+      if (!catalog.length) return;
+      const product = catalog[Math.floor(Math.random() * catalog.length)];
+      const quantity = 2 + Math.floor(Math.random() * 4);
+      const reward = Math.round(getBusinessSalePrice(propertyId, product) * quantity * (1.12 + Math.random() * 0.18));
+      ordersForDay.push({ id: currentGameDateKey + ':' + propertyId + ':' + product.id + ':' + ordersForDay.length, propertyId, productId: product.id, productName: product.name, propertyName: properties.find(p => p.id === propertyId)?.name || 'İşletme', quantity, reward, createdAt: gameHourIndex(), expiresAt: gameHourIndex() + 8 + Math.floor(Math.random() * 17), status: 'available' });
+    });
+    return ordersForDay.sort(() => Math.random() - 0.5).slice(0, 4);
+  };
+  useEffect(() => {
+    const hasOrderEligibleBusiness = owned.some(id => !rented.includes(id) && (tradeCatalog[id] || []).some(product => product.price > 0 && (product.unlockLevel || 1) <= getBusinessSalesLevel(id)));
+    if (ordersDateKey !== currentGameDateKey || (orders.length === 0 && hasOrderEligibleBusiness)) {
+      setOrders(createDailyOrders());
+      setOrdersDateKey(currentGameDateKey);
+    }
+    if (dailyTasksDateKey !== currentGameDateKey) {
+      setDailyTasks(makeDailyTasks());
+      setDailyTasksDateKey(currentGameDateKey);
+    }
+  }, [currentGameDateKey, owned, rented, ordersDateKey, orders.length, dailyTasksDateKey]);
+  useEffect(() => {
+    const now = gameHourIndex();
+    setOrders(old => {
+      let changed = false;
+      const next = old.map(order => {
+        if ((order.status === 'available' || order.status === 'accepted') && Number(order.expiresAt) <= now) { changed = true; return { ...order, status: 'expired' }; }
+        return order;
+      });
+      return changed ? next : old;
+    });
+  }, [year, month, day, hour]);
+  const acceptCustomerOrder = (orderId) => {
+    const order = orders.find(item => item.id === orderId);
+    if (!order || order.status !== 'available') return;
+    setOrders(old => old.map(item => item.id === orderId ? { ...item, status: 'accepted' } : item));
+    updateDailyTask('accept-orders', 1);
+    tell('Sipariş kabul edildi: ' + order.quantity + ' adet ' + order.productName + '. Teslim süresini kaçırma.');
+  };
+  const deliverCustomerOrder = (orderId) => {
+    const order = orders.find(item => item.id === orderId);
+    if (!order || order.status !== 'accepted') return;
+    if (!owned.includes(order.propertyId) || rented.includes(order.propertyId)) { tell('Siparişi teslim etmek için ilgili işletmenin sahibi olmalı ve işletme kirada olmamalı.'); return; }
+    const stock = getProductStock(order.propertyId, order.productId);
+    if (stock < order.quantity) { tell('Yeterli hazır ürün yok. Gerekli: ' + order.quantity + ', depoda: ' + stock + '.'); return; }
+    setStockByProperty(old => {
+      const inventory = getInventoryState(order.propertyId, old[order.propertyId]);
+      return { ...old, [order.propertyId]: { materials: inventory.materials, products: { ...inventory.products, [order.productId]: Math.max(0, stock - order.quantity) } } };
+    });
+    setCash(old => Math.round((old + order.reward) * 100) / 100);
+    setBusinessStats(old => {
+      const stats = old[order.propertyId] || {};
+      const productStats = stats.productUnitsSold || {};
+      const itemStats = productStats[order.productId] || {};
+      return { ...old, [order.propertyId]: { ...stats, unitsSold: (Number(stats.unitsSold) || 0) + order.quantity, revenue: Math.round(((Number(stats.revenue) || 0) + order.reward) * 100) / 100, productUnitsSold: { ...productStats, [order.productId]: { ...itemStats, units: (Number(itemStats.units) || 0) + order.quantity, revenue: Math.round(((Number(itemStats.revenue) || 0) + order.reward) * 100) / 100 } } };
+    });
+    setOrders(old => old.map(item => item.id === orderId ? { ...item, status: 'completed' } : item));
+    updateDailyTask('deliver-order', 1);
+    tell('Sipariş teslim edildi: ' + order.quantity + ' adet ' + order.productName + '. Ödül +₺' + order.reward.toLocaleString('tr-TR') + '.');
+  };
+  const claimDailyTask = (taskId) => {
+    const task = dailyTasks.find(item => item.id === taskId);
+    if (!task || task.progress < task.target || task.claimed) return;
+    setCash(old => Math.round((old + task.reward) * 100) / 100);
+    setDailyTasks(old => old.map(item => item.id === taskId ? { ...item, claimed: true } : item));
+    tell('Günlük görev tamamlandı: ' + task.title + '. Ödül +₺' + task.reward + ' ve ' + task.xp + ' XP.');
   };
 
   const advanceHour = (work = false) => {
@@ -2012,6 +2099,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       const current = old[pendingKey]; const currentUnits = Number(current?.units) || 0;
       return { ...old, [pendingKey]: { units: currentUnits + quantity, readyAt: currentUnits > 0 ? (Number(current.readyAt) || firstReadyAt) : firstReadyAt, finishAt: completionAt, duration, name: shoe.name, propertyId: 37, productId: shoe.id } };
     });
+    updateDailyTask('produce', quantity);
 
     tell((existingUnits > 0 ? 'Üretim kuyruğuna eklendi: ' : 'Üretim başladı: ') + shoe.name + ' ×' + quantity + '. İlk çift yaklaşık ' + Math.max(1, Math.ceil((firstReadyAt - now) / 1000)) + ' saniye içinde hazır olacak.');
   };
@@ -2089,6 +2177,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       const currentUnits = Number(current?.units) || 0;
       return { ...old, [pendingKey]: { units: currentUnits + quantity, readyAt: currentUnits > 0 ? (Number(current.readyAt) || firstReadyAt) : firstReadyAt, finishAt: completionAt, duration, name: item.name, propertyId, productId: item.id } };
     });
+    updateDailyTask('produce', quantity);
 
     tell((existingUnits > 0 ? 'Üretim kuyruğuna eklendi: ' : 'Üretim başladı: ') + item.name + ' ×' + quantity + '. İlk ürün yaklaşık ' + Math.max(1, Math.ceil((firstReadyAt - now) / 1000)) + ' sn içinde hazır.');
   };
@@ -2393,6 +2482,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       <button className={activeHudPanel === 'property' ? 'active' : ''} onClick={() => setActiveHudPanel(activeHudPanel === 'property' ? null : 'property')} aria-label="Seçili mülk" title="Mülk"><span>⌂</span><small>MÜLK</small></button>
       <button className={activeHudPanel === 'business' ? 'active' : ''} onClick={() => setActiveHudPanel(activeHudPanel === 'business' ? null : 'business')} aria-label="İşletme ve stok" title="İşletme"><span>▤</span><small>İŞLETME</small></button>
       <button className={activeHudPanel === 'goals' ? 'active' : ''} onClick={() => setActiveHudPanel(activeHudPanel === 'goals' ? null : 'goals')} aria-label="Gelişim hedefleri" title="Hedefler"><span>◇</span><small>HEDEFLER</small></button>
+      <button className={activeHudPanel === 'orders' ? 'active' : ''} onClick={() => setActiveHudPanel(activeHudPanel === 'orders' ? null : 'orders')} aria-label="Siparişler ve görevler" title="Siparişler"><span>▣</span><small>SİPARİŞ</small></button>
       <button className={activeHudPanel === 'portfolio' ? 'active' : ''} onClick={() => setActiveHudPanel(activeHudPanel === 'portfolio' ? null : 'portfolio')} aria-label="Portföy" title="Portföy"><span>▦</span><small>PORTFÖY</small></button>
       <button className={activeHudPanel === 'time' ? 'active' : ''} onClick={() => setActiveHudPanel(activeHudPanel === 'time' ? null : 'time')} aria-label="Oyun zamanı" title="Zaman"><span>◷</span><small>ZAMAN</small></button>
       <button className={activeHudPanel === 'social' ? 'active' : ''} onClick={() => setActiveHudPanel(activeHudPanel === 'social' ? null : 'social')} aria-label="Çok oyunculu oda" title="Oyuncular"><span>♙</span><small>ODA</small></button>
@@ -2450,6 +2540,32 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       </div>
 
       <aside className={'side-panel hud-side-panel hud-panel-content-' + (activeHudPanel || 'none')} aria-label="Oyun menüsü">
+        <section className="orders-panel">
+          <div className="card-label">MAHALLE PAZARI · SİPARİŞLER</div><h2>Müşteri talepleri</h2>
+          <p className="orders-intro">Siparişi kabul et, ürünleri üret ve süresi dolmadan teslim et.</p>
+          {orders.length === 0 && <div className="orders-empty">Bugün uygun sipariş yok. İşletme satın alıp işletmeye başladığında müşteri talepleri burada görünür.</div>}
+          {orders.map(order => {
+            const stock = getProductStock(order.propertyId, order.productId);
+            const hoursLeft = Math.max(0, Number(order.expiresAt) - gameHourIndex());
+            const statusLabel = order.status === 'completed' ? 'TESLİM EDİLDİ' : order.status === 'expired' ? 'SÜRESİ DOLDU' : order.status === 'accepted' ? 'KABUL EDİLDİ' : 'YENİ TALEP';
+            return <article className={'customer-order-card order-' + order.status} key={order.id}>
+              <div className="customer-order-top"><span>{order.propertyName}</span><b>{statusLabel}</b></div><h3>{order.productName}</h3>
+              <div className="customer-order-meta"><span>İstenen: <strong>{order.quantity}</strong></span><span>Hazır stok: <strong>{stock}</strong></span></div>
+              <div className="customer-order-reward"><strong>₺{Number(order.reward).toLocaleString('tr-TR')}</strong><span>{order.status === 'completed' ? 'Ödül alındı' : order.status === 'expired' ? 'Fırsat kaçtı' : hoursLeft + ' oyun saati kaldı'}</span></div>
+              {order.status === 'available' && <button className="stock-button" onClick={() => acceptCustomerOrder(order.id)}>SİPARİŞİ KABUL ET</button>}
+              {order.status === 'accepted' && <button className="stock-button" onClick={() => deliverCustomerOrder(order.id)} disabled={stock < order.quantity}>{stock < order.quantity ? 'ÜRETİM GEREKİYOR' : 'SİPARİŞİ TESLİM ET'}</button>}
+            </article>;
+          })}
+        </section>
+        <section className="daily-tasks-panel">
+          <div className="card-label">GÜNLÜK GÖREVLER</div><h2>Bugünün hedefleri</h2>
+          <p className="orders-intro">Hedefleri tamamla, ödülünü kendin topla. Görevler oyun günü değişince yenilenir.</p>
+          {dailyTasks.map(task => <div className="daily-task-row" key={task.id}>
+            <div className="daily-task-head"><strong>{task.title}</strong><span>{Math.min(task.progress,task.target)}/{task.target}</span></div><p>{task.detail}</p>
+            <div className="daily-task-meter"><span style={{width: Math.min(100, Math.round(task.progress / task.target * 100)) + '%'}} /></div>
+            <div className="daily-task-foot"><span>₺{task.reward} + {task.xp} XP</span><button className="stock-button" onClick={() => claimDailyTask(task.id)} disabled={task.progress < task.target || task.claimed}>{task.claimed ? 'ALINDI' : task.progress < task.target ? 'DEVAM ET' : 'ÖDÜLÜ AL'}</button></div>
+          </div>)}
+        </section>
         <section className="balance-card">
           <div className="card-label">02 / CEPTEKİ SERMAYE</div>
           <div className="balance-number"><span>₺</span>{cash.toLocaleString('tr-TR', { maximumFractionDigits: 2 })}</div>
