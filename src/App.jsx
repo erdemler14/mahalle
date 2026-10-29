@@ -1057,6 +1057,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   const [notice, setNotice] = useState('');
   const [businessAlert, setBusinessAlert] = useState(null);
   const [dailySalesLog, setDailySalesLog] = useState(() => Array.isArray(saved.dailySalesLog) ? saved.dailySalesLog : []);
+  const [dailySalesRevenue, setDailySalesRevenue] = useState(() => Math.max(0, Number(saved.dailySalesRevenue) || 0));
   const [zReport, setZReport] = useState(null);
   useEffect(() => { if (!zReport) return; const timer = setTimeout(() => setZReport(null), 15000); return () => clearTimeout(timer); }, [zReport]);
   const [showPortfolio, setShowPortfolio] = useState(() => Boolean(saved.showPortfolio));
@@ -2008,11 +2009,11 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const state = {
       version: 2, economyVersion: STARTER_ECONOMY_VERSION, playerName, steps, cash, owned, rented, selected, showPortfolio, professionId, marketValues,
       hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty,
-      businessStats, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, experience, dailySalesLog, log: log.slice(0, 5), developments
+      businessStats, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, experience, dailySalesLog, dailySalesRevenue, log: log.slice(0, 5), developments
     };
     supabase.from('player_saves').upsert({ user_id: session.user.id, state, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
       .then(({ error }) => { if (error) setMultiplayerStatus('Kayıt eşitlenemedi · ' + error.message); });
-  }, [session?.user?.id, supabase, cloudReady, playerName, steps, cash, owned, rented, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, experience, dailySalesLog, log, developments]);
+  }, [session?.user?.id, supabase, cloudReady, playerName, steps, cash, owned, rented, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, experience, dailySalesLog, dailySalesRevenue, log, developments]);
 
 
   const tell = (text) => {
@@ -2170,8 +2171,10 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       }
       const reportRows = [...dailySalesLog];
       if (business.entries.length) reportRows.push(...business.entries.map(text => ({ text, kind: 'daily' })));
-      setZReport({ date: `${day}.${String(month).padStart(2, '0')}.${year}`, nextDate: `${nextDay}.${String(nextMonth).padStart(2, '0')}.${nextMonthRaw > 12 ? year + 1 : year}`, rows: reportRows, totalRevenue: Number(business.revenue) || 0, costs: Number(dailyCost) || 0, rent: Number(dailyRent) || 0, net: Number(dailyRent + business.revenue - dailyCost + dryCleanDelta) || 0, dryCleanDelta });
+      const daySalesRevenue = Math.max(0, Number(dailySalesRevenue) || 0);
+      setZReport({ date: `${day}.${String(month).padStart(2, '0')}.${year}`, nextDate: `${nextDay}.${String(nextMonth).padStart(2, '0')}.${nextMonthRaw > 12 ? year + 1 : year}`, rows: reportRows, totalRevenue: daySalesRevenue, costs: Number(dailyCost) || 0, rent: Number(dailyRent) || 0, net: Number(dailyRent + daySalesRevenue - dailyCost + dryCleanDelta) || 0, dryCleanDelta });
       setDailySalesLog([]);
+      setDailySalesRevenue(0);
       const dailyNet = dailyRent + business.revenue - dailyCost + dryCleanDelta;
       setCash(v => Math.round((v + dailyNet) * 100) / 100);
       setDay(nextDay);
@@ -2191,6 +2194,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       tell('STOK BİTTİ: ' + alert.propertyName + ' — ' + alert.productName + '. Yeniden üretim yap.');
     }
     if (hourlySales.entries.length) setDailySalesLog(old => [...old, ...hourlySales.entries.map(text => ({ text, kind: 'sale' }))].slice(-80));
+    if (hourlySales.revenue > 0) setDailySalesRevenue(old => Math.round(((Number(old) || 0) + hourlySales.revenue) * 100) / 100);
     if (Object.keys(hourlySales.salesByProperty).length) setStockByProperty(old => ({ ...old, ...hourlySales.stockChanges }));
     if (Object.keys(hourlySales.salesByProperty).length) {
       setBusinessStats(old => {
@@ -2497,6 +2501,10 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const upkeep = DAILY_LIVING_COST + maintenance + business.costs;
     const rent = Math.round((properties.filter(p => owned.includes(p.id) && rented.includes(p.id)).reduce((sum, p) => sum + Number(p.rent || 0) / 30, 0) + Object.entries(unitRented).reduce((sum, [key, activeRent]) => { if (!activeRent) return sum; const [pid] = key.split(':'); const p = properties.find(item => item.id === Number(pid)); const unitOwner = unitOwners[key]; return sum + (p && unitOwner?.playerId === playerId ? Number(p.rent || 0) / (p.units || 1) / 30 : 0); }, 0)) * 100) / 100;
     const net = rent + business.revenue + sales.revenue - upkeep;
+    const reportRows = [...dailySalesLog, ...sales.entries.map(text => ({ text, kind: 'sale' })), ...business.entries.map(text => ({ text, kind: 'daily' }))];
+    setZReport({ date: `${day}.${String(month).padStart(2, '0')}.${year}`, nextDate: `${nextDay}.${String(nextMonth).padStart(2, '0')}.${nextMonthRaw > 12 ? year + 1 : year}`, rows: reportRows, totalRevenue: Math.round(((Number(dailySalesRevenue) || 0) + sales.revenue + business.revenue) * 100) / 100, costs: upkeep, rent, net });
+    setDailySalesLog([]);
+    setDailySalesRevenue(0);
     setCash(v => Math.round((v + net) * 100) / 100);
     setDay(nextDay);
     setMonth(nextMonth);
