@@ -1620,7 +1620,41 @@ function App({ session = null, supabase = null, authConfigured = false }) {
 
   const getBusinessProfile = (propertyId) => {
     const id = Number(propertyId);
-    // Explicit high-priority mappings for venues whose legacy inventory was previously generic.
+    // The playable property IDs end at 41; hotel-like lodging venues are IDs 4 and 21.
+    // Do not rely on obsolete IDs 55/56 that are not present in the property registry.
+    if (id === 4) return {
+      name:'Şahin Bey Ticaret Hanı — konaklama tedariki',
+      materials:[
+        {id:'sahin-han-carsaf',name:'Temiz çarşaf, nevresim ve yastık kılıfı',batch:6,cost:14},
+        {id:'sahin-han-temizlik',name:'Oda temizliği ve yüzey dezenfektanı',batch:8,cost:8},
+        {id:'sahin-han-kahvalti',name:'Kahvaltılık peynir, zeytin ve yumurta',batch:6,cost:12},
+        {id:'sahin-han-lamba',name:'Lamba yağı ve ısıtma yakıtı',batch:8,cost:9},
+        {id:'sahin-han-ikram',name:'Misafir sabunu, su ve ikramlık',batch:8,cost:7}
+      ],
+      recipes:[['sahin-han-carsaf',1,'sahin-han-temizlik',1],['sahin-han-kahvalti',1,'sahin-han-ikram',1],['sahin-han-lamba',1,'sahin-han-temizlik',1]],
+      productRules:[
+        {match:/kahvaltı|kahvalti|ikram/i,recipe:[['sahin-han-kahvalti',1],['sahin-han-ikram',1]]},
+        {match:/oda|konaklama|gecelik|yatak/i,recipe:[['sahin-han-carsaf',1],['sahin-han-temizlik',1],['sahin-han-ikram',1]]},
+        {match:/depo|ambar|taşıma|tasima/i,recipe:[['sahin-han-lamba',1],['sahin-han-temizlik',1]]}
+      ]
+    };
+    if (id === 21) return {
+      name:'Hacı Arif Paşa Hanı — konaklama tedariki',
+      materials:[
+        {id:'arif-carsaf',name:'Han odası çarşafı ve yatak takımı',batch:6,cost:15},
+        {id:'arif-temizlik',name:'Kat temizliği ve sabun sarfı',batch:8,cost:8},
+        {id:'arif-kahvalti',name:'Tüccar kahvaltısı ve ikram tepsisi',batch:6,cost:13},
+        {id:'arif-lamba',name:'Lamba yağı ve soba yakıtı',batch:8,cost:9},
+        {id:'arif-yuk',name:'Ambar ipi, çuval ve taşıma bezi',batch:8,cost:8}
+      ],
+      recipes:[['arif-carsaf',1,'arif-temizlik',1],['arif-kahvalti',1,'arif-temizlik',1],['arif-yuk',1,'arif-lamba',1]],
+      productRules:[
+        {match:/kahvaltı|kahvalti|ikram|erzak/i,recipe:[['arif-kahvalti',1],['arif-temizlik',1]]},
+        {match:/ambar|yük|yuk|depo|taşıma|tasima/i,recipe:[['arif-yuk',1],['arif-lamba',1]]},
+        {match:/çarşaf|carsaf|oda|konaklama|yatak/i,recipe:[['arif-carsaf',1],['arif-temizlik',1]]}
+      ]
+    };
+    // Explicit high-priority mapping for the gazino, which also had a generic legacy profile.
     if (id === 35) return {
       name:'Haliç Gazinosu',
       materials:[
