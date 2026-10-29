@@ -1266,6 +1266,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   const [buildingLevels, setBuildingLevels] = useState(() => saved.buildingLevels && typeof saved.buildingLevels === 'object' ? saved.buildingLevels : {});
   const [selectedUnit, setSelectedUnit] = useState(1);
   const [selected, setSelected] = useState(() => properties.some(p => p.id === saved.selected) ? saved.selected : 1);
+  const [buildingStoryId, setBuildingStoryId] = useState(null);
   const [mapSearch, setMapSearch] = useState(() => properties.find(p => p.id === saved.selected)?.name || properties[0].name);
   const [activeHudPanel, setActiveHudPanel] = useState(null);
   useEffect(() => { const property = properties.find(p => p.id === selected); if (property) setMapSearch(property.name); }, [selected]);
@@ -1406,6 +1407,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   const selectProperty = (id) => {
     if (sendAction('selectProperty', id)) return;
     setSelected(id);
+    setBuildingStoryId(id);
   };
   const changeProfession = (id) => {
     if (sendAction('changeProfession', id)) return;
@@ -3401,6 +3403,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
             {owned.includes(active.id) && !rented.includes(active.id) && (tradeCatalog[active.id] || []).some(item => item.price > 0) && <span className="property-note">Ürün ve stok ayarlandığında işletme otomatik çalışır.</span>}
           </div>
         </div>} />
+        {buildingStoryId != null && (() => { const storyProperty = properties.find(item => item.id === buildingStoryId); if (!storyProperty) return null; const storyText = storyProperty.history || storyProperty.style || 'Bu yapı, 1920’lerin Beyoğlu’sunda mahallenin gündelik yaşamının bir parçası.'; return <aside className="building-history-popover" role="status" aria-live="polite"><button className="building-history-close" type="button" aria-label="Bilgilendirmeyi kapat" onClick={() => setBuildingStoryId(null)}>×</button><span className="building-history-kicker">PERA · DÖNEM NOTU</span><h3>{storyProperty.name}</h3><p>{storyText.length > 300 ? storyText.slice(0,297).trimEnd() + '…' : storyText}</p><button className="building-history-action" type="button" onClick={() => { setSelected(storyProperty.id); setBuildingStoryId(null); }}>MÜLKÜ İNCELE <span>↗</span></button></aside>; })()}
         <div className="map-legend"><span><i className="legend-dot available" /> SATILIK MÜLK</span><span><i className="legend-dot owned" /> SENİN MÜLKÜN</span><span className="map-hint">SÜRÜKLE: DÖNDÜR · KAYDIR: YAKINLAŞ · BİNAYA TIKLA</span></div>
         <div className="world-caption"><span>İSTANBUL / BEYOĞLU</span><span>{String(day).padStart(2, '0')} {['OCAK','ŞUBAT','MART','NİSAN','MAYIS','HAZİRAN','TEMMUZ','AĞUSTOS','EYLÜL','EKİM','KASIM','ARALIK'][month - 1]} {year} <i>·</i> {String(hour).padStart(2, '0')}:00</span></div>
         {activeEconomicEvents().length > 0
