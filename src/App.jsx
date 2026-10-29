@@ -50,6 +50,43 @@ const properties = [
   { id: 47, name: 'Beyoğlu Ticaret ve Meslek Mektebi', type: 'İşletme', price: 12800, rent: 180, x: -2.5, z: -15.5, color: '#b7c4cf', floors: 3, width: 3.2, depth: 2.7, style: 'Üç katlı tarihî eğitim binası, amfiler ve meslek sınıfları', history: 'Hekimlik, hukuk, eczacılık ve teknik meslekler için uzun süreli ücretli eğitimler sunar.' }
 ];
 
+// Short, period-grounded vignettes give every building a distinct neighbourhood memory.
+  const propertyStories = {
+    1: "1910’larda Eleni Hanım’ın dükkânı sabah erkenden açılır; çevredeki aileler peynir, zeytin ve günlük erzak için önce buraya uğrardı.",
+    2: "Bu apartmanın üst katlarında Levanten aileler ve bekâr memurlar oturur; girişteki kapıcı, gelen mektupları ve şehir dedikodularını herkesten önce duyardı.",
+    3: "Rıhtıma yakın bu ambar, gemilerden indirilen kumaş toplarını, kahve çuvallarını ve ithal ev eşyasını dükkânlara dağıtan küçük tüccarların uğrak yeriydi.",
+    4: "Şahin Bey, Anadolu’dan gelen tüccarlara oda ve depo yeri verirdi; hanın avlusunda her sabah yük arabaları ve pazarlık sesleri birbirine karışırdı.",
+    5: "Meydancık’taki bu evin cumbasından sokağa bakan Ali Rıza Bey, mahalleye gelen yeni esnafı ve değişen dükkân tabelalarını yıllardır not ederdi.",
+    6: "Petraki Kalfa’nın yaptığı taş işçiliğiyle tanınan ev, dar merdiveni ve avlu kuyusuyla eski Beyoğlu’nun zanaatkâr ailelerini hatırlatırdı.",
+    7: "Maison Vuccino’da şarap fıçılarıyla peynir sandıkları yan yana dururdu; dükkân, Pera lokantalarına ve evlerine erzak alan müşterilere hizmet verirdi.",
+    8: "Apostolidis Apartmanı’nın balkonlarında çamaşırlar kurur, girişindeki küçük bekleme alanında kiracılar kira ve tamirat haberlerini konuşurdu.",
+    9: "Nuri Efendi’nin matbaasında davetiye, ticari makbuz ve gazete ilanları basılırdı; geceleri bile kurşun harflerin sesi sokaktan duyulurdu.",
+    10: "Au Paon, vitrinindeki yeni kesim ceketler ve Avrupa kumaşlarıyla dikkat çekerdi; terziler sabah ölçü alır, akşamüstü son prova için müşterileri beklerdi.",
+    11: "Avlulu Hacı İsmail Efendi Evi’nde aile toplantıları avluda yapılır, kapı önündeki taş sekide komşular günün haberlerini paylaşırdı.",
+    12: "Hakkı Efendi’nin kıraathanesinde gazeteler yüksek sesle okunur; tüccarlar, hamallar ve memurlar bir bardak çay eşliğinde şehirdeki gelişmeleri tartışırdı.",
+    13: "Schumacher’in fırınından çıkan sıcak somunlar daha gün doğmadan mahalleye dağılır, fırının önünde işe yetişmeye çalışanlar sıraya girerdi.",
+    14: "Kurban Usta sabah erkenden dükkânını açar, kasap kâğıdına sardığı etleri mahalle evlerine ve yakındaki lokantalara hazırlardı.",
+    15: "Canzuch Eczahanesi’nin raflarında cam şişeler, tentürler ve merhem kavanozları sıralanır; eczacı hem reçete hazırlar hem de mahallelinin derdini dinlerdi.",
+    16: "Narlıyan’ın raflarında romanlar, sözlükler ve okul defterleri bulunurdu; öğrenciler sınav öncesi, memurlar ise yeni çıkan gazeteleri almak için uğrardı.",
+    17: "Hakkı Usta’nın marangozhanesinden rende kokusu eksik olmazdı; apartman kapıları, masa ayakları ve dükkân rafları burada sipariş üzerine yapılırdı.",
+    18: "Yorgo’nun tezgâhına sabah kasalarla meyve ve sebze gelirdi; taze ürün seçmek isteyen ev hanımları en iyi domatesin hangi kasada olduğunu bilirdi.",
+    19: "Hacı Salih’in esnaf lokantası, öğle arasında çorba ve tencere yemeği arayan hamalların, kâtiplerin ve dükkân sahiplerinin ortak sofrasıydı.",
+    20: "Karabet Usta’nın ocağında at nalı, kapı menteşesi ve soba parçası dövülürdü; çekiç sesi yokuştan geçenlere atölyenin açık olduğunu haber verirdi.",
+    21: "Hacı Arif Paşa Hanı’nda taşradan gelen tüccarlar kalır, mallarını depolar ve ertesi günkü satış için kahve içerek hesap tutardı.",
+    22: "Galata Yokuşu’ndaki Zeki Bey Apartmanı, limanla Pera arasındaki hareketli hayatın ortasında memurlara ve küçük tüccarlara ev sahipliği yapardı.",
+    23: "Madam Mari’nin dükkânında tarçın, karanfil, ıhlamur ve şifalı otlar kesekâğıtlarına tartılır; bazı karışımlar aileden aileye aktarılan tariflerle hazırlanırdı.",
+    24: "Frej Apartmanı’nın gösterişli cephesi, yeni şehir hayatının ve apartman kültürünün simgesiydi; girişinde faytonlar ve ziyaretçiler eksik olmazdı.",
+    25: "Café de Péra’da kahve fincanları, gazete sayfaları ve piyano sesi birbirine karışır; sanatçılarla tüccarlar aynı masalarda buluşurdu.",
+    26: "Madam İfigenia’nın terzihanesinde kumaşlar ölçülür, prova günleri deftere yazılırdı; iyi dikilmiş bir palto müşterinin yıllarca sakladığı bir yatırımdı.",
+    27: "Rizzo Apartmanı’nın dar merdivenleri farklı diller konuşan kiracıları aynı avluya taşır; kapıcı her dairenin küçük sırlarını bilirdi.",
+    29: "Mavridis Biraderler, sabun kazanlarını arka avluda kaynatır; zeytinyağı ve kokulu otlarla hazırlanan kalıpları kurutup dükkânlara gönderirdi.",
+    30: "Crespi Apartmanı’nda üst katların pencereleri Sıraselviler’e bakardı; yeni kiracılar taşındıkça apartmanın girişinde farklı diller ve alışkanlıklar buluşurdu.",
+    31: "Şeref Usta’nın lokantası akşamları da canlı kalırdı; tiyatrodan çıkanlar ve geç saatte çalışanlar evlerine dönmeden önce sıcak bir tabak yemek yerdi.",
+    32: "Papadopulos’un matbaa ve kırtasiyesinde okul defterleriyle ticari evraklar aynı tezgahta satılır, acil ilan ve davetiyeler kısa sürede basılırdı.",
+    34: "Çiçekçi dükkânının önünde mevsimine göre karanfil, gül ve sümbül dizilirdi; buketler nişanlara, ziyaretlere ve tiyatro açılışlarına gönderilirdi."
+  };
+  properties.forEach(property => { if (propertyStories[property.id]) property.history = propertyStories[property.id]; });
+
 // Galata-style irregular street frontages: narrow blocks, staggered facades and varied angles.
 properties.forEach((property, index) => {
   const frontage = Math.floor(index / 8);
@@ -1730,6 +1767,39 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       ]
     };
     // Explicit high-priority mapping for the gazino, which also had a generic legacy profile.
+    if (id === 40) return {
+      name:'Tarihi Mahalle Hamamı — hamam ve bakım tedariki',
+      materials:[
+        {id:'hamam-kese-stok',name:'Kese lifi ve doğal sabun',batch:8,cost:9},
+        {id:'hamam-yag',name:'Gülsuyu ve bakım yağı',batch:6,cost:11},
+        {id:'hamam-tekstil',name:'Temiz peştamal ve havlu demeti',batch:8,cost:10},
+        {id:'hamam-yakit',name:'Külhan odunu ve kömür',batch:8,cost:8},
+        {id:'hamam-su',name:'Su ısıtma ve kazan bakım sarfı',batch:6,cost:9}
+      ],
+      recipes:[['hamam-kese-stok',1,'hamam-yakit',1],['hamam-yag',1,'hamam-tekstil',1],['hamam-yakit',1,'hamam-su',1]],
+      productRules:[
+        {match:/giriş|yıkanma|yikanma|hamam/i,recipe:[['hamam-yakit',1],['hamam-su',1]]},
+        {match:/kese|köpük|kopuk|tellak/i,recipe:[['hamam-kese-stok',1],['hamam-yakit',1]]},
+        {match:/masaj|bakım|bakim|özel oda|ozel oda/i,recipe:[['hamam-yag',1],['hamam-tekstil',1]]},
+        {match:/havlu|peştamal|pestamal/i,recipe:[['hamam-tekstil',1],['hamam-yakit',1]]}
+      ]
+    };
+    if (id === 33) return {
+      name:'Şevket Efendi’nin Berberhanesi — berber sarfı',
+      materials:[
+        {id:'berber-jilet',name:'Ustura jileti ve bileme taşı',batch:8,cost:7},
+        {id:'berber-sabun',name:'Tıraş sabunu ve kolonya',batch:8,cost:8},
+        {id:'berber-havlu',name:'Temiz havlu ve önlük',batch:8,cost:7},
+        {id:'berber-yag',name:'Saç yağı ve bakım losyonu',batch:6,cost:9},
+        {id:'berber-dezenf',name:'Makas ve tarak temizleme sarfı',batch:8,cost:6}
+      ],
+      recipes:[['berber-jilet',1,'berber-sabun',1],['berber-havlu',1,'berber-dezenf',1],['berber-yag',1,'berber-havlu',1]],
+      productRules:[
+        {match:/tıraş|tiras|sakal|ustura/i,recipe:[['berber-jilet',1],['berber-sabun',1]]},
+        {match:/saç|sac|kesim|fön|fon|şekil|sekil/i,recipe:[['berber-havlu',1],['berber-dezenf',1]]},
+        {match:/kolonya|bakım|bakim|yağ|yag/i,recipe:[['berber-yag',1],['berber-sabun',1]]}
+      ]
+    };
     if (id === 35) return {
       name:'Haliç Gazinosu',
       materials:[
