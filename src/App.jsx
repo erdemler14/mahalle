@@ -1103,7 +1103,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     23: [{ id: 'aktar', name: 'Baharat ve şifalı otlar', cost: 12, price: 4.5, units: 8 }, { id: 'sabun', name: 'Sabun ve bakım', cost: 9, price: 3.2, units: 8 }],
     25: [{ id: 'kahve-galata', name: 'Kahve ve çay', cost: 12, price: 4.2, units: 10 }, { id: 'tatli-galata', name: 'Şerbet ve tatlı', cost: 10, price: 3.5, units: 8 }],
     26: [{ id: 'dikim', name: 'Özel dikim', cost: 16, price: 6.5, units: 5, production: true }, { id: 'tamir-giysi', name: 'Giysi tamiri', cost: 8, price: 4, units: 6 }],
-    28: [{ id: 'bakkal', name: 'Temel erzak', cost: 13, price: 4, units: 10 }, { id: 'konserve', name: 'Kavanoz ve konserve', cost: 11, price: 3.6, units: 8 }],
+    28: [{ id: 'kolonya', name: 'Kolonya ve koku', cost: 12, price: 4.2, units: 8 }, { id: 'parfum', name: 'Parfüm ve esans', cost: 18, price: 6.5, units: 6 }, { id: 'sabun-parfum', name: 'Sabun ve bakım seti', cost: 14, price: 4.8, units: 8 }],
     29: [{ id: 'sabun-imalat', name: 'Sabun üretimi', cost: 14, price: 6, units: 6, production: true }, { id: 'temizlik', name: 'Temizlik malzemesi', cost: 10, price: 3.8, units: 8 }],
     31: [{ id: 'lokanta-galata', name: 'Günün yemeği', cost: 16, price: 6.5, units: 8 }, { id: 'meze', name: 'Meze ve sıcak çorba', cost: 11, price: 4.5, units: 8 }],
     32: [{ id: 'baski-galata', name: 'Basılı ilan ve evrak', cost: 14, price: 5, units: 8 }, { id: 'kirtasiye-galata', name: 'Defter ve kırtasiye', cost: 10, price: 3.8, units: 8 }]
