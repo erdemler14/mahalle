@@ -30,7 +30,7 @@ const properties = [
   { id: 25, name: 'Café de Péra', type: 'İşletme', price: 4455, rent: 62, x: -15.3, z: 1.2, color: '#c7b89e', floors: 3, style: 'Köşe kahvesi ve açık oturma alanı' },
   { id: 26, name: 'Madam İfigenia’nın Terzihanesi', type: 'Atölye', price: 3060, rent: 39, x: 15.2, z: 1.2, color: '#c4b2a5', floors: 3, style: 'Dar cepheli zanaat dükkanı' },
   { id: 27, name: 'Rizzo Apartmanı', type: 'Konut', price: 7020, rent: 84, x: -15.3, z: 7.1, color: '#b8c3c9', floors: 5, style: 'Konsollu cumba ve dökme demir balkonlar', units: 8 },
-  { id: 28, name: 'Sotiri Biraderler Kolonyacı ve Parfümeri', type: 'Ticaret', price: 3420, rent: 47, x: 15.2, z: 7.1, color: '#d6c3a8', floors: 2, style: 'Kepenkli, dar vitrinli bakkal' },
+  { id: 28, name: 'Sotiri Biraderler Kolonyacı ve Parfümeri', type: 'Ticaret', price: 3420, rent: 47, x: 15.2, z: 7.1, color: '#d6c3a8', floors: 2, style: 'Kepenkli, dar vitrinli parfümeri', history: 'Geç Osmanlı döneminde Beyoğlu’nda kolonya, sabun ve Avrupa esansları satan küçük aile dükkânlarından esinlenir.' },
   { id: 29, name: 'Mavridis Biraderler Sabun İmalathanesi', type: 'Atölye', price: 3870, rent: 49, x: -15.3, z: 12.8, color: '#b9b3a6', floors: 2, style: 'Arka avlulu küçük imalathane' },
   { id: 30, name: 'Sıraselviler’de Crespi Apartmanı', type: 'Konut', price: 5355, rent: 66, x: 15.2, z: 12.8, color: '#c8b8c2', floors: 4, style: 'Üst katlarda kiralık daireleri olan apartman', units: 6 },
   { id: 31, name: 'Şeref Usta’nın Lokantası', type: 'İşletme', price: 5670, rent: 77, x: -5.5, z: 17.2, color: '#c7a18e', floors: 2, style: 'Sokak köşesinde eski usul lokanta' },
@@ -38,9 +38,9 @@ const properties = [
   { id: 33, name: 'Şevket Efendi’nin Berberhanesi', type: 'İşletme', price: 1980, rent: 42, x: 0, z: 20.5, color: '#b6a18c', floors: 2, style: 'Pera usulü berber dükkânı, pirinç aynalar ve ahşap koltuk' },
   { id: 34, name: 'Çiçekçi Dükkânı', type: 'Ticaret', price: 2475, rent: 38, x: 20.5, z: 18.4, color: '#c4b6a6', floors: 2, style: 'Vitrininde çiçekler ve saksılar bulunan küçük çiçekçi' },
   { id: 35, name: 'Haliç Gazinosu', type: 'İşletme', price: 3350, rent: 245, x: 21.2, z: 12.2, color: '#a88c73', floors: 2, style: 'Haliç kıyısında teraslı, deniz manzaralı gazino' },
-  { id: 36, name: 'Kohen Hemşireler Kitabevi', type: 'Ticaret', price: 2100, rent: 42, x: 20.7, z: 5.3, color: '#bca98e', floors: 2, width: 2.35, depth: 1.9, style: 'Tünel Pasajı içinde dar cepheli, küçük tarihî kitabevi' },
-  { id: 39, name: 'Sokrat Kıraathanesi', type: 'İşletme', price: 2850, rent: 52, x: -20.5, z: -5.3, color: '#c5b9a4', floors: 2, width: 2.5, depth: 2.1, style: 'Sokrat adıyla bilinen mahalle kıraathanesi' },
-  { id: 40, name: 'Tarihi Mahalle Hamamı', type: 'İşletme', price: 8200, rent: 165, x: -20.5, z: 5.3, color: '#b9aa94', floors: 1, width: 4.0, depth: 3.2, style: 'Yüksek kubbeli, geniş soyunmalık ve sıcaklık bölümleri olan tarihî hamam' }
+  { id: 36, name: 'Kohen Hemşireler Kitabevi', type: 'Ticaret', price: 2100, rent: 42, x: 20.7, z: 5.3, color: '#bca98e', floors: 2, width: 2.35, depth: 1.9, style: 'Tünel Pasajı içinde dar cepheli, küçük tarihî kitabevi', history: '1918’de açılan tarihî kitabevinden esinlenir; yabancı dilde kitap, roman, sözlük ve kırtasiye ürünleriyle tanınır.' },
+  { id: 39, name: 'Sokrat Kıraathanesi', type: 'İşletme', price: 2850, rent: 52, x: -20.5, z: -5.3, color: '#c5b9a4', floors: 2, width: 2.5, depth: 2.1, style: 'Sokrat adıyla bilinen mahalle kıraathanesi', history: 'Dönemin mahalle kahvehanelerini temsil eder; kahve, çay, şerbet ve küçük tatlılar sunar.' },
+  { id: 40, name: 'Tarihi Mahalle Hamamı', type: 'İşletme', price: 8200, rent: 165, x: -20.5, z: 5.3, color: '#b9aa94', floors: 1, width: 4.0, depth: 3.2, style: 'Yüksek kubbeli, geniş soyunmalık ve sıcaklık bölümleri olan tarihî hamam', history: 'Geç Osmanlı İstanbul’undaki mahalle hamamlarından esinlenen, yıkanma ve kese hizmeti sunan kamusal yapı.' }
 ];
 
 // Galata-style irregular street frontages: narrow blocks, staggered facades and varied angles.
@@ -1182,7 +1182,10 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     29: [{ id: 'sabun-imalat', name: 'Sabun üretimi', cost: 14, price: 6, units: 6, production: true }, { id: 'temizlik', name: 'Temizlik malzemesi', cost: 10, price: 3.8, units: 8 }],
     31: [{ id: 'lokanta-galata', name: 'Günün yemeği', cost: 16, price: 6.5, units: 8 }, { id: 'meze', name: 'Meze ve sıcak çorba', cost: 11, price: 4.5, units: 8 }],
     32: [{ id: 'baski-galata', name: 'Basılı ilan ve evrak', cost: 14, price: 5, units: 8 }, { id: 'kirtasiye-galata', name: 'Defter ve kırtasiye', cost: 10, price: 3.8, units: 8 }],
-    34: [{ id: 'buketi', name: 'Mevsim çiçekleri buketi', cost: 10, price: 4, units: 8 }, { id: 'saksi-cicegi', name: 'Saksı çiçeği', cost: 12, price: 4.8, units: 6 }, { id: 'cenaze-celengi', name: 'Çelenk ve tören aranjmanı', cost: 18, price: 7, units: 4 }, { id: 'gul-demeti', name: 'Gül demeti', cost: 14, price: 5.5, units: 6 }]
+    34: [{ id: 'buketi', name: 'Mevsim çiçekleri buketi', cost: 10, price: 4, units: 8 }, { id: 'saksi-cicegi', name: 'Saksı çiçeği', cost: 12, price: 4.8, units: 6 }, { id: 'cenaze-celengi', name: 'Çelenk ve tören aranjmanı', cost: 18, price: 7, units: 4 }, { id: 'gul-demeti', name: 'Gül demeti', cost: 14, price: 5.5, units: 6 }],
+    36: [{id:'kitap-kohen',name:'Yabancı dilde roman',cost:12,price:4.2,units:8},{id:'sozluk-kohen',name:'Sözlük ve dil kitabı',cost:16,price:5.5,units:6},{id:'kirtasiye-kohen',name:'Defter, kalem ve mürekkep',cost:8,price:3,units:10},{id:'nadir-eser-kohen',name:'Nadir ve ciltli eser',cost:24,price:8,units:4}],
+    39: [{id:'kahve-sokrat',name:'Türk kahvesi',cost:8,price:3,units:10},{id:'cay-sokrat',name:'Çay ve şerbet',cost:6,price:2.5,units:10},{id:'tatli-sokrat',name:'Lokum ve küçük tatlı',cost:8,price:3.2,units:8}],
+    40: [{id:'hamam-giris',name:'Hamam giriş ücreti',cost:5,price:3.5,units:12},{id:'kese',name:'Kese ve köpük hizmeti',cost:7,price:5,units:8},{id:'hamam-havlu',name:'Havlu ve peştamal',cost:8,price:3.5,units:8}]
   };
 
   // Commercial ownership is independent of the character's former profession.
@@ -1206,7 +1209,8 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     23: [['bitki-karisimi','Özel bitki karışımları',14,5,6,2],['baharat-seti','Baharat sandığı',18,6.5,5,3],['aktar-merhemi','Bitkisel merhem',24,8.5,4,4],['ithal-baharat','İthal baharat',32,11,3,5]],
     25: [['filtre-kahve','Kahve harmanı ve lokum',15,5.2,8,2],['serbet','Gül şerbeti ve tatlı',18,6.5,6,3],['pasta','Pasta ve pastane tabağı',24,9,5,4],['salon-kahvesi','Salon kahvesi özel harmanı',32,12,4,5]],
     26: [['elbise','Günlük şehir elbisesi',18,7,5,2],['palto','Yün palto',25,10,4,3],['gelinlik','Özel gün elbisesi',32,13,3,4],['moda-dikim','Pera modası özel dikim',42,17,2,5]],
-    28: [['peynir-zeytin','Peynir ve zeytin',14,4.5,8,2],['kahve-seker','Kahve ve şeker',18,6,6,3],['ithal-erzak','İthal erzak',24,8.5,5,4],['hediyelik-kutu','Hediyelik erzak kutusu',30,11,4,5]],
+    28: [['kolonya-28','Kolonya şişesi',12,4.2,8,2],['esans-28','Esans ve parfüm',18,6.5,6,3],['sabun-28','Kokulu sabun ve bakım seti',14,4.8,8,4],['hediye-parfum-28','Hediye parfüm kutusu',24,8,4,5]],
+    36: [['yeni-roman-kohen','Yeni çıkan roman',15,5.2,6,2],['resimli-kitap-kohen','Resimli kitap ve çocuk yayını',12,4.2,8,3],['ithal-kalem-kohen','İthal dolma kalem',25,9,4,4],['ansiklopedi-kohen','Ciltli eser ve ansiklopedi',32,12,3,5]],
     29: [['lavanta-sabun','Lavanta sabunu',17,6.5,6,2],['kokulu-sabun','Kokulu misafir sabunu',22,8.5,5,3],['kolonya-uretim','Kolonya ve esans',28,11,4,4],['otel-seti','Otel sabun seti',36,14,3,5]],
     31: [['pilav','Pilav ve zeytinyağlı',15,5.5,7,2],['kebap','Kebap ve ızgara',22,8,5,3],['tatli-galata','Günün tatlısı',25,9.5,4,4],['usta-sofrasi','Usta sofrası',34,13,3,5]],
     32: [['davetiye-galata','Davetiye ve kartvizit',15,5.5,7,2],['ciltli-eser','Ciltli kitap ve defter',21,7.5,5,3],['afis','Renkli afiş ve ilan',28,10,4,4],['prestij-baski','Prestijli sanat baskısı',36,13,3,5]],
@@ -2445,7 +2449,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
           <div className="property-type">{active.type.toUpperCase()}</div>
           <h2>{active.name}</h2>
           {ownerByProperty[active.id] && <div className="owner-chip">MÜLK SAHİBİ: {ownerByProperty[active.id].name}{ownerByProperty[active.id].playerId === playerId ? ' (SEN)' : ''}</div>}
-          <p className="property-description">{active.style}. Bu taşınmazı alabilir, işletme olarak kullanabilir veya ileride kiraya verebilirsin.</p>
+          <p className="property-description">{active.style}. {active.history ? active.history + " " : ""}Bu taşınmazı alabilir, işletme olarak kullanabilir veya ileride kiraya verebilirsin.</p>
           <div className="property-stats">
             <div><span>Güncel piyasa değeri</span><strong>₺{getMarketValue(active).toLocaleString('tr-TR')}</strong></div>
             <div><span>Günlük kira</span><strong>₺{(active.rent / 30).toFixed(2)}</strong></div><div><span>Yıllık kira potansiyeli</span><strong>₺{(active.rent * 12).toLocaleString('tr-TR')}</strong></div>
