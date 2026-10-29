@@ -1997,7 +1997,35 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       const reward = Math.round(getBusinessSalePrice(propertyId, product) * quantity * (1.12 + Math.random() * 0.18));
       ordersForDay.push({ id: currentGameDateKey + ':' + propertyId + ':' + product.id + ':' + ordersForDay.length, propertyId, productId: product.id, productName: product.name, propertyName: properties.find(p => p.id === propertyId)?.name || 'İşletme', quantity, reward, createdAt: gameHourIndex(), expiresAt: gameHourIndex() + 8 + Math.floor(Math.random() * 17), status: 'available' });
     });
-    return ordersForDay.sort(() => Math.random() - 0.5).slice(0, 4);
+    // Time-limited event orders: extra rewards for preparing stock before a neighborhood fair.
+    const fairActive = month >= 1 && month <= 12 && day >= 8 && day <= 14;
+    if (fairActive) {
+      const eventCandidates = candidates.flatMap(propertyId => {
+        const property = properties.find(p => p.id === propertyId);
+        const propertyName = property?.name || '';
+        const catalog = (tradeCatalog[propertyId] || []).filter(product =>
+          product.price > 0 && !product.service && (product.unlockLevel || 1) <= getBusinessSalesLevel(propertyId)
+        );
+        const eligible = catalog.filter(product => {
+          const text = (product.id || '') + ' ' + (product.name || '') + ' ' + propertyName;
+          return /pastane|fırın|firin|unlu mamul|börek|borek|çiçekçi|cicekci|çiçek|cicek|buket|kahvehane|kahve|kafe|gazino|lokanta/i.test(text);
+        });
+        return eligible.map(product => ({ propertyId, property, product }));
+      });
+      eventCandidates.sort(() => Math.random() - 0.5).slice(0, 2).forEach(({propertyId, property, product}, index) => {
+        const quantity = 3 + Math.floor(Math.random() * 4);
+        const base = getBusinessSalePrice(propertyId, product) * quantity;
+        const reward = Math.round(base * (1.45 + Math.random() * 0.25));
+        ordersForDay.push({
+          id: currentGameDateKey + ':fair:' + propertyId + ':' + product.id + ':' + index,
+          propertyId, productId: product.id, productName: product.name,
+          propertyName: property?.name || 'İşletme', quantity, reward,
+          createdAt: gameHourIndex(), expiresAt: gameHourIndex() + 8 + Math.floor(Math.random() * 9),
+          status: 'available', eventOrder: true, eventName: 'Mahalle Şenliği'
+        });
+      });
+    }
+    return ordersForDay.sort(() => Math.random() - 0.5).slice(0, 5);
   };
   useEffect(() => {
     const hasOrderEligibleBusiness = owned.some(id => !rented.includes(id) && (tradeCatalog[id] || []).some(product => product.price > 0 && (product.unlockLevel || 1) <= getBusinessSalesLevel(id)));
@@ -2951,7 +2979,8 @@ function App({ session = null, supabase = null, authConfigured = false }) {
             const hoursLeft = Math.max(0, Number(order.expiresAt) - gameHourIndex());
             const statusLabel = order.status === 'completed' ? 'TESLİM EDİLDİ' : order.status === 'expired' ? 'SÜRESİ DOLDU' : order.status === 'accepted' ? 'KABUL EDİLDİ' : 'YENİ TALEP';
             return <article className={'customer-order-card order-' + order.status} key={order.id}>
-              <div className="customer-order-top"><span>{order.propertyName}</span><b>{statusLabel}</b></div><h3>{order.productName}</h3>
+              <div className="customer-order-top"><span>{order.propertyName}</span><b>{order.eventOrder ? 'ŞENLİK SİPARİŞİ' : statusLabel}</b></div><h3>{order.productName}</h3>
+              {order.eventOrder && <div className="event-order-note">Süreli etkinlik · Yüksek ödül · {Math.max(0, Number(order.expiresAt) - gameHourIndex())} oyun saati kaldı</div>}
               <div className="customer-order-meta"><span>İstenen: <strong>{order.quantity}</strong></span><span>Hazır stok: <strong>{stock}</strong></span></div>
               <div className="customer-order-reward"><strong>₺{Number(order.reward).toLocaleString('tr-TR')}</strong><span>{order.status === 'completed' ? 'Ödül alındı' : order.status === 'expired' ? 'Fırsat kaçtı' : hoursLeft + ' oyun saati kaldı'}</span></div>
               {order.status === 'available' && <button className="stock-button" onClick={() => acceptCustomerOrder(order.id)}>SİPARİŞİ KABUL ET</button>}
