@@ -1552,6 +1552,26 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   // Distinct supply chains for every active commercial property. Similar businesses may sell
   // related goods, but their procurement items remain specific to the shop and its operating model.
   const BUSINESS_SPECIFIC_PROFILES = {
+    58: {
+      name:'Haliç Gazinosu — özel tedarik',
+      materials:[
+        {id:'halic58-mutfak',name:'Gazino mutfağı meze ve sıcak yemek erzağı',batch:8,cost:14},
+        {id:'halic58-icecek',name:'Şerbet, limonata ve içecek fıçısı',batch:8,cost:11},
+        {id:'halic58-servis',name:'Masa örtüsü, tabak ve servis takımı',batch:8,cost:10},
+        {id:'halic58-sahne',name:'Nota, sahne aksesuarı ve müzik sarfı',batch:6,cost:13},
+        {id:'halic58-yakit',name:'Mutfak ve sahne aydınlatma yakıtı',batch:8,cost:9}
+      ],
+      recipes:[
+        ['halic58-mutfak',1,'halic58-servis',1],
+        ['halic58-icecek',1,'halic58-servis',1],
+        ['halic58-sahne',1,'halic58-yakit',1]
+      ],
+      productRules:[
+        {match:/giriş|giris|bilet/i,recipe:[['halic58-sahne',1],['halic58-yakit',1]]},
+        {match:/masa|servis/i,recipe:[['halic58-mutfak',1],['halic58-servis',1]]},
+        {match:/musiki|müzik|muzik|sahne/i,recipe:[['halic58-sahne',1],['halic58-yakit',1]]}
+      ]
+    },
     55: {
       name:'Pansiyon tedariki',
       materials:[
