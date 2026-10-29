@@ -1261,6 +1261,63 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       if (!tradeCatalog[id].some(item => item.id === productId)) tradeCatalog[id].push({ id: productId, name, cost, price, units, unlockLevel });
     });
   });
+  // Reconcile catalogs against the actual properties in the city. Older expansion data
+  // used colliding IDs; these canonical catalogs intentionally win for active properties.
+  tradeCatalog[33] = [
+    {id:'berber-tiras',name:'Ustura tıraşı',cost:8,price:16,units:8,service:true},
+    {id:'berber-sakal',name:'Sakal düzeltme ve bakım',cost:7,price:14,units:8,service:true},
+    {id:'berber-sac',name:'Saç kesimi ve tarama',cost:9,price:18,units:8,service:true},
+    {id:'berber-yikama',name:'Sıcak havlu ve saç yıkama',cost:6,price:13,units:8,service:true},
+    {id:'berber-kolonya',name:'Kolonya ve saç losyonu',cost:12,price:24,units:8}
+  ];
+  tradeCatalog[34] = [
+    {id:'cicek-mevsim',name:'Mevsim çiçekleri buketi',cost:12,price:25,units:8},
+    {id:'cicek-gul',name:'Gül demeti',cost:15,price:32,units:6},
+    {id:'cicek-saksi',name:'Saksı çiçeği',cost:14,price:29,units:6},
+    {id:'cicek-celenk',name:'Tören ve cenaze çelengi',cost:22,price:46,units:4},
+    {id:'cicek-dugun',name:'Düğün ve nişan aranjmanı',cost:26,price:54,units:4},
+    {id:'cicek-kurumsal',name:'Otel ve mağaza haftalık çiçek düzenlemesi',cost:18,price:39,units:5,service:true}
+  ];
+  tradeCatalog[35] = [
+    {id:'gazino-meze',name:'Gazino meze tabağı',cost:14,price:30,units:8},
+    {id:'gazino-soguk',name:'Soğuk içecek ve şerbet',cost:12,price:26,units:8},
+    {id:'gazino-sicak',name:'Sıcak yemek servisi',cost:20,price:43,units:6},
+    {id:'gazino-masa',name:'Teras masa servisi',cost:18,price:38,units:6,service:true},
+    {id:'gazino-musiki',name:'Canlı musiki gecesi bileti',cost:16,price:34,units:8,service:true},
+    {id:'gazino-ozel',name:'Özel loca ve davet paketi',cost:28,price:62,units:3,service:true}
+  ];
+  tradeCatalog[36] = [
+    {id:'kohen-roman',name:'Yabancı dilde roman',cost:15,price:32,units:6},
+    {id:'kohen-sozluk',name:'Sözlük ve dilbilgisi kitabı',cost:16,price:34,units:6},
+    {id:'kohen-tarih',name:'Tarih ve seyahat kitabı',cost:18,price:38,units:6},
+    {id:'kohen-kirtasiye',name:'Defter, kalem ve mürekkep',cost:10,price:22,units:8},
+    {id:'kohen-nadir',name:'Nadir ciltli eser',cost:26,price:58,units:3},
+    {id:'kohen-siparis',name:'Yurt dışından özel kitap siparişi',cost:20,price:46,units:4,service:true}
+  ];
+  tradeCatalog[39] = [
+    {id:'sokrat-dibek',name:'Dibek kahvesi',cost:10,price:22,units:10},
+    {id:'sokrat-cay',name:'İnce belli bardakta çay',cost:8,price:17,units:10},
+    {id:'sokrat-serbet',name:'Ev yapımı şerbet',cost:9,price:19,units:8},
+    {id:'sokrat-lokum',name:'Kahve yanı lokum tabağı',cost:11,price:23,units:8},
+    {id:'sokrat-nargile',name:'Nargile ve köz servisi',cost:13,price:28,units:6,service:true},
+    {id:'sokrat-oyun',name:'Tavla ve oyun masası servisi',cost:5,price:12,units:8,service:true}
+  ];
+  tradeCatalog[40] = [
+    {id:'hamam-giris',name:'Hamam giriş ve yıkanma hizmeti',cost:12,price:27,units:8,service:true},
+    {id:'hamam-kese',name:'Kese ve köpük hizmeti',cost:10,price:23,units:8,service:true},
+    {id:'hamam-tellak',name:'Tellak ve özel bakım hizmeti',cost:16,price:35,units:6,service:true},
+    {id:'hamam-masaj',name:'Yağlı masaj ve bakım',cost:18,price:39,units:5,service:true},
+    {id:'hamam-havlu',name:'Peştamal ve havlu seti',cost:14,price:29,units:8},
+    {id:'hamam-ozel',name:'Özel oda ve dinlenme paketi',cost:20,price:46,units:4,service:true}
+  ];
+  tradeCatalog[41] = [
+    {id:'dry-takim',name:'Takım elbise kuru temizleme',cost:14,price:30,units:8,service:true},
+    {id:'dry-palto',name:'Palto ve kaban temizliği',cost:16,price:35,units:6,service:true},
+    {id:'dry-ipek',name:'İpek ve hassas kumaş bakımı',cost:20,price:44,units:4,service:true},
+    {id:'dry-utu',name:'Ütüleme ve kolalama',cost:10,price:22,units:8,service:true},
+    {id:'dry-leke',name:'Özel leke çıkarma',cost:12,price:27,units:6,service:true},
+    {id:'dry-perde',name:'Perde ve ev tekstili temizliği',cost:22,price:48,units:4,service:true}
+  ];
   Object.values(tradeCatalog).forEach(items => items.forEach((item, index) => { item.unlockLevel = Math.min(5, index + 1); }));
   const businessMaterialProfiles = {
     pharmacy: { name: 'Eczahane', materials: [{id:'ecz-ot',name:'Şifalı ot ve etkin madde',batch:6,cost:9},{id:'ecz-sise',name:'Cam şişe ve kavanoz',batch:6,cost:8},{id:'ecz-sargi',name:'Sargı bezi ve temiz pamuk',batch:6,cost:10},{id:'ecz-ambalaj',name:'Etiket ve kâğıt ambalaj',batch:8,cost:7}], recipes: [['ecz-ot',1,'ecz-sise',1],['ecz-ot',2,'ecz-sise',1],['ecz-ot',1,'ecz-ambalaj',2],['ecz-sargi',2,'ecz-ambalaj',1],['ecz-ot',2,'ecz-sise',2]] },
