@@ -1017,3 +1017,28 @@ body{overflow:hidden}
  .hud-panel-business .hud-side-panel>.property-card .shoe-workshop .shoe-product-row{align-items:stretch;flex-direction:column}
  .hud-panel-business .hud-side-panel>.property-card .shoe-workshop .stock-button{width:100%;max-width:none}
 }
+
+
+/* Kunduracı now shares the production-console hierarchy used by every other shop. */
+.shoe-workshop.production-console{display:flex;flex-direction:column;gap:16px;padding:16px;box-sizing:border-box;width:100%;min-width:0;overflow:hidden}
+.shoe-workshop .production-console-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:0 0 14px;border-bottom:1px solid #344655}
+.shoe-workshop .production-console-head>div:first-child{min-width:0;flex:1}
+.shoe-workshop .production-console-head h3{margin:7px 0;color:#edf3f5;font-size:15px;line-height:1.35}
+.shoe-workshop .production-console-head p{margin:0;color:#aebdc8;font-size:10px;line-height:1.6}
+.shoe-workshop .production-level-chip{flex:0 0 90px;max-width:90px;padding:9px;border:1px solid #344655;border-radius:9px;background:#101b25}
+.shoe-workshop .production-level-chip strong{display:block;color:#f1d9a4;font:800 10px 'IBM Plex Mono',monospace}
+.shoe-workshop .production-level-chip small{display:block;margin-top:5px;color:#aebdc8;font-size:9px;line-height:1.4}
+.shoe-workshop .production-quick-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.shoe-workshop .production-quick-stats>div{min-width:0;padding:10px 8px;border:1px solid #344655;border-radius:9px;background:#101b25}
+.shoe-workshop .production-quick-stats>div>span{font-size:8px;line-height:1.4;letter-spacing:.04em}
+.shoe-workshop .production-quick-stats>div>strong{font-size:13px}
+.shoe-workshop .production-section-title{display:flex;align-items:center;gap:8px;margin:2px 0 0;padding-top:13px;border-top:1px solid #344655;color:#e8eef2;font-size:12px;line-height:1.4}
+.shoe-workshop .storage-upgrade-panel{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.shoe-workshop .production-helper{margin:0;color:#aebdc8;font-size:10px;line-height:1.6}
+.shoe-workshop .material-stock-card{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px 12px}
+.shoe-workshop .material-stock-card .material-stock-head{grid-column:1;grid-row:1}
+.shoe-workshop .material-stock-card .material-stock-meter{grid-column:1;grid-row:2;margin:0}
+.shoe-workshop .material-stock-card .stock-button{grid-column:2;grid-row:1 / span 2;max-width:125px;min-width:94px;white-space:normal;line-height:1.35}
+.shoe-workshop .shoe-product-row{align-items:center}
+.shoe-workshop .shoe-product-row .stock-button{max-width:145px;min-width:105px;white-space:normal;line-height:1.4}
+@media(max-width:520px){.shoe-workshop .production-console-head{flex-direction:column}.shoe-workshop .production-level-chip{max-width:none;flex-basis:auto;width:auto}.shoe-workshop .material-stock-card{grid-template-columns:minmax(0,1fr)}.shoe-workshop .material-stock-card .material-stock-head,.shoe-workshop .material-stock-card .material-stock-meter,.shoe-workshop .material-stock-card .stock-button{grid-column:1;grid-row:auto}.shoe-workshop .material-stock-card .stock-button{max-width:none;width:100%}.shoe-workshop .shoe-product-row{flex-direction:column;align-items:stretch}.shoe-workshop .shoe-product-row .stock-button{max-width:none;width:100%}}
