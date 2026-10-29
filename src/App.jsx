@@ -3084,7 +3084,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   return <main className={'app-shell fullscreen-game ' + (activeHudPanel ? 'hud-open ' + (activeHudPanel === 'social' ? 'hud-social' : 'hud-panel-open hud-panel-' + activeHudPanel) : '')}>
     <header className="topbar hud-topbar">
       <a className="wordmark" href="#" aria-label="Mahalle ana sayfa"><span className="mark">M.</span><span>MAHALLE</span></a>
-      <div className="top-center"><span className="live-dot" /> BEYOĞLU · {String(hour).padStart(2, '0')}:00</div>
+      <div className="top-center"><span className="live-dot" /> BEYOĞLU · {String(day).padStart(2, '0')} {['OCAK','ŞUBAT','MART','NİSAN','MAYIS','HAZİRAN','TEMMUZ','AĞUSTOS','EYLÜL','EKİM','KASIM','ARALIK'][month - 1]} {year} · {String(hour).padStart(2, '0')}:00</div>
       <div className="top-actions"><button className="reset-button" onClick={resetGame}>YENİ OYUN ↻</button><button className="avatar-button" onClick={() => setShowPortfolio(v => !v)} aria-label="Portföyü aç">CC</button></div>
     </header>
 
@@ -3146,7 +3146,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
           </div>
         </div>} />
         <div className="map-legend"><span><i className="legend-dot available" /> SATILIK MÜLK</span><span><i className="legend-dot owned" /> SENİN MÜLKÜN</span><span className="map-hint">SÜRÜKLE: DÖNDÜR · KAYDIR: YAKINLAŞ · BİNAYA TIKLA</span></div>
-        <div className="world-caption"><span>İSTANBUL / BEYOĞLU</span><span>GÜN {day} <i>·</i> SAAT {String(hour).padStart(2, '0')}:00</span></div>
+        <div className="world-caption"><span>İSTANBUL / BEYOĞLU</span><span>{String(day).padStart(2, '0')} {['OCAK','ŞUBAT','MART','NİSAN','MAYIS','HAZİRAN','TEMMUZ','AĞUSTOS','EYLÜL','EKİM','KASIM','ARALIK'][month - 1]} {year} <i>·</i> {String(hour).padStart(2, '0')}:00</span></div>
         {activeEconomicEvents().length > 0
           ? <div className="economic-event-banner" role="status"><strong>TAKVİM ETKİNLİĞİ · {activeEconomicEvents().map(event => event.name).join(' + ')}</strong><span>{activeEconomicEvents()[0].detail}</span></div>
           : <div className="economic-event-banner upcoming-event-banner" role="status"><strong>YAKLAŞAN ETKİNLİK · MAHALLE ŞENLİĞİ</strong><span>Her ayın 8–14. günleri. {day < 8 ? 'Başlamasına ' + (8 - day) + ' oyun günü kaldı.' : 'Bir sonraki şenliğe yaklaşık ' + (30 - day + 8) + ' oyun günü kaldı.'} Pastane ve çiçekçi stoklarını önceden hazırla; etkinlikte stok yoksa satış gerçekleşmez.</span></div>}

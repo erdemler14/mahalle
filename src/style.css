@@ -1180,3 +1180,9 @@ body{overflow:hidden}
 @media(max-width:680px){
   .fullscreen-game .world-topline .property-finder{flex:1 1 100%;width:100%;max-width:none;min-width:0;height:32px}
 }
+
+
+/* Keep the historical in-game date readable in the HUD and map caption. */
+.fullscreen-game .top-center{white-space:nowrap;max-width:none}
+.fullscreen-game .world-caption span:last-child{white-space:nowrap;font-variant-numeric:tabular-nums}
+@media(max-width:680px){.fullscreen-game .world-caption{font-size:8px;letter-spacing:.25px}.fullscreen-game .world-caption span:last-child{font-size:8px}}
