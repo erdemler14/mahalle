@@ -1065,11 +1065,42 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   const [businessPlans, setBusinessPlans] = useState(() => saved.businessPlans && typeof saved.businessPlans === 'object' ? saved.businessPlans : {});
   const [stockByProperty, setStockByProperty] = useState(() => saved.stockByProperty && typeof saved.stockByProperty === 'object' ? saved.stockByProperty : {});
   const [businessStats, setBusinessStats] = useState(() => saved.businessStats && typeof saved.businessStats === 'object' ? saved.businessStats : {});
-  const [pendingProductions, setPendingProductions] = useState({});
+  const [pendingProductions, setPendingProductions] = useState(() => saved.pendingProductions && typeof saved.pendingProductions === 'object' ? saved.pendingProductions : {});
+  const productionProcessingRef = useRef({});
   const [productionBatch, setProductionBatch] = useState('1');
   const [selectedShoeId, setSelectedShoeId] = useState('kundura');
   const [productionNow, setProductionNow] = useState(Date.now());
-  useEffect(() => { if (!Object.keys(pendingProductions).length) return; const timer = setInterval(() => setProductionNow(Date.now()), 250); return () => clearInterval(timer); }, [pendingProductions]);
+  useEffect(() => {
+    if (!Object.keys(pendingProductions).length) return;
+    const timer = setInterval(() => {
+      const now = Date.now();
+      setProductionNow(now);
+      Object.entries(pendingProductions).forEach(([key, job]) => {
+        if (!job || !job.units || !job.readyAt || now < Number(job.readyAt)) return;
+        const lockKey = key + ':' + job.readyAt;
+        if (productionProcessingRef.current[lockKey]) return;
+        productionProcessingRef.current[lockKey] = true;
+        const duration = Math.max(500, Number(job.duration) || 2500);
+        const completedUnits = Math.min(Number(job.units) || 0, 1 + Math.floor((now - Number(job.readyAt)) / duration));
+        if (completedUnits <= 0) return;
+        const propertyId = Number(job.propertyId || key.split(':')[0]);
+        const productId = job.productId || key.split(':').slice(1).join(':');
+        setStockByProperty(old => {
+          const current = getInventoryState(propertyId, old[propertyId]);
+          return { ...old, [propertyId]: { materials: current.materials || {}, products: { ...(current.products || {}), [productId]: (Number(current.products?.[productId]) || 0) + completedUnits } } };
+        });
+        setPendingProductions(old => {
+          const current = old[key];
+          if (!current || Number(current.readyAt) !== Number(job.readyAt)) return old;
+          const remaining = Math.max(0, (Number(current.units) || 0) - completedUnits);
+          if (remaining > 0) return { ...old, [key]: { ...current, units: remaining, readyAt: Number(current.readyAt) + duration * completedUnits } };
+          const next = { ...old }; delete next[key]; return next;
+        });
+        if (completedUnits >= Number(job.units)) tell('Üretim tamamlandı: ' + (job.name || productId) + ' ×' + completedUnits + '. Ürünler depoya eklendi.');
+      });
+    }, 500);
+    return () => clearInterval(timer);
+  }, [pendingProductions]);
   const productionTimersRef = useRef({});
   const [multiplayerRole, setMultiplayerRole] = useState('solo');
   const [multiplayerStatus, setMultiplayerStatus] = useState('Solo oyun');
@@ -1453,12 +1484,12 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       }
       window.localStorage.setItem(saveKey, JSON.stringify({
         version: 3, economyVersion: STARTER_ECONOMY_VERSION, playerName, steps, cash, owned, rented, unitOwners, unitRented, buildingLevels, selected, showPortfolio, professionId, marketValues,
-        hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, log: log.slice(0, 5)
+        hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, pendingProductions, log: log.slice(0, 5)
       }));
     } catch {
       // The game remains playable if browser storage is disabled or full.
     }
-  }, [playerName, steps, cash, owned, rented, unitOwners, unitRented, buildingLevels, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, log]);
+  }, [playerName, steps, cash, owned, rented, unitOwners, unitRented, buildingLevels, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, pendingProductions, log]);
 
   useEffect(() => {
     if (!session || !supabase) { setCloudReady(true); return undefined; }
@@ -1520,10 +1551,11 @@ function App({ session = null, supabase = null, authConfigured = false }) {
           if (state.businessPlans && typeof state.businessPlans === 'object') setBusinessPlans(state.businessPlans);
           if (state.stockByProperty && typeof state.stockByProperty === 'object') setStockByProperty(state.stockByProperty);
           if (state.businessStats && typeof state.businessStats === 'object') setBusinessStats(state.businessStats);
+          if (state.pendingProductions && typeof state.pendingProductions === 'object') setPendingProductions(state.pendingProductions);
           if (Array.isArray(state.log)) setLog(state.log.slice(0, 5));
           if (state.developments && typeof state.developments === 'object') setDevelopments(state.developments);
         } else {
-          const initialState = { version: 2, economyVersion: STARTER_ECONOMY_VERSION, playerName: displayName, steps, cash: STARTING_CASH, owned: [], rented, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, log: log.slice(0, 5), developments };
+          const initialState = { version: 2, economyVersion: STARTER_ECONOMY_VERSION, playerName: displayName, steps, cash: STARTING_CASH, owned: [], rented, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, pendingProductions, log: log.slice(0, 5), developments };
           const { error } = await supabase.from('player_saves').upsert({ user_id: userId, state: initialState, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
           if (error) throw error;
           setPlayerName(displayName);
@@ -1554,11 +1586,11 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const state = {
       version: 2, economyVersion: STARTER_ECONOMY_VERSION, playerName, steps, cash, owned, rented, selected, showPortfolio, professionId, marketValues,
       hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty,
-      businessStats, log: log.slice(0, 5), developments
+      businessStats, pendingProductions, log: log.slice(0, 5), developments
     };
     supabase.from('player_saves').upsert({ user_id: session.user.id, state, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
       .then(({ error }) => { if (error) setMultiplayerStatus('Kayıt eşitlenemedi · ' + error.message); });
-  }, [session?.user?.id, supabase, cloudReady, playerName, steps, cash, owned, rented, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, log, developments]);
+  }, [session?.user?.id, supabase, cloudReady, playerName, steps, cash, owned, rented, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, pendingProductions, log, developments]);
 
 
   const tell = (text) => {
@@ -1980,19 +2012,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       const current = old[pendingKey]; const currentUnits = Number(current?.units) || 0;
       return { ...old, [pendingKey]: { units: currentUnits + quantity, readyAt: currentUnits > 0 ? (Number(current.readyAt) || firstReadyAt) : firstReadyAt, finishAt: completionAt, duration, name: shoe.name, propertyId: 37, productId: shoe.id } };
     });
-    for (let unit = 1; unit <= quantity; unit++) {
-      const readyAt = previousFinish + duration * unit;
-      setTimeout(() => {
-        setStockByProperty(old => { const current = old[37] && typeof old[37] === 'object' ? old[37] : { materials: {}, products: {} }; return { ...old, 37: { materials: current.materials || {}, products: { ...(current.products || {}), [shoe.id]: (Number(current.products?.[shoe.id]) || 0) + 1 } } }; });
-        setPendingProductions(old => {
-          const current = old[pendingKey]; if (!current) return old;
-          const remaining = Math.max(0, (Number(current.units) || 0) - 1);
-          if (remaining > 0) return { ...old, [pendingKey]: { ...current, units: remaining, readyAt: Math.min((Number(current.readyAt) || Date.now()) + (Number(current.duration) || duration), Number(current.finishAt) || Infinity) } };
-          const nextJobs = { ...old }; delete nextJobs[pendingKey]; return nextJobs;
-        });
-        if (unit === quantity) tell('Üretim tamamlandı: ' + quantity + ' çift ' + shoe.name + '. Vitrine eklendi.');
-      }, Math.max(0, readyAt - Date.now()));
-    }
+
     tell((existingUnits > 0 ? 'Üretim kuyruğuna eklendi: ' : 'Üretim başladı: ') + shoe.name + ' ×' + quantity + '. İlk çift yaklaşık ' + Math.max(1, Math.ceil((firstReadyAt - now) / 1000)) + ' saniye içinde hazır olacak.');
   };
 
@@ -2069,23 +2089,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       const currentUnits = Number(current?.units) || 0;
       return { ...old, [pendingKey]: { units: currentUnits + quantity, readyAt: currentUnits > 0 ? (Number(current.readyAt) || firstReadyAt) : firstReadyAt, finishAt: completionAt, duration, name: item.name, propertyId, productId: item.id } };
     });
-    for (let unit = 1; unit <= quantity; unit++) {
-      const readyAt = previousFinish + duration * unit;
-      setTimeout(() => {
-        setStockByProperty(old => {
-          const state = getInventoryState(propertyId, old[propertyId]);
-          return { ...old, [propertyId]: { materials: state.materials, products: { ...state.products, [item.id]: (Number(state.products?.[item.id]) || 0) + 1 } } };
-        });
-        setPendingProductions(old => {
-          const current = old[pendingKey];
-          if (!current) return old;
-          const remaining = Math.max(0, (Number(current.units) || 0) - 1);
-          if (remaining > 0) return { ...old, [pendingKey]: { ...current, units: remaining, readyAt: Math.min((Number(current.readyAt) || Date.now()) + (Number(current.duration) || duration), Number(current.finishAt) || Infinity) } };
-          const next = { ...old }; delete next[pendingKey]; return next;
-        });
-        if (unit === quantity) tell('Üretim tamamlandı: ' + item.name + '. ' + quantity + ' adet ürün depoya eklendi.');
-      }, Math.max(0, readyAt - Date.now()));
-    }
+
     tell((existingUnits > 0 ? 'Üretim kuyruğuna eklendi: ' : 'Üretim başladı: ') + item.name + ' ×' + quantity + '. İlk ürün yaklaşık ' + Math.max(1, Math.ceil((firstReadyAt - now) / 1000)) + ' sn içinde hazır.');
   };
   const buy = async () => {
