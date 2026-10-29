@@ -1050,6 +1050,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   const [activeHudPanel, setActiveHudPanel] = useState(null);
   useEffect(() => { const property = properties.find(p => p.id === selected); if (property) setMapSearch(property.name); }, [selected]);
   const [notice, setNotice] = useState('');
+  const [businessAlert, setBusinessAlert] = useState(null);
   const [showPortfolio, setShowPortfolio] = useState(() => Boolean(saved.showPortfolio));
   const [portfolioDetailId, setPortfolioDetailId] = useState(null);
   const [professionId, setProfessionId] = useState(() => ['kolonyaci', 'leblebici', 'terzi', 'matbaaci', 'kahveci', 'firinci', 'kasap', 'eczaci', 'kitapci', 'marangoz', 'manav', 'lokantaci', 'demirci', 'amele'].includes(saved.professionId) ? saved.professionId : 'amele');
@@ -1587,9 +1588,11 @@ function App({ session = null, supabase = null, authConfigured = false }) {
         if (roll < 0.17) {
           dryCleanDelta = Math.round(250 + Math.random() * 1750);
           dryCleanNews = ` Pera Buharlı Kuru Temizleme'de olağan dışı nakit tahsilatı: +₺${dryCleanDelta.toLocaleString('tr-TR')}! Bu kazanç şüpheleri de artırıyor.`;
+          setBusinessAlert({ type: 'windfall', title: 'Beklenmedik Nakit!', amount: dryCleanDelta, message: 'Pera Buharlı Kuru Temizleme’de olağan dışı bir nakit tahsilatı gerçekleşti. Kazanç kasana eklendi; ancak şüphe seviyesi de yükseliyor.' });
         } else if (roll > 0.91) {
           dryCleanDelta = -Math.round(450 + Math.random() * 3550);
           dryCleanNews = ` KURU TEMİZLEMEYE BASKIN! Kayıt dışı işlemler tespit edildi; ceza ve el koyma toplamı -₺${Math.abs(dryCleanDelta).toLocaleString('tr-TR')}.`;
+          setBusinessAlert({ type: 'raid', title: 'KURU TEMİZLEMEYE BASKIN!', amount: dryCleanDelta, message: 'Denetim ekipleri kayıt dışı işlemleri tespit etti. Ceza ve el koyma bedeli kasandan düşüldü.' });
         }
       }
       const dailyNet = dailyRent + business.revenue - dailyCost + dryCleanDelta;
@@ -2664,6 +2667,25 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     <footer className="footer"><span>MAHALLE <i>©</i> 1923</span><span>GEÇMİŞİN İÇİNDE BİR GELECEK KUR.</span><span>PROTOTİP 0.4.0</span></footer>
     <div className="economy-note">Kayıt bu tarayıcıda otomatik saklanır. Ekonomi değerleri oynanabilir prototip varsayımlarıdır; doğrulanmış 1923 ücret ve fiyat verileri değildir.</div>
     {notice && <div className="toast" key={noticeId} role="status">{notice}</div>}
+    {businessAlert && (
+      <div role="dialog" aria-modal="true" aria-labelledby="business-alert-title" onClick={() => setBusinessAlert(null)} style={{ position: 'fixed', inset: 0, zIndex: 100000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, background: 'rgba(12, 16, 22, 0.78)', backdropFilter: 'blur(5px)' }}>
+        <div onClick={event => event.stopPropagation()} style={{ position: 'relative', width: 'min(440px, 100%)', borderRadius: 18, overflow: 'hidden', background: '#f7f2e8', color: '#27231f', boxShadow: '0 24px 90px rgba(0,0,0,.5)', border: businessAlert.type === 'raid' ? '2px solid #a52d26' : '2px solid #b28a3c' }}>
+          <div style={{ padding: '22px 24px 18px', background: businessAlert.type === 'raid' ? 'linear-gradient(135deg,#651f1b,#b83a2d)' : 'linear-gradient(135deg,#54401d,#b58a35)', color: '#fff8e9' }}>
+            <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase', opacity: .85 }}>{businessAlert.type === 'raid' ? 'DENETİM OLAYI' : 'GİZLİ İŞLETME OLAYI'}</div>
+            <div id="business-alert-title" style={{ marginTop: 8, fontSize: 25, lineHeight: 1.15, fontWeight: 900 }}>{businessAlert.title}</div>
+            <div style={{ marginTop: 8, fontSize: 13, opacity: .9 }}>Pera Buharlı Kuru Temizleme</div>
+          </div>
+          <div style={{ padding: 24 }}>
+            <div style={{ fontSize: 15, lineHeight: 1.55 }}>{businessAlert.message}</div>
+            <div style={{ margin: '18px 0 22px', padding: '16px 18px', borderRadius: 12, background: businessAlert.type === 'raid' ? '#f6dfdc' : '#eee4ca', border: '1px solid rgba(60,45,25,.12)' }}>
+              <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '.1em', opacity: .7 }}>{businessAlert.type === 'raid' ? 'CEZA VE EL KOYMA' : 'KASAYA EKLENEN NAKİT'}</div>
+              <div style={{ marginTop: 4, fontSize: 30, lineHeight: 1.1, fontWeight: 900, color: businessAlert.type === 'raid' ? '#a52d26' : '#48652c' }}>{businessAlert.amount > 0 ? '+' : '−'}₺{Math.abs(businessAlert.amount).toLocaleString('tr-TR')}</div>
+            </div>
+            <button type="button" onClick={() => setBusinessAlert(null)} style={{ width: '100%', padding: '13px 16px', border: 0, borderRadius: 10, background: businessAlert.type === 'raid' ? '#8e2d25' : '#655027', color: '#fff', fontWeight: 800, fontSize: 14, cursor: 'pointer' }}>ANLADIM, DEVAM ET</button>
+          </div>
+        </div>
+      </div>
+    )}
   </main>;
 }
 
