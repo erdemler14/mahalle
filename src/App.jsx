@@ -3197,8 +3197,11 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const validIds=new Set(profile.materials.map(m=>m.id));
     const total=Object.entries(inventory.materials||{}).reduce((s,[id,n])=>s+(validIds.has(id)?Math.max(0,Number(n)||0):0),0);
     let room=Math.max(0,quantity-Math.max(0,capacity-total));
+    const activeProduct=(tradeCatalog[propertyId]||[]).find(item=>item.id===businessPlans[propertyId]);
+    const activeRecipe=activeProduct?getBusinessRecipe(propertyId,activeProduct):[];
+    const preserve=new Map(activeRecipe.map(part=>[part.id,part.qty*(productionBatch==='max'?5:Math.max(1,Number(productionBatch)||1))]));
     const returns=new Map();
-    profile.materials.filter(m=>m.id!==materialId).map(m=>({m,n:Math.max(0,Number(inventory.materials?.[m.id])||0)})).sort((a,b)=>b.n-a.n).forEach(x=>{if(room<=0)return;const take=Math.min(x.n,room);if(take){returns.set(x.m.id,take);room-=take;}});
+    profile.materials.filter(m=>m.id!==materialId).map(m=>({m,n:Math.max(0,Number(inventory.materials?.[m.id])||0),keep:preserve.get(m.id)||0})).filter(x=>x.n>x.keep).sort((a,b)=>(a.n-a.keep)-(b.n-b.keep)).reverse().forEach(x=>{if(room<=0)return;const take=Math.min(x.n-x.keep,room);if(take){returns.set(x.m.id,take);room-=take;}});
     if(room>0){tell('Depoda yer açılamadı. DEPOYU DÜZENLE ile seçili ürünün reçetesini koruyarak fazla stoğu iade edebilirsin.');return;}
     const refund=Math.round([...returns].reduce((s,[id,n])=>{const m=profile.materials.find(x=>x.id===id);return s+(m?m.cost/Math.max(1,m.batch)*n*.85:0);},0)*100)/100;
     const cost=Math.round(material.cost*quantity/material.batch*100)/100;
