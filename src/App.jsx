@@ -3406,7 +3406,8 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     if (session && supabase) {
       if (ownerByProperty[active.id] || owned.includes(active.id)) { tell('Bu mülkün zaten bir sahibi var.'); return; }
       try {
-        const { data, error } = await supabase.rpc('claim_property', { p_property_id: active.id });
+        const purchaseMarketValue = getMarketValue(active);
+        const { data, error } = await supabase.rpc('claim_property', { p_property_id: active.id, p_market_value: purchaseMarketValue, p_current_cash: cash });
         if (error) throw error;
         const result = Array.isArray(data) ? data[0] : data;
         if (!result || !Number.isFinite(Number(result.cash))) throw new Error('Sunucudan geçerli satın alma sonucu alınamadı.');
@@ -3433,7 +3434,8 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   };
 
   const sellProperty = async () => {
-    if (!owned.includes(active.id)) { tell('Yalnızca sahibi olduğun mülkü satabilirsin.'); return; }
+    const isOwnedByPlayer = owned.includes(active.id) || ownerByProperty[active.id]?.playerId === playerId;
+    if (!isOwnedByPlayer) { tell('Yalnızca sahibi olduğun mülkü satabilirsin.'); return; }
     const property = active;
     const salePrice = Math.round(getMarketValue(property) * 0.95 * 100) / 100;
     if (typeof window !== 'undefined' && !window.confirm(`${property.name} mülkünü ₺${salePrice.toLocaleString('tr-TR')} bedelle satmak istiyor musun? Mevcut işletme stoğu satışa dahil değil ve sıfırlanacak.`)) return;
