@@ -1325,3 +1325,31 @@ body{overflow:hidden}
 .business-product-actions{display:flex;gap:7px;margin-top:11px}
 .business-product-actions .stock-button{width:100%;min-height:36px}
 @media(max-width:760px){.business-product-catalog{grid-template-columns:1fr}}
+
+/* Compact Sims-inspired production catalogue */
+.production-catalog-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:14px 0 9px}
+.production-catalog-heading>div:first-child strong{display:block;color:var(--ink,#26352d);font-size:14px;font-weight:750}
+.production-catalog-heading>div:first-child small{display:block;margin-top:3px;color:var(--muted,#817b6e);font-size:10px}
+.production-batch-picker-compact{margin:0;padding:0;border:0;background:transparent}
+.production-batch-picker-compact>span{font-size:9px;letter-spacing:.7px}
+.production-batch-picker-compact>div{gap:3px}
+.production-batch-picker-compact button{min-width:30px;min-height:29px;padding:5px 8px;font-size:10px}
+.business-product-catalog-simple{display:flex;flex-direction:column;gap:7px;margin:0 0 15px}
+.business-product-row{padding:10px 12px;background:#f8f6ef;border:1px solid #e4dfd3;border-radius:9px;color:#393b32;box-shadow:0 1px 2px #322b1d08}
+.business-product-row.is-selected{border-color:#9eae91;background:#f4f7ef;box-shadow:inset 3px 0 #829879}
+.business-product-row.is-locked{opacity:.58}
+.business-product-main{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.business-product-title{min-width:0}
+.business-product-title strong{display:block;color:#34382f;font-size:12px;font-weight:750}
+.business-product-title small{display:block;margin-top:2px;color:#817968;font-size:10px}
+.business-product-stock{display:flex;gap:9px;flex-shrink:0;color:#777365;font-size:9px}
+.business-product-stock b{color:#394237;font-size:10px}
+.business-product-recipe-simple{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.business-ingredient-chip{display:inline-flex;align-items:center;gap:4px;padding:4px 7px;border:1px solid #e2ddcf;border-radius:5px;background:#efede5;color:#656052;font-size:9px;line-height:1.2}
+.business-ingredient-chip b{font-weight:750;color:#45513f}
+.business-ingredient-chip.is-missing{border-color:#e7c9a7;background:#fbf0e2;color:#8a5a2d}
+.business-ingredient-chip.is-missing b{color:#a35b27}
+.business-product-bottom{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;min-height:29px}
+.business-product-bottom .production-queue-note{margin:0;color:#7b765f;font-size:9px}
+.business-product-action{min-width:105px;min-height:30px;padding:6px 12px;border-radius:6px;font-size:9px;letter-spacing:.4px}
+@media(max-width:560px){.production-catalog-heading{align-items:flex-start;flex-direction:column}.production-batch-picker-compact{align-self:stretch}.production-batch-picker-compact>div{justify-content:flex-start}.business-product-row{padding:9px}.business-product-stock{gap:6px}.business-product-action{min-width:90px}}
