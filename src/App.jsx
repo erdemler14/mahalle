@@ -3986,30 +3986,9 @@ function App({ session = null, supabase = null, authConfigured = false }) {
                   <div className="production-level-chip"><strong>SEV. {level}/5</strong><small>{level === 5 ? 'Usta işletme' : Math.max(0, nextTarget - sold) + ' satışla seviye atla'}</small></div>
                 </div>
                 {(() => { const order = orders.find(item => item.id === focusedOrderId && item.status === 'accepted' && item.propertyId === active.id); if (!order) return null; const ready = getProductStock(active.id, order.productId); const needed = Math.max(0, Number(order.quantity) - ready); return <div className="focused-order-production"><div className="focused-order-top"><span>↗ SİPARİŞTEN ÜRETİME</span><button type="button" onClick={() => setFocusedOrderId(null)} aria-label="Sipariş hedefini kapat">×</button></div><strong>{order.productName} · {order.propertyName}</strong><div className="focused-order-count"><span>Hazır <b>{ready}</b></span><span>Hedef <b>{order.quantity}</b></span><span>Üretilecek <b>{needed}</b></span></div><div className="customer-order-stock-meter"><span style={{width: Math.min(100, ready / Math.max(1, order.quantity) * 100) + '%'}} /></div><small>Ürün otomatik seçildi. Aşağıda eksik hammaddeleri tedarik edip üretimi başlatabilirsin.</small></div>; })()}
-                <section className="simple-supply-panel">
-                  <div className="simple-supply-heading"><div><strong>Temel tedarik</strong><small>İşletmenin ortak kullandığı en fazla dört kalem</small></div><span>{simpleSupplyMaterials.length}/4</span></div>
-                  <div className="simple-supply-grid">
-                    {simpleSupplyMaterials.map(material => {
-                      const amount = Math.max(0, Number(inventory.materials?.[material.id]) || 0);
-                      const cap = getMaterialItemCapacity(active.id);
-                      const quantity = Math.min(material.batch, Math.max(0,cap-amount));
-                      const cost = Math.round(material.cost * quantity / Math.max(1,material.batch) * 100) / 100;
-                      const ratio = Math.min(100,Math.round(amount/Math.max(1,cap)*100));
-                      return <div className="simple-supply-item" key={material.id}>
-                        <div className="simple-supply-item-copy">
-                          <strong>{material.name}</strong>
-                          <div className="simple-supply-meter"><span style={{width:ratio+'%'}} /></div>
-                          <small>{amount} / {cap} stok</small>
-                        </div>
-                        <button type="button" onClick={() => buyBusinessMaterial(active.id,material.id)} disabled={quantity<=0 || cash < cost}>{quantity>0 ? 'PAKET AL · ₺' + cost.toLocaleString('tr-TR') : 'DOLU'}</button>
-                      </div>;
-                    })}
-                  </div>
-                  <p>Bu liste işletmenin ana malzemelerini gösterir. Diğer ürün girdileriyle uğraşmana gerek yok: ürün kartında “Tedarik et” dediğinde eksikler tek işlemde tamamlanır.</p>
-                </section>
                 <div className="production-catalog-heading">
-                  <div><strong>Ürünler</strong><small>{availableProducts.length} ürün üretime açık · {allProducts.length - availableProducts.length} kilitli</small></div>
-                  <div className="production-batch-picker production-batch-picker-compact"><span>PARTİ</span><div>
+                  <div><strong>Ürün kataloğu</strong><small>{availableProducts.length} ürün açık · {allProducts.length - availableProducts.length} kilitli</small></div>
+                  <div className="production-batch-picker production-batch-picker-compact"><span>ÜRETİM ADEDİ</span><div>
                     {[['1','1'],['5','5'],['10','10'],['max','Maks.']].map(([value,label]) => <button type="button" key={value} className={String(productionBatch) === value ? 'active' : ''} onClick={() => setProductionBatch(value)}>{label}</button>)}
                   </div></div>
                 </div>
@@ -4048,7 +4027,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
                           : !itemRecipe.length
                             ? <button type="button" className="stock-button" disabled>REÇETE EKSİK</button>
                             : missingParts.length
-                              ? <button type="button" className="stock-button business-product-action" onClick={() => { setBusinessPlans(old => ({...old,[active.id]:item.id})); buyRecipeMaterials(active.id,item,item.service ? 1 : productionBatch); }}>TEDARİK ET</button>
+                              ? <button type="button" className="stock-button business-product-action" onClick={() => { setBusinessPlans(old => ({...old,[active.id]:item.id})); buyRecipeMaterials(active.id,item,item.service ? 1 : productionBatch); }}>EKSİKLERİ TAMAMLA</button>
                               : item.service
                                 ? <button type="button" className="stock-button business-product-action" onClick={() => selectBusinessPlan(item.id)}>{isSelected ? 'SEÇİLİ' : 'HİZMETİ SEÇ'}</button>
                                 : <button type="button" className="stock-button production-primary-action business-product-action" disabled={itemCapacity <= 0} onClick={() => stockBusiness(item.id)}>{itemCapacity <= 0 ? 'DEPO DOLU' : itemPending ? 'KUYRUĞA EKLE' : 'ÜRET'}</button>}
