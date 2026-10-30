@@ -3979,12 +3979,6 @@ function App({ session = null, supabase = null, authConfigured = false }) {
                   <div className="production-level-chip"><strong>SEV. {level}/5</strong><small>{level === 5 ? 'Usta işletme' : Math.max(0, nextTarget - sold) + ' satışla seviye atla'}</small></div>
                 </div>
                 {(() => { const order = orders.find(item => item.id === focusedOrderId && item.status === 'accepted' && item.propertyId === active.id); if (!order) return null; const ready = getProductStock(active.id, order.productId); const needed = Math.max(0, Number(order.quantity) - ready); return <div className="focused-order-production"><div className="focused-order-top"><span>↗ SİPARİŞTEN ÜRETİME</span><button type="button" onClick={() => setFocusedOrderId(null)} aria-label="Sipariş hedefini kapat">×</button></div><strong>{order.productName} · {order.propertyName}</strong><div className="focused-order-count"><span>Hazır <b>{ready}</b></span><span>Hedef <b>{order.quantity}</b></span><span>Üretilecek <b>{needed}</b></span></div><div className="customer-order-stock-meter"><span style={{width: Math.min(100, ready / Math.max(1, order.quantity) * 100) + '%'}} /></div><small>Ürün otomatik seçildi. Aşağıda eksik hammaddeleri tedarik edip üretimi başlatabilirsin.</small></div>; })()}
-                <div className="production-quick-stats">
-                  <div><span>HAMMADDE DEPOSU</span><strong>{totalRaw}/{materialCapacity}</strong></div>
-                  <div><span>ÜRETİMDE</span><strong>{getPendingUnits(active.id)}</strong></div>
-                  <div><span>HAZIR ÜRÜN</span><strong>{getTotalStock(active.id)}/{getStockCapacity(active.id)}</strong></div>
-                </div>
-                {allProducts.some(item => (item.unlockLevel || 1) <= level && !isPlayerProductUnlocked(item)) && <div className="global-unlock-list"><strong>SEVİYEYLE AÇILAN ÜRÜNLER</strong>{allProducts.filter(item => (item.unlockLevel || 1) <= level && !isPlayerProductUnlocked(item)).slice(0, 3).map(item => <div key={item.id}><span>🔒 {item.name}</span><small>Oyuncu seviyesi {getPlayerUnlockLevel(item)}</small></div>)}</div>}
                 <div className="production-catalog-heading">
                   <div><strong>Ürünler</strong><small>{availableProducts.length} ürün üretime açık · {allProducts.length - availableProducts.length} kilitli</small></div>
                   <div className="production-batch-picker production-batch-picker-compact"><span>PARTİ</span><div>
