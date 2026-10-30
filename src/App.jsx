@@ -3985,60 +3985,61 @@ function App({ session = null, supabase = null, authConfigured = false }) {
                   <div><span>HAZIR ÜRÜN</span><strong>{getTotalStock(active.id)}/{getStockCapacity(active.id)}</strong></div>
                 </div>
                 {allProducts.some(item => (item.unlockLevel || 1) <= level && !isPlayerProductUnlocked(item)) && <div className="global-unlock-list"><strong>SEVİYEYLE AÇILAN ÜRÜNLER</strong>{allProducts.filter(item => (item.unlockLevel || 1) <= level && !isPlayerProductUnlocked(item)).slice(0, 3).map(item => <div key={item.id}><span>🔒 {item.name}</span><small>Oyuncu seviyesi {getPlayerUnlockLevel(item)}</small></div>)}</div>}
-                <div className="production-materials-head"><div><strong>Satış kataloğu ve üretim</strong><span>{allProducts.length} ürün · {availableProducts.length} açık</span></div></div>
-                <p className="production-helper">Satışa sunulan tüm ürünler burada listelenir. Her ürünün altında kendi reçetesi ve mevcut hammadde durumu görünür. Eksik varsa tedarik et; reçete hazırsa doğrudan üret.</p>
-                <div className="business-product-catalog">
+                <div className="production-catalog-heading">
+                  <div><strong>Ürünler</strong><small>{availableProducts.length} ürün üretime açık · {allProducts.length - availableProducts.length} kilitli</small></div>
+                  <div className="production-batch-picker production-batch-picker-compact"><span>PARTİ</span><div>
+                    {[['1','1'],['5','5'],['10','10'],['max','Maks.']].map(([value,label]) => <button type="button" key={value} className={String(productionBatch) === value ? 'active' : ''} onClick={() => setProductionBatch(value)}>{label}</button>)}
+                  </div></div>
+                </div>
+                <div className="business-product-catalog business-product-catalog-simple">
                   {allProducts.map(item => {
                     const unlocked = (item.unlockLevel || 1) <= level && isPlayerProductUnlocked(item);
                     const itemRecipe = getBusinessRecipe(active.id, item);
-                    const itemMissing = itemRecipe.filter(part => (Number(inventory.materials?.[part.id]) || 0) < part.qty);
                     const itemPending = pendingProductions[active.id + ':' + item.id];
                     const itemStock = getProductStock(active.id, item.id);
                     const itemCapacity = Math.max(0, getStockCapacity(active.id) - getTotalStock(active.id) - getPendingUnits(active.id));
-                    const itemStats = businessStats[active.id]?.productUnitsSold?.[item.id] || {};
                     const requestedUnits = productionBatch === 'max' ? Math.min(15, itemCapacity) : Math.max(1, Number(productionBatch) || 1);
-                    const batchMissing = itemRecipe.filter(part => (Number(inventory.materials?.[part.id]) || 0) < part.qty * requestedUnits);
+                    const batchMissing = itemRecipe.filter(part => (Number(inventory.materials?.[part.id]) || 0) < part.qty * (item.service ? 1 : requestedUnits));
                     const isSelected = businessPlans[active.id] === item.id;
-                    return <article className={`business-product-card ${!unlocked ? 'is-locked' : ''} ${isSelected ? 'is-selected' : ''}`} key={item.id}>
-                      <div className="business-product-card-head">
-                        <div><strong>{item.name}</strong><small>{unlocked ? 'Satış fiyatı ₺' + getBusinessSalePrice(active.id,item).toLocaleString('tr-TR',{maximumFractionDigits:2}) : 'İşletme seviyesi ' + (item.unlockLevel || 1) + ' · Oyuncu seviyesi ' + getPlayerUnlockLevel(item) + ' gerekli'}</small></div>
-                        <span className="business-product-status">{!unlocked ? 'KİLİTLİ' : item.service ? 'HİZMET' : 'SATIŞTA'}</span>
+                    const serviceMissing = itemRecipe.filter(part => (Number(inventory.materials?.[part.id]) || 0) < part.qty);
+                    const missingParts = item.service ? serviceMissing : batchMissing;
+                    return <article className={`business-product-card business-product-row ${!unlocked ? 'is-locked' : ''} ${isSelected ? 'is-selected' : ''}`} key={item.id}>
+                      <div className="business-product-main">
+                        <div className="business-product-title">
+                          <strong>{item.name}</strong>
+                          <small>{unlocked ? '₺' + getBusinessSalePrice(active.id,item).toLocaleString('tr-TR',{maximumFractionDigits:2}) : 'Seviye ' + (item.unlockLevel || 1) + ' · Oyuncu seviyesi ' + getPlayerUnlockLevel(item)}</small>
+                        </div>
+                        <div className="business-product-stock">
+                          {!item.service && <><span>Stok <b>{itemStock}</b></span><span>Üretimde <b>{itemPending?.units || 0}</b></span></>}
+                          {item.service && <span>Hizmet</span>}
+                        </div>
                       </div>
-                      <div className="business-product-metrics">
-                        <span>Hazır <b>{item.service ? '—' : itemStock}</b></span>
-                        <span>Üretimde <b>{itemPending?.units || 0}</b></span>
-                        <span>Satılan <b>{Number(itemStats.units) || 0}</b></span>
-                      </div>
-                      <div className="business-product-recipe">
-                        <strong>Gerekli hammaddeler</strong>
+                      <div className="business-product-recipe-simple">
                         {itemRecipe.length ? itemRecipe.map(part => {
                           const material = profile.materials.find(m => m.id === part.id);
                           const amount = Number(inventory.materials?.[part.id]) || 0;
                           const needed = part.qty * (item.service ? 1 : requestedUnits);
-                          return <div className="business-product-material" key={part.id}>
-                            <span>{material?.name || part.id}</span>
-                            <small className={amount < needed ? 'production-missing' : 'production-ready'}>Depoda {amount} · {item.service ? 'Hizmet başına' : requestedUnits + ' üretim için'} {needed}</small>
-                          </div>;
-                        }) : <small className="production-missing">Bu ürün için reçete tanımlanmamış.</small>}
+                          const shortfall = Math.max(0, needed - amount);
+                          return <span className={`business-ingredient-chip ${shortfall ? 'is-missing' : 'is-ready'}`} key={part.id}>
+                            {material?.name || part.id} <b>{shortfall ? '−' + shortfall : amount + '/' + needed}</b>
+                          </span>;
+                        }) : <span className="business-ingredient-chip is-missing">Reçete tanımlanmamış</span>}
                       </div>
-                      {itemPending && <small className="production-queue-note">Üretim kuyruğunda {itemPending.units} adet · sıradaki {Math.max(0,Math.ceil((itemPending.readyAt-productionNow)/1000))} sn</small>}
-                      <div className="business-product-actions">
+                      <div className="business-product-bottom">
+                        {itemPending && <small className="production-queue-note">{itemPending.units} adet üretimde · {Math.max(0,Math.ceil((itemPending.readyAt-productionNow)/1000))} sn</small>}
                         {!unlocked
                           ? <button type="button" className="stock-button" disabled>KİLİTLİ</button>
                           : !itemRecipe.length
                             ? <button type="button" className="stock-button" disabled>REÇETE EKSİK</button>
-                            : itemMissing.length || (!item.service && batchMissing.length)
-                              ? <button type="button" className="stock-button" onClick={() => { setBusinessPlans(old => ({...old,[active.id]:item.id})); buyRecipeMaterials(active.id,item,item.service ? 1 : productionBatch); }}>HAMMADDE TEDARİK ET</button>
+                            : missingParts.length
+                              ? <button type="button" className="stock-button business-product-action" onClick={() => { setBusinessPlans(old => ({...old,[active.id]:item.id})); buyRecipeMaterials(active.id,item,item.service ? 1 : productionBatch); }}>TEDARİK ET</button>
                               : item.service
-                                ? <button type="button" className="stock-button" onClick={() => selectBusinessPlan(item.id)}>{isSelected ? 'HİZMET SEÇİLİ' : 'HİZMETİ SEÇ'}</button>
-                                : <button type="button" className="stock-button production-primary-action" disabled={itemCapacity <= 0} onClick={() => stockBusiness(item.id)}>{itemCapacity <= 0 ? 'ÜRÜN DEPOSU DOLU' : itemPending ? 'KUYRUĞA EKLE · ' + (productionBatch === 'max' ? 'MAKS.' : productionBatch) : (productionBatch === 'max' ? 'MAKSİMUM ÜRET' : productionBatch + ' ADET ÜRET')}</button>}
+                                ? <button type="button" className="stock-button business-product-action" onClick={() => selectBusinessPlan(item.id)}>{isSelected ? 'SEÇİLİ' : 'HİZMETİ SEÇ'}</button>
+                                : <button type="button" className="stock-button production-primary-action business-product-action" disabled={itemCapacity <= 0} onClick={() => stockBusiness(item.id)}>{itemCapacity <= 0 ? 'DEPO DOLU' : itemPending ? 'KUYRUĞA EKLE' : 'ÜRET'}</button>}
                       </div>
                     </article>;
                   })}
                 </div>
-                <div className="production-batch-picker"><span>ÜRETİM PARTİSİ · TÜM ÜRÜNLER</span><div>
-                  {[['1','1 adet'],['5','5 adet'],['10','10 adet'],['max','Maks.']].map(([value,label]) => <button type="button" key={value} className={String(productionBatch) === value ? 'active' : ''} onClick={() => setProductionBatch(value)}>{label}</button>)}
-                </div></div>
                 <details className="production-details">
                   <summary>İşletme raporu ve stok ayrıntıları</summary>
                   <div className="production-detail-body">
