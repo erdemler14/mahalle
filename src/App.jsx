@@ -3155,7 +3155,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     setStockByProperty(old=>{const current=getInventoryState(37,old[37]);return {...old,37:{materials:next,products:current.products}};});
     if(refund>0)setCash(value=>Math.round((value+refund)*100)/100);
     setBusinessStats(old=>{const previous=old[37]||{unitsSold:0,revenue:0,stockInvested:0};return {...old,37:{...previous,stockInvested:Math.max(0,Math.round(((Number(previous.stockInvested)||0)-refund)*100)/100)}};});
-    tell('Kunduracı deposu düzenlendi. '+(capacity-totalRaw+returned)+' birim alan açıldı; fazla malzeme %85 bedelle iade edildi, ₺'+refund.toLocaleString('tr-TR')+' geri alındı. '+(feasibleBatch>0?feasibleBatch+' çiftlik üretim partisi tedarik edilebilir.':'İlk üretim partisi için hâlâ yeterli alan yok; daha fazla fazla stoğu iade et veya depoyu genişlet.'));
+    tell('Kunduracı deposu düzenlendi. '+(capacity-totalRaw+returned)+' birim alan açıldı; fazla malzeme %85 bedelle iade edildi, ₺'+refund.toLocaleString('tr-TR')+' geri alındı. '+(productCapacity<=0?'Vitrin deposu dolu; satışla yer açılınca üretime geçebilirsin.':feasibleBatch>0?feasibleBatch+' çiftlik üretim partisi için hammadde alanı hazır.':'İlk üretim partisi için hâlâ yeterli hammadde alanı yok; daha fazla fazla stoğu iade et veya depoyu genişlet.'));
   };
   const craftShoe = (shoeId, requestedBatch = productionBatch) => {
     if (!owned.includes(37) || rented.includes(37)) { tell('Üretim için kunduracı sana ait olmalı ve kirada olmamalı.'); return; }
