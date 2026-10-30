@@ -1770,7 +1770,12 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   // Business-specific supply chains: recipes follow the actual product range of each shop,
   // rather than every shop drawing from the same generic "food" or "trade" list.
   const shopSpecificProfiles = {
-    dryclean: { name: 'Kuru temizleme', materials: [{id:'dry-solvent',name:'Temizleme sıvısı',batch:6,cost:12},{id:'dry-steam',name:'Buhar ve ütüleme sarfı',batch:8,cost:7},{id:'dry-care',name:'Hassas kumaş bakım ürünü',batch:6,cost:10},{id:'dry-wrap',name:'Kâğıt ve giysi kılıfı',batch:10,cost:5}], recipes: [['dry-solvent',1,'dry-steam',1],['dry-solvent',1,'dry-care',1],['dry-steam',1,'dry-wrap',1]] },
+    dryclean: { name: 'Kuru temizleme', materials: [{id:'dry-solvent',name:'Temizleme sıvısı',batch:6,cost:12},{id:'dry-steam',name:'Buhar ve ütüleme sarfı',batch:8,cost:7},{id:'dry-care',name:'Hassas kumaş bakım ürünü',batch:6,cost:10},{id:'dry-wrap',name:'Kâğıt ve giysi kılıfı',batch:10,cost:5}], recipes: [['dry-solvent',1,'dry-steam',1],['dry-solvent',1,'dry-care',1],['dry-steam',1,'dry-wrap',1]], productRules:[
+      {match:/takım|takim|temizleme/i,recipe:[['dry-solvent',1],['dry-steam',1]]},
+      {match:/palto|kaban/i,recipe:[['dry-solvent',1],['dry-care',1]]},
+      {match:/ipek|hassas/i,recipe:[['dry-solvent',1],['dry-care',1],['dry-wrap',1]]},
+      {match:/ütü|utu|paket/i,recipe:[['dry-steam',1],['dry-wrap',1]]}
+    ] },
     grocery: { name: 'Bakkal ve şarküteri', materials: [
       {id:'bak-koku',name:'Kolonya ve esans',batch:6,cost:10},{id:'bak-cam',name:'Cam şişe ve kavanoz',batch:6,cost:9},
       {id:'bak-sabun',name:'Sabun bazı ve bakım yağı',batch:6,cost:10},{id:'bak-erzak',name:'Toptan erzak kolisi',batch:8,cost:12},
