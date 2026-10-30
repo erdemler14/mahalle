@@ -3211,7 +3211,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     tell('Depo genişletildi: seviye ' + nextLevel + '/15. Hammadde kapasitesi ' + getMaterialCapacity(propertyId) + ', ürün kapasitesi ' + getStockCapacity(propertyId) + ' birim oldu. Ödenen: ₺' + cost.toLocaleString('tr-TR') + '.');
   };
 
-  const planWarehouseSpace = (propertyId, product, requestedBatch, inventory) => {
+  const planWarehouseSpace = (propertyId, product, requestedBatch, inventory, ignoreProductCapacity = false) => {
     const profile=getBusinessProfile(propertyId),recipe=getBusinessRecipe(propertyId,product);
     if(!recipe.length)return null;
     const capacity=getMaterialCapacity(propertyId),itemCapacity=getMaterialItemCapacity(propertyId);
@@ -3219,7 +3219,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const total=Object.values(inventory.materials||{}).reduce((sum,n)=>sum+Math.max(0,Number(n)||0),0);
     const legacyReturns=new Map(Object.entries(inventory.materials||{}).filter(([id,n])=>!validIds.has(id)&&Math.max(0,Number(n)||0)>0).map(([id,n])=>[id,Math.max(0,Number(n)||0)]));
     const free=Math.max(0,capacity-total);
-    const productSpace=product.service?5:Math.max(0,getStockCapacity(propertyId)-getTotalStock(propertyId)-getPendingUnits(propertyId));
+    const productSpace=ignoreProductCapacity?15:(product.service?5:Math.max(0,getStockCapacity(propertyId)-getTotalStock(propertyId)-getPendingUnits(propertyId)));
     const maxBySku=recipe.reduce((n,p)=>Math.min(n,Math.floor(itemCapacity/p.qty)),Infinity);
     const wanted=Math.min(requestedBatch==='max'?15:Math.max(1,Number(requestedBatch)||1),productSpace,maxBySku);
     for(let batch=wanted;batch>=1;batch--){
@@ -3334,8 +3334,8 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   const rebalanceBusinessWarehouse = (propertyId, product, requestedBatch = productionBatch) => {
     if(!product)return;
     if(!owned.includes(propertyId)||rented.includes(propertyId)){tell('Depoyu düzenlemek için işletmenin sahibi olmalı ve kiraya vermemiş olmalısın.');return;}
-    const inventory=getInventoryState(propertyId),plan=planWarehouseSpace(propertyId,product,requestedBatch,inventory);
-    if(!plan){tell('Depoda bir üretim partisi için bile alan açılamadı. Daha küçük parti seç veya stokları üretimde kullan.');return;}
+    const inventory=getInventoryState(propertyId),plan=planWarehouseSpace(propertyId,product,requestedBatch,inventory,true);
+    if(!plan){tell('Seçili ürünün reçetesini koruyarak depoda alan açılamadı. Fazla hammaddeleri satır satır iade et veya daha küçük parti seç.');return;}
     if(!plan.returns.size){tell('Depo seçili ürün için uygun. '+plan.batch+' adetlik üretim partisi için alan hazır.');return;}
     const next=applyWarehouseReturns(propertyId,inventory,plan);
     setStockByProperty(old=>{const state=getInventoryState(propertyId,old[propertyId]);return {...old,[propertyId]:{materials:next,products:state.products}};});
