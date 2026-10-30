@@ -1720,14 +1720,6 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       {id:'gazino-musiki',name:'Canlı musiki gecesi bileti',cost:16,price:34,units:8,service:true},
       {id:'gazino-loca',name:'Özel loca ve davet paketi',cost:28,price:62,units:3,service:true}
     ],
-    38: [
-      {id:'galata-raki',name:'Galata usulü rakı kadehi',cost:16,price:35,units:8},
-      {id:'galata-sarap',name:'Fıçıdan sofra şarabı',cost:14,price:31,units:8},
-      {id:'galata-meze',name:'Soğuk meze ve zeytinyağlı tabağı',cost:13,price:29,units:8},
-      {id:'galata-balik',name:'Günün balığı ve ızgara',cost:21,price:47,units:5},
-      {id:'galata-deniz',name:'Kalamar, midye ve deniz mahsulü',cost:24,price:54,units:4},
-      {id:'galata-usta',name:'Meyhaneci sofrası ve özel meze seçkisi',cost:29,price:65,units:4}
-    ],
     36: [
       {id:'kohen-roman',name:'Yabancı dilde roman',cost:15,price:32,units:6},
       {id:'kohen-sozluk',name:'Sözlük ve dilbilgisi kitabı',cost:16,price:34,units:6},
@@ -1832,6 +1824,115 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   // Distinct supply chains for every active commercial property. Similar businesses may sell
   // related goods, but their procurement items remain specific to the shop and its operating model.
   const BUSINESS_SPECIFIC_PROFILES = {
+    38: { name:'Kuyumcu', materials:[
+      {id:'kuy-altin',name:'Altın ve gümüş külçe',batch:4,cost:28},{id:'kuy-tas',name:'Değerli taş ve inci',batch:4,cost:22},
+      {id:'kuy-tel',name:'Ayar teli, lehim ve maden sarfı',batch:6,cost:10},{id:'kuy-mekanizma',name:'Cep saati mekanizması ve zemberek',batch:4,cost:24}
+    ], recipes:[['kuy-altin',1,'kuy-tel',1],['kuy-altin',1,'kuy-tas',1],['kuy-mekanizma',1,'kuy-tel',1]], productRules:[
+      {match:/yüzük|bilezik|altın|gumus|gümüş/i,recipe:[['kuy-altin',1],['kuy-tas',1],['kuy-tel',1]]},
+      {match:/saat|zemberek|mekanizma/i,recipe:[['kuy-mekanizma',1],['kuy-tel',1]]}
+    ]},
+    48: { name:'Oyuncakçı', materials:[
+      {id:'oyuncak-ahsap',name:'Oyuncaklık ahşap ve torna parçası',batch:8,cost:10},{id:'oyuncak-kumas',name:'Bez, keçe ve dolgu pamuğu',batch:8,cost:8},
+      {id:'oyuncak-deri',name:'Deri parça ve sicim',batch:6,cost:9},{id:'oyuncak-boya',name:'Oyuncak boyası ve vernik',batch:6,cost:8}
+    ], recipes:[['oyuncak-ahsap',1,'oyuncak-boya',1],['oyuncak-kumas',1,'oyuncak-dolgu',1],['oyuncak-deri',1,'oyuncak-sicim',1]], productRules:[
+      {match:/ahşap|at|top|tahta/i,recipe:[['oyuncak-ahsap',1],['oyuncak-boya',1]]},
+      {match:/bez|bebek|kumaş/i,recipe:[['oyuncak-kumas',1],['oyuncak-boya',1]]},
+      {match:/deri|sicim/i,recipe:[['oyuncak-deri',1],['oyuncak-ahsap',1]]}
+    ]},
+    49: { name:'Saat tamircisi', materials:[
+      {id:'saat-mekanizma',name:'Saat mekanizması ve zemberek',batch:4,cost:22},{id:'saat-cam',name:'Saat camı ve kadran',batch:6,cost:12},
+      {id:'saat-yay',name:'Yay, vida ve hassas bağlantı',batch:8,cost:8},{id:'saat-yag',name:'Hassas makine yağı ve temizleme bezi',batch:8,cost:7}
+    ], recipes:[['saat-mekanizma',1,'saat-yay',1],['saat-cam',1,'saat-yag',1],['saat-mekanizma',1,'saat-cam',1]], productRules:[
+      {match:/tamir|bakım|bakim/i,recipe:[['saat-yay',1],['saat-yag',1]]},
+      {match:/cep saati|duvar saati|saat/i,recipe:[['saat-mekanizma',1],['saat-cam',1],['saat-yay',1]]}
+    ]},
+    50: { name:'Kahve kavurucusu', materials:[
+      {id:'kav-yesil',name:'Çiğ kahve çekirdeği çuvalı',batch:8,cost:14},{id:'kav-odun',name:'Kavurma ocağı odunu ve kömürü',batch:8,cost:8},
+      {id:'kav-ambalaj',name:'Kahve kesesi ve tartı kâğıdı',batch:8,cost:6},{id:'kav-seker',name:'Şeker ve kakule',batch:6,cost:9}
+    ], recipes:[['kav-yesil',1,'kav-odun',1],['kav-yesil',1,'kav-ambalaj',1],['kav-yesil',1,'kav-seker',1]], productRules:[
+      {match:/çekirdek|cekirdek|yeşil kahve|yesil kahve/i,recipe:[['kav-yesil',1],['kav-ambalaj',1]]},
+      {match:/kavrulmuş|kavrulmus|kahve/i,recipe:[['kav-yesil',1],['kav-odun',1],['kav-seker',1]]},
+      {match:/fincan|servis/i,recipe:[['kav-yesil',1],['kav-ambalaj',1]]}
+    ]},
+    51: { name:'Mefruşatçı', materials:[
+      {id:'mefru-kumas',name:'Perdelik ve döşemelik kumaş topu',batch:6,cost:14},{id:'mefru-iplik',name:'Dikiş ipliği, kordon ve püskül',batch:8,cost:8},
+      {id:'mefru-astar',name:'Astar, tela ve kaplama bezi',batch:6,cost:10},{id:'mefru-metal',name:'Perde halkası, korniş ve bağlantı',batch:8,cost:9}
+    ], recipes:[['mefru-kumas',1,'mefru-iplik',1],['mefru-kumas',1,'mefru-astar',1],['mefru-kumas',1,'mefru-metal',1]], productRules:[
+      {match:/perde|örtü|ortu|masa/i,recipe:[['mefru-kumas',1],['mefru-iplik',1],['mefru-metal',1]]},
+      {match:/yatak|kaplama|döşeme|doseme/i,recipe:[['mefru-kumas',1],['mefru-astar',1]]}
+    ]},
+    52: { name:'Tabelacı ve boyacı', materials:[
+      {id:'tabela-tahta',name:'Tabela tahtası ve metal levha',batch:6,cost:12},{id:'tabela-boya',name:'Yağlı boya, vernik ve pigment',batch:8,cost:9},
+      {id:'tabela-firca',name:'Fırça, kalem ve yazı ucu',batch:8,cost:7},{id:'tabela-altin',name:'Varak, yaldız ve süsleme malzemesi',batch:4,cost:14}
+    ], recipes:[['tabela-tahta',1,'tabela-boya',1],['tabela-tahta',1,'tabela-firca',1],['tabela-boya',1,'tabela-altin',1]], productRules:[
+      {match:/tabela|levha|yazı|yazi/i,recipe:[['tabela-tahta',1],['tabela-boya',1],['tabela-firca',1]]},
+      {match:/boya|duvar|vernik/i,recipe:[['tabela-boya',1],['tabela-firca',1]]}
+    ]},
+    53: { name:'Galata Meyhanesi', materials:[
+      {id:'galata53-icki',name:'Rakı ve sofra şarabı fıçıları',batch:6,cost:18},{id:'galata53-balik',name:'Günlük balık ve deniz mahsulü kasası',batch:6,cost:17},
+      {id:'galata53-meze',name:'Peynir, zeytin ve soğuk meze erzağı',batch:8,cost:12},{id:'galata53-yag',name:'Zeytinyağı, limon ve taze ot',batch:8,cost:9},
+      {id:'galata53-ekmek',name:'Ekmek ve meze pidesi',batch:8,cost:8},{id:'galata53-servis',name:'Rakı kadehi, tabak ve sofra takımı',batch:6,cost:11},
+      {id:'galata53-yakit',name:'Mutfak kömürü ve ocak odunu',batch:8,cost:8}
+    ], recipes:[['galata53-icki',1,'galata53-servis',1],['galata53-meze',1,'galata53-yag',1],['galata53-balik',1,'galata53-yakit',1],['galata53-ekmek',1,'galata53-meze',1],['galata53-balik',1,'galata53-meze',2]], productRules:[
+      {match:/rakı|raki|şarap|sarap|bira|içki|icki|kadeh/i,recipe:[['galata53-icki',1],['galata53-servis',1]]},
+      {match:/balık|balik|deniz|ızgara|izgara|kalamar|midye|karides/i,recipe:[['galata53-balik',1],['galata53-yakit',1],['galata53-yag',1]]},
+      {match:/meze|peynir|zeytin|turşu|tursu/i,recipe:[['galata53-meze',1],['galata53-yag',1],['galata53-servis',1]]},
+      {match:/ekmek|pide/i,recipe:[['galata53-ekmek',1],['galata53-yakit',1]]}
+    ]},
+    54: { name:'Galata şarap imalathanesi', materials:[
+      {id:'mahzen54-uzum',name:'Şaraplık üzüm ve şıra',batch:8,cost:15},{id:'mahzen54-maya',name:'Şarap mayası ve fermantasyon besini',batch:6,cost:12},
+      {id:'mahzen54-fici',name:'Meşe fıçı ve aktarım hortumu',batch:4,cost:18},{id:'mahzen54-sise',name:'Şişe, mantar ve mühür',batch:8,cost:10},
+      {id:'mahzen54-temiz',name:'Fıçı temizleme ve kükürt fitili',batch:6,cost:9}
+    ], recipes:[['mahzen54-uzum',1,'mahzen54-maya',1],['mahzen54-uzum',1,'mahzen54-fici',1],['mahzen54-sise',1,'mahzen54-temiz',1]], productRules:[
+      {match:/üretim|üzüm|uzum|şıra|sira|şarap|sarap/i,recipe:[['mahzen54-uzum',1],['mahzen54-maya',1],['mahzen54-fici',1]]},
+      {match:/şişe|sise|mantar|fıçı|fici/i,recipe:[['mahzen54-sise',1],['mahzen54-temiz',1]]},
+      {match:/sirke/i,recipe:[['mahzen54-uzum',1],['mahzen54-maya',1],['mahzen54-sise',1]]}
+    ]},
+    57: { name:'Majestic Sineması', materials:[
+      {id:'sinema-film',name:'35 mm film makarası ve kopya',batch:4,cost:22},{id:'sinema-elektrik',name:'Projektör lambası ve elektrik sarfı',batch:6,cost:12},
+      {id:'sinema-afis',name:'Film afişi ve gişe basılı malzemesi',batch:8,cost:7},{id:'sinema-atistir',name:'Gazoz, şekerleme ve kuruyemiş',batch:8,cost:9}
+    ], recipes:[['sinema-film',1,'sinema-elektrik',1],['sinema-afis',1,'sinema-elektrik',1],['sinema-atistir',1,'sinema-afis',1]], productRules:[
+      {match:/bilet|giriş|giris|sinema|film/i,recipe:[['sinema-film',1],['sinema-elektrik',1],['sinema-afis',1]]},
+      {match:/atıştırmalık|atistirmalik|şeker|seker|gazoz/i,recipe:[['sinema-atistir',1],['sinema-afis',1]]}
+    ]},
+    59: { name:'Arka Sokak Kahvesi', materials:[
+      {id:'arka59-kahve',name:'Kahve çekirdeği ve kavrulmuş kahve',batch:8,cost:12},{id:'arka59-cay',name:'Çay, şeker ve limon',batch:8,cost:9},
+      {id:'arka59-ikram',name:'Lokum ve küçük ikramlık',batch:8,cost:8},{id:'arka59-fincan',name:'Fincan, bardak ve nargile takımı',batch:6,cost:10},
+      {id:'arka59-komur',name:'Semaver odunu ve nargile kömürü',batch:8,cost:8}
+    ], recipes:[['arka59-kahve',1,'arka59-fincan',1],['arka59-cay',1,'arka59-komur',1],['arka59-ikram',1,'arka59-fincan',1]], productRules:[
+      {match:/kahve/i,recipe:[['arka59-kahve',1],['arka59-fincan',1]]},
+      {match:/çay|cay|şerbet|serbet/i,recipe:[['arka59-cay',1],['arka59-komur',1],['arka59-fincan',1]]},
+      {match:/lokum|ikram|nargile/i,recipe:[['arka59-ikram',1],['arka59-fincan',1],['arka59-komur',1]]}
+    ]},
+    60: { name:'Hamam ve Tellaklar', materials:[
+      {id:'hamam60-pestamal',name:'Peştamal, havlu ve çarşaf',batch:8,cost:11},{id:'hamam60-sabun',name:'Zeytinyağlı sabun ve köpük',batch:8,cost:9},
+      {id:'hamam60-kese',name:'Kese lifi ve tellak sarfı',batch:8,cost:9},{id:'hamam60-yag',name:'Masaj yağı ve bakım özü',batch:6,cost:12},
+      {id:'hamam60-yakit',name:'Külhan odunu ve kazan kömürü',batch:8,cost:9}
+    ], recipes:[['hamam60-pestamal',1,'hamam60-yakit',1],['hamam60-kese',1,'hamam60-sabun',1],['hamam60-yag',1,'hamam60-pestamal',1]], productRules:[
+      {match:/giriş|giris|hamam|yıkanma|yikanma/i,recipe:[['hamam60-pestamal',1],['hamam60-yakit',1]]},
+      {match:/kese|tellak|köpük|kopuk/i,recipe:[['hamam60-kese',1],['hamam60-sabun',1],['hamam60-yakit',1]]},
+      {match:/masaj|yağ|yag|bakım|bakim/i,recipe:[['hamam60-yag',1],['hamam60-pestamal',1]]}
+    ]},
+    61: { name:'Avlulu Han', materials:[
+      {id:'han61-carsaf',name:'Han odası çarşafı ve yatak takımı',batch:6,cost:14},{id:'han61-erzak',name:'Tüccar kahvaltısı ve kuru erzak',batch:8,cost:11},
+      {id:'han61-temiz',name:'Oda temizliği ve sabun sarfı',batch:8,cost:8},{id:'han61-yuk',name:'Yük çuvalı, bağlama ipi ve sandık',batch:8,cost:10},
+      {id:'han61-yakit',name:'Lamba yağı ve ısıtma yakıtı',batch:8,cost:8}
+    ], recipes:[['han61-carsaf',1,'han61-temiz',1],['han61-erzak',1,'han61-yakit',1],['han61-yuk',1,'han61-yakit',1]], productRules:[
+      {match:/oda|konaklama|gecelik|yatak/i,recipe:[['han61-carsaf',1],['han61-temiz',1]]},
+      {match:/depo|yük|yuk|ambar|yükleme|yukleme/i,recipe:[['han61-yuk',1],['han61-yakit',1]]},
+      {match:/kahvaltı|kahvalti|erzak/i,recipe:[['han61-erzak',1],['han61-yakit',1]]}
+    ]},
+    62: { name:'Arka Sokak Meyhanesi', materials:[
+      {id:'arka62-icki',name:'Rakı ve şarap fıçıları',batch:6,cost:17},{id:'arka62-meze',name:'Meze, peynir, zeytin ve turşu',batch:8,cost:12},
+      {id:'arka62-balik',name:'Günlük balık ve deniz mahsulü',batch:6,cost:17},{id:'arka62-yag',name:'Zeytinyağı, limon ve taze ot',batch:8,cost:9},
+      {id:'arka62-ekmek',name:'Ekmek ve sıcak meze malzemesi',batch:8,cost:8},{id:'arka62-servis',name:'Rakı kadehi, tabak ve sofra takımı',batch:6,cost:10},
+      {id:'arka62-yakit',name:'Mutfak kömürü ve ocak odunu',batch:8,cost:8}
+    ], recipes:[['arka62-icki',1,'arka62-servis',1],['arka62-meze',1,'arka62-yag',1],['arka62-balik',1,'arka62-yakit',1],['arka62-ekmek',1,'arka62-meze',1],['arka62-balik',1,'arka62-meze',2]], productRules:[
+      {match:/rakı|raki|şarap|sarap|kadeh/i,recipe:[['arka62-icki',1],['arka62-servis',1]]},
+      {match:/balık|balik|deniz|ızgara|izgara|midye|kalamar/i,recipe:[['arka62-balik',1],['arka62-yakit',1],['arka62-yag',1]]},
+      {match:/meze|peynir|zeytin|turşu|tursu/i,recipe:[['arka62-meze',1],['arka62-yag',1],['arka62-servis',1]]},
+      {match:/ekmek|pide/i,recipe:[['arka62-ekmek',1],['arka62-yakit',1]]}
+    ]},
     58: {
       name:'Haliç Gazinosu — özel tedarik',
       materials:[
@@ -1949,7 +2050,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const propertyName = String(properties.find(property => property.id === id)?.name || '').toLocaleLowerCase('tr-TR');
     // Match by the actual business name as well as its ID: newly added meyhanes
     // must never inherit the unrelated generic wholesale/packaging supply chain.
-    if (id === 38 || /meyhane|meyhaneci|taverna/.test(propertyName)) return MEYHANE_PROFILE;
+    if ([53,62].includes(id) || /meyhane|meyhaneci|taverna/.test(propertyName)) return id === 62 ? BUSINESS_SPECIFIC_PROFILES[62] : BUSINESS_SPECIFIC_PROFILES[53];
     // Professional offices sell time and expertise, not physical inventory.
     if ([42, 43, 44, 45, 46].includes(id)) return { name: ({42:'Dr. Deniz Hanım Muayenehanesi',43:'Avukat Nihat Bey Hukuk Bürosu',44:'Diş Tabibi Rauf Bey Kliniği',45:'Mühendislik ve Mimarlık Bürosu',46:'SMMM ve Muhasebe Yazıhanesi'})[id], materials: [], recipes: [], productRules: [] };
     // The playable property IDs end at 41; hotel-like lodging venues are IDs 4 and 21.
@@ -2819,7 +2920,17 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const id = Number(propertyId);
     if (id === 37) return 'shoe';
     const propertyName = String(properties.find(property => property.id === id)?.name || '').toLocaleLowerCase('tr-TR');
-    if ([35,38].includes(id) || /meyhane|meyhaneci|taverna|gazino/.test(propertyName)) return 'food';
+    if ([35,53,58,59,62].includes(id) || /meyhane|meyhaneci|taverna|gazino/.test(propertyName)) return 'food';
+    if (id === 38) return 'jewelry';
+    if (id === 48) return 'toys';
+    if (id === 49) return 'clock';
+    if (id === 50) return 'coffee';
+    if (id === 51) return 'textile';
+    if (id === 52) return 'service';
+    if (id === 54) return 'wine';
+    if (id === 57) return 'cinema';
+    if (id === 60) return 'hamam';
+    if ([55,56,61].includes(id)) return 'lodging';
     if ([4,21].includes(id)) return 'lodging';
     if (id === 15) return 'pharmacy';
     if ([13,14,18,19,12,25].includes(id)) return 'food';
@@ -2833,8 +2944,8 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   };
   // Each business has its own warehouse. Raw materials and finished goods have separate,
   // property-specific capacities; neither inventory is shared between businesses.
-  const MATERIAL_WAREHOUSE_BASE = { shoe: 36, lodging: 40, pharmacy: 36, food: 48, textile: 36, paper: 48, wood: 36, metal: 30, soap: 36, service: 30, general: 40 };
-  const PRODUCT_WAREHOUSE_BASE = { shoe: 24, lodging: 20, pharmacy: 24, food: 30, textile: 24, paper: 36, wood: 24, metal: 20, soap: 24, service: 18, general: 30 };
+  const MATERIAL_WAREHOUSE_BASE = { shoe: 36, lodging: 40, pharmacy: 36, food: 48, textile: 36, paper: 48, wood: 36, metal: 30, soap: 36, service: 30, jewelry: 24, toys: 36, clock: 24, coffee: 36, wine: 48, cinema: 30, hamam: 40, general: 40 };
+  const PRODUCT_WAREHOUSE_BASE = { shoe: 24, lodging: 20, pharmacy: 24, food: 30, textile: 24, paper: 36, wood: 24, metal: 20, soap: 24, service: 18, jewelry: 16, toys: 24, clock: 16, coffee: 24, wine: 30, cinema: 18, hamam: 20, general: 30 };
   const WAREHOUSE_LEVEL_MULTIPLIER = [0, 1, 1.55, 2.25, 3.15, 4.3, 5.7, 7.4, 9.5, 12, 15, 18.5, 22.5, 27, 32.5, 39];
   const getMaterialCapacity = (propertyId) => Math.round((MATERIAL_WAREHOUSE_BASE[getWarehouseProfileKey(propertyId)] || 40) * WAREHOUSE_LEVEL_MULTIPLIER[getWarehouseLevel(propertyId)]);
   const getStockCapacity = (propertyId) => Math.round((PRODUCT_WAREHOUSE_BASE[getWarehouseProfileKey(propertyId)] || 30) * WAREHOUSE_LEVEL_MULTIPLIER[getWarehouseLevel(propertyId)]);
