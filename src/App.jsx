@@ -1961,7 +1961,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       {match:/ekmek|pide/i,recipe:[['arka62-ekmek',1],['arka62-yakit',1]]}
     ]},
     58: {
-      name:'Haliç Gazinosu — özel tedarik',
+      name:'Pera Musiki Salonu — özel tedarik',
       materials:[
         {id:'halic58-mutfak',name:'Gazino mutfağı meze ve sıcak yemek erzağı',batch:8,cost:14},
         {id:'halic58-icecek',name:'Şerbet, limonata ve içecek fıçısı',batch:8,cost:11},
