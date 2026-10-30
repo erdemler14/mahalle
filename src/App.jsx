@@ -3226,10 +3226,23 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     if(returned<=0){tell('Depo seçili üretim partisi için uygun. Gereken hammaddeler korunuyor ve iade edilebilecek fazla stok yok.');return;}
     const refund=Math.round([...returns.entries()].reduce((sum,[id,qty])=>{const m=materialById.get(id);return sum+(m?m.cost/Math.max(1,m.batch)*qty*0.7:0);},0)*100)/100;
     const nextMaterials={...(inventory.materials||{})};returns.forEach((qty,id)=>{nextMaterials[id]=Math.max(0,(Number(nextMaterials[id])||0)-qty);});
+    const freeAfter = Math.max(0,capacity-(totalRaw-returned));
+    const canFitBatch = candidate => {
+      let missingTotal = 0;
+      for (const part of recipe) {
+        const have = Math.max(0,Number(nextMaterials[part.id])||0);
+        const missing = Math.max(0,part.qty*candidate-have);
+        if (have+missing > itemCapacity) return false;
+        missingTotal += missing;
+      }
+      return missingTotal <= freeAfter;
+    };
+    let feasibleBatch = 0;
+    for (let candidate=1;candidate<=batch;candidate++) if (canFitBatch(candidate)) feasibleBatch=candidate;
     setStockByProperty(old=>{const state=getInventoryState(propertyId,old[propertyId]);return {...old,[propertyId]:{materials:nextMaterials,products:state.products}};});
     if(refund>0)setCash(value=>Math.round((value+refund)*100)/100);
     setBusinessStats(old=>{const previous=old[propertyId]||{unitsSold:0,revenue:0,stockInvested:0};return {...old,[propertyId]:{...previous,stockInvested:Math.max(0,Math.round(((Number(previous.stockInvested)||0)-refund)*100)/100)}};});
-    tell('Depo düzenlendi: '+[...returns.entries()].map(([id,qty])=>(materialById.get(id)?.name||id)+' −'+qty).join(', ')+'. '+(capacity-totalRaw+returned)+' birim alan açıldı; tedarikçiden %70 bedelle ₺'+refund.toLocaleString('tr-TR')+' iade alındı. '+batch+' adetlik üretim ihtiyacı korundu.');
+    tell('Depo düzenlendi: '+[...returns.entries()].map(([id,qty])=>(materialById.get(id)?.name||id)+' −'+qty).join(', ')+'. '+(capacity-totalRaw+returned)+' birim alan açıldı; tedarikçiden %70 bedelle ₺'+refund.toLocaleString('tr-TR')+' iade alındı. '+(feasibleBatch>0?'Seçili ürün için '+feasibleBatch+' adetlik parti tedarik edilebilir.':'Ancak seçili ürünün ilk üretim partisi için hâlâ yeterli alan yok; daha fazla fazla stoğu iade et veya depoyu genişlet.'));
   };
   const stockBusiness = () => {
     if (sendAction('stockBusiness')) return;
