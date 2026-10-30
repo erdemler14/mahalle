@@ -2146,8 +2146,8 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   };
   const getBusinessRecipe = (propertyId, product) => {
     const id = Number(propertyId);
-    if (product?.service) return [];
     const key = String((product?.id || '') + ' ' + (product?.name || '')).toLocaleLowerCase('tr-TR');
+    if (product?.service && [42,43,44,45,46].includes(id)) return [];
     // Explicit product-to-supply recipes prevent a shop's entire range from sharing one generic recipe.
     const recipeByProduct = {
       1: [
@@ -2923,6 +2923,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   const PRODUCT_WAREHOUSE_BASE = { shoe: 24, lodging: 20, pharmacy: 24, food: 30, textile: 24, paper: 36, wood: 24, metal: 20, soap: 24, service: 18, jewelry: 16, toys: 24, clock: 16, coffee: 24, wine: 30, cinema: 18, hamam: 20, general: 30 };
   const WAREHOUSE_LEVEL_MULTIPLIER = [0, 1, 1.55, 2.25, 3.15, 4.3, 5.7, 7.4, 9.5, 12, 15, 18.5, 22.5, 27, 32.5, 39];
   const getMaterialCapacity = (propertyId) => Math.round((MATERIAL_WAREHOUSE_BASE[getWarehouseProfileKey(propertyId)] || 40) * WAREHOUSE_LEVEL_MULTIPLIER[getWarehouseLevel(propertyId)]);
+  const getMaterialItemCapacity = (propertyId) => Math.max(1, Math.floor(getMaterialCapacity(propertyId) * 0.55));
   const getStockCapacity = (propertyId) => Math.round((PRODUCT_WAREHOUSE_BASE[getWarehouseProfileKey(propertyId)] || 30) * WAREHOUSE_LEVEL_MULTIPLIER[getWarehouseLevel(propertyId)]);
   const processBusinessSales = (hours = 1) => {
     let revenue = 0;
@@ -2962,14 +2963,22 @@ function App({ session = null, supabase = null, authConfigured = false }) {
         const products = { ...(inventory.products || {}) };
         (tradeCatalog[propertyId] || []).filter(item => item.price > 0).forEach(product => {
           const serviceSale = Boolean(product.service);
+          if (serviceSale && businessPlans[propertyId] !== product.id) return;
+          const serviceRecipe = serviceSale ? getBusinessRecipe(propertyId, product) : [];
+          const serviceMaterialLimit = serviceRecipe.length ? serviceRecipe.reduce((limit, part) => Math.min(limit, Math.floor((Number(inventory.materials?.[part.id]) || 0) / part.qty)), Infinity) : Infinity;
           const stock = Math.max(0, Number(products[product.id]) || 0);
           const soldBefore = Number(businessStats[propertyId]?.productUnitsSold?.[product.id]?.units) || 0;
           const reputation = Math.min(100, Math.floor(soldBefore * 1.5));
           const eventEffect = getEconomicEventEffect(property, product);
           const salesChance = Math.min(0.92, (0.34 + (reputation / 100) * 0.12) * eventEffect.chance);
-          if ((!serviceSale && stock <= 0) || Math.random() > salesChance) return;
-          const sold = serviceSale ? 1 : Math.min(stock, 1 + (Math.random() > 0.72 ? 1 : 0));
+          if ((!serviceSale && stock <= 0) || (serviceSale && serviceMaterialLimit <= 0) || Math.random() > salesChance) return;
+          const sold = serviceSale ? Math.min(1, serviceMaterialLimit) : Math.min(stock, 1 + (Math.random() > 0.72 ? 1 : 0));
           const baseMultiplier = 1;
+          if (serviceSale && serviceRecipe.length) {
+            const nextMaterials = { ...(inventory.materials || {}) };
+            serviceRecipe.forEach(part => { nextMaterials[part.id] = Math.max(0, (Number(nextMaterials[part.id]) || 0) - part.qty * sold); });
+            inventory.materials = nextMaterials;
+          }
           const masteryLevel = soldBefore >= 60 ? 5 : soldBefore >= 35 ? 4 : soldBefore >= 15 ? 3 : soldBefore >= 5 ? 2 : 1;
           const salePrice = getBusinessSalePrice(propertyId, product);
           const takings = Math.round(sold * salePrice * (1 + (masteryLevel - 1) * 0.02) * eventEffect.sales * 100) / 100;
@@ -3178,8 +3187,9 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const capacity = getMaterialCapacity(propertyId);
     const validMaterialIds = new Set(getUnlockedBusinessMaterials(propertyId).map(item => item.id));
     const totalRawStock = Object.entries(inventory.materials || {}).reduce((sum, [id, amount]) => sum + (validMaterialIds.has(id) ? Math.max(0, Number(amount) || 0) : 0), 0);
-    const quantity = Math.min(material.batch, Math.max(0, capacity - totalRawStock));
-    if (quantity <= 0) { tell('Hammadde deposu dolu. Depoyu genişlet veya üretim yap.'); return; }
+    const itemFree = Math.max(0, getMaterialItemCapacity(propertyId) - current);
+    const quantity = Math.min(material.batch, Math.max(0, capacity - totalRawStock), itemFree);
+    if (quantity <= 0) { tell(itemFree <= 0 ? material.name + ' için tek hammadde depo sınırına ulaştın. Başka hammaddeleri kullan veya depoyu düzenle.' : 'Hammadde deposu dolu. Seçili ürün için depoyu düzenleyerek alan açabilirsin.'); return; }
     const cost = Math.round(material.cost * quantity / material.batch * 100) / 100;
     if (cash < cost) { tell(material.name + ' tedariki için ₺' + cost + ' gerekiyor.'); return; }
     setCash(value => Math.round((value - cost) * 100) / 100);
@@ -3208,7 +3218,10 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     if (!deficits.length) { tell('Seçili üretim miktarı (' + batch + ') için gerekli tüm hammaddeler hazır. Doğrudan üretime başlayabilirsin.'); return; }
     if (deficits.some(part => !part.material || !unlocked.has(part.id))) { tell('Bu ürün için gereken hammaddelerden bazıları henüz açılmamış.'); return; }
     const neededSpace = deficits.reduce((sum,part)=>sum+part.missing,0);
-    if (neededSpace > freeCapacity) { tell('Bu parti için ' + neededSpace + ' birim boş hammadde alanı gerekiyor; depoda yalnızca ' + freeCapacity + ' birim yer var. Üretim partisini küçült veya depoyu genişlet.'); return; }
+    const itemCapacity = getMaterialItemCapacity(propertyId);
+    const overflow = deficits.find(part => (Number(inventory.materials?.[part.id]) || 0) + part.missing > itemCapacity);
+    if (overflow) { tell(overflow.material.name + ' için tek hammadde depo sınırı aşılacak. Daha küçük üretim partisi seç veya "Depoyu düzenle" ile fazla stoğu iade et.'); return; }
+    if (neededSpace > freeCapacity) { tell('Bu parti için ' + neededSpace + ' birim boş alan gerekiyor; depoda ' + freeCapacity + ' birim var. "Depoyu düzenle" ile fazla stoğu tedarikçiye iade edebilirsin.'); return; }
     const totalCost = Math.round(deficits.reduce((sum,part)=>sum+part.material.cost*part.missing/part.material.batch,0)*100)/100;
     if (cash < totalCost) { tell('Seçili ' + batch + ' adetlik üretim için toplu tedarik ₺'+totalCost.toLocaleString('tr-TR')+' tutuyor; bakiyen ₺'+cash.toLocaleString('tr-TR')+'. Üretim partisini küçült veya para biriktir.'); return; }
     const nextMaterials = { ...(inventory.materials||{}) };
@@ -3226,6 +3239,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const item = availableProducts.find(product => product.id === businessPlans[propertyId]) || availableProducts[0];
     if (!owned.includes(propertyId) || rented.includes(propertyId)) { tell('İşletmeyi yönetmek için sahibi olmalı ve kiraya vermemiş olmalısın.'); return; }
     if (!item || item.price <= 0) { tell('Önce satışa sunacağın ürün veya hizmeti seç.'); return; }
+    if (item.service) { tell(item.name + ' bir hizmettir; üretim kuyruğuna girmez. Gerekli sarf malzemelerini tedarik et, hizmet verildikçe tüketilir.'); return; }
     const level = getBusinessSalesLevel(propertyId);
     if ((item.unlockLevel || 1) > level) { tell(item.name + ' için işletme seviyesi ' + item.unlockLevel + ' gerekli. Şu an seviye ' + level + '.'); return; }
     if (!isPlayerProductUnlocked(item)) { tell(item.name + ' kilitli. Oyuncu seviyesi ' + getPlayerUnlockLevel(item) + ' olduğunda açılacak.'); return; }
@@ -3794,7 +3808,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
               const materialCapacity = getMaterialCapacity(active.id);
               const freeCapacity = Math.max(0, materialCapacity - totalRaw);
               const pending = selectedProduct ? pendingProductions[active.id + ':' + selectedProduct.id] : null;
-              const canProduce = !!selectedProduct && !missing.length && getTotalStock(active.id) + getPendingUnits(active.id) < getStockCapacity(active.id);
+              const canProduce = !!selectedProduct && !selectedProduct.service && !missing.length && getTotalStock(active.id) + getPendingUnits(active.id) < getStockCapacity(active.id);
               const sold = Number(businessStats[active.id]?.unitsSold) || 0;
               const thresholds = [0, 5, 15, 35, 60];
               const nextTarget = thresholds[level];
