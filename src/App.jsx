@@ -2040,8 +2040,8 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     if ([53,62].includes(id) || /meyhane|meyhaneci|taverna/.test(propertyName)) return id === 62 ? BUSINESS_SPECIFIC_PROFILES[62] : BUSINESS_SPECIFIC_PROFILES[53];
     // Professional offices sell time and expertise, not physical inventory.
     if ([42, 43, 44, 45, 46].includes(id)) return { name: ({42:'Dr. Deniz Hanım Muayenehanesi',43:'Avukat Nihat Bey Hukuk Bürosu',44:'Diş Tabibi Rauf Bey Kliniği',45:'Mühendislik ve Mimarlık Bürosu',46:'SMMM ve Muhasebe Yazıhanesi'})[id], materials: [], recipes: [], productRules: [] };
-    // The playable property IDs end at 41; hotel-like lodging venues are IDs 4 and 21.
-    // Do not rely on obsolete IDs 55/56 that are not present in the property registry.
+    // Original lodging properties 4 and 21 have dedicated rules here;
+    // the expansion hotels and pansiyon (55 and 56) use their own profiles below.
     if (id === 4) return {
       name:'Şahin Bey Ticaret Hanı — konaklama tedariki',
       materials:[
@@ -2074,7 +2074,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
         {match:/çarşaf|carsaf|oda|konaklama|yatak/i,recipe:[['arif-carsaf',1],['arif-temizlik',1]]}
       ]
     };
-    // Explicit high-priority mapping for the gazino, which also had a generic legacy profile.
+    // Explicit high-priority mapping for the original neighbourhood hamam.
     if (id === 40) return {
       name:'Tarihi Mahalle Hamamı — hamam ve bakım tedariki',
       materials:[
@@ -2844,16 +2844,14 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     if (id === 38) return 'jewelry';
     if (id === 48) return 'toys';
     if (id === 49) return 'clock';
-    if (id === 50) return 'coffee';
     if (id === 51) return 'textile';
     if (id === 52) return 'service';
     if (id === 54) return 'wine';
     if (id === 57) return 'cinema';
-    if (id === 60) return 'hamam';
     if ([55,56,61].includes(id)) return 'lodging';
     if ([4,21].includes(id)) return 'lodging';
     if (id === 15) return 'pharmacy';
-    if ([13,14,18,19,12,25].includes(id)) return 'food';
+    if ([13,14,18,19].includes(id)) return 'food';
     if ([10,26].includes(id)) return 'textile';
     if ([9,16,32].includes(id)) return 'paper';
     if (id === 17) return 'wood';
