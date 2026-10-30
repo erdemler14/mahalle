@@ -15,13 +15,21 @@ export default function AuthGate({ children }) {
   useEffect(() => {
     if (!supabaseConfigured || !supabase) return undefined;
     let active = true;
-    supabase.auth.getSession().then(({ data, error }) => {
-      if (!active) return;
-      if (error) setMessage(error.message);
-      setSession(data?.session || null);
-      setLoading(false);
-    });
+    supabase.auth.getSession()
+      .then(({ data, error }) => {
+        if (!active) return;
+        if (error) setMessage('Oturum kontrol edilemedi: ' + error.message + '. E-posta ve şifrenle yeniden giriş yapabilirsin.');
+        setSession(data?.session || null);
+      })
+      .catch(error => {
+        if (!active) return;
+        setMessage('Bağlantı kurulamadı. İnternet bağlantını kontrol edip yeniden giriş yap: ' + (error?.message || 'Bilinmeyen bağlantı hatası.'));
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
     const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      if (!active) return;
       setSession(nextSession || null);
       setLoading(false);
     });
@@ -53,7 +61,10 @@ export default function AuthGate({ children }) {
           }
         });
         if (error) throw error;
-        if (!data.session) {
+        if (data.user && !data.session && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+          setMode('login');
+          setMessage('Bu e-posta adresiyle daha önce hesap oluşturulmuş. Şifrenle giriş yapmayı dene.');
+        } else if (!data.session) {
           setMode('verify');
           setVerificationCode('');
           setMessage('Doğrulama e-postası gönderildi. E-postadaki tek kullanımlık kodu gir. Kod görünmüyorsa Supabase e-posta şablonunda {{ .Token }} alanının bulunduğunu kontrol et.');
