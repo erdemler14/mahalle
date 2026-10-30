@@ -129,34 +129,34 @@ const EXTRA_TRADE_CATALOG = {
     { id: 'uzum-sirkesi', name: 'Üzüm sirkesi', cost: 40, price: 10, units: 8 }
   ],
   55: [
-    { id: 'pansiyon-gece', name: 'Pansiyon gecelik konaklama', cost: 36, price: 18, units: 8 },
-    { id: 'pansiyon-kahvalti', name: 'Pansiyon kahvaltısı', cost: 12, price: 6, units: 8 }
+    { id: 'pansiyon-gece', name: 'Pansiyon gecelik konaklama', cost: 36, price: 18, units: 8, service: true },
+    { id: 'pansiyon-kahvalti', name: 'Pansiyon kahvaltısı', cost: 12, price: 6, units: 8, service: true }
   ],
   56: [
-    { id: 'otel-oda', name: 'Otel oda geceliği', cost: 88, price: 44, units: 8 },
-    { id: 'otel-suit', name: 'Üst kat oda geceliği', cost: 140, price: 70, units: 4 },
-    { id: 'otel-yemek', name: 'Otel yemek servisi', cost: 24, price: 12, units: 8 }
+    { id: 'otel-oda', name: 'Otel oda geceliği', cost: 88, price: 44, units: 8, service: true },
+    { id: 'otel-suit', name: 'Üst kat oda geceliği', cost: 140, price: 70, units: 4, service: true },
+    { id: 'otel-yemek', name: 'Otel yemek servisi', cost: 24, price: 12, units: 8, service: true }
   ],
   57: [
-    { id: 'sinema-bilet', name: 'Sinema bileti', cost: 16, price: 8, units: 8 },
+    { id: 'sinema-bilet', name: 'Sinema bileti', cost: 16, price: 8, units: 8, service: true },
     { id: 'sinema-atistirmalik', name: 'Sinema atıştırmalığı', cost: 6, price: 3, units: 8 }
   ],
   58: [
-    { id: 'gazino-giris', name: 'Gazino giriş bileti', cost: 28, price: 14, units: 8 },
-    { id: 'gazino-masa', name: 'Gazino masa servisi', cost: 32, price: 16, units: 8 },
-    { id: 'gazino-muzik', name: 'Musiki gecesi bileti', cost: 22, price: 11, units: 8 }
+    { id: 'gazino-giris', name: 'Gazino giriş bileti', cost: 28, price: 14, units: 8, service: true },
+    { id: 'gazino-masa', name: 'Gazino masa servisi', cost: 32, price: 16, units: 8, service: true },
+    { id: 'gazino-muzik', name: 'Musiki gecesi bileti', cost: 22, price: 11, units: 8, service: true }
   ],
   59: [
     { id: 'arka-kahve', name: 'Kahve ve lokum', cost: 8, price: 4, units: 8 },
     { id: 'arka-nargile', name: 'Kahve yanı ikram', cost: 10, price: 5, units: 8 }
   ],
   60: [
-    { id: 'hamam-giris', name: 'Hamam giriş hizmeti', cost: 24, price: 12, units: 8 },
-    { id: 'hamam-kese', name: 'Kese ve tellak hizmeti', cost: 18, price: 9, units: 8 }
+    { id: 'hamam-giris', name: 'Hamam giriş hizmeti', cost: 24, price: 12, units: 8, service: true },
+    { id: 'hamam-kese', name: 'Kese ve tellak hizmeti', cost: 18, price: 9, units: 8, service: true }
   ],
   61: [
-    { id: 'han-oda', name: 'Han dükkânı günlük kirası', cost: 40, price: 20, units: 8 },
-    { id: 'han-depo', name: 'Depo ve yükleme hizmeti', cost: 18, price: 9, units: 8 }
+    { id: 'han-oda', name: 'Han dükkânı günlük kirası', cost: 40, price: 20, units: 8, service: true },
+    { id: 'han-depo', name: 'Depo ve yükleme hizmeti', cost: 18, price: 9, units: 8, service: true }
   ],
   62: [
     { id: 'arka-meyhane-meze', name: 'Meze tabağı', cost: 7, price: 18, units: 8 },
