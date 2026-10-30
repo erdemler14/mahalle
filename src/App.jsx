@@ -2650,8 +2650,11 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       const alert = hourlySales.stockoutAlerts[0];
       tell('STOK BİTTİ: ' + alert.propertyName + ' — ' + alert.productName + '. Yeniden üretim yap.');
     }
-    if (hourlySales.entries.length) setDailySalesLog(old => [...old, ...hourlySales.entries.map(text => ({ text, kind: 'sale' }))].slice(-80));
-    if (hourlySales.revenue > 0) setDailySalesRevenue(old => Math.round(((Number(old) || 0) + hourlySales.revenue) * 100) / 100);
+    if (hourlySales.entries.length) setDailySalesLog(old => [...old, ...hourlySales.entries.map(text => ({ text, kind: 'sale' })), ...(hourlySales.officialFeeEntries || []).map(text => ({ text, kind: 'daily' }))].slice(-80));
+    // Hourly sales settle professional stamp/transaction fees immediately. Store net
+    // sales in the daily accumulator so the 05:00 close report does not charge them twice.
+    const hourlySalesNet = Math.round((hourlySales.revenue - (Number(hourlySales.officialFees) || 0)) * 100) / 100;
+    if (hourlySalesNet !== 0) setDailySalesRevenue(old => Math.round(((Number(old) || 0) + hourlySalesNet) * 100) / 100);
     // Optional auto-replenishment: replenish a small production batch when stock is low.
     // Service businesses with consumable inputs are replenished too; they do not enter a production queue.
     const autoStockChanges = { ...hourlySales.stockChanges };
@@ -2741,7 +2744,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       detail = 'Bu saatte iş bulmak zor. Dinlenmeyi veya saati ilerletmeyi seçtin.';
     }
     // All owned businesses add their takings independently of the player's profession income.
-    const net = hourlySales.revenue + laborNet;
+    const net = hourlySalesNet + laborNet;
     setCash(v => Math.max(0, Math.round((v + net) * 100) / 100));
     const nextHour = (hour + 1) % 24;
     setHour(nextHour);
