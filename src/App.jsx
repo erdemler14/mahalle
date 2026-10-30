@@ -3987,20 +3987,25 @@ function App({ session = null, supabase = null, authConfigured = false }) {
                 </div>
                 {(() => { const order = orders.find(item => item.id === focusedOrderId && item.status === 'accepted' && item.propertyId === active.id); if (!order) return null; const ready = getProductStock(active.id, order.productId); const needed = Math.max(0, Number(order.quantity) - ready); return <div className="focused-order-production"><div className="focused-order-top"><span>↗ SİPARİŞTEN ÜRETİME</span><button type="button" onClick={() => setFocusedOrderId(null)} aria-label="Sipariş hedefini kapat">×</button></div><strong>{order.productName} · {order.propertyName}</strong><div className="focused-order-count"><span>Hazır <b>{ready}</b></span><span>Hedef <b>{order.quantity}</b></span><span>Üretilecek <b>{needed}</b></span></div><div className="customer-order-stock-meter"><span style={{width: Math.min(100, ready / Math.max(1, order.quantity) * 100) + '%'}} /></div><small>Ürün otomatik seçildi. Aşağıda eksik hammaddeleri tedarik edip üretimi başlatabilirsin.</small></div>; })()}
                 <section className="simple-supply-panel">
-                  <div className="simple-supply-heading"><div><strong>Malzeme deposu</strong><small>Bu işletmenin temel tedarik kalemleri</small></div><span>{simpleSupplyMaterials.length}/4</span></div>
+                  <div className="simple-supply-heading"><div><strong>Temel tedarik</strong><small>İşletmenin ortak kullandığı en fazla dört kalem</small></div><span>{simpleSupplyMaterials.length}/4</span></div>
                   <div className="simple-supply-grid">
                     {simpleSupplyMaterials.map(material => {
                       const amount = Math.max(0, Number(inventory.materials?.[material.id]) || 0);
                       const cap = getMaterialItemCapacity(active.id);
                       const quantity = Math.min(material.batch, Math.max(0,cap-amount));
                       const cost = Math.round(material.cost * quantity / Math.max(1,material.batch) * 100) / 100;
+                      const ratio = Math.min(100,Math.round(amount/Math.max(1,cap)*100));
                       return <div className="simple-supply-item" key={material.id}>
-                        <div><strong>{material.name}</strong><small>Depoda {amount} · Paket {material.batch}</small></div>
-                        <button type="button" onClick={() => buyBusinessMaterial(active.id,material.id)} disabled={quantity<=0 || cash < cost}>{quantity>0 ? '+ ' + quantity + ' · ₺' + cost.toLocaleString('tr-TR') : 'DOLU'}</button>
+                        <div className="simple-supply-item-copy">
+                          <strong>{material.name}</strong>
+                          <div className="simple-supply-meter"><span style={{width:ratio+'%'}} /></div>
+                          <small>{amount} / {cap} stok</small>
+                        </div>
+                        <button type="button" onClick={() => buyBusinessMaterial(active.id,material.id)} disabled={quantity<=0 || cash < cost}>{quantity>0 ? 'PAKET AL · ₺' + cost.toLocaleString('tr-TR') : 'DOLU'}</button>
                       </div>;
                     })}
                   </div>
-                  <p>Yeni ürünler açıldıkça işletmenin ihtiyaç duyduğu malzemeler de gelişir. Ürün kartındaki “Tedarik et” seçeneği, o ürünün eksik reçetesini tek işlemde tamamlar.</p>
+                  <p>Bu liste işletmenin ana malzemelerini gösterir. Diğer ürün girdileriyle uğraşmana gerek yok: ürün kartında “Tedarik et” dediğinde eksikler tek işlemde tamamlanır.</p>
                 </section>
                 <div className="production-catalog-heading">
                   <div><strong>Ürünler</strong><small>{availableProducts.length} ürün üretime açık · {allProducts.length - availableProducts.length} kilitli</small></div>
@@ -4033,7 +4038,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
                       </div>
                       <div className="business-product-recipe-simple">
                         <span className={`business-ingredient-chip ${!itemRecipe.length || missingParts.length ? 'is-missing' : 'is-ready'}`}>
-                          {!itemRecipe.length ? 'Reçete tanımlanmamış' : missingParts.length ? missingParts.length + ' malzeme eksik' : item.service ? 'Hizmet malzemeleri hazır' : 'Üretim malzemeleri hazır'}
+                          {!itemRecipe.length ? 'Üretim tarifi henüz açılmadı' : missingParts.length ? 'Üretim için tedarik gerekiyor' : item.service ? 'Hizmete hazır' : 'Üretime hazır'}
                         </span>
                       </div>
                       <div className="business-product-bottom">
