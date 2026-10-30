@@ -3140,7 +3140,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const totalRaw=SHOE_MATERIALS.reduce((sum,m)=>sum+Math.max(0,Number(materials[m.id])||0),0), free=Math.max(0,capacity-totalRaw);
     const productCapacity=Math.max(0,getStockCapacity(37)-getTotalStock(37)-getPendingUnits(37)), recipe=Object.entries(shoe.recipe).map(([id,qty])=>({id,qty}));
     const maxBatch=recipe.reduce((limit,part)=>Math.min(limit,Math.floor(capacity/part.qty)),Infinity);
-    const batch=requestedBatch==='max'?Math.min(15,productCapacity,maxBatch):Math.min(Math.max(1,Number(requestedBatch)||1),productCapacity,maxBatch);
+    const batch=requestedBatch==='max'?Math.min(15,maxBatch):Math.min(Math.max(1,Number(requestedBatch)||1),maxBatch);
     if(batch<=0){tell('Seçili kundura için depo veya vitrin kapasitesi uygun değil.');return;}
     const keep=new Map(recipe.map(part=>[part.id,part.qty*batch])),returns=new Map();let forced=0;
     SHOE_MATERIALS.forEach(m=>{const excess=Math.max(0,(Number(materials[m.id])||0)-itemCapacity);if(excess){returns.set(m.id,excess);forced+=excess;}});
@@ -3151,7 +3151,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const next={...materials};returns.forEach((q,id)=>{next[id]=Math.max(0,(Number(next[id])||0)-q);});
     const freeAfter=Math.max(0,capacity-(totalRaw-returned));
     const canFitBatch=candidate=>{let missingTotal=0;for(const part of recipe){const have=Math.max(0,Number(next[part.id])||0),missing=Math.max(0,part.qty*candidate-have);if(have+missing>itemCapacity)return false;missingTotal+=missing;}return missingTotal<=freeAfter;};
-    let feasibleBatch=0;for(let candidate=1;candidate<=batch;candidate++)if(canFitBatch(candidate))feasibleBatch=candidate;
+    let feasibleBatch=0;for(let candidate=1;candidate<=Math.min(batch,productCapacity);candidate++)if(canFitBatch(candidate))feasibleBatch=candidate;
     setStockByProperty(old=>{const current=getInventoryState(37,old[37]);return {...old,37:{materials:next,products:current.products}};});
     if(refund>0)setCash(value=>Math.round((value+refund)*100)/100);
     setBusinessStats(old=>{const previous=old[37]||{unitsSold:0,revenue:0,stockInvested:0};return {...old,37:{...previous,stockInvested:Math.max(0,Math.round(((Number(previous.stockInvested)||0)-refund)*100)/100)}};});
