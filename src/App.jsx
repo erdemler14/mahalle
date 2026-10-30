@@ -3187,6 +3187,25 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     return next;
   };
 
+  const returnBusinessMaterial = (propertyId, materialId) => {
+    if(!owned.includes(propertyId)||rented.includes(propertyId)){tell('Hammadde iadesi için işletmenin sahibi olmalı ve kiraya vermemiş olmalısın.');return;}
+    const profile=getBusinessProfile(propertyId),material=profile.materials.find(m=>m.id===materialId);
+    if(!material)return;
+    const inventory=getInventoryState(propertyId),current=Math.max(0,Number(inventory.materials?.[materialId])||0);
+    const activeProduct=(tradeCatalog[propertyId]||[]).find(item=>item.id===businessPlans[propertyId]);
+    const activeRecipe=activeProduct?getBusinessRecipe(propertyId,activeProduct):[];
+    const batch=productionBatch==='max'?5:Math.max(1,Number(productionBatch)||1);
+    const keep=(activeRecipe.find(part=>part.id===materialId)?.qty||0)*batch;
+    const quantity=Math.min(material.batch,Math.max(0,current-keep));
+    if(quantity<=0){tell('Seçili ürünün '+batch+' adetlik üretim reçetesi için bu hammaddenin mevcut stoğu korunuyor. Önce ürün veya parti miktarını değiştir.');return;}
+    const refund=Math.round(material.cost*quantity/material.batch*.85*100)/100;
+    const next={...(inventory.materials||{}),[materialId]:Math.max(0,current-quantity)};
+    setStockByProperty(old=>{const state=getInventoryState(propertyId,old[propertyId]);return {...old,[propertyId]:{materials:next,products:state.products}};});
+    setCash(v=>Math.round((v+refund)*100)/100);
+    setBusinessStats(old=>{const p=old[propertyId]||{unitsSold:0,revenue:0,stockInvested:0};return {...old,[propertyId]:{...p,stockInvested:Math.max(0,Math.round(((Number(p.stockInvested)||0)-refund)*100)/100)}};});
+    tell(material.name+' stoğundan '+quantity+' birim tedarikçiye iade edildi. %85 iade bedeli: ₺'+refund.toLocaleString('tr-TR')+'.');
+  };
+
   const buyBusinessMaterial = (propertyId, materialId) => {
     if(!owned.includes(propertyId)||rented.includes(propertyId)){tell('Hammadde tedariki için işletmenin sahibi olmalı ve kiraya vermemiş olmalısın.');return;}
     const profile=getBusinessProfile(propertyId),material=profile.materials.find(m=>m.id===materialId);
@@ -3869,9 +3888,14 @@ function App({ session = null, supabase = null, authConfigured = false }) {
                     const amount = Number(inventory.materials?.[material.id]) || 0;
                     const quantity = Math.min(material.batch, Math.max(0,getMaterialItemCapacity(active.id)-amount));
                     const cost = Math.round(material.cost * quantity / material.batch * 100) / 100;
+                    const keepForRecipe = (recipe.find(part => part.id === material.id)?.qty || 0) * (productionBatch === 'max' ? 5 : Math.max(1,Number(productionBatch)||1));
+                    const returnable = Math.min(material.batch,Math.max(0,amount-keepForRecipe));
                     return <div className="production-material-row" key={material.id}>
                       <div><strong>{material.name}</strong><small>Stokta {amount} · +{quantity} adet · ₺{cost}</small></div>
-                      <button className="stock-button" onClick={() => buyBusinessMaterial(active.id, material.id)} disabled={quantity <= 0}>{quantity > 0 ? 'TEDARİK ET' : 'HAMMADDE SINIRI'}</button>
+                      <div style={{display:'flex',gap:6,flexWrap:'wrap',justifyContent:'flex-end'}}>
+                        <button className="stock-button" onClick={() => buyBusinessMaterial(active.id, material.id)} disabled={quantity <= 0}>{quantity > 0 ? 'TEDARİK ET' : 'HAMMADDE SINIRI'}</button>
+                        {returnable > 0 && <button className="stock-button" style={{background:'#eee7da',color:'#55442c',border:'1px solid #c8b99e'}} onClick={() => returnBusinessMaterial(active.id,material.id)}>−{returnable} İADE ET</button>}
+                      </div>
                     </div>;
                   })}
                 </div>
