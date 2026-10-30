@@ -1824,6 +1824,19 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   // Distinct supply chains for every active commercial property. Similar businesses may sell
   // related goods, but their procurement items remain specific to the shop and its operating model.
   const BUSINESS_SPECIFIC_PROFILES = {
+    3: { name:'Karaköy Levazımat Ambarı', materials:[
+      {id:'ambar3-ahsap',name:'Tahta sandık, kereste ve palet',batch:8,cost:12},
+      {id:'ambar3-ip',name:'Bağlama ipi, halat ve çuval bağı',batch:8,cost:8},
+      {id:'ambar3-kumas',name:'Branda, örtü ve koruyucu bez',batch:6,cost:10},
+      {id:'ambar3-metal',name:'Sandık çivisi, menteşe ve kilit',batch:8,cost:9},
+      {id:'ambar3-arac',name:'El arabası tekeri ve hamal ekipmanı',batch:6,cost:11}
+    ], recipes:[['ambar3-ahsap',1,'ambar3-ip',1],['ambar3-ip',1,'ambar3-arac',1],['ambar3-kumas',1,'ambar3-arac',1]], productRules:[
+      {match:/sandık|sandik|kasa|tahta/i,recipe:[['ambar3-ahsap',1],['ambar3-metal',1],['ambar3-ip',1]]},
+      {match:/depolama|ambar|saklama/i,recipe:[['ambar3-ahsap',1],['ambar3-ip',1],['ambar3-kumas',1]]},
+      {match:/yükleme|yukleme|hamal/i,recipe:[['ambar3-ip',1],['ambar3-arac',1]]},
+      {match:/sevkiyat|taşıma|tasima/i,recipe:[['ambar3-kumas',1],['ambar3-ip',1],['ambar3-arac',1]]},
+      {match:/tasnif|kabul|ticari mal/i,recipe:[['ambar3-ahsap',1],['ambar3-ip',1],['ambar3-kumas',1]]}
+    ]},
     38: { name:'Kuyumcu', materials:[
       {id:'kuy-altin',name:'Altın ve gümüş külçe',batch:4,cost:28},{id:'kuy-tas',name:'Değerli taş ve inci',batch:4,cost:22},
       {id:'kuy-tel',name:'Ayar teli, lehim ve maden sarfı',batch:6,cost:10},{id:'kuy-mekanizma',name:'Cep saati mekanizması ve zemberek',batch:4,cost:24}
@@ -2894,6 +2907,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const id = Number(propertyId);
     if (id === 37) return 'shoe';
     const propertyName = String(properties.find(property => property.id === id)?.name || '').toLocaleLowerCase('tr-TR');
+    if (id === 3) return 'logistics';
     if ([35,53,58,62].includes(id) || /meyhane|meyhaneci|taverna|gazino/.test(propertyName)) return 'food';
     if ([12,25,39,50,59].includes(id)) return 'coffee';
     if (id === 34) return 'flower';
@@ -2924,8 +2938,8 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   };
   // Each business has its own warehouse. Raw materials and finished goods have separate,
   // property-specific capacities; neither inventory is shared between businesses.
-  const MATERIAL_WAREHOUSE_BASE = { shoe: 36, lodging: 40, pharmacy: 36, food: 48, textile: 36, paper: 48, wood: 36, metal: 30, soap: 36, service: 30, jewelry: 24, toys: 36, clock: 24, coffee: 36, wine: 48, cinema: 30, hamam: 40, flower: 40, dryclean: 30, general: 40 };
-  const PRODUCT_WAREHOUSE_BASE = { shoe: 24, lodging: 20, pharmacy: 24, food: 30, textile: 24, paper: 36, wood: 24, metal: 20, soap: 24, service: 18, jewelry: 16, toys: 24, clock: 16, coffee: 24, wine: 30, cinema: 18, hamam: 20, flower: 24, dryclean: 16, general: 30 };
+  const MATERIAL_WAREHOUSE_BASE = { shoe: 36, lodging: 40, pharmacy: 36, food: 48, textile: 36, paper: 48, wood: 36, metal: 30, soap: 36, service: 30, jewelry: 24, toys: 36, clock: 24, coffee: 36, wine: 48, cinema: 30, hamam: 40, flower: 40, dryclean: 30, logistics: 36, general: 40 };
+  const PRODUCT_WAREHOUSE_BASE = { shoe: 24, lodging: 20, pharmacy: 24, food: 30, textile: 24, paper: 36, wood: 24, metal: 20, soap: 24, service: 18, jewelry: 16, toys: 24, clock: 16, coffee: 24, wine: 30, cinema: 18, hamam: 20, flower: 24, dryclean: 16, logistics: 24, general: 30 };
   const WAREHOUSE_LEVEL_MULTIPLIER = [0, 1, 1.55, 2.25, 3.15, 4.3, 5.7, 7.4, 9.5, 12, 15, 18.5, 22.5, 27, 32.5, 39];
   const getMaterialCapacity = (propertyId) => Math.round((MATERIAL_WAREHOUSE_BASE[getWarehouseProfileKey(propertyId)] || 40) * WAREHOUSE_LEVEL_MULTIPLIER[getWarehouseLevel(propertyId)]);
   const getMaterialItemCapacity = (propertyId) => Math.max(1, Math.floor(getMaterialCapacity(propertyId) * 0.55));
@@ -2946,7 +2960,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       owned.forEach(propertyId => {
         if (rented.includes(propertyId)) return;
         const property = properties.find(item => item.id === propertyId);
-        if (!property || !['İşletme', 'Atölye', 'Ticaret'].includes(property.type)) return;
+        if (!property || !['İşletme', 'Atölye', 'Ticaret', 'Depo'].includes(property.type)) return;
         if (propertyId === 37) {
           const state = localStocks[37] && typeof localStocks[37] === 'object' ? localStocks[37] : { materials: {}, products: {} };
           const products = { ...(state.products || {}) };
@@ -3034,7 +3048,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     owned.forEach(propertyId => {
       if (rented.includes(propertyId)) return;
       const property = properties.find(item => item.id === propertyId);
-      if (!property || !['İşletme', 'Atölye', 'Ticaret'].includes(property.type)) return;
+      if (!property || !['İşletme', 'Atölye', 'Ticaret', 'Depo'].includes(property.type)) return;
       const product = (tradeCatalog[propertyId] || []).find(item => item.id === businessPlans[propertyId]);
       if (!product || product.price <= 0) return;
       const dailyCost = property.type === 'İşletme' ? 4.5 : property.type === 'Atölye' ? 3.5 : 2.5;
