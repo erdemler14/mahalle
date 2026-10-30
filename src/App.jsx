@@ -2625,14 +2625,16 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       const capacity = getMaterialCapacity(propertyId);
       const currentRaw = Object.entries(inventory.materials || {}).reduce((sum,[id,amount]) => sum + (unlocked.has(id) ? Math.max(0,Number(amount)||0) : 0),0);
       const productSpace = Math.max(0,getStockCapacity(propertyId)-getTotalStock(propertyId, inventory)-getPendingUnits(propertyId));
-      const batch = Math.min(5, productSpace);
+      const itemCapacity = getMaterialItemCapacity(propertyId);
+      const maxBatchBySku = recipe.reduce((limit,part)=>Math.min(limit,Math.floor(itemCapacity/part.qty)),Infinity);
+      const batch = Math.min(5, productSpace, maxBatchBySku);
       if (batch <= 0) return;
       const deficits = recipe.map(part => {
         const material = profile.materials.find(item => item.id === part.id);
         const have = Math.max(0,Number(inventory.materials?.[part.id])||0);
         return { ...part, material, missing: Math.max(0,part.qty*batch-have) };
       }).filter(part => part.missing > 0);
-      if (deficits.some(part => !part.material || !unlocked.has(part.id))) return;
+      if (deficits.some(part => !part.material || !unlocked.has(part.id) || (Number(inventory.materials?.[part.id])||0)+part.missing > itemCapacity)) return;
       if (currentRaw + deficits.reduce((sum,part)=>sum+part.missing,0) > capacity) return;
       const cost = Math.round(deficits.reduce((sum,part)=>sum+part.material.cost*part.missing/part.material.batch,0)*100)/100;
       if (cash - autoCashSpent < cost) return;
