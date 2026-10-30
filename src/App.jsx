@@ -3145,109 +3145,98 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     tell('Depo genişletildi: seviye ' + nextLevel + '/15. Hammadde kapasitesi ' + getMaterialCapacity(propertyId) + ', ürün kapasitesi ' + getStockCapacity(propertyId) + ' birim oldu. Ödenen: ₺' + cost.toLocaleString('tr-TR') + '.');
   };
 
-  const buyBusinessMaterial = (propertyId, materialId) => {
-    if (!owned.includes(propertyId) || rented.includes(propertyId)) { tell('Hammadde tedariki için işletmenin sahibi olmalı ve kiraya vermemiş olmalısın.'); return; }
-    const profile = getBusinessProfile(propertyId);
-    const material = profile.materials.find(item => item.id === materialId);
-    if (!material) return;
-    const inventory = getInventoryState(propertyId);
-    const current = Math.max(0, Number(inventory.materials?.[materialId]) || 0);
-    const capacity = getMaterialCapacity(propertyId);
-    const validMaterialIds = new Set(profile.materials.map(item => item.id));
-    const totalRawStock = Object.entries(inventory.materials || {}).reduce((sum, [id, amount]) => sum + (validMaterialIds.has(id) ? Math.max(0, Number(amount) || 0) : 0), 0);
-    const itemFree = Math.max(0, getMaterialItemCapacity(propertyId) - current);
-    const quantity = Math.min(material.batch, Math.max(0, capacity - totalRawStock), itemFree);
-    if (quantity <= 0) { tell(itemFree <= 0 ? material.name + ' için tek hammadde depo sınırına ulaştın. Başka hammaddeleri kullan veya depoyu düzenle.' : 'Hammadde deposu dolu. Seçili ürün için depoyu düzenleyerek alan açabilirsin.'); return; }
-    const cost = Math.round(material.cost * quantity / material.batch * 100) / 100;
-    if (cash < cost) { tell(material.name + ' tedariki için ₺' + cost + ' gerekiyor.'); return; }
-    setCash(value => Math.round((value - cost) * 100) / 100);
-    setStockByProperty(old => { const state = getInventoryState(propertyId, old[propertyId]); return { ...old, [propertyId]: { materials: { ...state.materials, [materialId]: current + quantity }, products: state.products } }; });
-    setBusinessStats(old => { const previous = old[propertyId] || { unitsSold: 0, revenue: 0, stockInvested: 0 }; return { ...old, [propertyId]: { ...previous, stockInvested: Math.round(((Number(previous.stockInvested)||0) + cost)*100)/100 } }; });
-    tell('Tedarik tamamlandı: ' + material.name + ' +' + quantity + ' birim, ₺' + cost + '.');
+  const planWarehouseSpace = (propertyId, product, requestedBatch, inventory) => {
+    const profile=getBusinessProfile(propertyId),recipe=getBusinessRecipe(propertyId,product);
+    if(!recipe.length)return null;
+    const capacity=getMaterialCapacity(propertyId),itemCapacity=getMaterialItemCapacity(propertyId);
+    const validIds=new Set(profile.materials.map(m=>m.id));
+    const total=Object.entries(inventory.materials||{}).reduce((s,[id,n])=>s+(validIds.has(id)?Math.max(0,Number(n)||0):0),0);
+    const free=Math.max(0,capacity-total);
+    const productSpace=product.service?5:Math.max(0,getStockCapacity(propertyId)-getTotalStock(propertyId)-getPendingUnits(propertyId));
+    const maxBySku=recipe.reduce((n,p)=>Math.min(n,Math.floor(itemCapacity/p.qty)),Infinity);
+    const wanted=Math.min(requestedBatch==='max'?5:Math.max(1,Number(requestedBatch)||1),productSpace,maxBySku);
+    for(let batch=wanted;batch>=1;batch--){
+      const targets=new Map(recipe.map(p=>[p.id,p.qty*batch]));
+      const deficits=recipe.map(p=>({...p,material:profile.materials.find(m=>m.id===p.id),missing:Math.max(0,p.qty*batch-(Number(inventory.materials?.[p.id])||0))}));
+      const missing=deficits.reduce((s,p)=>s+p.missing,0);
+      const returns=new Map();
+      profile.materials.forEach(m=>{
+        const have=Math.max(0,Number(inventory.materials?.[m.id])||0);
+        const excess=Math.max(0,have+Math.max(0,(targets.get(m.id)||0)-have)-itemCapacity);
+        if(excess)returns.set(m.id,excess);
+      });
+      const minReturn=[...returns.values()].reduce((s,n)=>s+n,0);
+      let room=Math.max(0,missing-free-minReturn);
+      const candidates=profile.materials.map(m=>({m,have:Math.max(0,Number(inventory.materials?.[m.id])||0),keep:targets.get(m.id)||0,already:returns.get(m.id)||0}))
+        .filter(x=>x.have>x.keep+x.already)
+        .sort((x,y)=>Number(targets.has(x.m.id))-Number(targets.has(y.m.id))||y.have-x.have);
+      candidates.forEach(x=>{if(room<=0)return;const take=Math.min(x.have-x.keep-x.already,room);if(take>0){returns.set(x.m.id,(returns.get(x.m.id)||0)+take);room-=take;}});
+      if(room>0)continue;
+      const refund=Math.round([...returns].reduce((s,[id,n])=>{const m=profile.materials.find(x=>x.id===id);return s+(m?m.cost/Math.max(1,m.batch)*n*.85:0);},0)*100)/100;
+      const purchaseCost=Math.round(deficits.reduce((s,p)=>s+p.material.cost*p.missing/p.material.batch,0)*100)/100;
+      return {batch,deficits,returns,refund,purchaseCost,profile};
+    }
+    return null;
   };
+
+  const applyWarehouseReturns = (propertyId, inventory, plan) => {
+    const next={...(inventory.materials||{})};
+    plan.returns.forEach((qty,id)=>{next[id]=Math.max(0,(Number(next[id])||0)-qty);});
+    return next;
+  };
+
+  const buyBusinessMaterial = (propertyId, materialId) => {
+    if(!owned.includes(propertyId)||rented.includes(propertyId)){tell('Hammadde tedariki için işletmenin sahibi olmalı ve kiraya vermemiş olmalısın.');return;}
+    const profile=getBusinessProfile(propertyId),material=profile.materials.find(m=>m.id===materialId);
+    if(!material)return;
+    const inventory=getInventoryState(propertyId),current=Math.max(0,Number(inventory.materials?.[materialId])||0);
+    const capacity=getMaterialCapacity(propertyId),itemCapacity=getMaterialItemCapacity(propertyId);
+    const quantity=Math.min(material.batch,Math.max(0,itemCapacity-current));
+    if(quantity<=0){tell('Bu hammaddenin depo sınırına ulaştın. Üretimde kullan veya stok miktarını azalt.');return;}
+    const validIds=new Set(profile.materials.map(m=>m.id));
+    const total=Object.entries(inventory.materials||{}).reduce((s,[id,n])=>s+(validIds.has(id)?Math.max(0,Number(n)||0):0),0);
+    let room=Math.max(0,quantity-Math.max(0,capacity-total));
+    const returns=new Map();
+    profile.materials.filter(m=>m.id!==materialId).map(m=>({m,n:Math.max(0,Number(inventory.materials?.[m.id])||0)})).sort((a,b)=>b.n-a.n).forEach(x=>{if(room<=0)return;const take=Math.min(x.n,room);if(take){returns.set(x.m.id,take);room-=take;}});
+    if(room>0){tell('Depoda yer açılamadı. DEPOYU DÜZENLE ile seçili ürünün reçetesini koruyarak fazla stoğu iade edebilirsin.');return;}
+    const refund=Math.round([...returns].reduce((s,[id,n])=>{const m=profile.materials.find(x=>x.id===id);return s+(m?m.cost/Math.max(1,m.batch)*n*.85:0);},0)*100)/100;
+    const cost=Math.round(material.cost*quantity/material.batch*100)/100;
+    if(cash+refund<cost){tell('Tedarik ₺'+cost.toLocaleString('tr-TR')+' tutuyor. Stok iadesi ₺'+refund.toLocaleString('tr-TR')+'; kalan tutar için bakiye yetersiz.');return;}
+    const next={...(inventory.materials||{})};returns.forEach((n,id)=>{next[id]=Math.max(0,(Number(next[id])||0)-n);});next[materialId]=current+quantity;
+    setCash(v=>Math.round((v+refund-cost)*100)/100);
+    setStockByProperty(old=>{const state=getInventoryState(propertyId,old[propertyId]);return {...old,[propertyId]:{materials:next,products:state.products}};});
+    setBusinessStats(old=>{const p=old[propertyId]||{unitsSold:0,revenue:0,stockInvested:0};return {...old,[propertyId]:{...p,stockInvested:Math.max(0,Math.round(((Number(p.stockInvested)||0)+cost-refund)*100)/100)}};});
+    tell('Tedarik tamamlandı: '+material.name+' +'+quantity+'. '+(returns.size?'Fazla stok otomatik %85 bedelle iade edildi. ':'')+'Net gider ₺'+Math.max(0,cost-refund).toLocaleString('tr-TR')+'.');
+  };
+
   const buyRecipeMaterials = (propertyId, product, requestedBatch = productionBatch) => {
-    if (!product) return;
-    if (!owned.includes(propertyId) || rented.includes(propertyId)) { tell('Toplu tedarik için işletmenin sahibi olmalı ve kiraya vermemiş olmalısın.'); return; }
-    const profile = getBusinessProfile(propertyId);
-    const recipe = getBusinessRecipe(propertyId, product);
-    const inventory = getInventoryState(propertyId);
-    const unlocked = new Set(getUnlockedBusinessMaterials(propertyId, getBusinessSalesLevel(propertyId), product).map(item => item.id));
-    const allMaterialIds = new Set(profile.materials.map(item => item.id));
-    const capacity = getMaterialCapacity(propertyId);
-    const currentTotal = Object.entries(inventory.materials || {}).reduce((sum,[id,amount]) => sum + (allMaterialIds.has(id) ? Math.max(0,Number(amount)||0) : 0),0);
-    const freeCapacity = Math.max(0,capacity-currentTotal);
-    const productCapacity = product.service ? 5 : Math.max(0,getStockCapacity(propertyId)-getTotalStock(propertyId)-getPendingUnits(propertyId));
-    const maxBatchBySku = recipe.reduce((limit,part)=>Math.min(limit,Math.floor(getMaterialItemCapacity(propertyId)/part.qty)),Infinity);
-    const requested = requestedBatch === 'max' ? Math.min(5,productCapacity,maxBatchBySku) : Math.max(1,Number(requestedBatch)||1);
-    const batch = Math.min(requested,productCapacity,maxBatchBySku);
-    if (batch <= 0) { tell('Hazır ürün deposunda yer yok. Önce satış bekle veya ürün deposunu genişlet.'); return; }
-    const deficits = recipe.map(part => {
-      const material = profile.materials.find(item => item.id === part.id);
-      const have = Math.max(0,Number(inventory.materials?.[part.id])||0);
-      return { ...part, material, missing: Math.max(0,part.qty*batch-have) };
-    }).filter(part => part.missing > 0);
-    if (!deficits.length) { tell('Seçili üretim miktarı (' + batch + ') için gerekli tüm hammaddeler hazır. Doğrudan üretime başlayabilirsin.'); return; }
-    if (deficits.some(part => !part.material || !unlocked.has(part.id))) { tell('Bu ürün için gereken hammaddelerden bazıları henüz açılmamış.'); return; }
-    const neededSpace = deficits.reduce((sum,part)=>sum+part.missing,0);
-    const itemCapacity = getMaterialItemCapacity(propertyId);
-    const overflow = deficits.find(part => (Number(inventory.materials?.[part.id]) || 0) + part.missing > itemCapacity);
-    if (overflow) { tell(overflow.material.name + ' için tek hammadde depo sınırı aşılacak. Daha küçük üretim partisi seç veya "Depoyu düzenle" ile fazla stoğu iade et.'); return; }
-    if (neededSpace > freeCapacity) { tell('Bu parti için ' + neededSpace + ' birim boş alan gerekiyor; depoda ' + freeCapacity + ' birim var. "Depoyu düzenle" ile fazla stoğu tedarikçiye iade edebilirsin.'); return; }
-    const totalCost = Math.round(deficits.reduce((sum,part)=>sum+part.material.cost*part.missing/part.material.batch,0)*100)/100;
-    if (cash < totalCost) { tell('Seçili ' + batch + ' adetlik üretim için toplu tedarik ₺'+totalCost.toLocaleString('tr-TR')+' tutuyor; bakiyen ₺'+cash.toLocaleString('tr-TR')+'. Üretim partisini küçült veya para biriktir.'); return; }
-    const nextMaterials = { ...(inventory.materials||{}) };
-    deficits.forEach(part => { nextMaterials[part.id]=(Number(nextMaterials[part.id])||0)+part.missing; });
-    setCash(value=>Math.round((value-totalCost)*100)/100);
-    setStockByProperty(old=>{ const state=getInventoryState(propertyId,old[propertyId]); return {...old,[propertyId]:{materials:nextMaterials,products:state.products}}; });
-    setBusinessStats(old=>{const previous=old[propertyId]||{unitsSold:0,revenue:0,stockInvested:0};return {...old,[propertyId]:{...previous,stockInvested:Math.round(((Number(previous.stockInvested)||0)+totalCost)*100)/100}};});
-    tell('Toplu tedarik tamamlandı: '+deficits.map(part=>part.material.name+' +'+part.missing).join(', ')+'. Toplam ₺'+totalCost.toLocaleString('tr-TR')+'. Üretime geçebilirsin.');
+    if(!product)return;
+    if(!owned.includes(propertyId)||rented.includes(propertyId)){tell('Toplu tedarik için işletmenin sahibi olmalı ve kiraya vermemiş olmalısın.');return;}
+    const inventory=getInventoryState(propertyId),plan=planWarehouseSpace(propertyId,product,requestedBatch,inventory);
+    if(!plan){tell('Seçili ürün için depo veya ürün kapasitesi uygun değil. Depoyu düzenle ya da daha küçük parti seç.');return;}
+    const unlocked=new Set(getUnlockedBusinessMaterials(propertyId,getBusinessSalesLevel(propertyId),product).map(m=>m.id));
+    if(plan.deficits.some(p=>!p.material||!unlocked.has(p.id))){tell('Bu ürünün reçetesindeki hammaddeler henüz açılmamış veya tanımlı değil.');return;}
+    if(cash+plan.refund<plan.purchaseCost){tell('Tedarik ₺'+plan.purchaseCost.toLocaleString('tr-TR')+' tutuyor. Fazla stok iadesi ₺'+plan.refund.toLocaleString('tr-TR')+'; kalan tutar için bakiye yetersiz.');return;}
+    const next=applyWarehouseReturns(propertyId,inventory,plan);
+    plan.deficits.forEach(p=>{next[p.id]=(Number(next[p.id])||0)+p.missing;});
+    setCash(v=>Math.round((v+plan.refund-plan.purchaseCost)*100)/100);
+    setStockByProperty(old=>{const state=getInventoryState(propertyId,old[propertyId]);return {...old,[propertyId]:{materials:next,products:state.products}};});
+    setBusinessStats(old=>{const p=old[propertyId]||{unitsSold:0,revenue:0,stockInvested:0};return {...old,[propertyId]:{...p,stockInvested:Math.max(0,Math.round(((Number(p.stockInvested)||0)+plan.purchaseCost-plan.refund)*100)/100)}};});
+    const returned=plan.returns.size?' Fazla stok %85 bedelle otomatik iade edildi; ₺'+plan.refund.toLocaleString('tr-TR')+' geri alındı.':'';
+    tell('Toplu tedarik tamamlandı. '+plan.batch+' adetlik üretim için gerekli hammaddeler hazır.'+returned+' Alış ₺'+plan.purchaseCost.toLocaleString('tr-TR')+'.');
   };
 
   const rebalanceBusinessWarehouse = (propertyId, product, requestedBatch = productionBatch) => {
-    if (!product) return;
-    if (!owned.includes(propertyId) || rented.includes(propertyId)) { tell('Depoyu düzenlemek için işletmenin sahibi olmalı ve kiraya vermemiş olmalısın.'); return; }
-    const profile = getBusinessProfile(propertyId), recipe = getBusinessRecipe(propertyId, product);
-    if (!recipe.length) { tell('Bu hizmet fiziksel hammadde kullanmıyor; depoda düzenlenecek sarf stoğu yok.'); return; }
-    const inventory = getInventoryState(propertyId), capacity = getMaterialCapacity(propertyId), itemCapacity = getMaterialItemCapacity(propertyId);
-    const materials = profile.materials;
-    const materialById = new Map(profile.materials.map(item => [item.id, item])), validIds = new Set(profile.materials.map(item => item.id));
-    const totalRaw = Object.entries(inventory.materials || {}).reduce((sum,[id,amount]) => sum + (validIds.has(id) ? Math.max(0,Number(amount)||0) : 0), 0);
-    const free = Math.max(0,capacity-totalRaw), productCapacity = product.service ? 5 : Math.max(0,getStockCapacity(propertyId)-getTotalStock(propertyId)-getPendingUnits(propertyId));
-    const maxBatchBySku = recipe.reduce((limit,part)=>Math.min(limit,Math.floor(itemCapacity/part.qty)),Infinity);
-    const batch = requestedBatch === 'max' ? Math.min(5,productCapacity,maxBatchBySku) : Math.min(Math.max(1,Number(requestedBatch)||1),productCapacity,maxBatchBySku);
-    if (batch <= 0) { tell('Seçili ürün için depo veya ürün kapasitesi uygun değil. Daha küçük parti seç veya ürün deposunda yer aç.'); return; }
-    const keep = new Map(recipe.map(part=>[part.id,part.qty*batch])), returns = new Map();
-    let forcedTotal = 0;
-    materials.forEach(material=>{const current=Math.max(0,Number(inventory.materials?.[material.id])||0),excess=Math.max(0,current-itemCapacity);if(excess){returns.set(material.id,excess);forcedTotal+=excess;}});
-    const deficits = recipe.reduce((sum,part)=>sum+Math.max(0,part.qty*batch-(Number(inventory.materials?.[part.id])||0)),0);
-    let remaining = Math.max(0,deficits-free-forcedTotal);
-    materials.slice().sort((a,b)=>Number(keep.has(a.id))-Number(keep.has(b.id))).forEach(material=>{
-      if(remaining<=0)return;
-      const current=Math.max(0,Number(inventory.materials?.[material.id])||0),already=Number(returns.get(material.id))||0;
-      const available=Math.max(0,current-already-(keep.get(material.id)||0)),take=Math.min(available,remaining);
-      if(take>0){returns.set(material.id,already+take);remaining-=take;}
-    });
-    const returned=[...returns.values()].reduce((sum,qty)=>sum+qty,0);
-    if(returned<=0){tell('Depo seçili üretim partisi için uygun. Gereken hammaddeler korunuyor ve iade edilebilecek fazla stok yok.');return;}
-    const refund=Math.round([...returns.entries()].reduce((sum,[id,qty])=>{const m=materialById.get(id);return sum+(m?m.cost/Math.max(1,m.batch)*qty*0.7:0);},0)*100)/100;
-    const nextMaterials={...(inventory.materials||{})};returns.forEach((qty,id)=>{nextMaterials[id]=Math.max(0,(Number(nextMaterials[id])||0)-qty);});
-    const freeAfter = Math.max(0,capacity-(totalRaw-returned));
-    const canFitBatch = candidate => {
-      let missingTotal = 0;
-      for (const part of recipe) {
-        const have = Math.max(0,Number(nextMaterials[part.id])||0);
-        const missing = Math.max(0,part.qty*candidate-have);
-        if (have+missing > itemCapacity) return false;
-        missingTotal += missing;
-      }
-      return missingTotal <= freeAfter;
-    };
-    let feasibleBatch = 0;
-    for (let candidate=1;candidate<=batch;candidate++) if (canFitBatch(candidate)) feasibleBatch=candidate;
-    setStockByProperty(old=>{const state=getInventoryState(propertyId,old[propertyId]);return {...old,[propertyId]:{materials:nextMaterials,products:state.products}};});
-    if(refund>0)setCash(value=>Math.round((value+refund)*100)/100);
-    setBusinessStats(old=>{const previous=old[propertyId]||{unitsSold:0,revenue:0,stockInvested:0};return {...old,[propertyId]:{...previous,stockInvested:Math.max(0,Math.round(((Number(previous.stockInvested)||0)-refund)*100)/100)}};});
-    tell('Depo düzenlendi: '+[...returns.entries()].map(([id,qty])=>(materialById.get(id)?.name||id)+' −'+qty).join(', ')+'. '+(capacity-totalRaw+returned)+' birim alan açıldı; tedarikçiden %70 bedelle ₺'+refund.toLocaleString('tr-TR')+' iade alındı. '+(feasibleBatch>0?'Seçili ürün için '+feasibleBatch+' adetlik parti tedarik edilebilir.':'Ancak seçili ürünün ilk üretim partisi için hâlâ yeterli alan yok; daha fazla fazla stoğu iade et veya depoyu genişlet.'));
+    if(!product)return;
+    if(!owned.includes(propertyId)||rented.includes(propertyId)){tell('Depoyu düzenlemek için işletmenin sahibi olmalı ve kiraya vermemiş olmalısın.');return;}
+    const inventory=getInventoryState(propertyId),plan=planWarehouseSpace(propertyId,product,requestedBatch,inventory);
+    if(!plan){tell('Depoda bir üretim partisi için bile alan açılamadı. Daha küçük parti seç veya stokları üretimde kullan.');return;}
+    if(!plan.returns.size){tell('Depo seçili ürün için uygun. '+plan.batch+' adetlik üretim partisi için alan hazır.');return;}
+    const next=applyWarehouseReturns(propertyId,inventory,plan);
+    setStockByProperty(old=>{const state=getInventoryState(propertyId,old[propertyId]);return {...old,[propertyId]:{materials:next,products:state.products}};});
+    setCash(v=>Math.round((v+plan.refund)*100)/100);
+    setBusinessStats(old=>{const p=old[propertyId]||{unitsSold:0,revenue:0,stockInvested:0};return {...old,[propertyId]:{...p,stockInvested:Math.max(0,Math.round(((Number(p.stockInvested)||0)-plan.refund)*100)/100)}};});
+    tell('Depo düzenlendi. '+plan.batch+' adetlik üretim reçetesi korunarak fazla stok %85 bedelle iade edildi. ₺'+plan.refund.toLocaleString('tr-TR')+' geri alındı.');
   };
   const stockBusiness = () => {
     if (sendAction('stockBusiness')) return;
