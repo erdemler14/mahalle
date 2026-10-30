@@ -3351,11 +3351,12 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     setBusinessStats(old=>{const p=old[propertyId]||{unitsSold:0,revenue:0,stockInvested:0};return {...old,[propertyId]:{...p,stockInvested:Math.max(0,Math.round(((Number(p.stockInvested)||0)-plan.refund)*100)/100)}};});
     tell('Depo düzenlendi. '+plan.batch+' adetlik üretim reçetesi korunarak fazla stok %85 bedelle iade edildi. ₺'+plan.refund.toLocaleString('tr-TR')+' geri alındı.');
   };
-  const stockBusiness = () => {
+  const stockBusiness = (requestedProductId = null) => {
     if (sendAction('stockBusiness')) return;
     const propertyId = active.id;
     const availableProducts = (tradeCatalog[propertyId] || []).filter(product => (product.unlockLevel || 1) <= getBusinessSalesLevel(propertyId) && isPlayerProductUnlocked(product));
-    const item = availableProducts.find(product => product.id === businessPlans[propertyId]) || availableProducts[0];
+    const item = availableProducts.find(product => product.id === requestedProductId) || availableProducts.find(product => product.id === businessPlans[propertyId]) || availableProducts[0];
+    if (requestedProductId != null) setBusinessPlans(old => ({ ...old, [propertyId]: requestedProductId }));
     if (!owned.includes(propertyId) || rented.includes(propertyId)) { tell('İşletmeyi yönetmek için sahibi olmalı ve kiraya vermemiş olmalısın.'); return; }
     if (!item || item.price <= 0) { tell('Önce satışa sunacağın ürün veya hizmeti seç.'); return; }
     if (item.service) { tell(item.name + ' bir hizmettir; üretim kuyruğuna girmez. Gerekli sarf malzemelerini tedarik et, hizmet verildikçe tüketilir.'); return; }
@@ -3984,41 +3985,61 @@ function App({ session = null, supabase = null, authConfigured = false }) {
                   <div><span>HAZIR ÜRÜN</span><strong>{getTotalStock(active.id)}/{getStockCapacity(active.id)}</strong></div>
                 </div>
                 {allProducts.some(item => (item.unlockLevel || 1) <= level && !isPlayerProductUnlocked(item)) && <div className="global-unlock-list"><strong>SEVİYEYLE AÇILAN ÜRÜNLER</strong>{allProducts.filter(item => (item.unlockLevel || 1) <= level && !isPlayerProductUnlocked(item)).slice(0, 3).map(item => <div key={item.id}><span>🔒 {item.name}</span><small>Oyuncu seviyesi {getPlayerUnlockLevel(item)}</small></div>)}</div>}
-                <label className="business-label" htmlFor="business-plan-select">Üretilecek ürün</label>
-                <select id="business-plan-select" className="profession-select production-product-select" value={selectedProduct?.id || ''} onChange={e => selectBusinessPlan(e.target.value)}>
-                  {availableProducts.map(item => <option key={item.id} value={item.id}>{item.name} · ₺{getBusinessSalePrice(active.id, item).toLocaleString('tr-TR', {maximumFractionDigits:2})}</option>)}
-                </select>
-                {selectedProduct && <div className="production-recipe-compact">
-                  <div><strong>{selectedProduct.name}</strong><span>Satış ₺{getBusinessSalePrice(active.id, selectedProduct).toLocaleString('tr-TR', {maximumFractionDigits:2})} · Hammadde ₺{getBusinessRecipeCost(active.id, selectedProduct).toLocaleString('tr-TR', {maximumFractionDigits:2})}</span></div>
-                  <p>{recipe.map(part => { const material = profile.materials.find(m => m.id === part.id); const amount = Number(inventory.materials?.[part.id]) || 0; return (material?.name || part.id) + ' ' + amount + '/' + part.qty; }).join('  ·  ')}</p>
-                  {missing.length > 0 && <small className="production-missing">Eksik: {missing.map(part => { const material = profile.materials.find(m => m.id === part.id); return (material?.name || part.id) + ' ×' + (part.qty - (Number(inventory.materials?.[part.id]) || 0)); }).join(', ')}</small>}
-                  {pending && <small className="production-queue-note">Kuyrukta {pending.units} adet · sıradaki {Math.max(0, Math.ceil((pending.readyAt - productionNow) / 1000))} sn</small>}
-                </div>}
-                 <div className="production-materials-head production-materials-toolbar"><div><strong>Hammaddeler</strong><span>{unlockedMaterials.length} çeşit açık</span></div><button type="button" className="bulk-supply-button" onClick={() => buyRecipeMaterials(active.id, selectedProduct, 'warehouse')} disabled={!selectedProduct || !recipe.length}>⚡ Tedarik deposunu doldur</button><button type="button" className="stock-button" onClick={() => rebalanceBusinessWarehouse(active.id, selectedProduct, productionBatch)} disabled={!selectedProduct || !recipe.length}>DEPOYU DÜZENLE</button></div>
-                 <p className="production-helper">Tedarik deposunu doldur seçeneği, seçili ürünün reçete oranlarını esas alarak ortak hammadde deposunu bütçen elverdiği ölçüde doldurur. Gerekirse uyumsuz veya fazla stok %85 bedelle otomatik iade edilir. Depo kapasitesi ve mevcut nakit birlikte hesaba katılır; tek üretimlik partiyle sınırlı değildir. "Depoyu düzenle" ise satın alma yapmadan stokları yeniden dengeler.</p>
-                 {legacyMaterials.length > 0 && <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,flexWrap:'wrap',padding:'11px 13px',marginBottom:10,border:'1px solid #c9a76a',borderRadius:10,background:'#f5ead3',color:'#55442c'}}><div><strong style={{display:'block',fontSize:12}}>ÖNCEKİ SÜRÜMDEN KALAN STOK</strong><small>{legacyMaterials.reduce((sum,[,amount])=>sum+Math.max(0,Number(amount)||0),0)} birim eski hammadde bulundu. Bunlar yeni reçetelerde kullanılmıyor; iade ederek depoyu açabilirsin.</small></div><button type="button" className="stock-button" onClick={() => returnLegacyBusinessMaterials(active.id)}>ESKİ STOKLARI İADE ET · ₺{legacyRefund.toLocaleString('tr-TR')}</button></div>}
-                <div className="production-materials-list">
-                  {unlockedMaterials.map(material => {
-                    const amount = Number(inventory.materials?.[material.id]) || 0;
-                    const quantity = Math.min(material.batch, Math.max(0,getMaterialItemCapacity(active.id)-amount));
-                    const cost = Math.round(material.cost * quantity / material.batch * 100) / 100;
-                    const keepForRecipe = (recipe.find(part => part.id === material.id)?.qty || 0) * (productionBatch === 'max' ? 15 : Math.max(1,Number(productionBatch)||1));
-                    const returnable = Math.min(material.batch,Math.max(0,amount-keepForRecipe));
-                    return <div className="production-material-row" key={material.id}>
-                      <div><strong>{material.name}</strong><small>Stokta {amount} · +{quantity} adet · ₺{cost}</small></div>
-                      <div style={{display:'flex',gap:6,flexWrap:'wrap',justifyContent:'flex-end'}}>
-                        <button className="stock-button" onClick={() => buyBusinessMaterial(active.id, material.id)} disabled={quantity <= 0}>{quantity > 0 ? 'TEDARİK ET' : 'HAMMADDE SINIRI'}</button>
-                        {returnable > 0 && <button className="stock-button" style={{background:'#eee7da',color:'#55442c',border:'1px solid #c8b99e'}} onClick={() => returnBusinessMaterial(active.id,material.id)}>−{returnable} İADE ET</button>}
+                <div className="production-materials-head"><div><strong>Satış kataloğu ve üretim</strong><span>{allProducts.length} ürün · {availableProducts.length} açık</span></div></div>
+                <p className="production-helper">Satışa sunulan tüm ürünler burada listelenir. Her ürünün altında kendi reçetesi ve mevcut hammadde durumu görünür. Eksik varsa tedarik et; reçete hazırsa doğrudan üret.</p>
+                <div className="business-product-catalog">
+                  {allProducts.map(item => {
+                    const unlocked = (item.unlockLevel || 1) <= level && isPlayerProductUnlocked(item);
+                    const itemRecipe = getBusinessRecipe(active.id, item);
+                    const itemMissing = itemRecipe.filter(part => (Number(inventory.materials?.[part.id]) || 0) < part.qty);
+                    const itemPending = pendingProductions[active.id + ':' + item.id];
+                    const itemStock = getProductStock(active.id, item.id);
+                    const itemCapacity = Math.max(0, getStockCapacity(active.id) - getTotalStock(active.id) - getPendingUnits(active.id));
+                    const itemStats = businessStats[active.id]?.productUnitsSold?.[item.id] || {};
+                    const requestedUnits = productionBatch === 'max' ? Math.min(15, itemCapacity) : Math.max(1, Number(productionBatch) || 1);
+                    const batchMissing = itemRecipe.filter(part => (Number(inventory.materials?.[part.id]) || 0) < part.qty * requestedUnits);
+                    const isSelected = businessPlans[active.id] === item.id;
+                    return <article className={`business-product-card ${!unlocked ? 'is-locked' : ''} ${isSelected ? 'is-selected' : ''}`} key={item.id}>
+                      <div className="business-product-card-head">
+                        <div><strong>{item.name}</strong><small>{unlocked ? 'Satış fiyatı ₺' + getBusinessSalePrice(active.id,item).toLocaleString('tr-TR',{maximumFractionDigits:2}) : 'İşletme seviyesi ' + (item.unlockLevel || 1) + ' · Oyuncu seviyesi ' + getPlayerUnlockLevel(item) + ' gerekli'}</small></div>
+                        <span className="business-product-status">{!unlocked ? 'KİLİTLİ' : item.service ? 'HİZMET' : 'SATIŞTA'}</span>
                       </div>
-                    </div>;
+                      <div className="business-product-metrics">
+                        <span>Hazır <b>{item.service ? '—' : itemStock}</b></span>
+                        <span>Üretimde <b>{itemPending?.units || 0}</b></span>
+                        <span>Satılan <b>{Number(itemStats.units) || 0}</b></span>
+                      </div>
+                      <div className="business-product-recipe">
+                        <strong>Gerekli hammaddeler</strong>
+                        {itemRecipe.length ? itemRecipe.map(part => {
+                          const material = profile.materials.find(m => m.id === part.id);
+                          const amount = Number(inventory.materials?.[part.id]) || 0;
+                          const needed = part.qty * (item.service ? 1 : requestedUnits);
+                          const enough = amount >= (item.service ? part.qty : part.qty);
+                          return <div className="business-product-material" key={part.id}>
+                            <span>{material?.name || part.id}</span>
+                            <small className={amount < part.qty ? 'production-missing' : 'production-ready'}>Depoda {amount} · {item.service ? 'Hizmet başına' : requestedUnits + ' üretim için'} {needed}</small>
+                          </div>;
+                        }) : <small className="production-missing">Bu ürün için reçete tanımlanmamış.</small>}
+                      </div>
+                      {itemPending && <small className="production-queue-note">Üretim kuyruğunda {itemPending.units} adet · sıradaki {Math.max(0,Math.ceil((itemPending.readyAt-productionNow)/1000))} sn</small>}
+                      <div className="business-product-actions">
+                        {!unlocked
+                          ? <button type="button" className="stock-button" disabled>KİLİTLİ</button>
+                          : !itemRecipe.length
+                            ? <button type="button" className="stock-button" disabled>REÇETE EKSİK</button>
+                            : itemMissing.length || (!item.service && batchMissing.length)
+                              ? <button type="button" className="stock-button" onClick={() => { setBusinessPlans(old => ({...old,[active.id]:item.id})); buyRecipeMaterials(active.id,item,item.service ? 1 : productionBatch); }}>HAMMADDE TEDARİK ET</button>
+                              : item.service
+                                ? <button type="button" className="stock-button" onClick={() => selectBusinessPlan(item.id)}>{isSelected ? 'HİZMET SEÇİLİ' : 'HİZMETİ SEÇ'}</button>
+                                : <button type="button" className="stock-button production-primary-action" disabled={itemCapacity <= 0} onClick={() => stockBusiness(item.id)}>{itemCapacity <= 0 ? 'ÜRÜN DEPOSU DOLU' : itemPending ? 'KUYRUĞA EKLE · ' + (productionBatch === 'max' ? 'MAKS.' : productionBatch) : (productionBatch === 'max' ? 'MAKSİMUM ÜRET' : productionBatch + ' ADET ÜRET')}</button>}
+                      </div>
+                    </article>;
                   })}
                 </div>
-                {selectedProduct && !selectedProduct.service && getProductStock(active.id, selectedProduct.id) === 0 && !pending && <div className="production-stockout-alert"><span>!</span><div><strong>STOK TÜKENDİ</strong><small>{selectedProduct.name} satışta yok. Üretim kuyruğuna ekleyerek stoğu yenile.</small></div></div>}
-                {!selectedProduct?.service && <><div className="production-batch-picker"><span>ÜRETİM PARTİSİ</span><div>
+                <div className="production-batch-picker"><span>ÜRETİM PARTİSİ · TÜM ÜRÜNLER</span><div>
                   {[['1','1 adet'],['5','5 adet'],['10','10 adet'],['max','Maks.']].map(([value,label]) => <button type="button" key={value} className={String(productionBatch) === value ? 'active' : ''} onClick={() => setProductionBatch(value)}>{label}</button>)}
                 </div></div>
-                <button className="stock-button production-primary-action" onClick={stockBusiness} disabled={!canProduce}>{pending ? 'KUYRUĞA ' + (productionBatch === 'max' ? 'MAKS.' : productionBatch) + ' ADET EKLE' : (productionBatch === 'max' ? 'MAKSİMUM ÜRET' : productionBatch + ' ADET ÜRET')}</button></>}
-                {selectedProduct?.service ? <p className="production-action-hint">Bu kalem hizmettir; üretim kuyruğu ve hazır ürün stoğu kullanılmaz. Reçetede görünen sarf malzemeleri hizmet verildikçe tüketilir.</p> : !canProduce && <p className="production-action-hint">{!recipe.length ? 'Bu ürünün hammadde reçetesi tanımlanmamış; üretim başlatılamaz.' : missing.length ? 'Üretime başlamak için eksik hammaddeleri tedarik et.' : 'Hazır ürün deposu dolu. Önce satış bekle veya depoyu genişlet.'}</p>}
                 <details className="production-details">
                   <summary>İşletme raporu ve stok ayrıntıları</summary>
                   <div className="production-detail-body">
