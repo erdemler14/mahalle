@@ -2622,8 +2622,9 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       const profile = getBusinessProfile(propertyId);
       const recipe = getBusinessRecipe(propertyId, product);
       const unlocked = new Set(getUnlockedBusinessMaterials(propertyId).map(item => item.id));
+      const allMaterialIds = new Set(profile.materials.map(item => item.id));
       const capacity = getMaterialCapacity(propertyId);
-      const currentRaw = Object.entries(inventory.materials || {}).reduce((sum,[id,amount]) => sum + (unlocked.has(id) ? Math.max(0,Number(amount)||0) : 0),0);
+      const currentRaw = Object.entries(inventory.materials || {}).reduce((sum,[id,amount]) => sum + (allMaterialIds.has(id) ? Math.max(0,Number(amount)||0) : 0),0);
       const productSpace = Math.max(0,getStockCapacity(propertyId)-getTotalStock(propertyId, inventory)-getPendingUnits(propertyId));
       const itemCapacity = getMaterialItemCapacity(propertyId);
       const maxBatchBySku = recipe.reduce((limit,part)=>Math.min(limit,Math.floor(itemCapacity/part.qty)),Infinity);
@@ -3152,7 +3153,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const inventory = getInventoryState(propertyId);
     const current = Math.max(0, Number(inventory.materials?.[materialId]) || 0);
     const capacity = getMaterialCapacity(propertyId);
-    const validMaterialIds = new Set(getUnlockedBusinessMaterials(propertyId).map(item => item.id));
+    const validMaterialIds = new Set(profile.materials.map(item => item.id));
     const totalRawStock = Object.entries(inventory.materials || {}).reduce((sum, [id, amount]) => sum + (validMaterialIds.has(id) ? Math.max(0, Number(amount) || 0) : 0), 0);
     const itemFree = Math.max(0, getMaterialItemCapacity(propertyId) - current);
     const quantity = Math.min(material.batch, Math.max(0, capacity - totalRawStock), itemFree);
@@ -3171,8 +3172,9 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const recipe = getBusinessRecipe(propertyId, product);
     const inventory = getInventoryState(propertyId);
     const unlocked = new Set(getUnlockedBusinessMaterials(propertyId, getBusinessSalesLevel(propertyId), product).map(item => item.id));
+    const allMaterialIds = new Set(profile.materials.map(item => item.id));
     const capacity = getMaterialCapacity(propertyId);
-    const currentTotal = Object.entries(inventory.materials || {}).reduce((sum,[id,amount]) => sum + (unlocked.has(id) ? Math.max(0,Number(amount)||0) : 0),0);
+    const currentTotal = Object.entries(inventory.materials || {}).reduce((sum,[id,amount]) => sum + (allMaterialIds.has(id) ? Math.max(0,Number(amount)||0) : 0),0);
     const freeCapacity = Math.max(0,capacity-currentTotal);
     const productCapacity = product.service ? 5 : Math.max(0,getStockCapacity(propertyId)-getTotalStock(propertyId)-getPendingUnits(propertyId));
     const maxBatchBySku = recipe.reduce((limit,part)=>Math.min(limit,Math.floor(getMaterialItemCapacity(propertyId)/part.qty)),Infinity);
@@ -3207,8 +3209,8 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const profile = getBusinessProfile(propertyId), recipe = getBusinessRecipe(propertyId, product);
     if (!recipe.length) { tell('Bu hizmet fiziksel hammadde kullanmıyor; depoda düzenlenecek sarf stoğu yok.'); return; }
     const inventory = getInventoryState(propertyId), capacity = getMaterialCapacity(propertyId), itemCapacity = getMaterialItemCapacity(propertyId);
-    const materials = getUnlockedBusinessMaterials(propertyId, getBusinessSalesLevel(propertyId));
-    const materialById = new Map(profile.materials.map(item => [item.id, item])), validIds = new Set(materials.map(item => item.id));
+    const materials = profile.materials;
+    const materialById = new Map(profile.materials.map(item => [item.id, item])), validIds = new Set(profile.materials.map(item => item.id));
     const totalRaw = Object.entries(inventory.materials || {}).reduce((sum,[id,amount]) => sum + (validIds.has(id) ? Math.max(0,Number(amount)||0) : 0), 0);
     const free = Math.max(0,capacity-totalRaw), productCapacity = product.service ? 5 : Math.max(0,getStockCapacity(propertyId)-getTotalStock(propertyId)-getPendingUnits(propertyId));
     const maxBatchBySku = recipe.reduce((limit,part)=>Math.min(limit,Math.floor(itemCapacity/part.qty)),Infinity);
