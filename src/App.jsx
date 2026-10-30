@@ -1838,7 +1838,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     ], recipes:[['oyuncak-ahsap',1,'oyuncak-boya',1],['oyuncak-kumas',1,'oyuncak-dolgu',1],['oyuncak-deri',1,'oyuncak-sicim',1]], productRules:[
       {match:/ahşap|at|top|tahta/i,recipe:[['oyuncak-ahsap',1],['oyuncak-boya',1]]},
       {match:/bez|bebek|kumaş/i,recipe:[['oyuncak-kumas',1],['oyuncak-boya',1]]},
-      {match:/deri|sicim/i,recipe:[['oyuncak-deri',1],['oyuncak-ahsap',1]]}
+      {match:/deri|sicim/i,recipe:[['oyuncak-deri',1],['oyuncak-sicim',1]]}
     ]},
     49: { name:'Saat tamircisi', materials:[
       {id:'saat-mekanizma',name:'Saat mekanizması ve zemberek',batch:4,cost:22},{id:'saat-cam',name:'Saat camı ve kadran',batch:6,cost:12},
@@ -1923,7 +1923,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     ], recipes:[['han61-carsaf',1,'han61-temiz',1],['han61-erzak',1,'han61-yakit',1],['han61-yuk',1,'han61-yakit',1]], productRules:[
       {match:/oda|konaklama|gecelik|yatak/i,recipe:[['han61-carsaf',1],['han61-temiz',1]]},
       {match:/depo|yük|yuk|ambar|yükleme|yukleme/i,recipe:[['han61-yuk',1],['han61-yakit',1]]},
-      {match:/kahvaltı|kahvalti|erzak/i,recipe:[['han61-erzak',1],['han61-yakit',1]]}
+      {match:/kahvaltı|kahvalti|erzak/i,recipe:[['han61-erzak',1],['han61-yakit',1]]},{match:/kira|kiralama|dükkân|dukkan|dükkan/i,recipe:[]}
     ]},
     62: { name:'Arka Sokak Meyhanesi', materials:[
       {id:'arka62-icki',name:'Rakı ve şarap fıçıları',batch:6,cost:17},{id:'arka62-meze',name:'Meze, peynir, zeytin ve turşu',batch:8,cost:12},
@@ -2031,7 +2031,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     36: { name:'Kohen Hemşireler Kitabevi', materials:[{id:'kohen-yabanci',name:'Yabancı dilde kitap ve roman sandığı',batch:6,cost:15},{id:'kohen-sozluk',name:'Sözlük ve dilbilgisi kitabı partisi',batch:6,cost:14},{id:'kohen-kirtasiye',name:'Mürekkep, defter ve kalem',batch:8,cost:9},{id:'kohen-nadir',name:'Nadir ciltli eser ve ithal yayın',batch:4,cost:20}], recipes:[['kohen-yabanci',1,'kohen-kirtasiye',1],['kohen-sozluk',1,'kohen-kirtasiye',1],['kohen-nadir',1,'kohen-kirtasiye',1]], productRules:[{match:/sözlük|sozluk|dil kitabı|dil kitabi/i,recipe:[['kohen-sozluk',1],['kohen-kirtasiye',1]]},{match:/kırtasiye|kirtasiye|defter|kalem|mürekkep|murekkep/i,recipe:[['kohen-kirtasiye',1]]},{match:/nadir|ciltli|ansiklopedi|eser/i,recipe:[['kohen-nadir',1],['kohen-kirtasiye',1]]},{match:/roman|kitap|yayın|yayin/i,recipe:[['kohen-yabanci',1],['kohen-kirtasiye',1]]}] },
     39: { name:'Sokrat Kıraathanesi', materials:[{id:'sokrat-kahve',name:'Dibek kahvesi ve kahve çekirdeği',batch:8,cost:12},{id:'sokrat-cay',name:'Çay, şeker ve limon',batch:8,cost:9},{id:'sokrat-serbet',name:'Şerbet özü ve lokum',batch:8,cost:10},{id:'sokrat-fincan',name:'Porselen fincan ve bardak',batch:8,cost:8},{id:'sokrat-nargile',name:'Nargile tütünü, lüle ve köz',batch:6,cost:12},{id:'sokrat-tavla',name:'Tavla takımı ve oyun masası sarfı',batch:6,cost:8}], recipes:[['sokrat-kahve',1,'sokrat-fincan',1],['sokrat-cay',1,'sokrat-fincan',1],['sokrat-serbet',1,'sokrat-fincan',1]], productRules:[{match:/kahve/i,recipe:[['sokrat-kahve',1],['sokrat-fincan',1]]},{match:/çay|cay|şerbet|serbet/i,recipe:[['sokrat-cay',1],['sokrat-serbet',1],['sokrat-fincan',1]]},{match:/lokum|tatlı|tatli/i,recipe:[['sokrat-serbet',1],['sokrat-cay',1]]},{match:/nargile|köz|koz/i,recipe:[['sokrat-nargile',1],['sokrat-fincan',1]]},{match:/tavla|oyun masası|oyun masasi/i,recipe:[['sokrat-tavla',1],['sokrat-fincan',1]]}] },
     40: { name:'Tarihi Mahalle Hamamı', materials:[{id:'hamam-havlu',name:'Peştamal, havlu ve çarşaf',batch:8,cost:10},{id:'hamam-sabun',name:'Zeytinyağlı sabun ve köpük',batch:8,cost:9},{id:'hamam-kese',name:'Kese ve tellak sarfı',batch:8,cost:9},{id:'hamam-yag',name:'Masaj yağı ve bakım özü',batch:6,cost:12},{id:'hamam-yakit',name:'Kazan yakıtı ve sıcak su gideri',batch:8,cost:10}], recipes:[['hamam-havlu',1,'hamam-sabun',1],['hamam-kese',1,'hamam-sabun',1],['hamam-yag',1,'hamam-havlu',1]], productRules:[{match:/havlu|peştamal|pestamal|kese|sabun/i,recipe:[['hamam-havlu',1],['hamam-sabun',1],['hamam-yakit',1]]},{match:/masaj|bakım|bakim|yağ|yag/i,recipe:[['hamam-yag',1],['hamam-havlu',1],['hamam-yakit',1]]}] },
-    41: { name:'Pera Buharlı Kuru Temizleme', materials:[{id:'pera-dry-solvent',name:'Kuru temizleme solventi',batch:6,cost:14},{id:'pera-dry-steam',name:'Buhar kazanı yakıtı ve ütü sarfı',batch:8,cost:9},{id:'pera-dry-care',name:'İpek ve hassas kumaş bakım solüsyonu',batch:6,cost:12},{id:'pera-dry-wrap',name:'Askı, kâğıt giysi kılıfı ve etiket',batch:10,cost:7},{id:'pera-dry-starch',name:'Kolalama ve leke çıkarıcı',batch:6,cost:11}], recipes:[['pera-dry-solvent',1,'pera-dry-steam',1],['pera-dry-solvent',1,'pera-dry-care',1],['pera-dry-steam',1,'pera-dry-wrap',1]], productRules:[{match:/ipek|hassas/i,recipe:[['pera-dry-solvent',1],['pera-dry-care',1],['pera-dry-wrap',1]]},{match:/ütü|utu|paket|kılıf|kilif/i,recipe:[['pera-dry-steam',1],['pera-dry-wrap',1]]},{match:/takım|takim|palto|kaban|temizleme/i,recipe:[['pera-dry-solvent',1],['pera-dry-steam',1],['pera-dry-starch',1],['pera-dry-wrap',1]]}] }
+    41: { name:'Pera Buharlı Kuru Temizleme', materials:[{id:'pera-dry-solvent',name:'Kuru temizleme solventi',batch:6,cost:14},{id:'pera-dry-steam',name:'Buhar kazanı yakıtı ve ütü sarfı',batch:8,cost:9},{id:'pera-dry-care',name:'İpek ve hassas kumaş bakım solüsyonu',batch:6,cost:12},{id:'pera-dry-wrap',name:'Askı, kâğıt giysi kılıfı ve etiket',batch:10,cost:7},{id:'pera-dry-starch',name:'Kolalama ve leke çıkarıcı',batch:6,cost:11}], recipes:[['pera-dry-solvent',1,'pera-dry-steam',1],['pera-dry-solvent',1,'pera-dry-care',1],['pera-dry-steam',1,'pera-dry-wrap',1]], productRules:[{match:/ipek|hassas/i,recipe:[['pera-dry-solvent',1],['pera-dry-care',1],['pera-dry-wrap',1]]},{match:/ütü|utu|paket|kılıf|kilif/i,recipe:[['pera-dry-steam',1],['pera-dry-wrap',1]]},{match:/takım|takim|palto|kaban|temizleme/i,recipe:[['pera-dry-solvent',1],['pera-dry-steam',1],['pera-dry-starch',1],['pera-dry-wrap',1]]},{match:/leke|çıkarma|cikarma/i,recipe:[['pera-dry-solvent',1],['pera-dry-starch',1],['pera-dry-care',1]]}] }
   };
 
   const getBusinessProfile = (propertyId) => {
@@ -2091,7 +2091,8 @@ function App({ session = null, supabase = null, authConfigured = false }) {
         {match:/giriş|yıkanma|yikanma|hamam/i,recipe:[['hamam-yakit',1],['hamam-su',1]]},
         {match:/kese|köpük|kopuk|tellak/i,recipe:[['hamam-kese-stok',1],['hamam-yakit',1]]},
         {match:/masaj|bakım|bakim|özel oda|ozel oda/i,recipe:[['hamam-yag',1],['hamam-tekstil',1]]},
-        {match:/havlu|peştamal|pestamal/i,recipe:[['hamam-tekstil',1],['hamam-yakit',1]]}
+        {match:/havlu|peştamal|pestamal/i,recipe:[['hamam-tekstil',1],['hamam-yakit',1]]},
+        {match:/oda|dinlenme|paket/i,recipe:[['hamam-yag',1],['hamam-tekstil',1],['hamam-yakit',1]]}
       ]
     };
     if (id === 33) return {
