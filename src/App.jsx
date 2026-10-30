@@ -3857,15 +3857,15 @@ function App({ session = null, supabase = null, authConfigured = false }) {
                   {pending && <small className="production-queue-note">Kuyrukta {pending.units} adet · sıradaki {Math.max(0, Math.ceil((pending.readyAt - productionNow) / 1000))} sn</small>}
                 </div>}
                  <div className="production-materials-head production-materials-toolbar"><div><strong>Hammaddeler</strong><span>{unlockedMaterials.length} çeşit açık</span></div><button type="button" className="bulk-supply-button" onClick={() => buyRecipeMaterials(active.id, selectedProduct, productionBatch)} disabled={!selectedProduct || selectedProduct.service && !recipe.length}>⚡ Eksikleri topluca tedarik et</button><button type="button" className="stock-button" onClick={() => rebalanceBusinessWarehouse(active.id, selectedProduct, productionBatch)} disabled={!selectedProduct || !recipe.length}>DEPOYU DÜZENLE</button></div>
-                 <p className="production-helper">Tek bir hammadde deponun en fazla %55'ini kullanabilir. Depo dolarsa "Depoyu düzenle", seçili ürünün üretim partisi için gereken miktarı korur; fazla stoğu tedarikçiye %70 bedelle iade ederek alan açar.</p>
+                 <p className="production-helper">Tek bir hammadde deponun en fazla %55'ini kullanabilir. Toplu tedarik gerektiğinde sistem önce seçili ürünün reçetesini korur, fazla hammaddeleri %85 bedelle otomatik iade ederek alan açar. İstersen "Depoyu düzenle" ile bunu ayrıca yapabilirsin.</p>
                 <div className="production-materials-list">
                   {unlockedMaterials.map(material => {
                     const amount = Number(inventory.materials?.[material.id]) || 0;
-                    const quantity = Math.min(material.batch, freeCapacity, Math.max(0,getMaterialItemCapacity(active.id)-amount));
+                    const quantity = Math.min(material.batch, Math.max(0,getMaterialItemCapacity(active.id)-amount));
                     const cost = Math.round(material.cost * quantity / material.batch * 100) / 100;
                     return <div className="production-material-row" key={material.id}>
                       <div><strong>{material.name}</strong><small>Stokta {amount} · +{quantity} adet · ₺{cost}</small></div>
-                      <button className="stock-button" onClick={() => buyBusinessMaterial(active.id, material.id)} disabled={quantity <= 0 || cash < cost}>{quantity > 0 ? 'TEDARİK ET' : 'DEPO DOLU'}</button>
+                      <button className="stock-button" onClick={() => buyBusinessMaterial(active.id, material.id)} disabled={quantity <= 0}>{quantity > 0 ? 'TEDARİK ET' : 'HAMMADDE SINIRI'}</button>
                     </div>;
                   })}
                 </div>
