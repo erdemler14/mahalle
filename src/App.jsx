@@ -1553,7 +1553,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     4: [
       {id:'sahin-oda',name:'Han odası geceliği',cost:18,price:39,units:8,service:true},
       {id:'sahin-yatak',name:'Yatak ve çarşaflı konaklama',cost:22,price:48,units:6,service:true},
-      {id:'sahin-kahvalti',name:'Tüccar kahvaltısı',cost:12,price:27,units:8},
+      {id:'sahin-kahvalti',name:'Tüccar kahvaltısı',cost:12,price:27,units:8,service:true},
       {id:'sahin-depo',name:'Ticaret sandığı depolama',cost:10,price:23,units:8,service:true},
       {id:'sahin-ozel',name:'Uzun konaklama ve hamal paketi',cost:28,price:62,units:4,service:true}
     ],
