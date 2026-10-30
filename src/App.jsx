@@ -1720,6 +1720,14 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       {id:'gazino-musiki',name:'Canlı musiki gecesi bileti',cost:16,price:34,units:8,service:true},
       {id:'gazino-loca',name:'Özel loca ve davet paketi',cost:28,price:62,units:3,service:true}
     ],
+    38: [
+      {id:'galata-raki',name:'Galata usulü rakı kadehi',cost:16,price:35,units:8},
+      {id:'galata-sarap',name:'Fıçıdan sofra şarabı',cost:14,price:31,units:8},
+      {id:'galata-meze',name:'Soğuk meze ve zeytinyağlı tabağı',cost:13,price:29,units:8},
+      {id:'galata-balik',name:'Günün balığı ve ızgara',cost:21,price:47,units:5},
+      {id:'galata-deniz',name:'Kalamar, midye ve deniz mahsulü',cost:24,price:54,units:4},
+      {id:'galata-usta',name:'Meyhaneci sofrası ve özel meze seçkisi',cost:29,price:65,units:4}
+    ],
     36: [
       {id:'kohen-roman',name:'Yabancı dilde roman',cost:15,price:32,units:6},
       {id:'kohen-sozluk',name:'Sözlük ve dilbilgisi kitabı',cost:16,price:34,units:6},
@@ -1941,7 +1949,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const propertyName = String(properties.find(property => property.id === id)?.name || '').toLocaleLowerCase('tr-TR');
     // Match by the actual business name as well as its ID: newly added meyhanes
     // must never inherit the unrelated generic wholesale/packaging supply chain.
-    if (/meyhane|meyhaneci|taverna/.test(propertyName)) return MEYHANE_PROFILE;
+    if (id === 38 || /meyhane|meyhaneci|taverna/.test(propertyName)) return MEYHANE_PROFILE;
     // Professional offices sell time and expertise, not physical inventory.
     if ([42, 43, 44, 45, 46].includes(id)) return { name: ({42:'Dr. Deniz Hanım Muayenehanesi',43:'Avukat Nihat Bey Hukuk Bürosu',44:'Diş Tabibi Rauf Bey Kliniği',45:'Mühendislik ve Mimarlık Bürosu',46:'SMMM ve Muhasebe Yazıhanesi'})[id], materials: [], recipes: [], productRules: [] };
     // The playable property IDs end at 41; hotel-like lodging venues are IDs 4 and 21.
@@ -2811,7 +2819,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const id = Number(propertyId);
     if (id === 37) return 'shoe';
     const propertyName = String(properties.find(property => property.id === id)?.name || '').toLocaleLowerCase('tr-TR');
-    if (id === 35 || /meyhane|meyhaneci|taverna|gazino/.test(propertyName)) return 'food';
+    if ([35,38].includes(id) || /meyhane|meyhaneci|taverna|gazino/.test(propertyName)) return 'food';
     if ([4,21].includes(id)) return 'lodging';
     if (id === 15) return 'pharmacy';
     if ([13,14,18,19,12,25].includes(id)) return 'food';
