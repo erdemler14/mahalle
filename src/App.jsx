@@ -2237,7 +2237,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     return [{id:recipe[0],qty:recipe[1]},{id:recipe[2],qty:recipe[3]}];
   };
   const getBusinessRecipeCost = (propertyId, product) => {
-    if (!product || product.service) return 0;
+    if (!product) return 0;
     const profile = getBusinessProfile(propertyId);
     return Math.round(getBusinessRecipe(propertyId, product).reduce((sum, part) => {
       const material = profile.materials.find(item => item.id === part.id);
@@ -2257,7 +2257,6 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   // Catalog prices remain the minimum floor for established retail/luxury goods.
   const getBusinessSalePrice = (propertyId, product) => {
     if (!product) return 0;
-    if (product.service) return Math.round((Number(product.price) || 0) * 100) / 100;
     const recipeCost = getBusinessRecipeCost(propertyId, product);
     return Math.round(Math.max(Number(product.price) || 0, recipeCost * 1.38) * 100) / 100;
   };
@@ -3234,7 +3233,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const capacity = getMaterialCapacity(propertyId);
     const currentTotal = Object.entries(inventory.materials || {}).reduce((sum,[id,amount]) => sum + (unlocked.has(id) ? Math.max(0,Number(amount)||0) : 0),0);
     const freeCapacity = Math.max(0,capacity-currentTotal);
-    const productCapacity = Math.max(0,getStockCapacity(propertyId)-getTotalStock(propertyId)-getPendingUnits(propertyId));
+    const productCapacity = product.service ? 5 : Math.max(0,getStockCapacity(propertyId)-getTotalStock(propertyId)-getPendingUnits(propertyId));
     const maxBatchBySku = recipe.reduce((limit,part)=>Math.min(limit,Math.floor(getMaterialItemCapacity(propertyId)/part.qty)),Infinity);
     const requested = requestedBatch === 'max' ? Math.min(5,productCapacity,maxBatchBySku) : Math.max(1,Number(requestedBatch)||1);
     const batch = Math.min(requested,productCapacity,maxBatchBySku);
@@ -3270,7 +3269,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const materials = getUnlockedBusinessMaterials(propertyId, getBusinessSalesLevel(propertyId));
     const materialById = new Map(profile.materials.map(item => [item.id, item])), validIds = new Set(materials.map(item => item.id));
     const totalRaw = Object.entries(inventory.materials || {}).reduce((sum,[id,amount]) => sum + (validIds.has(id) ? Math.max(0,Number(amount)||0) : 0), 0);
-    const free = Math.max(0,capacity-totalRaw), productCapacity = Math.max(0,getStockCapacity(propertyId)-getTotalStock(propertyId)-getPendingUnits(propertyId));
+    const free = Math.max(0,capacity-totalRaw), productCapacity = product.service ? 5 : Math.max(0,getStockCapacity(propertyId)-getTotalStock(propertyId)-getPendingUnits(propertyId));
     const maxBatchBySku = recipe.reduce((limit,part)=>Math.min(limit,Math.floor(itemCapacity/part.qty)),Infinity);
     const batch = requestedBatch === 'max' ? Math.min(5,productCapacity,maxBatchBySku) : Math.min(Math.max(1,Number(requestedBatch)||1),productCapacity,maxBatchBySku);
     if (batch <= 0) { tell('Seçili ürün için depo veya ürün kapasitesi uygun değil. Daha küçük parti seç veya ürün deposunda yer aç.'); return; }
