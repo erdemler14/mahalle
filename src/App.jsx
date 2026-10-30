@@ -3082,10 +3082,13 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const returned=[...returns.values()].reduce((sum,q)=>sum+q,0);if(!returned){tell('Kunduracı deposu seçili üretim partisi için uygun; iade edilecek fazla stok yok.');return;}
     const refund=Math.round([...returns.entries()].reduce((sum,[id,q])=>{const m=SHOE_MATERIALS.find(x=>x.id===id);return sum+(m?m.cost/Math.max(1,m.batch)*q*0.7:0);},0)*100)/100;
     const next={...materials};returns.forEach((q,id)=>{next[id]=Math.max(0,(Number(next[id])||0)-q);});
+    const freeAfter=Math.max(0,capacity-(totalRaw-returned));
+    const canFitBatch=candidate=>{let missingTotal=0;for(const part of recipe){const have=Math.max(0,Number(next[part.id])||0),missing=Math.max(0,part.qty*candidate-have);if(have+missing>itemCapacity)return false;missingTotal+=missing;}return missingTotal<=freeAfter;};
+    let feasibleBatch=0;for(let candidate=1;candidate<=batch;candidate++)if(canFitBatch(candidate))feasibleBatch=candidate;
     setStockByProperty(old=>{const current=getInventoryState(37,old[37]);return {...old,37:{materials:next,products:current.products}};});
     if(refund>0)setCash(value=>Math.round((value+refund)*100)/100);
     setBusinessStats(old=>{const previous=old[37]||{unitsSold:0,revenue:0,stockInvested:0};return {...old,37:{...previous,stockInvested:Math.max(0,Math.round(((Number(previous.stockInvested)||0)-refund)*100)/100)}};});
-    tell('Kunduracı deposu düzenlendi. '+(capacity-totalRaw+returned)+' birim alan açıldı; fazla malzeme %70 bedelle iade edildi, ₺'+refund.toLocaleString('tr-TR')+' geri alındı. '+batch+' çiftlik reçete stoğu korundu.');
+    tell('Kunduracı deposu düzenlendi. '+(capacity-totalRaw+returned)+' birim alan açıldı; fazla malzeme %70 bedelle iade edildi, ₺'+refund.toLocaleString('tr-TR')+' geri alındı. '+(feasibleBatch>0?feasibleBatch+' çiftlik üretim partisi tedarik edilebilir.':'İlk üretim partisi için hâlâ yeterli alan yok; daha fazla fazla stoğu iade et veya depoyu genişlet.'));
   };
   const craftShoe = (shoeId, requestedBatch = productionBatch) => {
     if (!owned.includes(37) || rented.includes(37)) { tell('Üretim için kunduracı sana ait olmalı ve kirada olmamalı.'); return; }
