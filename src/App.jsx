@@ -1836,9 +1836,9 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       {id:'oyuncak-deri',name:'Deri parça ve sicim',batch:6,cost:9},{id:'oyuncak-boya',name:'Oyuncak boyası ve vernik',batch:6,cost:8},
       {id:'oyuncak-dolgu',name:'Dolgu pamuğu ve yün',batch:8,cost:7},{id:'oyuncak-sicim',name:'Sağlam sicim ve dikiş ipliği',batch:8,cost:6}
     ], recipes:[['oyuncak-ahsap',1,'oyuncak-boya',1],['oyuncak-kumas',1,'oyuncak-dolgu',1],['oyuncak-deri',1,'oyuncak-sicim',1]], productRules:[
-      {match:/ahşap|at|top|tahta/i,recipe:[['oyuncak-ahsap',1],['oyuncak-boya',1]]},
-      {match:/bez|bebek|kumaş/i,recipe:[['oyuncak-kumas',1],['oyuncak-boya',1]]},
-      {match:/deri|sicim/i,recipe:[['oyuncak-deri',1],['oyuncak-sicim',1]]}
+      {match:/deri|sicim/i,recipe:[['oyuncak-deri',1],['oyuncak-sicim',1]]},
+      {match:/bez|bebek|kumaş/i,recipe:[['oyuncak-kumas',1],['oyuncak-dolgu',1]]},
+      {match:/ahşap|at|top|tahta/i,recipe:[['oyuncak-ahsap',1],['oyuncak-boya',1]]}
     ]},
     49: { name:'Saat tamircisi', materials:[
       {id:'saat-mekanizma',name:'Saat mekanizması ve zemberek',batch:4,cost:22},{id:'saat-cam',name:'Saat camı ve kadran',batch:6,cost:12},
@@ -1875,6 +1875,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       {id:'galata53-ekmek',name:'Ekmek ve meze pidesi',batch:8,cost:8},{id:'galata53-servis',name:'Rakı kadehi, tabak ve sofra takımı',batch:6,cost:11},
       {id:'galata53-yakit',name:'Mutfak kömürü ve ocak odunu',batch:8,cost:8}
     ], recipes:[['galata53-icki',1,'galata53-servis',1],['galata53-meze',1,'galata53-yag',1],['galata53-balik',1,'galata53-yakit',1],['galata53-ekmek',1,'galata53-meze',1],['galata53-balik',1,'galata53-meze',2]], productRules:[
+      {match:/ekmek.*meze|meze.*ekmek/i,recipe:[['galata53-ekmek',1],['galata53-meze',1],['galata53-yakit',1]]},
       {match:/rakı|raki|şarap|sarap|bira|içki|icki|kadeh/i,recipe:[['galata53-icki',1],['galata53-servis',1]]},
       {match:/balık|balik|deniz|ızgara|izgara|kalamar|midye|karides/i,recipe:[['galata53-balik',1],['galata53-yakit',1],['galata53-yag',1]]},
       {match:/meze|peynir|zeytin|turşu|tursu/i,recipe:[['galata53-meze',1],['galata53-yag',1],['galata53-servis',1]]},
