@@ -1910,8 +1910,38 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     41: { name:'Pera Buharlı Kuru Temizleme', materials:[{id:'pera-dry-solvent',name:'Kuru temizleme solventi',batch:6,cost:14},{id:'pera-dry-steam',name:'Buhar kazanı yakıtı ve ütü sarfı',batch:8,cost:9},{id:'pera-dry-care',name:'İpek ve hassas kumaş bakım solüsyonu',batch:6,cost:12},{id:'pera-dry-wrap',name:'Askı, kâğıt giysi kılıfı ve etiket',batch:10,cost:7},{id:'pera-dry-starch',name:'Kolalama ve leke çıkarıcı',batch:6,cost:11}], recipes:[['pera-dry-solvent',1,'pera-dry-steam',1],['pera-dry-solvent',1,'pera-dry-care',1],['pera-dry-steam',1,'pera-dry-wrap',1]], productRules:[{match:/ipek|hassas/i,recipe:[['pera-dry-solvent',1],['pera-dry-care',1],['pera-dry-wrap',1]]},{match:/ütü|utu|paket|kılıf|kilif/i,recipe:[['pera-dry-steam',1],['pera-dry-wrap',1]]},{match:/takım|takim|palto|kaban|temizleme/i,recipe:[['pera-dry-solvent',1],['pera-dry-steam',1],['pera-dry-starch',1],['pera-dry-wrap',1]]}] }
   };
 
+  const MEYHANE_PROFILE = {
+    name:'Galata Meyhanesi — meyhane tedariki',
+    materials:[
+      {id:'meyhane-icki',name:'Rakı, şarap ve bira fıçıları',batch:6,cost:18},
+      {id:'meyhane-balik',name:'Günlük balık ve deniz mahsulü kasası',batch:6,cost:17},
+      {id:'meyhane-meze',name:'Peynir, zeytin ve soğuk meze erzağı',batch:8,cost:12},
+      {id:'meyhane-yag',name:'Zeytinyağı, limon ve taze ot',batch:8,cost:9},
+      {id:'meyhane-ekmek',name:'Ekmek, un ve meze pidesi',batch:8,cost:8},
+      {id:'meyhane-servis',name:'Kadeh, rakı bardağı ve sofra takımı',batch:6,cost:11},
+      {id:'meyhane-yakit',name:'Mutfak kömürü ve ocak odunu',batch:8,cost:8}
+    ],
+    recipes:[
+      ['meyhane-icki',1,'meyhane-servis',1],
+      ['meyhane-meze',1,'meyhane-yag',1],
+      ['meyhane-balik',1,'meyhane-yakit',1],
+      ['meyhane-ekmek',1,'meyhane-meze',1],
+      ['meyhane-balik',1,'meyhane-meze',2]
+    ],
+    productRules:[
+      {match:/rakı|raki|şarap|sarap|bira|içki|icki|fıçı|fici|kadeh/i,recipe:[['meyhane-icki',1],['meyhane-servis',1]]},
+      {match:/balık|balik|deniz mahsulü|deniz mahsulu|ızgara|izgara|kalamar|midye|karides/i,recipe:[['meyhane-balik',1],['meyhane-yakit',1],['meyhane-yag',1]]},
+      {match:/meze|peynir|zeytin|turşu|tursu|salamura/i,recipe:[['meyhane-meze',1],['meyhane-yag',1],['meyhane-servis',1]]},
+      {match:/ekmek|pide|hamur/i,recipe:[['meyhane-ekmek',1],['meyhane-yakit',1]]},
+      {match:/sofra|masa|servis|rakı masası|raki masasi/i,recipe:[['meyhane-servis',1],['meyhane-meze',1]]}
+    ]
+  };
   const getBusinessProfile = (propertyId) => {
     const id = Number(propertyId);
+    const propertyName = String(properties.find(property => property.id === id)?.name || '').toLocaleLowerCase('tr-TR');
+    // Match by the actual business name as well as its ID: newly added meyhanes
+    // must never inherit the unrelated generic wholesale/packaging supply chain.
+    if (/meyhane|meyhaneci|taverna/.test(propertyName)) return MEYHANE_PROFILE;
     // Professional offices sell time and expertise, not physical inventory.
     if ([42, 43, 44, 45, 46].includes(id)) return { name: ({42:'Dr. Deniz Hanım Muayenehanesi',43:'Avukat Nihat Bey Hukuk Bürosu',44:'Diş Tabibi Rauf Bey Kliniği',45:'Mühendislik ve Mimarlık Bürosu',46:'SMMM ve Muhasebe Yazıhanesi'})[id], materials: [], recipes: [], productRules: [] };
     // The playable property IDs end at 41; hotel-like lodging venues are IDs 4 and 21.
@@ -2015,6 +2045,8 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     if (id === 39) return shopSpecificProfiles.coffee;
     // ID 40 has a dedicated hamam procurement profile above; do not fall back to generic service supplies.
     if (id === 41) return shopSpecificProfiles.dryclean;
+    // The school sells instruction and training, not retail goods or packaging.
+    if (id === 47) return { name:'Beyoğlu Ticaret ve Meslek Mektebi', materials:[], recipes:[], productRules:[] };
     if ([4,21].includes(id)) return businessMaterialProfiles.lodging;
     if ([9,16,32].includes(id)) return businessMaterialProfiles.paper;
     if ([26].includes(id)) return businessMaterialProfiles.textile;
@@ -2024,7 +2056,9 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     if ([33].includes(id)) return businessMaterialProfiles.service;
     if ([13,14,18,19,12,25].includes(id)) return businessMaterialProfiles.food;
     if ([10,26].includes(id)) return businessMaterialProfiles.textile;
-    return businessMaterialProfiles.general;
+    // Fail closed instead of assigning unrelated wholesale cartons and packaging
+    // to a newly introduced business whose supply chain has not yet been defined.
+    return { name:'Tedarik profili tanımlanmamış işletme', materials:[], recipes:[], productRules:[] };
   };
   const getBusinessRecipe = (propertyId, product) => {
     const id = Number(propertyId);
@@ -2107,6 +2141,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       ]
     };
     const profile = getBusinessProfile(propertyId);
+    if (!profile.materials?.length || !profile.recipes?.length) return [];
     const customRule = profile.productRules?.find(entry => entry.match.test(key));
     if (customRule && customRule.recipe.every(([materialId, qty]) => profile.materials.some(material => material.id === materialId) && qty > 0)) {
       return customRule.recipe.map(([materialId, qty]) => ({ id: materialId, qty }));
@@ -2775,6 +2810,8 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   const getWarehouseProfileKey = (propertyId) => {
     const id = Number(propertyId);
     if (id === 37) return 'shoe';
+    const propertyName = String(properties.find(property => property.id === id)?.name || '').toLocaleLowerCase('tr-TR');
+    if (id === 35 || /meyhane|meyhaneci|taverna|gazino/.test(propertyName)) return 'food';
     if ([4,21].includes(id)) return 'lodging';
     if (id === 15) return 'pharmacy';
     if ([13,14,18,19,12,25].includes(id)) return 'food';
