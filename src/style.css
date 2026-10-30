@@ -1385,3 +1385,29 @@ body{overflow:hidden}
 .simple-supply-panel>p{margin-top:7px;font-size:9px}
 .business-product-recipe-simple{margin-top:6px}
 .business-ingredient-chip{padding:4px 7px}
+
+/* Focused product-first production interface */
+.production-product-picker{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin:10px 0 12px}
+.production-product-choice{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0;padding:10px 11px;border:1px solid #e4dfd3;border-radius:8px;background:#faf8f2;color:#393b32;text-align:left;cursor:pointer}
+.production-product-choice strong{font-size:11px;line-height:1.3}
+.production-product-choice small{flex-shrink:0;color:#817968;font-size:9px}
+.production-product-choice.active{border-color:#849b78;background:#eef3e9;box-shadow:inset 3px 0 #78916d}
+.production-product-choice.locked{opacity:.45}
+.production-selected-product{padding:13px;margin:8px 0 14px;border:1px solid #e2ddcf;border-radius:10px;background:#f8f6ef;color:#393b32}
+.production-selected-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.production-selected-heading h4{margin:3px 0;font-size:16px;color:#34382f}
+.production-selected-heading small{color:#817968;font-size:10px}
+.production-selected-stock{font-size:10px;font-weight:750;text-align:right;color:#53684c}
+.production-selected-stock small{display:block;margin-top:3px;font-weight:400}
+.production-selected-recipe{margin-top:12px;padding:10px;background:#fffefa;border:1px solid #ece7dc;border-radius:7px}
+.production-recipe-title{margin-bottom:5px;color:#817968;font-size:9px;font-weight:750;letter-spacing:.07em}
+.production-recipe-line{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid #f0ece3;font-size:10px}
+.production-recipe-line:last-child{border-bottom:0}
+.production-recipe-line strong{font-size:9px}
+.production-recipe-line .short{color:#a35b27}
+.production-recipe-line .ready{color:#58754f}
+.production-selected-recipe>small{display:block;margin-top:5px;color:#817968;font-size:9px}
+.production-selected-controls{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;flex-wrap:wrap}
+.production-selected-controls>.stock-button{flex:1;min-height:38px}
+.production-queue-summary{margin-top:8px;color:#77735f;font-size:10px}
+@media(max-width:560px){.production-product-picker{grid-template-columns:1fr}.production-selected-controls{align-items:stretch;flex-direction:column}.production-selected-controls .production-batch-picker{align-self:stretch}}
