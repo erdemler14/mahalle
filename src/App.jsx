@@ -3948,6 +3948,13 @@ function App({ session = null, supabase = null, authConfigured = false }) {
               const recipe = selectedProduct ? getBusinessRecipe(active.id, selectedProduct) : [];
               const missing = recipe.filter(part => (Number(inventory.materials?.[part.id]) || 0) < part.qty);
               const unlockedMaterials = getUnlockedBusinessMaterials(active.id, level, selectedProduct);
+              // Keep the visible supplier menu to four core items. Advanced ingredients
+              // appear naturally as higher-level product recipes unlock.
+              const materialUseCount = new Map();
+              availableProducts.forEach(product => getBusinessRecipe(active.id, product).forEach(part => materialUseCount.set(part.id, (materialUseCount.get(part.id) || 0) + 1)));
+              const simpleSupplyMaterials = [...unlockedMaterials]
+                .sort((a,b) => (materialUseCount.get(b.id) || 0) - (materialUseCount.get(a.id) || 0))
+                .slice(0,4);
               const validMaterialIds = new Set(profile.materials.map(material => material.id));
               const totalRaw = Object.values(inventory.materials || {}).reduce((sum, amount) => sum + Math.max(0, Number(amount) || 0), 0);
                const legacyMaterials = getLegacyMaterials(active.id, inventory);
@@ -3979,6 +3986,23 @@ function App({ session = null, supabase = null, authConfigured = false }) {
                   <div className="production-level-chip"><strong>SEV. {level}/5</strong><small>{level === 5 ? 'Usta işletme' : Math.max(0, nextTarget - sold) + ' satışla seviye atla'}</small></div>
                 </div>
                 {(() => { const order = orders.find(item => item.id === focusedOrderId && item.status === 'accepted' && item.propertyId === active.id); if (!order) return null; const ready = getProductStock(active.id, order.productId); const needed = Math.max(0, Number(order.quantity) - ready); return <div className="focused-order-production"><div className="focused-order-top"><span>↗ SİPARİŞTEN ÜRETİME</span><button type="button" onClick={() => setFocusedOrderId(null)} aria-label="Sipariş hedefini kapat">×</button></div><strong>{order.productName} · {order.propertyName}</strong><div className="focused-order-count"><span>Hazır <b>{ready}</b></span><span>Hedef <b>{order.quantity}</b></span><span>Üretilecek <b>{needed}</b></span></div><div className="customer-order-stock-meter"><span style={{width: Math.min(100, ready / Math.max(1, order.quantity) * 100) + '%'}} /></div><small>Ürün otomatik seçildi. Aşağıda eksik hammaddeleri tedarik edip üretimi başlatabilirsin.</small></div>; })()}
+                <section className="simple-supply-panel">
+                  <div className="simple-supply-heading"><div><strong>Malzeme deposu</strong><small>Bu işletmenin temel tedarik kalemleri</small></div><span>{simpleSupplyMaterials.length}/4</span></div>
+                  <div className="simple-supply-grid">
+                    {simpleSupplyMaterials.map(material => {
+                      const amount = Math.max(0, Number(inventory.materials?.[material.id]) || 0);
+                      const cost = Math.round(material.cost * material.batch / material.batch * 100) / 100;
+                      const cap = getMaterialItemCapacity(active.id);
+                      const total = Object.values(inventory.materials || {}).reduce((sum,n) => sum + Math.max(0,Number(n)||0),0);
+                      const quantity = Math.min(material.batch, Math.max(0,cap-amount), Math.max(0,getMaterialCapacity(active.id)-total));
+                      return <div className="simple-supply-item" key={material.id}>
+                        <div><strong>{material.name}</strong><small>Depoda {amount} · Paket {material.batch}</small></div>
+                        <button type="button" onClick={() => buyBusinessMaterial(active.id,material.id)} disabled={quantity<=0 || cash < material.cost}>+ Tedarik</button>
+                      </div>;
+                    })}
+                  </div>
+                  <p>Yeni ürünler açıldıkça işletmenin ihtiyaç duyduğu malzemeler de gelişir. Ürün kartındaki “Tedarik et” seçeneği, o ürünün eksik reçetesini tek işlemde tamamlar.</p>
+                </section>
                 <div className="production-catalog-heading">
                   <div><strong>Ürünler</strong><small>{availableProducts.length} ürün üretime açık · {allProducts.length - availableProducts.length} kilitli</small></div>
                   <div className="production-batch-picker production-batch-picker-compact"><span>PARTİ</span><div>
@@ -4009,15 +4033,10 @@ function App({ session = null, supabase = null, authConfigured = false }) {
                         </div>
                       </div>
                       <div className="business-product-recipe-simple">
-                        {itemRecipe.length ? itemRecipe.map(part => {
-                          const material = profile.materials.find(m => m.id === part.id);
-                          const amount = Number(inventory.materials?.[part.id]) || 0;
-                          const needed = part.qty * (item.service ? 1 : requestedUnits);
-                          const shortfall = Math.max(0, needed - amount);
-                          return <span className={`business-ingredient-chip ${shortfall ? 'is-missing' : 'is-ready'}`} key={part.id}>
-                            {material?.name || part.id} <b>{shortfall ? '−' + shortfall : amount + '/' + needed}</b>
-                          </span>;
-                        }) : <span className="business-ingredient-chip is-missing">Reçete tanımlanmamış</span>}
+                        <span className={`business-ingredient-chip ${!itemRecipe.length || missingParts.length ? 'is-missing' : 'is-ready'}`}>
+                          {!itemRecipe.length ? 'Reçete tanımlanmamış' : missingParts.length ? missingParts.length + ' malzeme eksik' : item.service ? 'Hizmet malzemeleri hazır' : 'Üretim malzemeleri hazır'}
+                        </span>
+                      </div>
                       </div>
                       <div className="business-product-bottom">
                         {itemPending && <small className="production-queue-note">{itemPending.units} adet üretimde · {Math.max(0,Math.ceil((itemPending.readyAt-productionNow)/1000))} sn</small>}
