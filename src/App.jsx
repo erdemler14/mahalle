@@ -2163,7 +2163,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   const getBusinessRecipe = (propertyId, product) => {
     const id = Number(propertyId);
     const key = String((product?.id || '') + ' ' + (product?.name || '')).toLocaleLowerCase('tr-TR');
-    if (product?.service && [42,43,44,45,46].includes(id)) return [];
+    if (product?.service && [42,43,44,45,46,47].includes(id)) return [];
     // Explicit product-to-supply recipes prevent a shop's entire range from sharing one generic recipe.
     const profile = getBusinessProfile(propertyId);
     if (!profile.materials?.length || !profile.recipes?.length) return [];
@@ -2171,8 +2171,20 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     if (customRule && customRule.recipe.every(([materialId, qty]) => profile.materials.some(material => material.id === materialId) && qty > 0)) {
       return customRule.recipe.map(([materialId, qty]) => ({ id: materialId, qty }));
     }
-    // Never assign an unrelated level-based recipe to an unmatched product.
-    // An empty recipe is explicit: stock-free services may use it; physical goods may not be produced. 
+    // Older profiles store one explicit recipe per catalog item in matching order.
+    // Use that mapping when no name rule exists; never invent generic materials.
+    const catalog = (tradeCatalog[id] || []).filter(item => Number(item.price) > 0);
+    const productIndex = catalog.findIndex(item => item.id === product?.id);
+    const positionalRecipe = productIndex >= 0 ? profile.recipes[productIndex] : null;
+    if (Array.isArray(positionalRecipe) && positionalRecipe.length >= 2 && positionalRecipe.length % 2 === 0) {
+      const recipe = [];
+      for (let index = 0; index < positionalRecipe.length; index += 2) {
+        const materialId = positionalRecipe[index], qty = Number(positionalRecipe[index + 1]);
+        if (!profile.materials.some(material => material.id === materialId) || !Number.isFinite(qty) || qty <= 0) return [];
+        recipe.push({ id: materialId, qty });
+      }
+      return recipe;
+    }
     return [];
   };
   const getBusinessRecipeCost = (propertyId, product) => {
@@ -2869,7 +2881,9 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   const PRODUCT_WAREHOUSE_BASE = { shoe: 24, lodging: 20, pharmacy: 24, food: 30, textile: 24, paper: 36, wood: 24, metal: 20, soap: 24, service: 18, jewelry: 16, toys: 24, clock: 16, coffee: 24, wine: 30, cinema: 18, hamam: 20, flower: 24, dryclean: 16, logistics: 24, general: 30 };
   const WAREHOUSE_LEVEL_MULTIPLIER = [0, 1, 1.55, 2.25, 3.15, 4.3, 5.7, 7.4, 9.5, 12, 15, 18.5, 22.5, 27, 32.5, 39];
   const getMaterialCapacity = (propertyId) => Math.round((MATERIAL_WAREHOUSE_BASE[getWarehouseProfileKey(propertyId)] || 40) * WAREHOUSE_LEVEL_MULTIPLIER[getWarehouseLevel(propertyId)]);
-  const getMaterialItemCapacity = (propertyId) => Math.max(1, Math.floor(getMaterialCapacity(propertyId) * 0.55));
+  // Raw-material capacity is shared by all ingredients; one SKU may fill the warehouse.
+  // Smart procurement returns surplus when another ingredient is needed.
+  const getMaterialItemCapacity = (propertyId) => getMaterialCapacity(propertyId);
   const getStockCapacity = (propertyId) => Math.round((PRODUCT_WAREHOUSE_BASE[getWarehouseProfileKey(propertyId)] || 30) * WAREHOUSE_LEVEL_MULTIPLIER[getWarehouseLevel(propertyId)]);
   const processBusinessSales = (hours = 1) => {
     let revenue = 0;
@@ -3156,7 +3170,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const free=Math.max(0,capacity-total);
     const productSpace=product.service?5:Math.max(0,getStockCapacity(propertyId)-getTotalStock(propertyId)-getPendingUnits(propertyId));
     const maxBySku=recipe.reduce((n,p)=>Math.min(n,Math.floor(itemCapacity/p.qty)),Infinity);
-    const wanted=Math.min(requestedBatch==='max'?5:Math.max(1,Number(requestedBatch)||1),productSpace,maxBySku);
+    const wanted=Math.min(requestedBatch==='max'?15:Math.max(1,Number(requestedBatch)||1),productSpace,maxBySku);
     for(let batch=wanted;batch>=1;batch--){
       const targets=new Map(recipe.map(p=>[p.id,p.qty*batch]));
       const deficits=recipe.map(p=>({...p,material:profile.materials.find(m=>m.id===p.id),missing:Math.max(0,p.qty*batch-(Number(inventory.materials?.[p.id])||0))}));
@@ -3845,7 +3859,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
               const sold = Number(businessStats[active.id]?.unitsSold) || 0;
               const thresholds = [0, 5, 15, 35, 60];
               const nextTarget = thresholds[level];
-              if ([42, 43, 44, 45, 46].includes(Number(active.id))) {
+              if ([42, 43, 44, 45, 46, 47].includes(Number(active.id))) {
                 const serviceProducts = (tradeCatalog[active.id] || []).filter(item => item.service && item.price > 0);
                 const serviceLevel = getBusinessSalesLevel(active.id);
                 const selectedService = serviceProducts.find(item => item.id === businessPlans[active.id]) || serviceProducts.find(item => (item.unlockLevel || 1) <= serviceLevel && isPlayerProductUnlocked(item)) || serviceProducts[0];
@@ -3882,7 +3896,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
                   {pending && <small className="production-queue-note">Kuyrukta {pending.units} adet · sıradaki {Math.max(0, Math.ceil((pending.readyAt - productionNow) / 1000))} sn</small>}
                 </div>}
                  <div className="production-materials-head production-materials-toolbar"><div><strong>Hammaddeler</strong><span>{unlockedMaterials.length} çeşit açık</span></div><button type="button" className="bulk-supply-button" onClick={() => buyRecipeMaterials(active.id, selectedProduct, productionBatch)} disabled={!selectedProduct || selectedProduct.service && !recipe.length}>⚡ Eksikleri topluca tedarik et</button><button type="button" className="stock-button" onClick={() => rebalanceBusinessWarehouse(active.id, selectedProduct, productionBatch)} disabled={!selectedProduct || !recipe.length}>DEPOYU DÜZENLE</button></div>
-                 <p className="production-helper">Tek bir hammadde deponun en fazla %55'ini kullanabilir. Toplu tedarik gerektiğinde sistem önce seçili ürünün reçetesini korur, fazla hammaddeleri %85 bedelle otomatik iade ederek alan açar. İstersen "Depoyu düzenle" ile bunu ayrıca yapabilirsin.</p>
+                 <p className="production-helper">Depo kapasitesi bütün hammaddeler arasında ortaktır. Tek bir malzeme depoyu doldursa bile toplu tedarik, seçili ürünün reçetesinde gereken miktarı korur; kullanılmayan fazlayı %85 bedelle otomatik iade edip eksikleri tamamlar. "Depoyu düzenle" aynı işlemi üretim yapmadan uygular.</p>
                 <div className="production-materials-list">
                   {unlockedMaterials.map(material => {
                     const amount = Number(inventory.materials?.[material.id]) || 0;
