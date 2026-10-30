@@ -1759,7 +1759,12 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     pharmacy: { name: 'Eczahane', materials: [{id:'ecz-ot',name:'Şifalı ot ve etkin madde',batch:6,cost:9},{id:'ecz-sise',name:'Cam şişe ve kavanoz',batch:6,cost:8},{id:'ecz-sargi',name:'Sargı bezi ve temiz pamuk',batch:6,cost:10},{id:'ecz-ambalaj',name:'Etiket ve kâğıt ambalaj',batch:8,cost:7}], recipes: [['ecz-ot',1,'ecz-sise',1],['ecz-ot',2,'ecz-sise',1],['ecz-ot',1,'ecz-ambalaj',2],['ecz-sargi',2,'ecz-ambalaj',1],['ecz-ot',2,'ecz-sise',2]] },
     food: { name: 'Gıda', materials: [{id:'gida-un',name:'Un ve tahıl',batch:8,cost:8},{id:'gida-yag',name:'Yağ ve süt ürünleri',batch:6,cost:9},{id:'gida-urun',name:'Taze gıda ve et',batch:6,cost:12},{id:'gida-baharat',name:'Baharat ve maya',batch:8,cost:7}], recipes: [['gida-un',2,'gida-yag',1],['gida-urun',1,'gida-baharat',1],['gida-urun',2,'gida-yag',1],['gida-un',1,'gida-baharat',1],['gida-urun',2,'gida-baharat',1]] },
     textile: { name: 'Kumaş', materials: [{id:'kum-kumas',name:'Kumaş topu',batch:6,cost:12},{id:'kum-iplik',name:'İplik ve düğme',batch:8,cost:8},{id:'kum-aksesuar',name:'Dantel ve aksesuar',batch:6,cost:10}], recipes: [['kum-kumas',1,'kum-iplik',1],['kum-kumas',2,'kum-iplik',1],['kum-kumas',2,'kum-aksesuar',1],['kum-kumas',2,'kum-iplik',2],['kum-kumas',3,'kum-aksesuar',2]] },
-    paper: { name: 'Matbaa ve kitap', materials: [{id:'kagit',name:'Kâğıt ve karton',batch:8,cost:9},{id:'baski-murekkep',name:'Baskı mürekkebi',batch:6,cost:10},{id:'cilt-malzemesi',name:'Cilt bezi ve tutkal',batch:6,cost:12}], recipes: [['kagit',2,'baski-murekkep',1],['kagit',1,'cilt-malzemesi',1],['kagit',2,'baski-murekkep',2],['kagit',3,'cilt-malzemesi',2],['kagit',3,'baski-murekkep',2]] },
+    paper: { name: 'Matbaa ve kitap', materials: [{id:'kagit',name:'Kâğıt ve karton',batch:8,cost:9},{id:'baski-murekkep',name:'Baskı mürekkebi',batch:6,cost:10},{id:'cilt-malzemesi',name:'Cilt bezi ve tutkal',batch:6,cost:12}], recipes: [['kagit',2,'baski-murekkep',1],['kagit',1,'cilt-malzemesi',1],['kagit',2,'baski-murekkep',2],['kagit',3,'cilt-malzemesi',2],['kagit',3,'baski-murekkep',2]], productRules:[
+      {match:/roman|sözlük|sozluk|tarih|kitap|resimli/i,recipe:[['kagit',2],['baski-murekkep',1]]},
+      {match:/defter|kalem|mürekkep|murekkep|kırtasiye|kirtasiye/i,recipe:[['kagit',1],['baski-murekkep',1]]},
+      {match:/nadir|ciltli|ansiklopedi/i,recipe:[['kagit',2],['cilt-malzemesi',2]]},
+      {match:/sipariş|siparis|yurt dışı|yurt disi/i,recipe:[['kagit',1],['cilt-malzemesi',1],['baski-murekkep',1]]}
+    ] },
     wood: { name: 'Marangoz', materials: [{id:'ahsap',name:'Kereste',batch:6,cost:12},{id:'marangoz-civi',name:'Çivi ve bağlantı',batch:8,cost:7},{id:'ahsap-cila',name:'Cila ve tutkal',batch:6,cost:9}], recipes: [['ahsap',1,'marangoz-civi',1],['ahsap',2,'marangoz-civi',1],['ahsap',2,'ahsap-cila',1],['ahsap',3,'ahsap-cila',1],['ahsap',3,'marangoz-civi',2]] },
     metal: { name: 'Demirci', materials: [{id:'demir-hammadde',name:'Demir külçe',batch:6,cost:14},{id:'komur',name:'Kömür',batch:8,cost:8},{id:'baglanti',name:'Perçin ve bağlantı',batch:8,cost:7}], recipes: [['demir-hammadde',1,'komur',1],['demir-hammadde',2,'komur',1],['demir-hammadde',2,'baglanti',1],['demir-hammadde',3,'komur',2],['demir-hammadde',3,'baglanti',2]] },
     soap: { name: 'Sabun imalatı', materials: [{id:'sabun-yag',name:'Yağ ve sabun bazı',batch:6,cost:11},{id:'sabun-esans',name:'Koku ve bitki özü',batch:6,cost:10},{id:'sabun-kagit',name:'Kalıp ve ambalaj',batch:8,cost:7}], recipes: [['sabun-yag',1,'sabun-kagit',1],['sabun-yag',1,'sabun-esans',1],['sabun-yag',2,'sabun-esans',1],['sabun-yag',2,'sabun-kagit',2],['sabun-yag',2,'sabun-esans',2]] },
@@ -1774,7 +1779,9 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       {match:/takım|takim|temizleme/i,recipe:[['dry-solvent',1],['dry-steam',1]]},
       {match:/palto|kaban/i,recipe:[['dry-solvent',1],['dry-care',1]]},
       {match:/ipek|hassas/i,recipe:[['dry-solvent',1],['dry-care',1],['dry-wrap',1]]},
-      {match:/ütü|utu|paket/i,recipe:[['dry-steam',1],['dry-wrap',1]]}
+      {match:/ütü|utu|paket/i,recipe:[['dry-steam',1],['dry-wrap',1]]},
+      {match:/leke|çıkarma|cikarma/i,recipe:[['dry-solvent',1],['dry-care',1],['dry-steam',1]]},
+      {match:/perde|ev tekstili/i,recipe:[['dry-solvent',1],['dry-steam',1],['dry-wrap',1]]}
     ] },
     grocery: { name: 'Bakkal ve şarküteri', materials: [
       {id:'bak-koku',name:'Kolonya ve esans',batch:6,cost:10},{id:'bak-cam',name:'Cam şişe ve kavanoz',batch:6,cost:9},
@@ -1795,7 +1802,13 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       {id:'kahve-cekirdek',name:'Kahve çekirdeği ve çay',batch:8,cost:12},{id:'kahve-seker',name:'Şeker ve süt',batch:8,cost:9},
       {id:'kahve-surup',name:'Şerbet ve tatlı malzemesi',batch:6,cost:10},{id:'kahve-kakao',name:'Kakao ve ithal kahve',batch:6,cost:14},
       {id:'kahve-ikram',name:'Fincan ve servis malzemesi',batch:8,cost:7}
-    ], recipes: [['kahve-cekirdek',1,'kahve-ikram',1],['kahve-seker',1,'kahve-surup',1],['kahve-kakao',1,'kahve-ikram',1],['kahve-surup',2,'kahve-seker',1],['kahve-kakao',2,'kahve-ikram',1]] },
+    ], recipes: [['kahve-cekirdek',1,'kahve-ikram',1],['kahve-seker',1,'kahve-surup',1],['kahve-kakao',1,'kahve-ikram',1],['kahve-surup',2,'kahve-seker',1],['kahve-kakao',2,'kahve-ikram',1]], productRules:[
+      {match:/kahve|dibek/i,recipe:[['kahve-cekirdek',1],['kahve-ikram',1]]},
+      {match:/çay|cay|şerbet|serbet|limonata/i,recipe:[['kahve-cekirdek',1],['kahve-seker',1]]},
+      {match:/lokum|tatlı|tatli|pasta/i,recipe:[['kahve-surup',1],['kahve-ikram',1]]},
+      {match:/nargile|köz|koz/i,recipe:[['kahve-cekirdek',1],['kahve-ikram',1],['kahve-seker',1]]},
+      {match:/tavla|oyun|masa|servis/i,recipe:[['kahve-ikram',1],['kahve-seker',1]]}
+    ] },
     bakery: { name: 'Fırın', materials: [
       {id:'fir-un',name:'Un ve tahıl',batch:8,cost:8},{id:'fir-maya',name:'Maya ve tuz',batch:8,cost:7},
       {id:'fir-yag',name:'Tereyağı ve süt',batch:6,cost:10},{id:'fir-seker',name:'Şeker ve tatlı malzemesi',batch:8,cost:9},
@@ -1819,7 +1832,12 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       {id:'aktar-ot',name:'Şifalı ot ve baharat',batch:8,cost:10},{id:'aktar-kavanoz',name:'Kavanoz ve kâğıt kese',batch:8,cost:7},
       {id:'aktar-yag',name:'Bitkisel yağ ve öz',batch:6,cost:11},{id:'aktar-sabun',name:'Sabun ve bakım bazı',batch:6,cost:10}
     ], recipes: [['aktar-ot',1,'aktar-kavanoz',1],['aktar-sabun',1,'aktar-kavanoz',1],['aktar-ot',2,'aktar-kavanoz',1],['aktar-yag',1,'aktar-kavanoz',1],['aktar-ot',2,'aktar-yag',1]] },
-    flower: { name: 'Çiçekçi', materials: [{id:'cicek-taze',name:'Taze kesme çiçek',batch:10,cost:12},{id:'cicek-yesillik',name:'Yeşillik ve dolgu dalı',batch:10,cost:7},{id:'cicek-saksi',name:'Saksı, toprak ve gübre',batch:8,cost:10},{id:'cicek-kagit',name:'Ambalaj kâğıdı ve kurdele',batch:10,cost:6},{id:'cicek-tel',name:'Aranjman teli ve sünger',batch:8,cost:8}], recipes: [['cicek-taze',3,'cicek-kagit',1],['cicek-saksi',1,'cicek-yesillik',1],['cicek-taze',5,'cicek-tel',1],['cicek-taze',4,'cicek-yesillik',2],['cicek-taze',6,'cicek-kagit',2]] },
+    flower: { name: 'Çiçekçi', materials: [{id:'cicek-taze',name:'Taze kesme çiçek',batch:10,cost:12},{id:'cicek-yesillik',name:'Yeşillik ve dolgu dalı',batch:10,cost:7},{id:'cicek-saksi',name:'Saksı, toprak ve gübre',batch:8,cost:10},{id:'cicek-kagit',name:'Ambalaj kâğıdı ve kurdele',batch:10,cost:6},{id:'cicek-tel',name:'Aranjman teli ve sünger',batch:8,cost:8}], recipes: [['cicek-taze',3,'cicek-kagit',1],['cicek-saksi',1,'cicek-yesillik',1],['cicek-taze',5,'cicek-tel',1],['cicek-taze',4,'cicek-yesillik',2],['cicek-taze',6,'cicek-kagit',2]], productRules:[
+      {match:/mevsim|gül|gul|buketi|çiçek|cicek/i,recipe:[['cicek-taze',3],['cicek-kagit',1]]},
+      {match:/saksı|saksi|toprak/i,recipe:[['cicek-saksi',1],['cicek-yesillik',1]]},
+      {match:/çelenk|celenk|tören|toren|cenaze/i,recipe:[['cicek-taze',4],['cicek-tel',1],['cicek-yesillik',1]]},
+      {match:/düğün|dugun|nişan|nisan|kurumsal|haftalık|haftalik|otel|mağaza|magaza/i,recipe:[['cicek-taze',4],['cicek-yesillik',1],['cicek-kagit',1],['cicek-tel',1]]}
+    ] },
     perfumery: { name: 'Kolonyacı ve parfümeri', materials: [
       {id:'par-alkol',name:'Kolonya alkolü',batch:8,cost:10},{id:'par-esans',name:'Parfüm esansı',batch:6,cost:13},
       {id:'par-cam',name:'Cam şişe',batch:8,cost:8},{id:'par-sabun',name:'Sabun ve bakım yağı',batch:6,cost:10},
@@ -2145,7 +2163,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     if ([19,31].includes(id)) return shopSpecificProfiles.restaurant;
     if (id === 23) return shopSpecificProfiles.spice;
     if (id === 28) return shopSpecificProfiles.perfumery;
-    if (id === 34) return businessMaterialProfiles.flower;
+    if (id === 34) return shopSpecificProfiles.flower;
     if (id === 36) return businessMaterialProfiles.paper;
     if (id === 39) return shopSpecificProfiles.coffee;
     // ID 40 has a dedicated hamam procurement profile above; do not fall back to generic service supplies.
