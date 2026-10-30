@@ -2218,6 +2218,19 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       return sum + (material ? material.cost / material.batch * part.qty : 0);
     }, 0) * 100) / 100;
   };
+  // Older saves may contain raw-material IDs from the former generic procurement profile.
+  // Keep their value and make them returnable instead of hiding them or blocking the warehouse.
+  const getMaterialUnitValue = (propertyId, materialId) => {
+    const current = getBusinessProfile(propertyId)?.materials?.find(item => item.id === materialId);
+    if (current) return Number(current.cost) / Math.max(1, Number(current.batch) || 1);
+    const knownProfiles = [...Object.values(businessMaterialProfiles), ...Object.values(shopSpecificProfiles), ...Object.values(BUSINESS_SPECIFIC_PROFILES)];
+    const legacy = knownProfiles.flatMap(profile => profile?.materials || []).find(item => item.id === materialId);
+    return legacy ? Number(legacy.cost) / Math.max(1, Number(legacy.batch) || 1) : 0.75;
+  };
+  const getLegacyMaterials = (propertyId, inventory = getInventoryState(propertyId)) => {
+    const valid = new Set((getBusinessProfile(propertyId)?.materials || []).map(item => item.id));
+    return Object.entries(inventory.materials || {}).filter(([id, amount]) => !valid.has(id) && Math.max(0, Number(amount) || 0) > 0);
+  };
   const getUnlockedBusinessMaterials = (propertyId, level = getBusinessSalesLevel(propertyId), product = null) => {
     const profile = getBusinessProfile(propertyId);
     const professionalOffice = [42, 43, 44, 45, 46].includes(Number(propertyId));
@@ -3203,7 +3216,8 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     if(!recipe.length)return null;
     const capacity=getMaterialCapacity(propertyId),itemCapacity=getMaterialItemCapacity(propertyId);
     const validIds=new Set(profile.materials.map(m=>m.id));
-    const total=Object.entries(inventory.materials||{}).reduce((s,[id,n])=>s+(validIds.has(id)?Math.max(0,Number(n)||0):0),0);
+    const total=Object.values(inventory.materials||{}).reduce((sum,n)=>sum+Math.max(0,Number(n)||0),0);
+    const legacyReturns=new Map(Object.entries(inventory.materials||{}).filter(([id,n])=>!validIds.has(id)&&Math.max(0,Number(n)||0)>0).map(([id,n])=>[id,Math.max(0,Number(n)||0)]));
     const free=Math.max(0,capacity-total);
     const productSpace=product.service?5:Math.max(0,getStockCapacity(propertyId)-getTotalStock(propertyId)-getPendingUnits(propertyId));
     const maxBySku=recipe.reduce((n,p)=>Math.min(n,Math.floor(itemCapacity/p.qty)),Infinity);
@@ -3212,7 +3226,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       const targets=new Map(recipe.map(p=>[p.id,p.qty*batch]));
       const deficits=recipe.map(p=>({...p,material:profile.materials.find(m=>m.id===p.id),missing:Math.max(0,p.qty*batch-(Number(inventory.materials?.[p.id])||0))}));
       const missing=deficits.reduce((s,p)=>s+p.missing,0);
-      const returns=new Map();
+      const returns=new Map(legacyReturns);
       profile.materials.forEach(m=>{
         const have=Math.max(0,Number(inventory.materials?.[m.id])||0);
         const excess=Math.max(0,have+Math.max(0,(targets.get(m.id)||0)-have)-itemCapacity);
