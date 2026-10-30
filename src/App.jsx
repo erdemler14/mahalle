@@ -2658,7 +2658,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       const readyStock = Math.max(0, Number(inventory.products?.[product.id]) || 0);
       if (!product.service && readyStock + (Number(pending?.units) || 0) > 2) return;
       const plan = planWarehouseSpace(propertyId, product, 5, inventory);
-      if (!plan) return;
+      if (!plan || (product.service && !plan.deficits.length && !plan.returns.size)) return;
       const unlocked = new Set(getUnlockedBusinessMaterials(propertyId, getBusinessSalesLevel(propertyId), product).map(item => item.id));
       if (plan.deficits.some(part => !part.material || !unlocked.has(part.id))) return;
       if (cash - autoCashSpent + autoCashRefund < plan.purchaseCost) return;
