@@ -3104,7 +3104,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const quantity = Math.min(material.batch, Math.max(0, capacity - current));
     if (quantity <= 0) { tell('Bu hammaddenin kapasitesi dolu. Seçili ürünün üretimini yap veya farklı bir ürün seç.'); return; }
     const shoe = SHOE_RECIPES.find(item => item.id === selectedShoeId) || SHOE_RECIPES[0];
-    const requested = productionBatch === 'max' ? 10 : Math.max(1, Number(productionBatch) || 1);
+    const requested = productionBatch === 'max' ? 15 : Math.max(1, Number(productionBatch) || 1);
     const preserve = new Map(Object.entries(shoe.recipe).map(([id, qty]) => [id, Number(qty) * requested]));
     const free = Math.max(0, capacity - totalRaw);
     let room = Math.max(0, quantity - free);
@@ -3140,7 +3140,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const totalRaw=SHOE_MATERIALS.reduce((sum,m)=>sum+Math.max(0,Number(materials[m.id])||0),0), free=Math.max(0,capacity-totalRaw);
     const productCapacity=Math.max(0,getStockCapacity(37)-getTotalStock(37)-getPendingUnits(37)), recipe=Object.entries(shoe.recipe).map(([id,qty])=>({id,qty}));
     const maxBatch=recipe.reduce((limit,part)=>Math.min(limit,Math.floor(capacity/part.qty)),Infinity);
-    const batch=requestedBatch==='max'?Math.min(5,productCapacity,maxBatch):Math.min(Math.max(1,Number(requestedBatch)||1),productCapacity,maxBatch);
+    const batch=requestedBatch==='max'?Math.min(15,productCapacity,maxBatch):Math.min(Math.max(1,Number(requestedBatch)||1),productCapacity,maxBatch);
     if(batch<=0){tell('Seçili kundura için depo veya vitrin kapasitesi uygun değil.');return;}
     const keep=new Map(recipe.map(part=>[part.id,part.qty*batch])),returns=new Map();let forced=0;
     SHOE_MATERIALS.forEach(m=>{const excess=Math.max(0,(Number(materials[m.id])||0)-itemCapacity);if(excess){returns.set(m.id,excess);forced+=excess;}});
@@ -3259,7 +3259,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const inventory=getInventoryState(propertyId),current=Math.max(0,Number(inventory.materials?.[materialId])||0);
     const activeProduct=(tradeCatalog[propertyId]||[]).find(item=>item.id===businessPlans[propertyId]);
     const activeRecipe=activeProduct?getBusinessRecipe(propertyId,activeProduct):[];
-    const batch=productionBatch==='max'?5:Math.max(1,Number(productionBatch)||1);
+    const batch=productionBatch==='max'?15:Math.max(1,Number(productionBatch)||1);
     const keep=(activeRecipe.find(part=>part.id===materialId)?.qty||0)*batch;
     const quantity=Math.min(material.batch,Math.max(0,current-keep));
     if(quantity<=0){tell('Seçili ürünün '+batch+' adetlik üretim reçetesi için bu hammaddenin mevcut stoğu korunuyor. Önce ürün veya parti miktarını değiştir.');return;}
@@ -3300,7 +3300,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const free=Math.max(0,capacity-total);
     const activeProduct=(tradeCatalog[propertyId]||[]).find(item=>item.id===businessPlans[propertyId]);
     const activeRecipe=activeProduct?getBusinessRecipe(propertyId,activeProduct):[];
-    const preserve=new Map(activeRecipe.map(part=>[part.id,part.qty*(productionBatch==='max'?10:Math.max(1,Number(productionBatch)||1))]));
+    const preserve=new Map(activeRecipe.map(part=>[part.id,part.qty*(productionBatch==='max'?15:Math.max(1,Number(productionBatch)||1))]));
     const returns=new Map(allMaterials.filter(([id])=>!validIds.has(id)).map(([id,n])=>[id,n]));
     let room=Math.max(0,quantity-free-[...returns.values()].reduce((sum,n)=>sum+n,0));
     profile.materials.filter(m=>m.id!==materialId).map(m=>({m,n:Math.max(0,Number(inventory.materials?.[m.id])||0),keep:preserve.get(m.id)||0})).filter(x=>x.n>x.keep).sort((a,b)=>(a.n-a.keep)-(b.n-b.keep)).reverse().forEach(x=>{if(room<=0)return;const take=Math.min(x.n-x.keep,room);if(take){returns.set(x.m.id,(returns.get(x.m.id)||0)+take);room-=take;}});
@@ -3918,8 +3918,10 @@ function App({ session = null, supabase = null, authConfigured = false }) {
               const missing = recipe.filter(part => (Number(inventory.materials?.[part.id]) || 0) < part.qty);
               const unlockedMaterials = getUnlockedBusinessMaterials(active.id, level, selectedProduct);
               const validMaterialIds = new Set(profile.materials.map(material => material.id));
-              const totalRaw = Object.entries(inventory.materials || {}).reduce((sum, [id, amount]) => sum + (validMaterialIds.has(id) ? Math.max(0, Number(amount) || 0) : 0), 0);
-              const materialCapacity = getMaterialCapacity(active.id);
+              const totalRaw = Object.values(inventory.materials || {}).reduce((sum, amount) => sum + Math.max(0, Number(amount) || 0), 0);
+               const legacyMaterials = getLegacyMaterials(active.id, inventory);
+               const legacyRefund = Math.round(legacyMaterials.reduce((sum, [id, amount]) => sum + getMaterialUnitValue(active.id, id) * Math.max(0, Number(amount) || 0) * 0.85, 0) * 100) / 100;
+               const materialCapacity = getMaterialCapacity(active.id);
               const freeCapacity = Math.max(0, materialCapacity - totalRaw);
               const pending = selectedProduct ? pendingProductions[active.id + ':' + selectedProduct.id] : null;
               const canProduce = !!selectedProduct && !selectedProduct.service && recipe.length > 0 && !missing.length && getTotalStock(active.id) + getPendingUnits(active.id) < getStockCapacity(active.id);
@@ -3963,13 +3965,14 @@ function App({ session = null, supabase = null, authConfigured = false }) {
                   {pending && <small className="production-queue-note">Kuyrukta {pending.units} adet · sıradaki {Math.max(0, Math.ceil((pending.readyAt - productionNow) / 1000))} sn</small>}
                 </div>}
                  <div className="production-materials-head production-materials-toolbar"><div><strong>Hammaddeler</strong><span>{unlockedMaterials.length} çeşit açık</span></div><button type="button" className="bulk-supply-button" onClick={() => buyRecipeMaterials(active.id, selectedProduct, productionBatch)} disabled={!selectedProduct || selectedProduct.service && !recipe.length}>⚡ Eksikleri topluca tedarik et</button><button type="button" className="stock-button" onClick={() => rebalanceBusinessWarehouse(active.id, selectedProduct, productionBatch)} disabled={!selectedProduct || !recipe.length}>DEPOYU DÜZENLE</button></div>
-                 <p className="production-helper">Depo kapasitesi bütün hammaddeler arasında ortaktır. Tek bir malzeme depoyu doldursa bile toplu tedarik, seçili ürünün reçetesinde gereken miktarı korur; kullanılmayan fazlayı %85 bedelle otomatik iade edip eksikleri tamamlar. "Depoyu düzenle" aynı işlemi üretim yapmadan uygular.</p>
+                 <p className="production-helper">Depo kapasitesi bütün hammaddeler arasında ortaktır. Tek bir malzeme depoyu doldursa bile tedarik sistemi seçili ürünün reçetesini korur; kullanılmayan fazlayı %85 bedelle otomatik iade edip eksikleri tamamlar. "Depoyu düzenle" bunu üretim yapmadan uygular.</p>
+                 {legacyMaterials.length > 0 && <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,flexWrap:'wrap',padding:'11px 13px',marginBottom:10,border:'1px solid #c9a76a',borderRadius:10,background:'#f5ead3',color:'#55442c'}}><div><strong style={{display:'block',fontSize:12}}>ÖNCEKİ SÜRÜMDEN KALAN STOK</strong><small>{legacyMaterials.reduce((sum,[,amount])=>sum+Math.max(0,Number(amount)||0),0)} birim eski hammadde bulundu. Bunlar yeni reçetelerde kullanılmıyor; iade ederek depoyu açabilirsin.</small></div><button type="button" className="stock-button" onClick={() => returnLegacyBusinessMaterials(active.id)}>ESKİ STOKLARI İADE ET · ₺{legacyRefund.toLocaleString('tr-TR')}</button></div>}
                 <div className="production-materials-list">
                   {unlockedMaterials.map(material => {
                     const amount = Number(inventory.materials?.[material.id]) || 0;
                     const quantity = Math.min(material.batch, Math.max(0,getMaterialItemCapacity(active.id)-amount));
                     const cost = Math.round(material.cost * quantity / material.batch * 100) / 100;
-                    const keepForRecipe = (recipe.find(part => part.id === material.id)?.qty || 0) * (productionBatch === 'max' ? 5 : Math.max(1,Number(productionBatch)||1));
+                    const keepForRecipe = (recipe.find(part => part.id === material.id)?.qty || 0) * (productionBatch === 'max' ? 15 : Math.max(1,Number(productionBatch)||1));
                     const returnable = Math.min(material.batch,Math.max(0,amount-keepForRecipe));
                     return <div className="production-material-row" key={material.id}>
                       <div><strong>{material.name}</strong><small>Stokta {amount} · +{quantity} adet · ₺{cost}</small></div>
