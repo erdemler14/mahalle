@@ -3925,12 +3925,12 @@ function App({ session = null, supabase = null, authConfigured = false }) {
                     </div>;
                   })}
                 </div>
-                {selectedProduct && getProductStock(active.id, selectedProduct.id) === 0 && !pending && <div className="production-stockout-alert"><span>!</span><div><strong>STOK TÜKENDİ</strong><small>{selectedProduct.name} satışta yok. Üretim kuyruğuna ekleyerek stoğu yenile.</small></div></div>}
-                <div className="production-batch-picker"><span>ÜRETİM PARTİSİ</span><div>
+                {selectedProduct && !selectedProduct.service && getProductStock(active.id, selectedProduct.id) === 0 && !pending && <div className="production-stockout-alert"><span>!</span><div><strong>STOK TÜKENDİ</strong><small>{selectedProduct.name} satışta yok. Üretim kuyruğuna ekleyerek stoğu yenile.</small></div></div>}
+                {!selectedProduct?.service && <><div className="production-batch-picker"><span>ÜRETİM PARTİSİ</span><div>
                   {[['1','1 adet'],['5','5 adet'],['10','10 adet'],['max','Maks.']].map(([value,label]) => <button type="button" key={value} className={String(productionBatch) === value ? 'active' : ''} onClick={() => setProductionBatch(value)}>{label}</button>)}
                 </div></div>
-                <button className="stock-button production-primary-action" onClick={stockBusiness} disabled={!canProduce}>{pending ? 'KUYRUĞA ' + (productionBatch === 'max' ? 'MAKS.' : productionBatch) + ' ADET EKLE' : (productionBatch === 'max' ? 'MAKSİMUM ÜRET' : productionBatch + ' ADET ÜRET')}</button>
-                {!canProduce && <p className="production-action-hint">{missing.length ? 'Üretime başlamak için eksik hammaddeleri tedarik et.' : 'Hazır ürün deposu dolu. Önce satış bekle veya depoyu genişlet.'}</p>}
+                <button className="stock-button production-primary-action" onClick={stockBusiness} disabled={!canProduce}>{pending ? 'KUYRUĞA ' + (productionBatch === 'max' ? 'MAKS.' : productionBatch) + ' ADET EKLE' : (productionBatch === 'max' ? 'MAKSİMUM ÜRET' : productionBatch + ' ADET ÜRET')}</button></>}
+                {selectedProduct?.service ? <p className="production-action-hint">Bu kalem hizmettir; üretim kuyruğu ve hazır ürün stoğu kullanılmaz. Reçetede görünen sarf malzemeleri hizmet verildikçe tüketilir.</p> : !canProduce && <p className="production-action-hint">{missing.length ? 'Üretime başlamak için eksik hammaddeleri tedarik et.' : 'Hazır ürün deposu dolu. Önce satış bekle veya depoyu genişlet.'}</p>}
                 <details className="production-details">
                   <summary>İşletme raporu ve stok ayrıntıları</summary>
                   <div className="production-detail-body">
