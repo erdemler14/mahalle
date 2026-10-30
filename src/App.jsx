@@ -2616,64 +2616,54 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     }
     if (hourlySales.entries.length) setDailySalesLog(old => [...old, ...hourlySales.entries.map(text => ({ text, kind: 'sale' }))].slice(-80));
     if (hourlySales.revenue > 0) setDailySalesRevenue(old => Math.round(((Number(old) || 0) + hourlySales.revenue) * 100) / 100);
-    // Optional auto-replenishment: when selected product stock falls to 2 or fewer units,
-    // top up enough ingredients for a small batch and enqueue production if budget/storage allow.
+    // Optional auto-replenishment: replenish a small production batch when stock is low.
+    // Service businesses with consumable inputs are replenished too; they do not enter a production queue.
     const autoStockChanges = { ...hourlySales.stockChanges };
     const autoPendingChanges = { ...pendingProductions };
     const autoStatsChanges = {};
     let autoCashSpent = 0;
+    let autoCashRefund = 0;
     const autoNotes = [];
     owned.forEach(propertyId => {
       if (!autoSupplyByProperty[propertyId] || rented.includes(propertyId)) return;
       const products = (tradeCatalog[propertyId] || []).filter(product => (product.unlockLevel || 1) <= getBusinessSalesLevel(propertyId) && isPlayerProductUnlocked(product));
       const product = products.find(item => item.id === businessPlans[propertyId]) || products[0];
-      if (!product || product.service || !getBusinessRecipe(propertyId, product).length) return;
+      if (!product || !getBusinessRecipe(propertyId, product).length) return;
       const inventory = getInventoryState(propertyId, autoStockChanges[propertyId] || stockByProperty[propertyId]);
       const pendingKey = propertyId + ':' + product.id;
       const pending = autoPendingChanges[pendingKey];
       const readyStock = Math.max(0, Number(inventory.products?.[product.id]) || 0);
-      if (readyStock + (Number(pending?.units) || 0) > 2) return;
-      const profile = getBusinessProfile(propertyId);
+      if (!product.service && readyStock + (Number(pending?.units) || 0) > 2) return;
+      const plan = planWarehouseSpace(propertyId, product, 5, inventory);
+      if (!plan) return;
+      const unlocked = new Set(getUnlockedBusinessMaterials(propertyId, getBusinessSalesLevel(propertyId), product).map(item => item.id));
+      if (plan.deficits.some(part => !part.material || !unlocked.has(part.id))) return;
+      if (cash - autoCashSpent + autoCashRefund < plan.purchaseCost) return;
+      const nextMaterials = applyWarehouseReturns(propertyId, inventory, plan);
+      plan.deficits.forEach(part => { nextMaterials[part.id] = (Number(nextMaterials[part.id]) || 0) + part.missing; });
       const recipe = getBusinessRecipe(propertyId, product);
-      const unlocked = new Set(getUnlockedBusinessMaterials(propertyId).map(item => item.id));
-      const allMaterialIds = new Set(profile.materials.map(item => item.id));
-      const capacity = getMaterialCapacity(propertyId);
-      const currentRaw = Object.entries(inventory.materials || {}).reduce((sum,[id,amount]) => sum + (allMaterialIds.has(id) ? Math.max(0,Number(amount)||0) : 0),0);
-      const productSpace = Math.max(0,getStockCapacity(propertyId)-getTotalStock(propertyId, inventory)-getPendingUnits(propertyId));
-      const itemCapacity = getMaterialItemCapacity(propertyId);
-      const maxBatchBySku = recipe.reduce((limit,part)=>Math.min(limit,Math.floor(itemCapacity/part.qty)),Infinity);
-      const batch = Math.min(5, productSpace, maxBatchBySku);
-      if (batch <= 0) return;
-      const deficits = recipe.map(part => {
-        const material = profile.materials.find(item => item.id === part.id);
-        const have = Math.max(0,Number(inventory.materials?.[part.id])||0);
-        return { ...part, material, missing: Math.max(0,part.qty*batch-have) };
-      }).filter(part => part.missing > 0);
-      if (deficits.some(part => !part.material || !unlocked.has(part.id) || (Number(inventory.materials?.[part.id])||0)+part.missing > itemCapacity)) return;
-      if (currentRaw + deficits.reduce((sum,part)=>sum+part.missing,0) > capacity) return;
-      const cost = Math.round(deficits.reduce((sum,part)=>sum+part.material.cost*part.missing/part.material.batch,0)*100)/100;
-      if (cash - autoCashSpent < cost) return;
-      const nextMaterials = { ...(inventory.materials || {}) };
-      deficits.forEach(part => { nextMaterials[part.id]=(Number(nextMaterials[part.id])||0)+part.missing; });
-      recipe.forEach(part => { nextMaterials[part.id]=(Number(nextMaterials[part.id])||0)-part.qty*batch; });
-      autoCashSpent += cost;
-      const now = Date.now();
-      const duration = getProductionDuration(propertyId, product.id);
-      const existingUnits = Number(pending?.units) || 0;
-      const readyAt = existingUnits > 0 ? (Number(pending.readyAt) || now + duration) : now + duration;
-      const finishAt = (existingUnits > 0 ? Math.max(now,Number(pending.finishAt)||Number(pending.readyAt)||now) : now) + duration*batch;
-      autoPendingChanges[pendingKey] = { units: existingUnits+batch, readyAt, finishAt, duration, name: product.name, propertyId, productId: product.id };
+      if (!product.service) recipe.forEach(part => { nextMaterials[part.id] = (Number(nextMaterials[part.id]) || 0) - part.qty * plan.batch; });
+      autoCashSpent += plan.purchaseCost;
+      autoCashRefund += plan.refund;
+      if (!product.service) {
+        const now = Date.now();
+        const duration = getProductionDuration(propertyId, product.id);
+        const existingUnits = Number(pending?.units) || 0;
+        const readyAt = existingUnits > 0 ? (Number(pending.readyAt) || now + duration) : now + duration;
+        const finishAt = (existingUnits > 0 ? Math.max(now, Number(pending.finishAt) || Number(pending.readyAt) || now) : now) + duration * plan.batch;
+        autoPendingChanges[pendingKey] = { units: existingUnits + plan.batch, readyAt, finishAt, duration, name: product.name, propertyId, productId: product.id };
+      }
       autoStockChanges[propertyId] = { materials: nextMaterials, products: inventory.products || {} };
       const previous = businessStats[propertyId] || { unitsSold: 0, revenue: 0, stockInvested: 0 };
-      autoStatsChanges[propertyId] = { ...previous, stockInvested: Math.round(((Number(previous.stockInvested)||0)+cost)*100)/100 };
+      autoStatsChanges[propertyId] = { ...previous, stockInvested: Math.max(0, Math.round(((Number(previous.stockInvested) || 0) + plan.purchaseCost - plan.refund) * 100) / 100) };
       autoNotes.push(propertyId);
     });
-    if (autoCashSpent > 0) {
-      setCash(value => Math.round((value-autoCashSpent)*100)/100);
+    if (autoNotes.length) {
+      setCash(value => Math.round((value - autoCashSpent + autoCashRefund) * 100) / 100);
       setStockByProperty(old => ({ ...old, ...autoStockChanges }));
       setPendingProductions(autoPendingChanges);
       setBusinessStats(old => ({ ...old, ...autoStatsChanges }));
-      if (autoNotes.length) tell('Otomatik tedarik ve üretim kuyruğu: ' + autoNotes.map(id => properties.find(item => item.id === id)?.name || 'İşletme').join(', ') + '. Gider ₺' + autoCashSpent.toLocaleString('tr-TR') + '.');
+      tell('Otomatik tedarik: ' + autoNotes.map(id => properties.find(item => item.id === id)?.name || 'İşletme').join(', ') + '. Alış ₺' + autoCashSpent.toLocaleString('tr-TR') + ', fazla stok iadesi ₺' + autoCashRefund.toLocaleString('tr-TR') + '.');
     } else if (Object.keys(hourlySales.salesByProperty).length) setStockByProperty(old => ({ ...old, ...hourlySales.stockChanges }));
     if (Object.keys(hourlySales.salesByProperty).length) {
       setBusinessStats(old => {
