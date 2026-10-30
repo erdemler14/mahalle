@@ -1369,3 +1369,19 @@ body{overflow:hidden}
 .simple-supply-item button:disabled{opacity:.42;cursor:not-allowed}
 .simple-supply-panel>p{margin:8px 0 0;color:#817b6d;font-size:9px;line-height:1.45}
 @media(max-width:560px){.simple-supply-grid{grid-template-columns:1fr}.simple-supply-item{padding:9px 10px}.simple-supply-item strong{font-size:11px}.simple-supply-item button{min-height:34px;padding:6px 10px}}
+
+/* Cleaner supply shelf: one stock bar and one clear purchase action per core input */
+.simple-supply-panel{padding:11px 12px;background:#f7f5ed;border-color:#e7e1d4}
+.simple-supply-heading{margin-bottom:8px}
+.simple-supply-heading>span{background:#e8e7dc;color:#59664d}
+.simple-supply-grid{grid-template-columns:1fr;gap:5px}
+.simple-supply-item{padding:8px 9px;background:#fffefa;border-color:#ece7dc}
+.simple-supply-item-copy{flex:1;min-width:0}
+.simple-supply-item-copy strong{font-size:10px}
+.simple-supply-item-copy small{font-size:9px}
+.simple-supply-meter{height:4px;overflow:hidden;margin-top:5px;border-radius:4px;background:#ece9df}
+.simple-supply-meter span{display:block;height:100%;border-radius:4px;background:#8ba27e}
+.simple-supply-item button{min-width:105px;min-height:32px;padding:6px 9px;background:#e8efe2;border-color:#d1ddc7;color:#3e593a;font-size:9px}
+.simple-supply-panel>p{margin-top:7px;font-size:9px}
+.business-product-recipe-simple{margin-top:6px}
+.business-ingredient-chip{padding:4px 7px}
