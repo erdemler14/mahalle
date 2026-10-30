@@ -3351,7 +3351,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     setBusinessStats(old=>{const p=old[propertyId]||{unitsSold:0,revenue:0,stockInvested:0};return {...old,[propertyId]:{...p,stockInvested:Math.max(0,Math.round(((Number(p.stockInvested)||0)-plan.refund)*100)/100)}};});
     tell('Depo düzenlendi. '+plan.batch+' adetlik üretim reçetesi korunarak fazla stok %85 bedelle iade edildi. ₺'+plan.refund.toLocaleString('tr-TR')+' geri alındı.');
   };
-  const stockBusiness = (requestedProductId = null) => {
+  const stockBusiness = (requestedProductId = null, purchaseMissingMaterials = false) => {
     if (sendAction('stockBusiness')) return;
     const propertyId = active.id;
     const availableProducts = (tradeCatalog[propertyId] || []).filter(product => (product.unlockLevel || 1) <= getBusinessSalesLevel(propertyId) && isPlayerProductUnlocked(product));
@@ -3366,18 +3366,29 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const inventory = getInventoryState(propertyId);
     const recipe = getBusinessRecipe(propertyId, item);
     if (!recipe.length) { tell('Bu ürün için geçerli bir hammadde reçetesi tanımlanmamış. Yanlış veya bedelsiz üretim yapılmasını önlemek için işlem durduruldu.'); return; }
-    const materialLimit = recipe.reduce((limit, part) => Math.min(limit, Math.floor((Number(inventory.materials?.[part.id]) || 0) / part.qty)), Infinity);
+    let productionMaterials = { ...(inventory.materials || {}) };
+    if (purchaseMissingMaterials) {
+      const plan = planWarehouseSpace(propertyId, item, productionBatch, inventory, false, cash);
+      if (!plan) { tell('Eksik malzemeleri alacak bütçe veya depo alanı yok. Daha küçük üretim adedi seçebilirsin.'); return; }
+      const unlocked = new Set(getUnlockedBusinessMaterials(propertyId, level, item).map(material => material.id));
+      if (plan.deficits.some(part => !part.material || !unlocked.has(part.id))) { tell('Bu ürünün gerekli malzemeleri henüz açılmamış.'); return; }
+      productionMaterials = applyWarehouseReturns(propertyId, inventory, plan);
+      plan.deficits.forEach(part => { productionMaterials[part.id] = (Number(productionMaterials[part.id]) || 0) + part.missing; });
+      setCash(value => Math.round((value + plan.refund - plan.purchaseCost) * 100) / 100);
+      setBusinessStats(old => { const previous = old[propertyId] || { unitsSold: 0, revenue: 0, stockInvested: 0 }; return { ...old, [propertyId]: { ...previous, stockInvested: Math.max(0, Math.round(((Number(previous.stockInvested) || 0) + plan.purchaseCost - plan.refund) * 100) / 100) } }; });
+    }
+    const materialLimit = recipe.reduce((limit, part) => Math.min(limit, Math.floor((Number(productionMaterials[part.id]) || 0) / part.qty)), Infinity);
     const capacity = getStockCapacity(propertyId);
     const capacityLimit = Math.max(0, capacity - getTotalStock(propertyId) - getPendingUnits(propertyId));
     const requested = productionBatch === 'max' ? Math.min(materialLimit, capacityLimit) : Math.max(1, Number(productionBatch) || 1);
     const quantity = Math.min(requested, materialLimit, capacityLimit);
     if (quantity <= 0) {
       if (capacityLimit <= 0) tell('Ürün deposu dolu. Satış yapıldıkça yer açılır veya depo yükseltilebilir.');
-      else tell('Hammadde yetersiz. Üretim için gereken miktarları aşağıdan tedarik et.');
+      else tell('Hammadde yetersiz. Üretim adedini azalt veya eksikleri tamamla.');
       return;
     }
     if (quantity < requested) tell('Depo veya hammadde sınırı nedeniyle ' + quantity + ' adet üretim kuyruğa alınıyor.');
-    const nextMaterials = { ...inventory.materials };
+    const nextMaterials = { ...productionMaterials };
     recipe.forEach(part => { nextMaterials[part.id] = (Number(nextMaterials[part.id]) || 0) - part.qty * quantity; });
     const pendingKey = propertyId + ':' + item.id;
     const duration = getProductionDuration(propertyId, item.id);
@@ -4035,7 +4046,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
                       {!itemRecipe.length
                         ? <button type="button" className="stock-button" disabled>TARİF HENÜZ TANIMLANMADI</button>
                         : missingParts.length
-                          ? <button type="button" className="stock-button production-primary-action" onClick={()=>buyRecipeMaterials(active.id,item,item.service?1:productionBatch)}>EKSİKLERİ TEDARİK ET</button>
+                          ? <button type="button" className="stock-button production-primary-action" onClick={()=>stockBusiness(item.id,true)}>TEDARİK ET VE ÜRET</button>
                           : item.service
                             ? <button type="button" className="stock-button production-primary-action" onClick={()=>selectBusinessPlan(item.id)}>HİZMETE HAZIR</button>
                             : <button type="button" className="stock-button production-primary-action" disabled={itemCapacity<=0} onClick={()=>stockBusiness(item.id)}>{itemCapacity<=0?'ÜRÜN DEPOSU DOLU':itemPending?'ÜRETİME EKLE':'ÜRETİME BAŞLA'}</button>}
