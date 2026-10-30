@@ -90,11 +90,6 @@ const EXTRA_TRADE_CATALOG = {
     { id: 'serkuteri-zeytin', name: 'Zeytin', cost: 6, price: 15, units: 8 },
     { id: 'serkuteri-pastirma', name: 'Pastırma', cost: 14, price: 32, units: 6 }
   ],
-  47: [
-    { id: 'bakir-cezve', name: 'Bakır cezve', cost: 12, price: 29, units: 6 },
-    { id: 'bakir-tepsi', name: 'Bakır tepsi', cost: 16, price: 38, units: 6 },
-    { id: 'kalay-tamir', name: 'Kalaylama hizmeti', cost: 0, price: 12, units: 0, service: true }
-  ],
   48: [
     { id: 'oyuncak-at', name: 'Ahşap at', cost: 8, price: 21, units: 6 },
     { id: 'oyuncak-bebek', name: 'Bez bebek', cost: 6, price: 16, units: 8 },
