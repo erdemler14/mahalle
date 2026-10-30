@@ -1833,7 +1833,8 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     ]},
     48: { name:'Oyuncakçı', materials:[
       {id:'oyuncak-ahsap',name:'Oyuncaklık ahşap ve torna parçası',batch:8,cost:10},{id:'oyuncak-kumas',name:'Bez, keçe ve dolgu pamuğu',batch:8,cost:8},
-      {id:'oyuncak-deri',name:'Deri parça ve sicim',batch:6,cost:9},{id:'oyuncak-boya',name:'Oyuncak boyası ve vernik',batch:6,cost:8}
+      {id:'oyuncak-deri',name:'Deri parça ve sicim',batch:6,cost:9},{id:'oyuncak-boya',name:'Oyuncak boyası ve vernik',batch:6,cost:8},
+      {id:'oyuncak-dolgu',name:'Dolgu pamuğu ve yün',batch:8,cost:7},{id:'oyuncak-sicim',name:'Sağlam sicim ve dikiş ipliği',batch:8,cost:6}
     ], recipes:[['oyuncak-ahsap',1,'oyuncak-boya',1],['oyuncak-kumas',1,'oyuncak-dolgu',1],['oyuncak-deri',1,'oyuncak-sicim',1]], productRules:[
       {match:/ahşap|at|top|tahta/i,recipe:[['oyuncak-ahsap',1],['oyuncak-boya',1]]},
       {match:/bez|bebek|kumaş/i,recipe:[['oyuncak-kumas',1],['oyuncak-boya',1]]},
@@ -1900,9 +1901,9 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       {id:'arka59-ikram',name:'Lokum ve küçük ikramlık',batch:8,cost:8},{id:'arka59-fincan',name:'Fincan, bardak ve nargile takımı',batch:6,cost:10},
       {id:'arka59-komur',name:'Semaver odunu ve nargile kömürü',batch:8,cost:8}
     ], recipes:[['arka59-kahve',1,'arka59-fincan',1],['arka59-cay',1,'arka59-komur',1],['arka59-ikram',1,'arka59-fincan',1]], productRules:[
+      {match:/lokum|ikram|nargile/i,recipe:[['arka59-ikram',1],['arka59-fincan',1],['arka59-komur',1]]},
       {match:/kahve/i,recipe:[['arka59-kahve',1],['arka59-fincan',1]]},
-      {match:/çay|cay|şerbet|serbet/i,recipe:[['arka59-cay',1],['arka59-komur',1],['arka59-fincan',1]]},
-      {match:/lokum|ikram|nargile/i,recipe:[['arka59-ikram',1],['arka59-fincan',1],['arka59-komur',1]]}
+      {match:/çay|cay|şerbet|serbet/i,recipe:[['arka59-cay',1],['arka59-komur',1],['arka59-fincan',1]]}
     ]},
     60: { name:'Hamam ve Tellaklar', materials:[
       {id:'hamam60-pestamal',name:'Peştamal, havlu ve çarşaf',batch:8,cost:11},{id:'hamam60-sabun',name:'Zeytinyağlı sabun ve köpük',batch:8,cost:9},
