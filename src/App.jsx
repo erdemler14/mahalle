@@ -2161,92 +2161,17 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const key = String((product?.id || '') + ' ' + (product?.name || '')).toLocaleLowerCase('tr-TR');
     if (product?.service && [42,43,44,45,46].includes(id)) return [];
     // Explicit product-to-supply recipes prevent a shop's entire range from sharing one generic recipe.
-    const recipeByProduct = {
-      1: [
-        {match:/kolonya|parfüm|koku|esans/, recipe:[['bak-koku',1],['bak-cam',1]]},
-        {match:/sabun|bakım/, recipe:[['bak-sabun',1],['bak-ambalaj',1]]},
-        {match:/konserve|erzak/, recipe:[['bak-erzak',1],['bak-cam',1]]},
-        {match:/kahve|kakao/, recipe:[['bak-kahve',1],['bak-cam',1]]},
-        {match:/hediye|set/, recipe:[['bak-koku',1],['bak-ambalaj',1]]}
-      ],
-      7: [
-        {match:/şarap|sarap|üzüm|şişe/, recipe:[['sarap-sira',1],['sarap-sise',1]]},
-        {match:/erzak|ambar|koli/, recipe:[['sarap-erzak',1],['sarap-etiket',1]]},
-        {match:/zeytin|peynir|meze/, recipe:[['sarap-meze',1],['sarap-erzak',1]]}
-      ],
-      10: [
-        {match:/kumaş|kumas|giyim|dikim|giysi|terzi/, recipe:[['konf-kumas',1],['konf-iplik',1]]},
-        {match:/ithal|eşya|esya/, recipe:[['konf-ithal',1],['konf-aksesuar',1]]},
-        {match:/kitap|kırtasiye|kirtasiye/, recipe:[['konf-kagit',1],['konf-ithal',1]]}
-      ],
-      12: [
-        {match:/kahve|çay|cay/, recipe:[['kahve-cekirdek',1],['kahve-ikram',1]]},
-        {match:/tatlı|tatli|şerbet|serbet/, recipe:[['kahve-seker',1],['kahve-surup',1]]},
-        {match:/ithal|kakao/, recipe:[['kahve-kakao',1],['kahve-ikram',1]]}
-      ],
-      13: [
-        {match:/ekmek|somun/, recipe:[['fir-un',2],['fir-maya',1]]},
-        {match:/poğaça|pogaca|çörek|corek/, recipe:[['fir-un',1],['fir-yag',1]]},
-        {match:/tatlı|tatli|şeker|seker/, recipe:[['fir-un',1],['fir-seker',1]]}
-      ],
-      14: [
-        {match:/sakatat|kemik|suyu/, recipe:[['kas-kemik',1],['kas-baharat',1]]},
-        {match:/et|kıyma|kiyma|sucuk/, recipe:[['kas-et',1],['kas-kagit',1]]},
-        {match:/yağ|yag/, recipe:[['kas-et',1],['kas-yag',1]]}
-      ],
-      18: [
-        {match:/meyve|elma|armut|üzüm|uzum/, recipe:[['man-meyve',1],['man-sepet',1]]},
-        {match:/konserve|kurut/, recipe:[['man-meyve',1],['man-kurutma',1]]},
-        {match:/sebze|yeşillik|yesillik/, recipe:[['man-sebze',1],['man-sepet',1]]}
-      ],
-      19: [
-        {match:/çorba|corba|ekmek/, recipe:[['lok-tahil',1],['lok-meze',1]]},
-        {match:/meze|sıcak|sicak/, recipe:[['lok-meze',1],['lok-baharat',1]]},
-        {match:/yemek|günün|gunun|et/, recipe:[['lok-et',1],['lok-yag',1]]}
-      ],
-      23: [
-        {match:/sabun|bakım|bakim/, recipe:[['aktar-sabun',1],['aktar-kavanoz',1]]},
-        {match:/yağ|yag|öz|oz/, recipe:[['aktar-yag',1],['aktar-kavanoz',1]]},
-        {match:/baharat|ot|aktar/, recipe:[['aktar-ot',1],['aktar-kavanoz',1]]}
-      ],
-      25: [
-        {match:/kahve|çay|cay/, recipe:[['kahve-cekirdek',1],['kahve-ikram',1]]},
-        {match:/tatlı|tatli|şerbet|serbet/, recipe:[['kahve-seker',1],['kahve-surup',1]]},
-        {match:/ithal|kakao/, recipe:[['kahve-kakao',1],['kahve-ikram',1]]}
-      ],
-      28: [
-        {match:/kolonya|parfüm|parfum|koku|esans/, recipe:[['par-alkol',1],['par-esans',1],['par-cam',1]]},
-        {match:/sabun|bakım|bakim/, recipe:[['par-sabun',1],['par-kutu',1]]},
-        {match:/hediye|kutu|set/, recipe:[['par-esans',1],['par-kutu',1],['par-cam',1]]},
-        {match:/ithal|konserve|erzak/, recipe:[['bak-erzak',1],['bak-cam',1]]}
-      ],
-      41: [
-        {match:/takım|takim|palto|kaban|temizleme/, recipe:[['dry-solvent',1],['dry-steam',1]]},
-        {match:/ipek|hassas|kumaş|kumas/, recipe:[['dry-solvent',1],['dry-care',1]]},
-        {match:/ütü|utu|paket/, recipe:[['dry-steam',1],['dry-wrap',1]]}
-      ],
-      34: [
-        {match:/saksı|saksi|toprak|gübre|gubre/, recipe:[['cicek-saksi',1],['cicek-yesillik',1]]},
-        {match:/çelenk|tören|toren|aranjman/, recipe:[['cicek-taze',5],['cicek-tel',1],['cicek-yesillik',2]]},
-        {match:/gül|gul|demet|buket|çiçek|cicek/, recipe:[['cicek-taze',3],['cicek-yesillik',1],['cicek-kagit',1]]}
-      ],
-      31: [
-        {match:/çorba|corba|ekmek/, recipe:[['lok-tahil',1],['lok-meze',1]]},
-        {match:/meze|sıcak|sicak/, recipe:[['lok-meze',1],['lok-baharat',1]]},
-        {match:/yemek|günün|gunun|et/, recipe:[['lok-et',1],['lok-yag',1]]}
-      ]
-    };
     const profile = getBusinessProfile(propertyId);
     if (!profile.materials?.length || !profile.recipes?.length) return [];
     const customRule = profile.productRules?.find(entry => entry.match.test(key));
     if (customRule && customRule.recipe.every(([materialId, qty]) => profile.materials.some(material => material.id === materialId) && qty > 0)) {
       return customRule.recipe.map(([materialId, qty]) => ({ id: materialId, qty }));
     }
-    const validMaterialIds = new Set(profile.materials.map(material => material.id));
-    const specific = (recipeByProduct[id] || []).find(entry => entry.match.test(key));
-    if (specific && specific.recipe.every(([materialId, qty]) => validMaterialIds.has(materialId) && qty > 0)) return specific.recipe.map(([materialId, qty]) => ({ id: materialId, qty }));
     const recipe = profile.recipes[Math.min(4, Math.max(0, (Number(product?.unlockLevel) || 1) - 1))] || profile.recipes[0];
-    return [{id:recipe[0],qty:recipe[1]},{id:recipe[2],qty:recipe[3]}];
+    if (!Array.isArray(recipe) || recipe.length < 4) return [];
+    const fallback = [{id:recipe[0],qty:Number(recipe[1])},{id:recipe[2],qty:Number(recipe[3])}];
+    const validMaterialIds = new Set(profile.materials.map(material => material.id));
+    return fallback.every(part => validMaterialIds.has(part.id) && Number.isFinite(part.qty) && part.qty > 0) ? fallback : [];
   };
   const getBusinessRecipeCost = (propertyId, product) => {
     if (!product) return 0;
