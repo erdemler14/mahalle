@@ -4015,10 +4015,9 @@ function App({ session = null, supabase = null, authConfigured = false }) {
                           const material = profile.materials.find(m => m.id === part.id);
                           const amount = Number(inventory.materials?.[part.id]) || 0;
                           const needed = part.qty * (item.service ? 1 : requestedUnits);
-                          const enough = amount >= (item.service ? part.qty : part.qty);
                           return <div className="business-product-material" key={part.id}>
                             <span>{material?.name || part.id}</span>
-                            <small className={amount < part.qty ? 'production-missing' : 'production-ready'}>Depoda {amount} · {item.service ? 'Hizmet başına' : requestedUnits + ' üretim için'} {needed}</small>
+                            <small className={amount < needed ? 'production-missing' : 'production-ready'}>Depoda {amount} · {item.service ? 'Hizmet başına' : requestedUnits + ' üretim için'} {needed}</small>
                           </div>;
                         }) : <small className="production-missing">Bu ürün için reçete tanımlanmamış.</small>}
                       </div>
