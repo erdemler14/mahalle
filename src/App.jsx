@@ -3991,7 +3991,6 @@ function App({ session = null, supabase = null, authConfigured = false }) {
                   <div className="simple-supply-grid">
                     {simpleSupplyMaterials.map(material => {
                       const amount = Math.max(0, Number(inventory.materials?.[material.id]) || 0);
-                      const cost = Math.round(material.cost * material.batch / material.batch * 100) / 100;
                       const cap = getMaterialItemCapacity(active.id);
                       const quantity = Math.min(material.batch, Math.max(0,cap-amount));
                       const cost = Math.round(material.cost * quantity / Math.max(1,material.batch) * 100) / 100;
