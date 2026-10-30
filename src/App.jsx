@@ -2895,7 +2895,13 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const id = Number(propertyId);
     if (id === 37) return 'shoe';
     const propertyName = String(properties.find(property => property.id === id)?.name || '').toLocaleLowerCase('tr-TR');
-    if ([35,53,58,59,62].includes(id) || /meyhane|meyhaneci|taverna|gazino/.test(propertyName)) return 'food';
+    if ([35,53,58,62].includes(id) || /meyhane|meyhaneci|taverna|gazino/.test(propertyName)) return 'food';
+    if ([12,25,39,50,59].includes(id)) return 'coffee';
+    if (id === 34) return 'flower';
+    if (id === 36) return 'paper';
+    if (id === 40 || id === 60) return 'hamam';
+    if (id === 41) return 'dryclean';
+    if ([42,43,44,45,46,47].includes(id)) return 'service';
     if (id === 38) return 'jewelry';
     if (id === 48) return 'toys';
     if (id === 49) return 'clock';
@@ -2919,8 +2925,8 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   };
   // Each business has its own warehouse. Raw materials and finished goods have separate,
   // property-specific capacities; neither inventory is shared between businesses.
-  const MATERIAL_WAREHOUSE_BASE = { shoe: 36, lodging: 40, pharmacy: 36, food: 48, textile: 36, paper: 48, wood: 36, metal: 30, soap: 36, service: 30, jewelry: 24, toys: 36, clock: 24, coffee: 36, wine: 48, cinema: 30, hamam: 40, general: 40 };
-  const PRODUCT_WAREHOUSE_BASE = { shoe: 24, lodging: 20, pharmacy: 24, food: 30, textile: 24, paper: 36, wood: 24, metal: 20, soap: 24, service: 18, jewelry: 16, toys: 24, clock: 16, coffee: 24, wine: 30, cinema: 18, hamam: 20, general: 30 };
+  const MATERIAL_WAREHOUSE_BASE = { shoe: 36, lodging: 40, pharmacy: 36, food: 48, textile: 36, paper: 48, wood: 36, metal: 30, soap: 36, service: 30, jewelry: 24, toys: 36, clock: 24, coffee: 36, wine: 48, cinema: 30, hamam: 40, flower: 40, dryclean: 30, general: 40 };
+  const PRODUCT_WAREHOUSE_BASE = { shoe: 24, lodging: 20, pharmacy: 24, food: 30, textile: 24, paper: 36, wood: 24, metal: 20, soap: 24, service: 18, jewelry: 16, toys: 24, clock: 16, coffee: 24, wine: 30, cinema: 18, hamam: 20, flower: 24, dryclean: 16, general: 30 };
   const WAREHOUSE_LEVEL_MULTIPLIER = [0, 1, 1.55, 2.25, 3.15, 4.3, 5.7, 7.4, 9.5, 12, 15, 18.5, 22.5, 27, 32.5, 39];
   const getMaterialCapacity = (propertyId) => Math.round((MATERIAL_WAREHOUSE_BASE[getWarehouseProfileKey(propertyId)] || 40) * WAREHOUSE_LEVEL_MULTIPLIER[getWarehouseLevel(propertyId)]);
   const getMaterialItemCapacity = (propertyId) => Math.max(1, Math.floor(getMaterialCapacity(propertyId) * 0.55));
