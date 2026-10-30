@@ -3822,7 +3822,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
               const recipe = selectedProduct ? getBusinessRecipe(active.id, selectedProduct) : [];
               const missing = recipe.filter(part => (Number(inventory.materials?.[part.id]) || 0) < part.qty);
               const unlockedMaterials = getUnlockedBusinessMaterials(active.id, level, selectedProduct);
-              const validMaterialIds = new Set(getUnlockedBusinessMaterials(active.id, level).map(material => material.id));
+              const validMaterialIds = new Set(profile.materials.map(material => material.id));
               const totalRaw = Object.entries(inventory.materials || {}).reduce((sum, [id, amount]) => sum + (validMaterialIds.has(id) ? Math.max(0, Number(amount) || 0) : 0), 0);
               const materialCapacity = getMaterialCapacity(active.id);
               const freeCapacity = Math.max(0, materialCapacity - totalRaw);
