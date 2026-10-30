@@ -5,6 +5,48 @@ let s = fs.readFileSync(path, 'utf8');
 
 const extraCatalog = `
 const EXTRA_TRADE_CATALOG = {
+  33: [
+    { id: 'berber-tiras', name: 'Saç ve sakal tıraşı', cost: 0, price: 12, units: 0, service: true },
+    { id: 'berber-sakal', name: 'Ustura ile sakal tıraşı', cost: 0, price: 8, units: 0, service: true },
+    { id: 'berber-sac', name: 'Saç kesimi ve tarama', cost: 0, price: 14, units: 0, service: true },
+    { id: 'berber-bakim', name: 'Kolonya ve saç bakımı', cost: 0, price: 9, units: 0, service: true }
+  ],
+  35: [
+    { id: 'halic-meze', name: 'Meze ve sıcak yemek servisi', cost: 0, price: 22, units: 0, service: true },
+    { id: 'halic-icecek', name: 'Şerbet ve limonata servisi', cost: 0, price: 14, units: 0, service: true },
+    { id: 'halic-masa', name: 'Masa ve teras servisi', cost: 0, price: 18, units: 0, service: true },
+    { id: 'halic-musiki', name: 'Musiki gecesi ve sahne bileti', cost: 0, price: 26, units: 0, service: true }
+  ],
+  42: [
+    { id: 'hekim-muayene', name: 'Muayene ve teşhis', cost: 0, price: 18, units: 0, service: true },
+    { id: 'hekim-ev', name: 'Ev ziyareti', cost: 0, price: 28, units: 0, service: true },
+    { id: 'hekim-tedavi', name: 'Temel tedavi ve takip', cost: 0, price: 24, units: 0, service: true }
+  ],
+  43: [
+    { id: 'hukuk-danismanlik', name: 'Hukuki danışmanlık', cost: 0, price: 22, units: 0, service: true },
+    { id: 'hukuk-dilekce', name: 'Dilekçe ve başvuru hazırlığı', cost: 0, price: 30, units: 0, service: true },
+    { id: 'hukuk-sozlesme', name: 'Sözleşme inceleme ve düzenleme', cost: 0, price: 35, units: 0, service: true }
+  ],
+  44: [
+    { id: 'dis-muayene', name: 'Ağız ve diş muayenesi', cost: 0, price: 16, units: 0, service: true },
+    { id: 'dis-dolgu', name: 'Dolgu ve diş tedavisi', cost: 0, price: 34, units: 0, service: true },
+    { id: 'dis-cekimi', name: 'Diş çekimi', cost: 0, price: 28, units: 0, service: true }
+  ],
+  45: [
+    { id: 'muh-proje', name: 'Yapı projesi ve teknik çizim', cost: 0, price: 34, units: 0, service: true },
+    { id: 'muh-kesif', name: 'Keşif ve metraj çalışması', cost: 0, price: 26, units: 0, service: true },
+    { id: 'muh-danismanlik', name: 'Mühendislik danışmanlığı', cost: 0, price: 30, units: 0, service: true }
+  ],
+  46: [
+    { id: 'smmm-defter', name: 'Esnaf defteri ve muhasebe takibi', cost: 0, price: 20, units: 0, service: true },
+    { id: 'smmm-vergi', name: 'Vergi beyannamesi ve kayıt işlemi', cost: 0, price: 28, units: 0, service: true },
+    { id: 'smmm-denetim', name: 'Hesap kontrolü ve mali müşavirlik', cost: 0, price: 32, units: 0, service: true }
+  ],
+  47: [
+    { id: 'mektep-temel', name: 'Temel ticaret ve hesap dersi', cost: 0, price: 14, units: 0, service: true },
+    { id: 'mektep-meslek', name: 'Mesleki eğitim dönemi', cost: 0, price: 26, units: 0, service: true },
+    { id: 'mektep-ileri', name: 'İleri meslek ve uzmanlık eğitimi', cost: 0, price: 38, units: 0, service: true }
+  ],
   38: [
     { id: 'gumus-yuzuk', name: 'Gümüş yüzük', cost: 35, price: 76, units: 8 },
     { id: 'altin-bilezik', name: 'Altın bilezik', cost: 90, price: 190, units: 8 },
