@@ -3993,11 +3993,11 @@ function App({ session = null, supabase = null, authConfigured = false }) {
                       const amount = Math.max(0, Number(inventory.materials?.[material.id]) || 0);
                       const cost = Math.round(material.cost * material.batch / material.batch * 100) / 100;
                       const cap = getMaterialItemCapacity(active.id);
-                      const total = Object.values(inventory.materials || {}).reduce((sum,n) => sum + Math.max(0,Number(n)||0),0);
-                      const quantity = Math.min(material.batch, Math.max(0,cap-amount), Math.max(0,getMaterialCapacity(active.id)-total));
+                      const quantity = Math.min(material.batch, Math.max(0,cap-amount));
+                      const cost = Math.round(material.cost * quantity / Math.max(1,material.batch) * 100) / 100;
                       return <div className="simple-supply-item" key={material.id}>
                         <div><strong>{material.name}</strong><small>Depoda {amount} · Paket {material.batch}</small></div>
-                        <button type="button" onClick={() => buyBusinessMaterial(active.id,material.id)} disabled={quantity<=0 || cash < material.cost}>+ Tedarik</button>
+                        <button type="button" onClick={() => buyBusinessMaterial(active.id,material.id)} disabled={quantity<=0 || cash < cost}>{quantity>0 ? '+ ' + quantity + ' · ₺' + cost.toLocaleString('tr-TR') : 'DOLU'}</button>
                       </div>;
                     })}
                   </div>
@@ -4036,7 +4036,6 @@ function App({ session = null, supabase = null, authConfigured = false }) {
                         <span className={`business-ingredient-chip ${!itemRecipe.length || missingParts.length ? 'is-missing' : 'is-ready'}`}>
                           {!itemRecipe.length ? 'Reçete tanımlanmamış' : missingParts.length ? missingParts.length + ' malzeme eksik' : item.service ? 'Hizmet malzemeleri hazır' : 'Üretim malzemeleri hazır'}
                         </span>
-                      </div>
                       </div>
                       <div className="business-product-bottom">
                         {itemPending && <small className="production-queue-note">{itemPending.units} adet üretimde · {Math.max(0,Math.ceil((itemPending.readyAt-productionNow)/1000))} sn</small>}
