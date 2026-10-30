@@ -3058,28 +3058,52 @@ function App({ session = null, supabase = null, authConfigured = false }) {
 
   const buyShoeMaterial = (materialId) => {
     if (!owned.includes(37) || rented.includes(37)) { tell('Hammadde almak için kunduracı sana ait olmalı ve kirada olmamalı.'); return; }
-    const material = SHOE_MATERIALS.find(item => item.id === materialId); if (!material) return;
-    const shoeState = stockByProperty[37] && typeof stockByProperty[37] === 'object' ? stockByProperty[37] : { materials: {}, products: {} };
-    const materialStock = Math.max(0, Number(shoeState.materials?.[material.id]) || 0);
+    const material = SHOE_MATERIALS.find(item => item.id === materialId);
+    if (!material) return;
+    const shoeState = getInventoryState(37);
+    const materials = shoeState.materials || {};
+    const current = Math.max(0, Number(materials[material.id]) || 0);
     const capacity = getMaterialCapacity(37);
-    const totalRawStock = SHOE_MATERIALS.reduce((sum, item) => sum + Math.max(0, Number(shoeState.materials?.[item.id]) || 0), 0);
-    const freeCapacity = Math.max(0, capacity - totalRawStock);
-    const itemFree = Math.max(0,getMaterialItemCapacity(37)-materialStock);
-    const quantity = Math.min(material.batch, freeCapacity, itemFree);
-    if (quantity <= 0) { tell('Bu işletmenin hammadde deposu dolu (' + totalRawStock + '/' + capacity + ' birim). Üretim yaparak yer açabilir veya depoyu genişletebilirsin.'); return; }
+    const totalRaw = SHOE_MATERIALS.reduce((sum, item) => sum + Math.max(0, Number(materials[item.id]) || 0), 0);
+    const quantity = Math.min(material.batch, Math.max(0, capacity - current));
+    if (quantity <= 0) { tell('Bu hammaddenin kapasitesi dolu. Seçili ürünün üretimini yap veya farklı bir ürün seç.'); return; }
+    const shoe = SHOE_RECIPES.find(item => item.id === selectedShoeId) || SHOE_RECIPES[0];
+    const requested = productionBatch === 'max' ? 10 : Math.max(1, Number(productionBatch) || 1);
+    const preserve = new Map(Object.entries(shoe.recipe).map(([id, qty]) => [id, Number(qty) * requested]));
+    const free = Math.max(0, capacity - totalRaw);
+    let room = Math.max(0, quantity - free);
+    const returns = new Map();
+    SHOE_MATERIALS.filter(item => item.id !== materialId)
+      .map(item => ({ item, have: Math.max(0, Number(materials[item.id]) || 0), keep: preserve.get(item.id) || 0 }))
+      .filter(row => row.have > row.keep)
+      .sort((a, b) => (a.have - a.keep) - (b.have - b.keep))
+      .reverse()
+      .forEach(row => {
+        if (room <= 0) return;
+        const take = Math.min(row.have - row.keep, room);
+        if (take > 0) { returns.set(row.item.id, take); room -= take; }
+      });
+    if (room > 0) { tell('Depoda yer açılamadı. Seçili kunduranın reçetesini koruyarak fazla stoğu iade etmek için DEPOYU DÜZENLE seçeneğini kullan.'); return; }
+    const refund = Math.round([...returns].reduce((sum, [id, amount]) => {
+      const item = SHOE_MATERIALS.find(row => row.id === id);
+      return sum + (item ? item.cost / Math.max(1, item.batch) * amount * 0.85 : 0);
+    }, 0) * 100) / 100;
     const cost = Math.round(material.cost * quantity / material.batch * 100) / 100;
-    if (cash < cost) { tell(material.name + ' için ₺' + cost + ' gerekiyor.'); return; }
-    setCash(v => Math.round((v - cost) * 100) / 100);
-    setStockByProperty(old => { const state = old[37] && typeof old[37] === 'object' ? old[37] : { materials: {}, products: {} }; return { ...old, 37: { materials: { ...(state.materials || {}), [material.id]: (Number(state.materials?.[material.id]) || 0) + quantity }, products: state.products || {} } }; });
-    setBusinessStats(old => { const prev = old[37] || { unitsSold: 0, revenue: 0, stockInvested: 0 }; return { ...old, 37: { ...prev, stockInvested: Math.round((prev.stockInvested + cost) * 100) / 100 } }; });
-    tell('Tedarik tamamlandı: ' + material.name + ' +' + quantity + ' birim. Maliyet ₺' + cost + '.');
+    if (cash + refund < cost) { tell(material.name + ' için ₺' + cost.toLocaleString('tr-TR') + ' gerekiyor. Fazla stok iadesi ₺' + refund.toLocaleString('tr-TR') + '; kalan tutar için bakiye yetersiz.'); return; }
+    const next = { ...materials };
+    returns.forEach((amount, id) => { next[id] = Math.max(0, (Number(next[id]) || 0) - amount); });
+    next[material.id] = current + quantity;
+    setCash(value => Math.round((value + refund - cost) * 100) / 100);
+    setStockByProperty(old => { const state = getInventoryState(37, old[37]); return { ...old, 37: { materials: next, products: state.products } }; });
+    setBusinessStats(old => { const prev = old[37] || { unitsSold: 0, revenue: 0, stockInvested: 0 }; return { ...old, 37: { ...prev, stockInvested: Math.max(0, Math.round((prev.stockInvested + cost - refund) * 100) / 100) } }; });
+    tell('Tedarik tamamlandı: ' + material.name + ' +' + quantity + ' birim. ' + (returns.size ? 'Fazla stok %85 bedelle otomatik iade edildi. ' : '') + 'Net gider ₺' + Math.max(0, cost - refund).toLocaleString('tr-TR') + '.');
   };
   const rebalanceShoeWarehouse = (shoe, requestedBatch = productionBatch) => {
     if (!shoe) return;
     const state=getInventoryState(37), materials=state.materials||{}, capacity=getMaterialCapacity(37), itemCapacity=getMaterialItemCapacity(37);
     const totalRaw=SHOE_MATERIALS.reduce((sum,m)=>sum+Math.max(0,Number(materials[m.id])||0),0), free=Math.max(0,capacity-totalRaw);
     const productCapacity=Math.max(0,getStockCapacity(37)-getTotalStock(37)-getPendingUnits(37)), recipe=Object.entries(shoe.recipe).map(([id,qty])=>({id,qty}));
-    const maxBatch=recipe.reduce((limit,part)=>Math.min(limit,Math.floor(itemCapacity/part.qty)),Infinity);
+    const maxBatch=recipe.reduce((limit,part)=>Math.min(limit,Math.floor(capacity/part.qty)),Infinity);
     const batch=requestedBatch==='max'?Math.min(5,productCapacity,maxBatch):Math.min(Math.max(1,Number(requestedBatch)||1),productCapacity,maxBatch);
     if(batch<=0){tell('Seçili kundura için depo veya vitrin kapasitesi uygun değil.');return;}
     const keep=new Map(recipe.map(part=>[part.id,part.qty*batch])),returns=new Map();let forced=0;
@@ -3087,7 +3111,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const deficits=recipe.reduce((sum,p)=>sum+Math.max(0,p.qty*batch-(Number(materials[p.id])||0)),0);let remaining=Math.max(0,deficits-free-forced);
     SHOE_MATERIALS.slice().sort((a,b)=>Number(keep.has(a.id))-Number(keep.has(b.id))).forEach(m=>{if(remaining<=0)return;const current=Math.max(0,Number(materials[m.id])||0),already=Number(returns.get(m.id))||0,take=Math.min(Math.max(0,current-already-(keep.get(m.id)||0)),remaining);if(take>0){returns.set(m.id,already+take);remaining-=take;}});
     const returned=[...returns.values()].reduce((sum,q)=>sum+q,0);if(!returned){tell('Kunduracı deposu seçili üretim partisi için uygun; iade edilecek fazla stok yok.');return;}
-    const refund=Math.round([...returns.entries()].reduce((sum,[id,q])=>{const m=SHOE_MATERIALS.find(x=>x.id===id);return sum+(m?m.cost/Math.max(1,m.batch)*q*0.7:0);},0)*100)/100;
+    const refund=Math.round([...returns.entries()].reduce((sum,[id,q])=>{const m=SHOE_MATERIALS.find(x=>x.id===id);return sum+(m?m.cost/Math.max(1,m.batch)*q*0.85:0);},0)*100)/100;
     const next={...materials};returns.forEach((q,id)=>{next[id]=Math.max(0,(Number(next[id])||0)-q);});
     const freeAfter=Math.max(0,capacity-(totalRaw-returned));
     const canFitBatch=candidate=>{let missingTotal=0;for(const part of recipe){const have=Math.max(0,Number(next[part.id])||0),missing=Math.max(0,part.qty*candidate-have);if(have+missing>itemCapacity)return false;missingTotal+=missing;}return missingTotal<=freeAfter;};
@@ -3095,7 +3119,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     setStockByProperty(old=>{const current=getInventoryState(37,old[37]);return {...old,37:{materials:next,products:current.products}};});
     if(refund>0)setCash(value=>Math.round((value+refund)*100)/100);
     setBusinessStats(old=>{const previous=old[37]||{unitsSold:0,revenue:0,stockInvested:0};return {...old,37:{...previous,stockInvested:Math.max(0,Math.round(((Number(previous.stockInvested)||0)-refund)*100)/100)}};});
-    tell('Kunduracı deposu düzenlendi. '+(capacity-totalRaw+returned)+' birim alan açıldı; fazla malzeme %70 bedelle iade edildi, ₺'+refund.toLocaleString('tr-TR')+' geri alındı. '+(feasibleBatch>0?feasibleBatch+' çiftlik üretim partisi tedarik edilebilir.':'İlk üretim partisi için hâlâ yeterli alan yok; daha fazla fazla stoğu iade et veya depoyu genişlet.'));
+    tell('Kunduracı deposu düzenlendi. '+(capacity-totalRaw+returned)+' birim alan açıldı; fazla malzeme %85 bedelle iade edildi, ₺'+refund.toLocaleString('tr-TR')+' geri alındı. '+(feasibleBatch>0?feasibleBatch+' çiftlik üretim partisi tedarik edilebilir.':'İlk üretim partisi için hâlâ yeterli alan yok; daha fazla fazla stoğu iade et veya depoyu genişlet.'));
   };
   const craftShoe = (shoeId, requestedBatch = productionBatch) => {
     if (!owned.includes(37) || rented.includes(37)) { tell('Üretim için kunduracı sana ait olmalı ve kirada olmamalı.'); return; }
@@ -3784,7 +3808,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
                 const amount = Number(materials[m.id]) || 0;
                 const cap = getMaterialCapacity(37);
                 const totalRaw = SHOE_MATERIALS.reduce((sum,item)=>sum+(Number(materials[item.id])||0),0);
-                const quantity = Math.min(m.batch, Math.max(0, cap-totalRaw), Math.max(0,getMaterialItemCapacity(37)-amount));
+                const quantity = Math.min(m.batch, Math.max(0, cap-amount));
                 const cost = Math.round(m.cost*quantity/m.batch*100)/100;
                 const ratio = Math.min(100, Math.round(amount / cap * 100));
                 return <div className="material-stock-card" key={m.id}>
@@ -3818,7 +3842,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
                     <small className={missing.length?'production-requirements':'production-ready'}>{missing.length?'Eksik hammadde: '+missing.map(([id,qty])=>(SHOE_MATERIALS.find(m=>m.id===id)?.name||id)+' × '+Math.max(0,qty-(Number(materials[id])||0))).join(', '):'Üretim için gerekli hammaddeler mevcut'}</small>
                   </div>
                      <button type="button" className="stock-button" onClick={()=>rebalanceShoeWarehouse(selectedShoe,productionBatch)}>DEPOYU DÜZENLE · FAZLA STOĞU İADE ET</button>
-                     <small className="production-helper">Tek hammadde toplam deponun en fazla %55'ini kullanabilir. Düzenleme seçili kunduranın gerekli malzemesini korur; fazlayı tedarikçiye %70 bedelle iade eder.</small>
+                     <small className="production-helper">Depo kapasitesi bütün hammaddeler arasında ortaktır. Tedarik sırasında gerekirse fazla malzemeler seçili kunduranın reçetesi korunarak %85 bedelle otomatik iade edilir.</small>
                   <div className={`auto-supply-panel ${autoSupplyByProperty[active.id] ? 'auto-supply-enabled' : ''}`}><div className="auto-supply-copy"><span className="auto-supply-icon">↻</span><div><strong>Otomatik tedarik ve üretim</strong><small>Stok 2 adede düştüğünde, yeterli bakiye ve depo alanı varsa 5 adede kadar üretim başlatır.</small></div></div><button type="button" className="auto-supply-toggle" aria-pressed={Boolean(autoSupplyByProperty[active.id])} onClick={() => setAutoSupplyByProperty(old => ({ ...old, [active.id]: !old[active.id] }))}>{autoSupplyByProperty[active.id] ? 'AÇIK · KAPAT' : 'KAPALI · AÇ'}</button></div>
                 <div className="production-batch-picker"><span>ÜRETİM PARTİSİ</span><div>{[['1','1 çift'],['5','5 çift'],['10','10 çift'],['max','Maks.']].map(([value,label])=><button type="button" key={value} className={String(productionBatch)===value?'active':''} onClick={()=>setProductionBatch(value)}>{label}</button>)}</div></div>
                   <button className="stock-button production-primary-action" onClick={()=>craftShoe(selectedShoe.id,productionBatch)} disabled={missing.length>0||quantity<=0}>{quantity<=0?(productCapacity<=0?'VİTRİN DEPOSU DOLU':'HAMMADDE EKSİK'):(job?'KUYRUĞA '+quantity+' ÇİFT EKLE':quantity+' ÇİFT ÜRET')}</button>
