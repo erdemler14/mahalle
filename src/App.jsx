@@ -3214,7 +3214,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     tell('Depo genişletildi: seviye ' + nextLevel + '/15. Hammadde kapasitesi ' + getMaterialCapacity(propertyId) + ', ürün kapasitesi ' + getStockCapacity(propertyId) + ' birim oldu. Ödenen: ₺' + cost.toLocaleString('tr-TR') + '.');
   };
 
-  const planWarehouseSpace = (propertyId, product, requestedBatch, inventory, ignoreProductCapacity = false) => {
+  const planWarehouseSpace = (propertyId, product, requestedBatch, inventory, ignoreProductCapacity = false, maxBudget = Infinity) => {
     const profile=getBusinessProfile(propertyId),recipe=getBusinessRecipe(propertyId,product);
     if(!recipe.length)return null;
     const capacity=getMaterialCapacity(propertyId),itemCapacity=getMaterialItemCapacity(propertyId);
@@ -3222,9 +3222,12 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const total=Object.values(inventory.materials||{}).reduce((sum,n)=>sum+Math.max(0,Number(n)||0),0);
     const legacyReturns=new Map(Object.entries(inventory.materials||{}).filter(([id,n])=>!validIds.has(id)&&Math.max(0,Number(n)||0)>0).map(([id,n])=>[id,Math.max(0,Number(n)||0)]));
     const free=Math.max(0,capacity-total);
-    const productSpace=ignoreProductCapacity?15:(product.service?5:Math.max(0,getStockCapacity(propertyId)-getTotalStock(propertyId)-getPendingUnits(propertyId)));
+    const productSpace=ignoreProductCapacity?15:(requestedBatch==='warehouse'?Infinity:(product.service?5:Math.max(0,getStockCapacity(propertyId)-getTotalStock(propertyId)-getPendingUnits(propertyId))));
     const maxBySku=recipe.reduce((n,p)=>Math.min(n,Math.floor(itemCapacity/p.qty)),Infinity);
-    const wanted=Math.min(requestedBatch==='max'?15:Math.max(1,Number(requestedBatch)||1),productSpace,maxBySku);
+    const recipeUnits=recipe.reduce((sum,p)=>sum+p.qty,0);
+    const warehouseBatchLimit=requestedBatch==='warehouse'?Math.floor(capacity/Math.max(1,recipeUnits)):Infinity;
+    const requestedLimit=requestedBatch==='warehouse'?warehouseBatchLimit:(requestedBatch==='max'?15:Math.max(1,Number(requestedBatch)||1));
+    const wanted=Math.min(requestedLimit,productSpace,maxBySku);
     for(let batch=wanted;batch>=1;batch--){
       const targets=new Map(recipe.map(p=>[p.id,p.qty*batch]));
       const deficits=recipe.map(p=>({...p,material:profile.materials.find(m=>m.id===p.id),missing:Math.max(0,p.qty*batch-(Number(inventory.materials?.[p.id])||0))}));
@@ -3244,6 +3247,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       if(room>0)continue;
       const refund=Math.round([...returns].reduce((sum,[id,n])=>sum+getMaterialUnitValue(propertyId,id)*n*.85,0)*100)/100;
       const purchaseCost=Math.round(deficits.reduce((s,p)=>s+p.material.cost*p.missing/p.material.batch,0)*100)/100;
+      if(purchaseCost>maxBudget+refund)continue;
       return {batch,deficits,returns,refund,purchaseCost,profile};
     }
     return null;
@@ -3320,8 +3324,9 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   const buyRecipeMaterials = (propertyId, product, requestedBatch = productionBatch) => {
     if(!product)return;
     if(!owned.includes(propertyId)||rented.includes(propertyId)){tell('Toplu tedarik için işletmenin sahibi olmalı ve kiraya vermemiş olmalısın.');return;}
-    const inventory=getInventoryState(propertyId),plan=planWarehouseSpace(propertyId,product,requestedBatch,inventory);
-    if(!plan){tell('Seçili ürün için depo veya ürün kapasitesi uygun değil. Depoyu düzenle ya da daha küçük parti seç.');return;}
+    const inventory=getInventoryState(propertyId),fillWarehouse=requestedBatch==='warehouse';
+    const plan=planWarehouseSpace(propertyId,product,requestedBatch,inventory,false,cash);
+    if(!plan){tell(fillWarehouse?'Mevcut bütçenle bu reçeteden en az bir üretimlik hammadde tedarik edemiyorsun veya depoda uygun alan yok.':'Seçili ürün için depo veya ürün kapasitesi uygun değil. Depoyu düzenle ya da daha küçük parti seç.');return;}
     const unlocked=new Set(getUnlockedBusinessMaterials(propertyId,getBusinessSalesLevel(propertyId),product).map(m=>m.id));
     if(plan.deficits.some(p=>!p.material||!unlocked.has(p.id))){tell('Bu ürünün reçetesindeki hammaddeler henüz açılmamış veya tanımlı değil.');return;}
     if(cash+plan.refund<plan.purchaseCost){tell('Tedarik ₺'+plan.purchaseCost.toLocaleString('tr-TR')+' tutuyor. Fazla stok iadesi ₺'+plan.refund.toLocaleString('tr-TR')+'; kalan tutar için bakiye yetersiz.');return;}
@@ -3331,7 +3336,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     setStockByProperty(old=>{const state=getInventoryState(propertyId,old[propertyId]);return {...old,[propertyId]:{materials:next,products:state.products}};});
     setBusinessStats(old=>{const p=old[propertyId]||{unitsSold:0,revenue:0,stockInvested:0};return {...old,[propertyId]:{...p,stockInvested:Math.max(0,Math.round(((Number(p.stockInvested)||0)+plan.purchaseCost-plan.refund)*100)/100)}};});
     const returned=plan.returns.size?' Fazla stok %85 bedelle otomatik iade edildi; ₺'+plan.refund.toLocaleString('tr-TR')+' geri alındı.':'';
-    tell('Toplu tedarik tamamlandı. '+plan.batch+' adetlik üretim için gerekli hammaddeler hazır.'+returned+' Alış ₺'+plan.purchaseCost.toLocaleString('tr-TR')+'.');
+    tell(fillWarehouse?'Tedarik deposu dolduruldu. '+plan.batch+' üretimlik hammadde stoğu hazırlandı.'+(plan.purchaseCost-plan.refund+0.005<cash?' Bütçene göre mümkün olan en yüksek stok seviyesi alındı.':' Depo kapasitesi reçeteye göre dolduruldu.')+returned+' Alış ₺'+plan.purchaseCost.toLocaleString('tr-TR')+'.':'Toplu tedarik tamamlandı. '+plan.batch+' adetlik üretim için gerekli hammaddeler hazır.'+returned+' Alış ₺'+plan.purchaseCost.toLocaleString('tr-TR')+'.');
   };
 
   const rebalanceBusinessWarehouse = (propertyId, product, requestedBatch = productionBatch) => {
@@ -3989,8 +3994,8 @@ function App({ session = null, supabase = null, authConfigured = false }) {
                   {missing.length > 0 && <small className="production-missing">Eksik: {missing.map(part => { const material = profile.materials.find(m => m.id === part.id); return (material?.name || part.id) + ' ×' + (part.qty - (Number(inventory.materials?.[part.id]) || 0)); }).join(', ')}</small>}
                   {pending && <small className="production-queue-note">Kuyrukta {pending.units} adet · sıradaki {Math.max(0, Math.ceil((pending.readyAt - productionNow) / 1000))} sn</small>}
                 </div>}
-                 <div className="production-materials-head production-materials-toolbar"><div><strong>Hammaddeler</strong><span>{unlockedMaterials.length} çeşit açık</span></div><button type="button" className="bulk-supply-button" onClick={() => buyRecipeMaterials(active.id, selectedProduct, productionBatch)} disabled={!selectedProduct || selectedProduct.service && !recipe.length}>⚡ Eksikleri topluca tedarik et</button><button type="button" className="stock-button" onClick={() => rebalanceBusinessWarehouse(active.id, selectedProduct, productionBatch)} disabled={!selectedProduct || !recipe.length}>DEPOYU DÜZENLE</button></div>
-                 <p className="production-helper">Depo kapasitesi bütün hammaddeler arasında ortaktır. Tek bir malzeme depoyu doldursa bile tedarik sistemi seçili ürünün reçetesini korur; kullanılmayan fazlayı %85 bedelle otomatik iade edip eksikleri tamamlar. "Depoyu düzenle" bunu üretim yapmadan uygular.</p>
+                 <div className="production-materials-head production-materials-toolbar"><div><strong>Hammaddeler</strong><span>{unlockedMaterials.length} çeşit açık</span></div><button type="button" className="bulk-supply-button" onClick={() => buyRecipeMaterials(active.id, selectedProduct, 'warehouse')} disabled={!selectedProduct || !recipe.length}>⚡ Tedarik deposunu doldur</button><button type="button" className="stock-button" onClick={() => rebalanceBusinessWarehouse(active.id, selectedProduct, productionBatch)} disabled={!selectedProduct || !recipe.length}>DEPOYU DÜZENLE</button></div>
+                 <p className="production-helper">Tedarik deposunu doldur seçeneği, seçili ürünün reçete oranlarını esas alarak ortak hammadde deposunu bütçen elverdiği ölçüde doldurur. Gerekirse uyumsuz veya fazla stok %85 bedelle otomatik iade edilir. Depo kapasitesi ve mevcut nakit birlikte hesaba katılır; tek üretimlik partiyle sınırlı değildir. "Depoyu düzenle" ise satın alma yapmadan stokları yeniden dengeler.</p>
                  {legacyMaterials.length > 0 && <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,flexWrap:'wrap',padding:'11px 13px',marginBottom:10,border:'1px solid #c9a76a',borderRadius:10,background:'#f5ead3',color:'#55442c'}}><div><strong style={{display:'block',fontSize:12}}>ÖNCEKİ SÜRÜMDEN KALAN STOK</strong><small>{legacyMaterials.reduce((sum,[,amount])=>sum+Math.max(0,Number(amount)||0),0)} birim eski hammadde bulundu. Bunlar yeni reçetelerde kullanılmıyor; iade ederek depoyu açabilirsin.</small></div><button type="button" className="stock-button" onClick={() => returnLegacyBusinessMaterials(active.id)}>ESKİ STOKLARI İADE ET · ₺{legacyRefund.toLocaleString('tr-TR')}</button></div>}
                 <div className="production-materials-list">
                   {unlockedMaterials.map(material => {
