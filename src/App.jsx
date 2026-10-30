@@ -3407,7 +3407,13 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       if (ownerByProperty[active.id] || owned.includes(active.id)) { tell('Bu mülkün zaten bir sahibi var.'); return; }
       try {
         const purchaseMarketValue = getMarketValue(active);
-        const { data, error } = await supabase.rpc('claim_property', { p_property_id: active.id, p_market_value: purchaseMarketValue, p_current_cash: cash });
+        let purchaseResponse = await supabase.rpc('claim_property', { p_property_id: active.id, p_market_value: purchaseMarketValue, p_current_cash: cash });
+        // Older Supabase deployments may not yet have the new overload in their schema cache.
+        // Fall back to the original RPC so property trading remains available until SQL is applied.
+        if (purchaseResponse.error?.code === 'PGRST202' || purchaseResponse.error?.code === '42883') {
+          purchaseResponse = await supabase.rpc('claim_property', { p_property_id: active.id });
+        }
+        const { data, error } = purchaseResponse;
         if (error) throw error;
         const result = Array.isArray(data) ? data[0] : data;
         if (!result || !Number.isFinite(Number(result.cash))) throw new Error('Sunucudan geçerli satın alma sonucu alınamadı.');
@@ -3441,7 +3447,15 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     if (typeof window !== 'undefined' && !window.confirm(`${property.name} mülkünü ₺${salePrice.toLocaleString('tr-TR')} bedelle satmak istiyor musun? Mevcut işletme stoğu satışa dahil değil ve sıfırlanacak.`)) return;
     if (session && supabase) {
       try {
-        const { data, error } = await supabase.rpc('release_property', { p_property_id: property.id, p_market_value: getMarketValue(property), p_current_cash: cash });
+        let saleResponse = await supabase.rpc('release_property', { p_property_id: property.id, p_market_value: getMarketValue(property), p_current_cash: cash });
+        // Keep compatibility with deployments that have not applied the latest SQL overload yet.
+        if (saleResponse.error?.code === 'PGRST202' || saleResponse.error?.code === '42883') {
+          saleResponse = await supabase.rpc('release_property', { p_property_id: property.id, p_market_value: getMarketValue(property) });
+          if (saleResponse.error?.code === 'PGRST202' || saleResponse.error?.code === '42883') {
+            saleResponse = await supabase.rpc('release_property', { p_property_id: property.id });
+          }
+        }
+        const { data, error } = saleResponse;
         if (error) throw error;
         const result = Array.isArray(data) ? data[0] : data;
         if (!result || !Number.isFinite(Number(result.cash))) throw new Error('Sunucudan geçerli satış sonucu alınamadı.');
