@@ -3449,6 +3449,9 @@ function App({ session = null, supabase = null, authConfigured = false }) {
         setBusinessPlans(v => { const next = { ...v }; delete next[property.id]; return next; });
         setStockByProperty(v => { const next = { ...v }; delete next[property.id]; return next; });
         setBusinessStats(v => { const next = { ...v }; delete next[property.id]; return next; });
+        setPendingProductions(v => Object.fromEntries(Object.entries(v).filter(([key, job]) => Number(job?.propertyId || key.split(':')[0]) !== property.id)));
+        setAutoSupplyByProperty(v => { const next = { ...v }; delete next[property.id]; return next; });
+        setOrders(v => v.filter(order => Number(order.propertyId) !== property.id));
         setOwnerByProperty(v => { const next = { ...v }; delete next[property.id]; return next; });
         if (shopPropertyId === property.id) setShopPropertyId(null);
         tell(property.name + ' ortak şehirde satıldı. ₺' + Number(result.sale_price).toLocaleString('tr-TR') + ' tahsil edildi.');
@@ -3461,6 +3464,9 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     setBusinessPlans(v => { const next = { ...v }; delete next[property.id]; return next; });
     setStockByProperty(v => { const next = { ...v }; delete next[property.id]; return next; });
     setBusinessStats(v => { const next = { ...v }; delete next[property.id]; return next; });
+    setPendingProductions(v => Object.fromEntries(Object.entries(v).filter(([key, job]) => Number(job?.propertyId || key.split(':')[0]) !== property.id)));
+    setAutoSupplyByProperty(v => { const next = { ...v }; delete next[property.id]; return next; });
+    setOrders(v => v.filter(order => Number(order.propertyId) !== property.id));
     const nextOwners = { ...ownerByProperty };
     delete nextOwners[property.id];
     publishOwners(nextOwners);
