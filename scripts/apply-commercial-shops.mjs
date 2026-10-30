@@ -194,9 +194,8 @@ if (!s.includes('const EXTRA_TRADE_CATALOG')) {
 s = s.replace(/tradeCatalog\[([^\]]+)\](?!\s*=)/g, 'getTradeCatalog(tradeCatalog, $1)');
 s = s.replace('?.production ? "ÜRETİM YAP / STOK EKLE" : "TEDARİK ET / STOK AL"', '?.service ? "HİZMETİ SEÇ" : (getTradeCatalog(tradeCatalog, active.id) || []).find(item => item.id === businessPlans[active.id])?.production ? "ÜRETİM YAP / STOK EKLE" : "TEDARİK ET / STOK AL"');
 
-// Service businesses do not consume inventory. Their capacity is customer time, not stock.
-s = s.replace(/\bstock > 0\b/g, '(product?.service || stock > 0)');
-s = s.replace(/Math\.max\(0, stock - sold\)/g, 'product?.service ? stock : Math.max(0, stock - sold)');
+// Service items do not create finished-goods stock. Their operating inputs and
+// per-sale material consumption are handled by the business recipes in App.jsx.
 
 // Put the expanded premises into streets rather than extending the old rail-side rows.
 const oldLayout = /\/\/ Galata-style irregular street frontages: narrow blocks, staggered facades and varied angles\.\nproperties\.forEach\(\(property, index\) => \{.*?\n\}\);/s;
