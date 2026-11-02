@@ -2350,8 +2350,19 @@ function App({ session = null, supabase = null, authConfigured = false }) {
         if (profileError) throw profileError;
         // Claim the one-time grant before loading the cloud save, so the updated
         // balance is the source of truth and cannot be overwritten by stale client state.
-        const { data: bonusResult, error: bonusError } = await supabase.rpc('claim_launch_bonus');
-        if (bonusError) throw bonusError;
+        let bonusResult = null;
+        const bonusResponse = await supabase.rpc('claim_launch_bonus');
+        if (bonusResponse.error) {
+          // The SQL migration may be pending in Supabase. Keep the existing save
+          // readable; the bonus will be claimed on the next login after migration.
+          if (bonusResponse.error.code === 'PGRST202' || bonusResponse.error.code === '42883') {
+            setMultiplayerStatus('Ortak şehir bağlı · ikramiye/veri tabanı güncellemesi bekleniyor');
+          } else {
+            throw bonusResponse.error;
+          }
+        } else {
+          bonusResult = bonusResponse.data;
+        }
         const { data: cloudSave, error: saveError } = await supabase.from('player_saves').select('state').eq('user_id', userId).maybeSingle();
         if (saveError) throw saveError;
         if (cloudSave?.state && Object.keys(cloudSave.state).length) {
