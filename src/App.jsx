@@ -2348,6 +2348,10 @@ function App({ session = null, supabase = null, authConfigured = false }) {
           user_id: userId, display_name: displayName, updated_at: new Date().toISOString()
         }, { onConflict: 'user_id' });
         if (profileError) throw profileError;
+        // Claim the one-time grant before loading the cloud save, so the updated
+        // balance is the source of truth and cannot be overwritten by stale client state.
+        const { data: bonusResult, error: bonusError } = await supabase.rpc('claim_launch_bonus');
+        if (bonusError) throw bonusError;
         const { data: cloudSave, error: saveError } = await supabase.from('player_saves').select('state').eq('user_id', userId).maybeSingle();
         if (saveError) throw saveError;
         if (cloudSave?.state && Object.keys(cloudSave.state).length) {
@@ -2397,6 +2401,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
         await refreshWorld();
         if (!active) return;
         setMultiplayerStatus('Ortak şehir bağlı · herkesin mülkleri aynı haritada');
+        if (bonusResult?.granted) tell('Mahalleye hoş geldin ikramiyesi: hesabına tek seferlik ₺15.000 yatırıldı.');
         setCloudReady(true);
       } catch (error) {
         if (!active) return;
@@ -3424,13 +3429,11 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       if (ownerByProperty[active.id] || owned.includes(active.id)) { tell('Bu mülkün zaten bir sahibi var.'); return; }
       try {
         const purchaseMarketValue = getMarketValue(active);
-        let purchaseResponse = await supabase.rpc('claim_property', { p_property_id: active.id, p_market_value: purchaseMarketValue, p_current_cash: cash });
-        // Older Supabase deployments may not yet have the new overload in their schema cache.
-        // Fall back to the original RPC so property trading remains available until SQL is applied.
-        if (purchaseResponse.error?.code === 'PGRST202' || purchaseResponse.error?.code === '42883') {
-          purchaseResponse = await supabase.rpc('claim_property', { p_property_id: active.id });
-        }
-        const { data, error } = purchaseResponse;
+        const { data, error } = await supabase.rpc('claim_property', {
+          p_property_id: active.id,
+          p_market_value: purchaseMarketValue,
+          p_current_cash: cash
+        });
         if (error) throw error;
         const result = Array.isArray(data) ? data[0] : data;
         if (!result || !Number.isFinite(Number(result.cash))) throw new Error('Sunucudan geçerli satın alma sonucu alınamadı.');
@@ -3464,15 +3467,11 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     if (typeof window !== 'undefined' && !window.confirm(`${property.name} mülkünü ₺${salePrice.toLocaleString('tr-TR')} bedelle satmak istiyor musun? Mevcut işletme stoğu satışa dahil değil ve sıfırlanacak.`)) return;
     if (session && supabase) {
       try {
-        let saleResponse = await supabase.rpc('release_property', { p_property_id: property.id, p_market_value: getMarketValue(property), p_current_cash: cash });
-        // Keep compatibility with deployments that have not applied the latest SQL overload yet.
-        if (saleResponse.error?.code === 'PGRST202' || saleResponse.error?.code === '42883') {
-          saleResponse = await supabase.rpc('release_property', { p_property_id: property.id, p_market_value: getMarketValue(property) });
-          if (saleResponse.error?.code === 'PGRST202' || saleResponse.error?.code === '42883') {
-            saleResponse = await supabase.rpc('release_property', { p_property_id: property.id });
-          }
-        }
-        const { data, error } = saleResponse;
+        const { data, error } = await supabase.rpc('release_property', {
+          p_property_id: property.id,
+          p_market_value: getMarketValue(property),
+          p_current_cash: cash
+        });
         if (error) throw error;
         const result = Array.isArray(data) ? data[0] : data;
         if (!result || !Number.isFinite(Number(result.cash))) throw new Error('Sunucudan geçerli satış sonucu alınamadı.');
