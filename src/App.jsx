@@ -3478,14 +3478,20 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     if (typeof window !== 'undefined' && !window.confirm(`${property.name} mülkünü ₺${salePrice.toLocaleString('tr-TR')} bedelle satmak istiyor musun? Mevcut işletme stoğu satışa dahil değil ve sıfırlanacak.`)) return;
     if (session && supabase) {
       try {
+        const saleMarketValue = Number(getMarketValue(property));
         const { data, error } = await supabase.rpc('release_property', {
-          p_property_id: property.id,
-          p_market_value: getMarketValue(property),
-          p_current_cash: cash
+          p_property_id: Number(property.id),
+          p_market_value: saleMarketValue,
+          p_current_cash: Number(cash)
         });
-        if (error) throw error;
+        if (error) {
+          const detail = [error.message, error.details, error.hint, error.code].filter(Boolean).join(' · ');
+          throw new Error('Satış veritabanında tamamlanamadı: ' + (detail || 'Bilinmeyen RPC hatası'));
+        }
         const result = Array.isArray(data) ? data[0] : data;
-        if (!result || !Number.isFinite(Number(result.cash))) throw new Error('Sunucudan geçerli satış sonucu alınamadı.');
+        if (!result || Number(result.property_id) !== Number(property.id) || !Number.isFinite(Number(result.cash)) || !Number.isFinite(Number(result.sale_price))) {
+          throw new Error('Sunucu satış işlemini doğrulayamadı. Mülkiyet ve bakiye değiştirilmedi.');
+        }
         setCash(Number(result.cash));
         setOwned(v => v.filter(id => id !== property.id));
         setRented(v => v.filter(id => id !== property.id));
@@ -3496,9 +3502,14 @@ function App({ session = null, supabase = null, authConfigured = false }) {
         setAutoSupplyByProperty(v => { const next = { ...v }; delete next[property.id]; return next; });
         setOrders(v => v.filter(order => Number(order.propertyId) !== property.id));
         setOwnerByProperty(v => { const next = { ...v }; delete next[property.id]; return next; });
+        setSharedRentByProperty(v => ({ ...v, [property.id]: false }));
         if (shopPropertyId === property.id) setShopPropertyId(null);
         tell(property.name + ' ortak şehirde satıldı. ₺' + Number(result.sale_price).toLocaleString('tr-TR') + ' tahsil edildi.');
-      } catch (error) { tell(error?.message || 'Mülk satılamadı. Bağlantını kontrol edip tekrar dene.'); }
+      } catch (error) {
+        const message = error?.message || 'Mülk satılamadı. Bağlantını kontrol edip tekrar dene.';
+        tell(message);
+        if (typeof window !== 'undefined') window.alert(message);
+      }
       return;
     }
     setCash(v => Math.round((v + salePrice) * 100) / 100);
