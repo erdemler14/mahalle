@@ -3439,15 +3439,34 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     if (session && supabase) {
       if (ownerByProperty[active.id] || owned.includes(active.id)) { tell('Bu mülkün zaten bir sahibi var.'); return; }
       try {
-        const purchaseMarketValue = getMarketValue(active);
-        const { data, error } = await supabase.rpc('claim_property', {
-          p_property_id: active.id,
+        const purchaseMarketValue = Number(getMarketValue(active));
+        let purchaseResponse = await supabase.rpc('claim_property', {
+          p_property_id: Number(active.id),
           p_market_value: purchaseMarketValue,
-          p_current_cash: cash
+          p_current_cash: Number(cash)
         });
-        if (error) throw error;
+        // Older Supabase deployments may still expose the two- or one-argument RPC.
+        // Match the compatibility path already used by the property sale flow.
+        if (purchaseResponse.error?.code === 'PGRST202' || purchaseResponse.error?.code === '42883') {
+          purchaseResponse = await supabase.rpc('claim_property', {
+            p_property_id: Number(active.id),
+            p_market_value: purchaseMarketValue
+          });
+        }
+        if (purchaseResponse.error?.code === 'PGRST202' || purchaseResponse.error?.code === '42883') {
+          purchaseResponse = await supabase.rpc('claim_property', {
+            p_property_id: Number(active.id)
+          });
+        }
+        const { data, error } = purchaseResponse;
+        if (error) {
+          const detail = [error.message, error.details, error.hint, error.code].filter(Boolean).join(' · ');
+          throw new Error('Satın alma veritabanında tamamlanamadı: ' + (detail || 'Bilinmeyen RPC hatası'));
+        }
         const result = Array.isArray(data) ? data[0] : data;
-        if (!result || !Number.isFinite(Number(result.cash))) throw new Error('Sunucudan geçerli satın alma sonucu alınamadı.');
+        if (!result || Number(result.property_id) !== Number(active.id) || !Number.isFinite(Number(result.cash))) {
+          throw new Error('Sunucu satın alma işlemini doğrulayamadı. Bakiye ve mülkiyet değiştirilmedi.');
+        }
         setCash(Number(result.cash));
         setOwned(old => old.includes(active.id) ? old : [...old, active.id]);
         setRented(old => old.filter(id => id !== active.id));
@@ -3455,7 +3474,11 @@ function App({ session = null, supabase = null, authConfigured = false }) {
         setShopPropertyId(null);
         setSteps(v => v + 1);
         tell(active.name + ' ortak şehirde satın alındı. Mülkiyet sunucuda güvenceye alındı.');
-      } catch (error) { tell(error?.message || 'Mülk satın alınamadı. Bağlantını kontrol edip tekrar dene.'); }
+      } catch (error) {
+        const message = error?.message || 'Mülk satın alınamadı. Bağlantını kontrol edip tekrar dene.';
+        tell(message);
+        if (typeof window !== 'undefined') window.alert(message);
+      }
       return;
     }
     if (owned.includes(active.id) || ownerByProperty[active.id]) { tell('Bu mülkün zaten bir sahibi var.'); return; }
