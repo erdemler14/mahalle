@@ -3440,32 +3440,19 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       if (ownerByProperty[active.id] || owned.includes(active.id)) { tell('Bu mülkün zaten bir sahibi var.'); return; }
       try {
         const purchaseMarketValue = Number(getMarketValue(active));
-        let purchaseResponse = await supabase.rpc('claim_property', {
+        const purchaseResponse = await supabase.rpc('purchase_property_v2', {
           p_property_id: Number(active.id),
           p_market_value: purchaseMarketValue,
           p_current_cash: Number(cash)
         });
-        // Older Supabase deployments may still expose the two- or one-argument RPC.
-        // Match the compatibility path already used by the property sale flow.
-        if (purchaseResponse.error?.code === 'PGRST202' || purchaseResponse.error?.code === '42883') {
-          purchaseResponse = await supabase.rpc('claim_property', {
-            p_property_id: Number(active.id),
-            p_market_value: purchaseMarketValue
-          });
-        }
-        if (purchaseResponse.error?.code === 'PGRST202' || purchaseResponse.error?.code === '42883') {
-          purchaseResponse = await supabase.rpc('claim_property', {
-            p_property_id: Number(active.id)
-          });
-        }
-        const { data, error } = purchaseResponse;
-        if (error) {
+        if (purchaseResponse.error) {
+          const error = purchaseResponse.error;
           const detail = [error.message, error.details, error.hint, error.code].filter(Boolean).join(' · ');
-          throw new Error('Satın alma veritabanında tamamlanamadı: ' + (detail || 'Bilinmeyen RPC hatası'));
+          throw new Error('Satın alma tamamlanamadı: ' + (detail || 'Veritabanı hatası') + (error.code === 'PGRST202' ? ' · Supabase migration uygulanmamış olabilir.' : ''));
         }
-        const result = Array.isArray(data) ? data[0] : data;
-        if (!result || Number(result.property_id) !== Number(active.id) || !Number.isFinite(Number(result.cash))) {
-          throw new Error('Sunucu satın alma işlemini doğrulayamadı. Bakiye ve mülkiyet değiştirilmedi.');
+        const result = Array.isArray(purchaseResponse.data) ? purchaseResponse.data[0] : purchaseResponse.data;
+        if (!result || result.success !== true || Number(result.property_id) !== Number(active.id) || !Number.isFinite(Number(result.cash))) {
+          throw new Error('Sunucu satın alma işlemini doğrulamadı. Mülkiyet ve bakiye değiştirilmedi.');
         }
         setCash(Number(result.cash));
         setOwned(old => old.includes(active.id) ? old : [...old, active.id]);
