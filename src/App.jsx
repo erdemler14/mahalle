@@ -4080,6 +4080,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       <button className={activeHudPanel === 'business' ? 'active' : ''} onClick={() => setActiveHudPanel(activeHudPanel === 'business' ? null : 'business')} aria-label="İşletme ve stok" title="İşletme"><span>▤</span><small>İŞLETME</small></button>
       <button className={activeHudPanel === 'goals' ? 'active' : ''} onClick={() => setActiveHudPanel(activeHudPanel === 'goals' ? null : 'goals')} aria-label="Gelişim hedefleri" title="Hedefler"><span>◇</span><small>HEDEFLER</small></button>
       <button className={activeHudPanel === 'orders' ? 'active' : ''} onClick={() => setActiveHudPanel(activeHudPanel === 'orders' ? null : 'orders')} aria-label="Siparişler ve görevler" title="Siparişler"><span>▣</span><small>SİPARİŞ</small></button>
+      <button className={activeHudPanel === 'ferry' ? 'active' : ''} onClick={() => setActiveHudPanel(activeHudPanel === 'ferry' ? null : 'ferry')} aria-label="Haliç Vapur Hattı" title="Vapur Hattı"><span>⚓</span><small>VAPUR</small></button>
       <button className={activeHudPanel === 'portfolio' ? 'active' : ''} onClick={() => setActiveHudPanel(activeHudPanel === 'portfolio' ? null : 'portfolio')} aria-label="Portföy" title="Portföy"><span>▦</span><small>PORTFÖY</small></button>
       <button className={activeHudPanel === 'time' ? 'active' : ''} onClick={() => setActiveHudPanel(activeHudPanel === 'time' ? null : 'time')} aria-label="Oyun zamanı" title="Zaman"><span>◷</span><small>ZAMAN</small></button>
       <button className={activeHudPanel === 'social' ? 'active' : ''} onClick={() => setActiveHudPanel(activeHudPanel === 'social' ? null : 'social')} aria-label="Çok oyunculu oda" title="Oyuncular"><span>♙</span><small>ODA</small></button>
@@ -4131,6 +4132,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
             {owned.includes(active.id) && !rented.includes(active.id) && (tradeCatalog[active.id] || []).some(item => item.price > 0) && <span className="property-note">Ürün ve stok ayarlandığında işletme otomatik çalışır.</span>}
           </div>
         </div>} />
+        <button type="button" className="harbor-open-button" onClick={() => setActiveHudPanel(activeHudPanel === 'ferry' ? null : 'ferry')} aria-label="Haliç Vapur Hattı işletme ekranını aç"><span>⚓</span><strong>HALİÇ VAPUR HATTI</strong><small>{ferryBusiness.owned ? 'İŞLETMEN FAALİYETTE' : 'İMTİYAZ · ₺200'}</small></button>
         {buildingStoryId != null && (() => { const storyProperty = properties.find(item => item.id === buildingStoryId); if (!storyProperty) return null; const storyText = storyProperty.history || storyProperty.style || 'Bu yapı, 1920’lerin Beyoğlu’sunda mahallenin gündelik yaşamının bir parçası.'; return <aside className="building-history-popover" role="status" aria-live="polite"><button className="building-history-close" type="button" aria-label="Bilgilendirmeyi kapat" onClick={() => setBuildingStoryId(null)}>×</button><span className="building-history-kicker">PERA · DÖNEM NOTU</span><h3>{storyProperty.name}</h3><p>{storyText.length > 300 ? storyText.slice(0,297).trimEnd() + '…' : storyText}</p></aside>; })()}
         <div className="map-legend"><span><i className="legend-dot available" /> SATILIK MÜLK</span><span><i className="legend-dot owned" /> SENİN MÜLKÜN</span><span className="map-hint">SÜRÜKLE: DÖNDÜR · KAYDIR: YAKINLAŞ · BİNAYA TIKLA</span></div>
         <div className="world-caption"><span>İSTANBUL / BEYOĞLU</span><span>{String(day).padStart(2, '0')} {['OCAK','ŞUBAT','MART','NİSAN','MAYIS','HAZİRAN','TEMMUZ','AĞUSTOS','EYLÜL','EKİM','KASIM','ARALIK'][month - 1]} {year} <i>·</i> {String(hour).padStart(2, '0')}:00</span></div>
@@ -4140,6 +4142,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       </div>
 
       <aside className={'side-panel hud-side-panel hud-panel-content-' + (activeHudPanel || 'none')} aria-label="Oyun menüsü">
+        <FerryBusinessPanel state={ferryBusiness} cash={cash} year={year} month={month} day={day} hour={hour} onPurchase={purchaseFerryLine} onUpgrade={upgradeFerryLine} disabled={!!session && !cloudReady} />
         <section className="orders-panel">
           <div className="card-label">MAHALLE PAZARI · SİPARİŞLER</div><h2>Müşteri talepleri</h2>
           <div className="event-chain-card">
