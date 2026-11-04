@@ -47,7 +47,9 @@ test('offer workflow is persistent and only the two participants can read offers
 });
 
 test('beta test fund is exactly 70,000 TL, claimed once per account',()=>{
-  assert.match(migration,/v_new_cash:=v_cash\+70000/);
+  assert.match(migration,/v_new_cash:=v_cash\+v_invite.amount/);
+  assert.match(migration,/values \('[0-9a-f]{64}',70000\)/);
+  assert.match(migration,/v_invite.redeemed_by is not null/);
   assert.match(migration,/primary key\(user_id,grant_key\)/);
   assert.match(migration,/if exists\(select 1 from public\.player_beta_funds/);
   assert.match(migration,/function public\.claim_beta_test_fund_20261104/);
