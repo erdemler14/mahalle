@@ -1514,6 +1514,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   const [cloudOffers, setCloudOffers] = useState([]);
   const [cloudOffersError, setCloudOffersError] = useState('');
   const [testFundBusy, setTestFundBusy] = useState(false);
+  const [betaTestCode, setBetaTestCode] = useState('');
   const [cloudOfferRefresh, setCloudOfferRefresh] = useState(0);
   const acceptedOffersSeenRef = useRef(new Set());
   const [sharedRentByProperty, setSharedRentByProperty] = useState({});
@@ -1748,7 +1749,8 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     try {
       if (session && supabase) {
         if (!cloudReady) {tell('Hesap yüklenmesini bekle.');return;}
-        const {data,error}=await supabase.rpc('claim_beta_test_fund_20261104');
+        if (!betaTestCode.trim()) {tell('Kurucu test fonu için tek kullanımlık kodunu gir.');return;}
+        const {data,error}=await supabase.rpc('claim_beta_test_fund_20261104',{p_invite_code:betaTestCode.trim()});
         if (error) throw error;
         if (!data?.granted && !data?.already_claimed) throw new Error('Sunucu test fonunu doğrulamadı.');
         if (Number.isFinite(Number(data.cash))) setCash(Number(data.cash));
@@ -4384,10 +4386,11 @@ function App({ session = null, supabase = null, authConfigured = false }) {
           <div className="beta-credit-panel">
             <strong>₺70.000 · BETA TEST FONU</strong>
             <p>Mevcut oyunun korunur. Tek seferlik test sermayesi, hesabındaki bakiyeye eklenir.</p>
-            <button type="button" disabled={betaTestFundClaimed||testFundBusy||Boolean(session&&!cloudReady)} onClick={claimBetaTestFund}>
+            {session && !betaTestFundClaimed && <label className="beta-credit-code-label">KURUCUNUN TEST KODU<input aria-label="Özel test fonu kodu" type="text" autoComplete="off" spellCheck={false} placeholder="Özel davet kodunu gir" value={betaTestCode} onChange={event=>setBetaTestCode(event.target.value.slice(0,100))}/></label>}
+            <button type="button" disabled={betaTestFundClaimed||testFundBusy||Boolean(session&&!cloudReady)||Boolean(session&&!betaTestCode.trim())} onClick={claimBetaTestFund}>
               {testFundBusy?'İŞLENİYOR…':betaTestFundClaimed?'FON ALINDI':'₺70.000 TEST FONU AL'}
             </button>
-            <small>{session?'Hesap başına yalnızca bir kez; Supabase test fonu güncellemesi gerektirir.':'Bu tarayıcıdaki yerel test kaydı için bir defaya mahsustur.'}</small>
+            <small>{session?'Özel davet kodu yalnızca bir hesapta kullanılabilir. Yeni SQL migration uygulanmalıdır.':'Bu tarayıcıdaki yerel test kaydı için bir defaya mahsustur.'}</small>
           </div>
         </section>
 
