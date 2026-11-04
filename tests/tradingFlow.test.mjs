@@ -53,7 +53,7 @@ test('beta test fund is exactly 70,000 TL, claimed once per account',()=>{
   assert.match(migration,/primary key\(user_id,grant_key\)/);
   assert.match(migration,/if exists\(select 1 from public\.player_beta_funds/);
   assert.match(migration,/function public\.claim_beta_test_fund_20261104/);
-  assert.match(app,/rpc\('claim_beta_test_fund_20261104'\)/);
+  assert.match(app,/rpc\('claim_beta_test_fund_20261104',\{p_invite_code:/);
   assert.match(app,/betaTestFundClaimed/);
 });
 
