@@ -91,7 +91,7 @@ function makeHuman(scene,{x,z,role='buyer',index=0,facing=0,offsetY=0}){
   const group=new THREE.Group();
   const coat=outfits[index%outfits.length];
   const skirt=role==='flowerSeller'||role==='lady'||role==='passengerLady';
-  const body=box(group,coat,[skirt?.27:.26,.42,.18],[0,.62,0]);
+  box(group,coat,[skirt ? .27 : .26,.42,.18],[0,.62,0]);
   const face=new THREE.Mesh(new THREE.SphereGeometry(.116,9,7),M.skin);
   face.position.y=.99;group.add(face);
   box(group,M.fabric,[.14,.06,.18],[0,.86,.01]);
@@ -201,6 +201,11 @@ export function createPeriodStreetLife({scene,properties=[],isMobile=false}){
     people.push(makeHuman(scene,{x:sellerX,z:info.z+.38,role:info.goods==='flowers'?'flowerSeller':'seller',index:people.length,facing:info.rotation+.15}));
     people.push(makeHuman(scene,{x:info.x+(info.x>0?-.87:.87),z:info.z-1.05,role:people.length%2?'lady':'buyer',index:people.length+3,facing:info.rotation+Math.PI}));
   }
+  // Fish market belongs on the pier promenade; the central street market alone
+  // would leave the harbour looking deserted.
+  stalls.push(makeStand(scene,{x:24.03,z:8.55,rotation:Math.PI/2,label:'BALIK',goods:'fish',canopy:2,level:.14}));
+  people.push(makeHuman(scene,{x:23.32,z:8.90,role:'seller',index:people.length+9,offsetY:.15,facing:.15}));
+  if(!isMobile) people.push(makeHuman(scene,{x:24.20,z:9.80,role:'passengerLady',index:people.length+7,offsetY:.15,facing:1.2}));
   // A merchant street is busy before dusk; stalls and crates face real pavements.
   const quayVignettes=[
     {x:24.34,z:-17.3,role:'passenger',facing:-Math.PI/2},
@@ -266,7 +271,7 @@ export function createPeriodStreetLife({scene,properties=[],isMobile=false}){
       if(rain && p.index%4===0 && p.role!=='porter')active=false;
       p.group.visible=active;
       if(!active)continue;
-      const t=elapsed*(p.isMoving?.74:.24)+p.phase;
+      const t=elapsed*(p.isMoving ? .74 : .24)+p.phase;
       if(p.isMoving){
         p.group.position.x=p.x+Math.sin(t*.45)*.11;
         p.group.position.z=p.z+Math.cos(t*.7)*.24;
