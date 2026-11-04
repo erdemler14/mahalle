@@ -4,9 +4,10 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "node scripts/apply-property-taxes.mjs && node scripts/apply-commercial-shops.mjs && node scripts/apply-multiplayer-ownership.mjs && node scripts/apply-textile-shop-balance.mjs && node scripts/apply-property-development.mjs && vite build",
-    "preview": "vite preview"
+    "dev": "node scripts/generate-period-glb.mjs && vite",
+    "build": "node scripts/apply-property-taxes.mjs && node scripts/apply-commercial-shops.mjs && node scripts/apply-multiplayer-ownership.mjs && node scripts/apply-textile-shop-balance.mjs && node scripts/apply-property-development.mjs && node scripts/generate-period-glb.mjs && vite build",
+    "preview": "vite preview",
+    "generate:models": "node scripts/generate-period-glb.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "4.4.1",
