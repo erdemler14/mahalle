@@ -1,0 +1,26 @@
+/* Mahalle — 1923 Toy Store: full-viewport, accessible, mobile walk-through. */
+.toy-interior-modal{position:fixed;inset:0;z-index:10050;display:grid;place-items:center;padding:clamp(8px,2vw,24px);background:rgba(21,24,26,.95);backdrop-filter:blur(12px)}
+.toy-interior-frame{width:min(1260px,100%);height:min(93dvh,850px);min-height:350px;display:flex;flex-direction:column;overflow:hidden;border:1px solid #b8a279;border-radius:14px;background:#272b29;box-shadow:0 24px 100px #000a;color:#f6eddd}
+.toy-interior-top{display:flex;justify-content:space-between;gap:18px;align-items:center;padding:15px clamp(14px,2vw,26px);background:linear-gradient(105deg,#273333,#3d362d);border-bottom:1px solid #b8a27944}
+.toy-interior-top>div{display:grid;gap:4px;min-width:0}
+.toy-interior-kicker{font:700 10px 'IBM Plex Mono',monospace;color:#d9bb82;letter-spacing:.75px}
+.toy-interior-top h2{font:500 clamp(19px,2.7vw,31px) Georgia,serif;color:#fff0ce;margin:0;line-height:1.1}
+.toy-interior-top small{color:#cbc9b9;font:11px 'Space Grotesk',sans-serif}
+.toy-interior-top>button{flex:none;min-height:40px;border:1px solid #e1c395;border-radius:8px;background:#dfc394;color:#332e23;padding:10px 13px;font:800 11px 'Space Grotesk',sans-serif;cursor:pointer}
+.toy-interior-top>button:hover{background:#f8e1af}
+.toy-interior-canvas{position:relative;flex:1;min-height:120px;overflow:hidden;background:#dbc3a1}
+.toy-interior-canvas canvas{display:block;width:100%;height:100%;touch-action:none}
+.toy-interior-bottom{padding:12px clamp(12px,2vw,24px);display:flex;align-items:center;justify-content:space-between;gap:16px;background:#293332;border-top:1px solid #b09b7744}
+.toy-interior-caption{min-width:0;display:flex;flex-direction:column;gap:4px}
+.toy-interior-caption strong{font:800 10px 'IBM Plex Mono',monospace;color:#e8c891;letter-spacing:.65px}
+.toy-interior-caption span{font:12px 'Space Grotesk',sans-serif;color:#e4e2d6}
+.toy-interior-caption small{font:10px/1.35 'Space Grotesk',sans-serif;color:#aebeb7}
+.toy-interior-pad{flex:none;display:flex;gap:6px;touch-action:none}
+.toy-interior-pad button{width:clamp(38px,8vw,51px);height:44px;border:1px solid #8b9688;background:#44574f;border-radius:8px;color:#fff1d4;font:700 22px 'Space Grotesk',sans-serif;touch-action:none;user-select:none;cursor:pointer}
+.toy-interior-pad button:active{background:#b99260;color:#202b29}
+.toy-shop-floating-cta{position:absolute;z-index:11;top:209px;right:93px;border:1px solid #e5c38e;border-radius:9px;background:rgba(32,43,40,.94);color:#f1debb;padding:12px 14px;font:800 11px 'Space Grotesk',sans-serif;cursor:pointer;box-shadow:0 6px 24px #0005}
+.toy-shop-floating-cta span{margin-left:7px;font-size:16px}
+.toy-enter-cta{border-color:#d6b481!important;background:#d0a76a!important;color:#282b25!important}
+@media(max-width:760px){.toy-interior-modal{padding:0}.toy-interior-frame{width:100%;height:100dvh;max-height:none;border-radius:0;border:0;min-height:0}.toy-interior-top{padding:12px 14px}.toy-interior-top h2{font-size:20px}.toy-interior-top small{display:none}.toy-interior-top>button{min-height:38px;font-size:10px;padding:8px}.toy-interior-bottom{padding:9px 12px}.toy-interior-caption{max-width:55%}.toy-interior-caption>span{font-size:10px}.toy-interior-caption small{font-size:9px}.toy-interior-pad{gap:3px}.toy-interior-pad button{width:35px;height:38px;font-size:19px}.toy-shop-floating-cta{top:197px;right:78px;padding:8px 10px;font-size:9px}}
+@media(max-height:550px){.toy-interior-top{padding:7px 12px}.toy-interior-bottom{padding:5px 10px}.toy-interior-top h2{font-size:17px}.toy-interior-pad button{height:33px}.toy-interior-caption small{display:none}}
+@media(prefers-reduced-motion:reduce){.toy-interior-modal{backdrop-filter:none}}
