@@ -4232,7 +4232,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       <button className={activeHudPanel === 'ferry' ? 'active' : ''} onClick={() => setActiveHudPanel(activeHudPanel === 'ferry' ? null : 'ferry')} aria-label="Haliç Vapur Hattı" title="Vapur Hattı"><span>⚓</span><small>VAPUR</small></button>
       <button className={activeHudPanel === 'portfolio' ? 'active' : ''} onClick={() => setActiveHudPanel(activeHudPanel === 'portfolio' ? null : 'portfolio')} aria-label="Portföy" title="Portföy"><span>▦</span><small>PORTFÖY</small></button>
       <button className={activeHudPanel === 'time' ? 'active' : ''} onClick={() => setActiveHudPanel(activeHudPanel === 'time' ? null : 'time')} aria-label="Oyun zamanı" title="Zaman"><span>◷</span><small>ZAMAN</small></button>
-      <button className={activeHudPanel === 'social' ? 'active' : ''} onClick={() => setActiveHudPanel(activeHudPanel === 'social' ? null : 'social')} aria-label="Çok oyunculu oda" title="Oyuncular"><span>♙</span><small>ODA</small></button>
+      <button className={activeHudPanel === 'social' ? 'active' : ''} onClick={() => setActiveHudPanel(activeHudPanel === 'social' ? null : 'social')} aria-label="Oyuncular ve mülk teklifleri" title="Teklifler"><span>♙</span><small>{session ? 'TEKLİFLER' : 'ODA'}{session && cloudOffers.some(o=>((o.status==='pending'&&o.seller_user_id===session.user.id)||(o.status==='countered'&&o.buyer_user_id===session.user.id)))?' •':''}</small></button>
       <button className={activeHudPanel === 'log' ? 'active' : ''} onClick={() => setActiveHudPanel(activeHudPanel === 'log' ? null : 'log')} aria-label="Mahalle günlüğü" title="Günlük"><span>≡</span><small>GÜNLÜK</small></button>
     </nav>
     {activeHudPanel && <button className="hud-dismiss" aria-label="Menüyü kapat" onClick={() => setActiveHudPanel(null)}>×</button>}
@@ -4264,6 +4264,8 @@ function App({ session = null, supabase = null, authConfigured = false }) {
         {multiplayerRole !== 'solo' && <button className="room-leave-button" onClick={closeMultiplayer}>ODADAN AYRIL</button>}
       </div>}
       <p>{session ? 'Tek bir ortak şehirdesiniz. Mülk sahipliği herkes için ortaktır; paran, mesleğin, stokun ve oyun saatin yalnızca sana aittir.' : 'Herkes kendi parasını, mesleğini, stokunu ve portföyünü yönetir. Binaların sahipliği ortaktır; başka oyuncunun mülkü için satın alma teklifi gönderebilirsin. İnternet bağlantısı gerekir.'}</p>
+      {session && <SharedOffersPanel offers={cloudOffers} userId={session.user.id} busy={offerBusy}
+        error={cloudOffersError} onRespond={respondSharedOffer}/>}
       {incomingOffer && <div className="incoming-offer" role="alert"><strong>{incomingOffer.isCounter ? 'Karşı teklif geldi' : 'Yeni satın alma teklifi'}</strong><span>{incomingOffer.fromName}, {properties.find(p => p.id === incomingOffer.propertyId)?.name || 'bir mülk'} için ₺{Number(incomingOffer.price).toLocaleString('tr-TR')} teklif ediyor.</span><label>Teklif / karşı teklif (₺)<input type="number" min="1" value={offerPriceInput} onChange={e => setOfferPriceInput(e.target.value)} /></label><div><button onClick={() => respondToOffer('accept')}>KABUL ET</button><button onClick={() => respondToOffer('counter', offerPriceInput)}>KARŞI TEKLİF</button><button onClick={() => respondToOffer('reject')}>REDDET</button></div></div>}
     </section>
 
@@ -4336,7 +4338,15 @@ function App({ session = null, supabase = null, authConfigured = false }) {
           <div className="card-label">02 / CEPTEKİ SERMAYE</div>
           <div className="balance-number"><span>₺</span>{cash.toLocaleString('tr-TR', { maximumFractionDigits: 2 })}</div>
           <div className="balance-foot"><span>Gün {day} · {workHours} saat çalıştın</span><span className={cash > 0 ? 'positive' : 'negative'}>{cash > 0 ? 'AYAKTA' : 'SERMAYE BİTTİ'}</span></div>
-          <div className="balance-rule"><span style={{width: `${Math.min(100, cash / 500 * 100)}%`}} /></div>
+          <div className="balance-rule"><span style={{width: `${Math.min(100, cash / 70000 * 100)}%`}} /></div>
+          <div className="beta-credit-panel">
+            <strong>₺70.000 · BETA TEST FONU</strong>
+            <p>Mevcut oyunun korunur. Tek seferlik test sermayesi, hesabındaki bakiyeye eklenir.</p>
+            <button type="button" disabled={betaTestFundClaimed||testFundBusy||Boolean(session&&!cloudReady)} onClick={claimBetaTestFund}>
+              {testFundBusy?'İŞLENİYOR…':betaTestFundClaimed?'FON ALINDI':'₺70.000 TEST FONU AL'}
+            </button>
+            <small>{session?'Hesap başına yalnızca bir kez; Supabase test fonu güncellemesi gerektirir.':'Bu tarayıcıdaki yerel test kaydı için bir defaya mahsustur.'}</small>
+          </div>
         </section>
 
         <section className="progression-card" aria-label="Gelişim hedefi">
