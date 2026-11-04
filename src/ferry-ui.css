@@ -1,0 +1,62 @@
+/* Haliç transport concession – matches Mahalle's 1923-era compact HUD. */
+.hud-panel-ferry .hud-side-panel>.ferry-enterprise-panel{display:block!important}
+.ferry-enterprise-panel{
+  background:linear-gradient(160deg,#1b2c32,#152129 60%,#1b2227);
+  color:#f0e8d8;padding:17px;border-radius:11px;
+  border:1px solid rgba(186,160,106,.29);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06)
+}
+.ferry-header{display:grid;gap:7px;padding:2px 0 15px;border-bottom:1px solid #65746b50}
+.ferry-kicker{font:700 10px 'IBM Plex Mono',monospace;color:#b5ae8f;letter-spacing:.8px}
+.ferry-status{justify-self:start;font:700 9px 'IBM Plex Mono',monospace;letter-spacing:.7px;border:1px solid #74827a66;padding:5px 8px;border-radius:5px}
+.ferry-status.owned{background:#264b3e;color:#a5e2bc;border-color:#568a6f}
+.ferry-status.available{color:#dcc390}
+.ferry-header h2{font:500 clamp(19px,2vw,26px)/1.15 Georgia,'Times New Roman',serif!important;letter-spacing:-.4px;color:#f4e9d5;margin:1px 0 0}
+.ferry-header p{font:12px/1.55 'Space Grotesk',sans-serif;color:#adbab7;margin:0}
+.ferry-stats{margin:15px 0;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ferry-stats>div{display:flex;flex-direction:column;gap:7px;padding:12px 10px;border:1px solid #45555c;background:#1c2b31;border-radius:8px;min-width:0}
+.ferry-stats span{font:700 9px/1.35 'IBM Plex Mono',monospace;color:#a6b4b0;letter-spacing:.35px}
+.ferry-stats strong{font:600 14px/1.2 'Space Grotesk',sans-serif;color:#f2dfb2;overflow-wrap:anywhere}
+.ferry-license{padding:14px;background:#2a332f;border-radius:9px;border:1px solid #83734b77;display:grid;gap:9px}
+.ferry-license>strong{font:700 13px 'Space Grotesk',sans-serif;color:#f6e5bd}
+.ferry-license p{font:11px/1.55 'Space Grotesk',sans-serif;color:#bcc6be;margin:0}
+.ferry-license small{color:#e8bba7;font-size:10px}
+.ferry-purchase{width:100%;min-height:46px;padding:12px;border:0;border-radius:7px;background:#e4c18a;color:#273029;font:800 12px 'Space Grotesk',sans-serif;cursor:pointer}
+.ferry-purchase:hover:not(:disabled){background:#f5d9a9;transform:translateY(-1px)}
+.ferry-purchase:disabled{opacity:.50;cursor:not-allowed}
+.ferry-report{margin:12px 0;padding:13px;background:#1a3030;border:1px solid #4f675c;border-radius:9px;display:grid;gap:9px}
+.ferry-report-title{font:800 10px 'IBM Plex Mono',monospace;color:#d9c495;letter-spacing:.65px}
+.ferry-report>div:not(.ferry-report-title){display:flex;align-items:center;justify-content:space-between;gap:10px;color:#c1cfc8;font:11px 'Space Grotesk',sans-serif}
+.ferry-report strong{font:600 12px 'Space Grotesk',sans-serif;color:#f1dfb7}
+.ferry-report small{color:#93aaa4;font:10px/1.5 'Space Grotesk',sans-serif}
+.ferry-upgrade-heading{display:flex;justify-content:space-between;align-items:center;padding:17px 0 10px;font:800 10px 'IBM Plex Mono',monospace;letter-spacing:.35px;color:#d4c5a6}
+.ferry-upgrade-list{display:grid;gap:7px}
+.ferry-upgrade{display:flex;justify-content:space-between;gap:10px;align-items:center;border-radius:8px;border:1px solid #41515a;background:#1c2b32;padding:11px}
+.ferry-upgrade>div{display:grid;gap:5px;min-width:0}
+.ferry-upgrade strong{font:700 12px 'Space Grotesk',sans-serif;color:#e8e0cf}
+.ferry-upgrade p{font:10px/1.4 'Space Grotesk',sans-serif;color:#a8bab7;margin:0}
+.ferry-upgrade button{min-width:76px;min-height:37px;padding:7px 9px;flex:none;border-radius:6px;border:1px solid #ae9970;background:#dec18c;color:#252f30;font:800 11px 'Space Grotesk',sans-serif;cursor:pointer}
+.ferry-upgrade button:disabled{opacity:.46;cursor:not-allowed}
+.ferry-upgrade.purchased button{color:#d6e9d8;background:#2d5d47;border-color:#529a75;opacity:1}
+.ferry-historical-note{margin:13px 0 0;color:#8d9e9d;font:10px/1.6 'Space Grotesk',sans-serif}
+.harbor-open-button{position:absolute;z-index:11;top:154px;right:93px;display:flex;align-items:center;gap:8px;max-width:245px;padding:10px 12px;border:1px solid #e4cb97b5;border-radius:10px;background:rgba(19,31,38,.91);color:#f2d29d;box-shadow:0 8px 25px #0004;cursor:pointer;backdrop-filter:blur(12px)}
+.harbor-open-button>span{font-size:19px}
+.harbor-open-button strong{font:800 10px 'Space Grotesk',sans-serif;letter-spacing:.45px}
+.harbor-open-button small{font:600 9px 'IBM Plex Mono',monospace;color:#b9c7c2}
+.harbor-open-button:hover,.harbor-open-button:focus-visible{border-color:#ffdfa0;outline:2px solid #ffdfa050}
+@media(max-width:860px){
+ .harbor-open-button{top:155px;right:78px;padding:8px 10px}
+ .harbor-open-button strong{font-size:9px}
+ .ferry-enterprise-panel{padding:13px}
+}
+@media(max-width:650px){
+ .harbor-open-button{top:136px;right:76px;gap:5px}
+ .harbor-open-button strong{font-size:9px}
+ .harbor-open-button small{display:none}
+ .ferry-stats{gap:6px}
+}
+@media(max-width:370px){
+ .harbor-open-button{top:126px;right:64px}
+ .harbor-open-button>span{font-size:16px}
+ .harbor-open-button strong{max-width:86px;white-space:normal}
+}
