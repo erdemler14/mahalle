@@ -12,6 +12,7 @@ import { createPeriodStreetLife } from './periodStreetLife.js';
 import FerryBusinessPanel from './FerryBusinessPanel.jsx';
 import SharedOffersPanel from './SharedOffersPanel.jsx';
 import CityLifePanel from './CityLifePanel.jsx';
+import ToyShopInterior, { TOY_SHOP_ID } from './ToyShopInterior.jsx';
 import { createLivingResidents } from './livingResidents3d.js';
 import {
   getCityPopulation, normalizeNeighborhood, customerFlow, neighborhoodPulse,
@@ -1565,6 +1566,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   const [selectedUnit, setSelectedUnit] = useState(1);
   const [selected, setSelected] = useState(() => properties.some(p => p.id === saved.selected) ? saved.selected : 1);
   const [buildingStoryId, setBuildingStoryId] = useState(null);
+  const [toyShopOpen, setToyShopOpen] = useState(false);
   const [mapSearch, setMapSearch] = useState(() => properties.find(p => p.id === saved.selected)?.name || properties[0].name);
   const [activeHudPanel, setActiveHudPanel] = useState(null);
   useEffect(() => { const property = properties.find(p => p.id === selected); if (property) setMapSearch(property.name); }, [selected]);
@@ -1818,6 +1820,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     else if(message.decision==='reject'&&offer.fromPlayerId===playerId){setIncomingOffer(null);setNotice('Satın alma teklifin reddedildi.');}
   };
   const selectProperty = (id) => {
+    if (toyShopOpen) setToyShopOpen(false);
     if (sendAction('selectProperty', id)) return;
     setSelected(id);
     setBuildingStoryId(id);
@@ -1828,6 +1831,8 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     setShopPropertyId(null);
   };
 
+  const enterToyShop = () => { setSelected(TOY_SHOP_ID); setBuildingStoryId(null); setToyShopOpen(true); };
+  const leaveToyShop = () => setToyShopOpen(false);
   const shopOpen = shopPropertyId === selected;
   const [log, setLog] = useState(() => Array.isArray(saved.log) && saved.log.length ? saved.log.slice(0, 5) : [{ id: 0, text: 'Beyoğlu’na geldin. Gündelik işlerle sermaye biriktir, ilk dükkânını al ve işletmeni büyüt.' }]);
   const professionOptions = [
@@ -4122,6 +4127,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   };
 
   const resetGame = () => {
+    setToyShopOpen(false);
     if (session && supabase) { tell('Ortak şehirde yeni oyun sıfırlaması şimdilik kapalı; mülk sahipliğinin kaybolmaması için.'); return; }
     if (sendAction('resetGame')) return;
     if (typeof window !== 'undefined' && !window.confirm('Yeni oyun başlatılsın mı? Mevcut mahalle kaydı silinecek.')) return;
@@ -4351,6 +4357,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       {incomingOffer && <div className="incoming-offer" role="alert"><strong>{incomingOffer.isCounter ? 'Karşı teklif geldi' : 'Yeni satın alma teklifi'}</strong><span>{incomingOffer.fromName}, {properties.find(p => p.id === incomingOffer.propertyId)?.name || 'bir mülk'} için ₺{Number(incomingOffer.price).toLocaleString('tr-TR')} teklif ediyor.</span><label>Teklif / karşı teklif (₺)<input type="number" min="1" value={offerPriceInput} onChange={e => setOfferPriceInput(e.target.value)} /></label><div><button onClick={() => respondToOffer('accept')}>KABUL ET</button><button onClick={() => respondToOffer('counter', offerPriceInput)}>KARŞI TEKLİF</button><button onClick={() => respondToOffer('reject')}>REDDET</button></div></div>}
     </section>
 
+    {toyShopOpen && <ToyShopInterior property={properties.find(p=>p.id===TOY_SHOP_ID)} owned={owned.includes(TOY_SHOP_ID)} stock={getTotalStock(TOY_SHOP_ID)} onExit={leaveToyShop}/>}
     <section className="game-layout fullscreen-layout">
       <div className="world-panel">
         <div className="world-topline"><span><span className="live-dot" /> BEYOĞLU MERKEZİ</span><label className="property-finder"><span>⌕</span><input aria-label="Mülk ara ve haritada göster" list="mahalle-property-options" placeholder="Mülk adı yaz..." value={mapSearch} onChange={event => { const value = event.target.value; setMapSearch(value); const match = properties.find(property => property.name.toLocaleLowerCase('tr-TR') === value.trim().toLocaleLowerCase('tr-TR')); if (match) { selectProperty(match.id); setMapSearch(''); } }} /><datalist id="mahalle-property-options">{properties.map(property => <option key={property.id} value={property.name}>{owned.includes(property.id) ? 'Senin mülkün' : 'Satılık'}</option>)}</datalist><small>{properties.length} MÜLK</small></label><span className="world-year">OYUN DÜNYASI <i>·</i> {year}</span></div>
@@ -4358,6 +4365,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
           <div className="scene-action-eyebrow">SEÇİLİ BİNA · {String(active.id).padStart(2, '0')}</div><strong>{active.name}</strong>
           <span>{ownerByProperty[active.id] ? (ownerByProperty[active.id].playerId === playerId ? `Sahibi: ${ownerByProperty[active.id].name} (sen)` : `Sahibi: ${ownerByProperty[active.id].name}`) : 'Satılık'} · ₺{getMarketValue(active).toLocaleString('tr-TR')}</span>
           <div className="scene-action-buttons">
+            {active.id === TOY_SHOP_ID && <button type="button" className="toy-enter-cta" onClick={enterToyShop}>↗ DÜKKÂNA GİR · 3D</button>}
             {!ownerByProperty[active.id] && !owned.includes(active.id) && <button onClick={buy} disabled={purchaseBusy}>{purchaseBusy?'İŞLENİYOR':'SATIN AL'}</button>}
             {ownerByProperty[active.id]?.playerId === playerId && owned.includes(active.id) && <button onClick={toggleRent}>{rented.includes(active.id) ? 'KİRACILIĞI BİTİR' : 'KİRAYA VER'}</button>}
             {owned.includes(active.id) && <button onClick={sellProperty}>MÜLKÜ SAT · ₺{Math.round(getMarketValue(active) * 0.95).toLocaleString('tr-TR')}</button>}
@@ -4365,6 +4373,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
             {owned.includes(active.id) && !rented.includes(active.id) && (tradeCatalog[active.id] || []).some(item => item.price > 0) && <span className="property-note">Ürün ve stok ayarlandığında işletme otomatik çalışır.</span>}
           </div>
         </div>} />
+        {active.id === TOY_SHOP_ID && <button type="button" className="toy-shop-floating-cta" onClick={enterToyShop}>✦ OYUNCAKÇININ İÇİNE GİR <span>↗</span></button>}
         <button type="button" className="harbor-open-button" onClick={() => setActiveHudPanel(activeHudPanel === 'ferry' ? null : 'ferry')} aria-label="Haliç Vapur Hattı işletme ekranını aç"><span>⚓</span><strong>HALİÇ VAPUR HATTI</strong><small>{ferryBusiness.owned ? 'İŞLETMEN FAALİYETTE' : 'İMTİYAZ · ₺200'}</small></button>
         {buildingStoryId != null && (() => { const storyProperty = properties.find(item => item.id === buildingStoryId); if (!storyProperty) return null; const storyText = storyProperty.history || storyProperty.style || 'Bu yapı, 1920’lerin Beyoğlu’sunda mahallenin gündelik yaşamının bir parçası.'; return <aside className="building-history-popover" role="status" aria-live="polite"><button className="building-history-close" type="button" aria-label="Bilgilendirmeyi kapat" onClick={() => setBuildingStoryId(null)}>×</button><span className="building-history-kicker">PERA · DÖNEM NOTU</span><h3>{storyProperty.name}</h3><p>{storyText.length > 300 ? storyText.slice(0,297).trimEnd() + '…' : storyText}</p></aside>; })()}
         <div className="map-legend"><span><i className="legend-dot available" /> SATILIK MÜLK</span><span><i className="legend-dot owned" /> SENİN MÜLKÜN</span><span className="map-hint">SÜRÜKLE: DÖNDÜR · KAYDIR: YAKINLAŞ · BİNAYA TIKLA</span></div>
