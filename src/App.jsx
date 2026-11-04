@@ -2627,17 +2627,17 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const profile = getBusinessProfile(propertyId);
     return Math.round(getBusinessRecipe(propertyId, product).reduce((sum, part) => {
       const material = profile.materials.find(item => item.id === part.id);
-      return sum + (material ? material.cost / material.batch * part.qty : 0);
+      return sum + (material ? material.cost / material.batch * part.qty * getSupplyModifier(properties.find(p => p.id === Number(propertyId)),{ferryBusiness,neighborhood}) : 0);
     }, 0) * 100) / 100;
   };
   // Older saves may contain raw-material IDs from the former generic procurement profile.
   // Keep their value and make them returnable instead of hiding them or blocking the warehouse.
   const getMaterialUnitValue = (propertyId, materialId) => {
     const current = getBusinessProfile(propertyId)?.materials?.find(item => item.id === materialId);
-    if (current) return Number(current.cost) / Math.max(1, Number(current.batch) || 1);
+    if (current) return Number(current.cost) / Math.max(1, Number(current.batch) || 1) * getSupplyModifier(properties.find(p => p.id === Number(propertyId)),{ferryBusiness,neighborhood});
     const knownProfiles = [...Object.values(businessMaterialProfiles), ...Object.values(shopSpecificProfiles), ...Object.values(BUSINESS_SPECIFIC_PROFILES)];
     const legacy = knownProfiles.flatMap(profile => profile?.materials || []).find(item => item.id === materialId);
-    return legacy ? Number(legacy.cost) / Math.max(1, Number(legacy.batch) || 1) : 0.75;
+    return (legacy ? Number(legacy.cost) / Math.max(1, Number(legacy.batch) || 1) : 0.75) * getSupplyModifier(properties.find(p => p.id === Number(propertyId)),{ferryBusiness,neighborhood});
   };
   const getLegacyMaterials = (propertyId, inventory = getInventoryState(propertyId)) => {
     const valid = new Set((getBusinessProfile(propertyId)?.materials || []).map(item => item.id));
@@ -3113,7 +3113,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       return;
     }
     const isWorkingHour = hour >= 8 && hour < 19;
-    const hourlySales = isWorkingHour ? processBusinessSales(1) : { revenue: 0, entries: [], salesByProperty: {}, stockChanges: {} };
+    const hourlySales = hour >= 6 && hour < 23 ? processBusinessSales(1) : { revenue: 0, entries: [], salesByProperty: {}, stockChanges: {} };
     const unitsSoldThisHour = Object.values(hourlySales.salesByProperty || {}).reduce((sum, sale) => sum + (Number(sale.units) || 0), 0);
     if (unitsSoldThisHour > 0) updateDailyTask('sell-products', unitsSoldThisHour);
     if (hourlySales.stockoutAlerts?.length) {
@@ -3253,7 +3253,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       events.push({ id: 'victory-day', name: '30 Ağustos', detail: 'Zafer Bayramı kutlamaları cadde ticaretini ve yeme-içme talebini artırıyor.', effect: (p, product) => ({ sales: isFood(product) || isGiftOrRetail(product) || isEntertainment(p) ? 1.28 : 1.05, chance: 1.14 }) });
     }
     if ((month === 10 && [28,29].includes(day))) {
-      events.push({ id: 'republic-day', name: '29 Ekim Cumhuriyet Bayramı', detail: 'Cumhuriyet Bayramı kutlamaları nedeniyle merkezde alışveriş ve eğlence talebi artıyor.', effect: (p, product) => ({ sales: isFood(product) || isGiftOrRetail(product) || isEntertainment(p) ? 1.38 : 1.08, chance: 1.2 }) });
+      events.push({ id: 'republic-day', name: year===1923?'Cumhuriyetin İlanı':'29 Ekim', detail: year===1923?'29 Ekim 1923’te Cumhuriyetin ilan edildiği haberi yayılıyor; gazete, kahvehane ve ulaşımda hareketlilik var.':'29 Ekim günlerinde merkezde alışveriş ve eğlence talebi artıyor.', effect: (p, product) => ({ sales: isFood(product) || isGiftOrRetail(product) || isEntertainment(p) ? 1.38 : 1.08, chance: 1.2 }) });
     }
     if (month === 9 && day >= 1 && day <= 5) {
       events.push({ id: 'school-opening', name: 'Okullar açılıyor', detail: 'Okul hazırlıkları kitapçı ve kırtasiyelerde satışları artırıyor.', effect: (p, product) => ({ sales: isBookshop(p) || /kitap|defter|kalem|kırtasiye/i.test((product?.id || '') + ' ' + (product?.name || '')) ? 1.75 : 0.96, chance: isBookshop(p) ? 1.45 : 0.98 }) });
@@ -3286,7 +3286,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     }
     // Multi-day cultural and neighborhood events create distinct winners and losers.
     if (month === 10 && day >= 12 && day <= 16) {
-      events.push({ id: 'beyoglu-film-festival', name: 'Beyoğlu Film Festivali', detail: 'Beş gün süren film gösterimleri ve gece seansları çevredeki gazino, kahvehane, lokanta ve kitapçılara ziyaretçi çekiyor; bazı sakin sokaklarda gürültü artıyor.', effect: (p, product) => {
+      events.push({ id: 'beyoglu-film-festival', name: 'Beyoğlu Film Gösterimleri (kurgu)', detail: 'Oyun için kurgulanan beş günlük film gösterimleri ve gece seansları çevredeki gazino, kahvehane, lokanta ve kitapçılara ziyaretçi çekiyor; bazı sakin sokaklarda gürültü artıyor.', effect: (p, product) => {
         const entertainment = isEntertainment(p);
         const food = isFood(product);
         const books = isBookshop(p) || /kitap|sinema|film|dergi/i.test((product?.id || '') + ' ' + (product?.name || ''));
@@ -3397,17 +3397,20 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       if (detail && entries.length < 8) entries.push(detail);
     };
     for (let hourIndex = 0; hourIndex < hours; hourIndex++) {
+      const salesHour = hours === 1 ? hour : Math.min(23, 6 + hourIndex);
       owned.forEach(propertyId => {
         if (rented.includes(propertyId)) return;
         const property = properties.find(item => item.id === propertyId);
         if (!property || !['İşletme', 'Atölye', 'Ticaret', 'Depo'].includes(property.type)) return;
+        if (!isBusinessOpen(property,salesHour)) return;
+        const customerFlowForShop = shopCustomerFlow(property,salesHour);
         if (propertyId === 37) {
           const state = localStocks[37] && typeof localStocks[37] === 'object' ? localStocks[37] : { materials: {}, products: {} };
           const products = { ...(state.products || {}) };
           let changed = false;
           SHOE_RECIPES.forEach(shoe => {
             const stock = Math.max(0, Number(products[shoe.id]) || 0);
-            if (!stock || Math.random() > 0.46) return;
+            if (!stock || Math.random() > Math.min(.94,.46*customerFlowForShop.demand)) return;
             const eventEffect = getEconomicEventEffect(property, { id: shoe.id, name: shoe.name });
             const sold = Math.min(stock, Math.random() > 0.78 ? 2 : 1);
             const amount = Math.round(sold * shoe.price * eventEffect.sales * 100) / 100;
@@ -3429,7 +3432,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
           const soldBefore = Number(businessStats[propertyId]?.productUnitsSold?.[product.id]?.units) || 0;
           const reputation = Math.min(100, Math.floor(soldBefore * 1.5));
           const eventEffect = getEconomicEventEffect(property, product);
-          const salesChance = Math.min(0.92, (0.34 + (reputation / 100) * 0.12) * eventEffect.chance);
+          const salesChance = Math.min(0.94, (0.34 + (reputation / 100) * 0.12) * eventEffect.chance * customerFlowForShop.demand);
           if ((!serviceSale && stock <= 0) || (serviceSale && serviceMaterialLimit <= 0) || Math.random() > salesChance) return;
           const sold = serviceSale ? Math.min(1, serviceMaterialLimit) : Math.min(stock, 1 + (Math.random() > 0.72 ? 1 : 0));
           const baseMultiplier = 1;
@@ -3510,7 +3513,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const nextMonthRaw = month + (nextDayRaw > 30 ? 1 : 0);
     const nextMonth = nextMonthRaw > 12 ? 1 : nextMonthRaw;
     const business = settleDailyBusinesses();
-    const sales = processBusinessSales(11);
+    const sales = processBusinessSales(17);
     if (sales.stockoutAlerts?.length) {
       const alert = sales.stockoutAlerts[0];
       tell('STOK BİTTİ: ' + alert.propertyName + ' — ' + alert.productName + '. Yeniden üretim yap.');
