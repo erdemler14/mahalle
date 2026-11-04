@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import Peer from 'peerjs';
 import { createLivingCity, cityLifePhase } from './livingCity.js';
@@ -11,6 +11,12 @@ import { applyWaterfrontZoning } from './waterfrontZoning.js';
 import { createPeriodStreetLife } from './periodStreetLife.js';
 import FerryBusinessPanel from './FerryBusinessPanel.jsx';
 import SharedOffersPanel from './SharedOffersPanel.jsx';
+import CityLifePanel from './CityLifePanel.jsx';
+import { createLivingResidents } from './livingResidents3d.js';
+import {
+  getCityPopulation, normalizeNeighborhood, customerFlow, neighborhoodPulse,
+  isBusinessOpen, getSupplyModifier, storyForDay, applyStoryDecision
+} from './cityLifeEngine.js';
 import { FERRY_LICENSE_PRICE, FERRY_UPGRADES, normaliseFerryBusiness, calculateFerryDay, applyFerrySettlement } from './ferryBusiness.js';
 
 const properties = [
@@ -120,6 +126,7 @@ Object.assign(properties.find(property => property.id === 40), { x: -20.5, z: 5.
 Object.assign(properties.find(property => property.id === 41), { x: 27.2, z: 22.5, rotation: -0.03 });
 // Apply after commercial-shop build scripts: property IDs, names, prices and owners never change.
 applyWaterfrontZoning(properties);
+const CITY_POPULATION = getCityPopulation(properties);
 
 const SAVE_KEY = 'mahalle-save-v1';
 const SAVE_BACKUP_KEY = 'mahalle-save-v1-backup';
@@ -170,7 +177,7 @@ function supportsProfessionAt(property, professionId) {
   return Boolean(property && venueTypesByProfession[professionId]?.includes(property.type));
 }
 
-function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', onSelect, onUniversity, hour, day = 1, month = 1, overlay, developments = {}, buildingLevels = {}, ferryBusiness = {} }) {
+function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', onSelect, onUniversity, hour, day = 1, month = 1, year = 1923, overlay, developments = {}, buildingLevels = {}, ferryBusiness = {}, neighborhood = {} }) {
   const host = useRef(null);
   const overlayRef = useRef(null);
   const selectRef = useRef(onSelect);
@@ -197,6 +204,10 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
   useEffect(() => { selectedRef.current = selected; }, [selected]);
   useEffect(() => { hourRef.current = hour; }, [hour]);
   useEffect(() => { ferryStateRef.current = ferryBusiness; }, [ferryBusiness]);
+  const neighborhoodRef = useRef(neighborhood);
+  useEffect(() => { neighborhoodRef.current = neighborhood; }, [neighborhood]);
+  const yearRef = useRef(year);
+  useEffect(() => { yearRef.current = year; }, [year]);
   const dayRef = useRef(day);
   const monthRef = useRef(month);
   useEffect(() => { dayRef.current = day; monthRef.current = month; }, [day, month]);
@@ -745,6 +756,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
     const harborScene = createHarborScene({ scene, oldFerry: ferry, isMobile: isMobileScene, ferryStateRef });
     const glbArchitecture = createGlbArchitecture({ properties, buildingMeshes, mobile: isMobileScene, developments, owned, ownerByProperty, playerId });
     const periodStreetLife = createPeriodStreetLife({ scene, properties, isMobile: isMobileScene });
+    const livingResidents = createLivingResidents({ scene, properties, isMobile: isMobileScene });
 
     // A subtle pulsing ring makes the currently selected property easy to spot.
     const selectionRingMaterial = new THREE.MeshStandardMaterial({
@@ -1422,6 +1434,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
       periodVisuals.update({ hour: currentHour, elapsed, delta, weather: cityWeather });
       harborScene.update({ hour: currentHour, day: dayRef.current, month: monthRef.current, elapsed });
       periodStreetLife.update({ hour: currentHour, elapsed, delta, weather: cityWeather });
+      livingResidents.update({ clock: { hour: currentHour, day: dayRef.current, month: monthRef.current, year: yearRef.current }, elapsed, delta, weather: cityWeather });
       streetMat.roughness = cityWeather.damp ? 0.56 : 1;
       streetMat.metalness = cityWeather.damp ? 0.12 : 0;
       scene.fog.near = cityWeather.raining ? 32 : 42;
@@ -1578,6 +1591,8 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   const [businessPlans, setBusinessPlans] = useState(() => saved.businessPlans && typeof saved.businessPlans === 'object' ? saved.businessPlans : {});
   const [stockByProperty, setStockByProperty] = useState(() => saved.stockByProperty && typeof saved.stockByProperty === 'object' ? saved.stockByProperty : {});
   const [businessStats, setBusinessStats] = useState(() => saved.businessStats && typeof saved.businessStats === 'object' ? saved.businessStats : {});
+  const [neighborhood, setNeighborhood] = useState(() => normalizeNeighborhood(saved.neighborhood));
+  const storyActionLock = useRef(null);
   const [autoSupplyByProperty, setAutoSupplyByProperty] = useState(() => saved.autoSupplyByProperty && typeof saved.autoSupplyByProperty === 'object' ? saved.autoSupplyByProperty : {});
   const [pendingProductions, setPendingProductions] = useState(() => saved.pendingProductions && typeof saved.pendingProductions === 'object' ? saved.pendingProductions : {});
   const productionProcessingRef = useRef({});
@@ -1591,6 +1606,14 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   const [experience, setExperience] = useState(() => Math.max(0, Number(saved.experience) || 0));
   // Always initialize the development map before save/load effects can reference it.
   const [developments, setDevelopments] = useState(() => saved.developments && typeof saved.developments === 'object' ? saved.developments : {});
+  const cityPulse = useMemo(() => neighborhoodPulse({
+    properties, clock: {year,month,day,hour}, ferryBusiness, neighborhood,
+    businessStats
+  }),[year,month,day,hour,ferryBusiness,neighborhood,businessStats]);
+  const shopCustomerFlow = (property, salesHour = hour) => customerFlow({
+    property,clock:{year,month,day,hour:salesHour},properties,
+    population:CITY_POPULATION,ferryBusiness,neighborhood,businessStats
+  });
   const playerLevel = 1 + Math.floor(experience / 100);
   const levelExperience = experience % 100;
   const [selectedShoeId, setSelectedShoeId] = useState('kundura');
@@ -2699,13 +2722,13 @@ function App({ session = null, supabase = null, authConfigured = false }) {
         window.localStorage.setItem(saveBackupKey, JSON.stringify(previousSave));
       }
       window.localStorage.setItem(saveKey, JSON.stringify({
-        version: 3, economyVersion: STARTER_ECONOMY_VERSION, playerName, steps, cash, ferryBusiness, owned, rented, unitOwners, unitRented, buildingLevels, selected, showPortfolio, professionId, marketValues,
+        version: 3, economyVersion: STARTER_ECONOMY_VERSION, playerName, steps, cash, ferryBusiness, neighborhood, owned, rented, unitOwners, unitRented, buildingLevels, selected, showPortfolio, professionId, marketValues,
         hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, autoSupplyByProperty, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, eventChain, log: log.slice(0, 5)
       }));
     } catch {
       // The game remains playable if browser storage is disabled or full.
     }
-  }, [playerName, steps, cash, ferryBusiness, owned, rented, unitOwners, unitRented, buildingLevels, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, autoSupplyByProperty, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, eventChain, log]);
+  }, [playerName, steps, cash, ferryBusiness, neighborhood, owned, rented, unitOwners, unitRented, buildingLevels, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, autoSupplyByProperty, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, eventChain, log]);
 
   useEffect(() => {
     if (!session || !supabase) { setCloudReady(true); return undefined; }
@@ -2800,6 +2823,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
           if (state.stockByProperty && typeof state.stockByProperty === 'object') setStockByProperty(state.stockByProperty);
           if (state.autoSupplyByProperty && typeof state.autoSupplyByProperty === 'object') setAutoSupplyByProperty(state.autoSupplyByProperty);
           if (state.businessStats && typeof state.businessStats === 'object') setBusinessStats(state.businessStats);
+          if (state.neighborhood && typeof state.neighborhood === 'object') setNeighborhood(normalizeNeighborhood(state.neighborhood));
           if (state.pendingProductions && typeof state.pendingProductions === 'object') setPendingProductions(state.pendingProductions);
           if (Array.isArray(state.orders)) setOrders(state.orders);
           if (typeof state.ordersDateKey === 'string') setOrdersDateKey(state.ordersDateKey);
@@ -2810,7 +2834,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
           if (Array.isArray(state.log)) setLog(state.log.slice(0, 5));
           if (state.developments && typeof state.developments === 'object') setDevelopments(state.developments);
         } else {
-          const initialState = { version: 2, economyVersion: STARTER_ECONOMY_VERSION, playerName: displayName, steps, cash: STARTING_CASH, ferryBusiness: normaliseFerryBusiness(null), owned: [], rented, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, autoSupplyByProperty, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, experience, careerReputation, enrolledCourse, certificates, log: log.slice(0, 5), developments };
+          const initialState = { version: 2, economyVersion: STARTER_ECONOMY_VERSION, playerName: displayName, steps, cash: STARTING_CASH, ferryBusiness: normaliseFerryBusiness(null), neighborhood: normalizeNeighborhood(null), owned: [], rented, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, autoSupplyByProperty, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, experience, careerReputation, enrolledCourse, certificates, log: log.slice(0, 5), developments };
           const { error } = await supabase.from('player_saves').upsert({ user_id: userId, state: initialState, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
           if (error) throw error;
           setPlayerName(displayName);
@@ -2840,13 +2864,13 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   useEffect(() => {
     if (!session || !supabase || !cloudReady) return;
     const state = {
-      version: 2, economyVersion: STARTER_ECONOMY_VERSION, playerName, steps, cash, ferryBusiness, owned, rented, selected, showPortfolio, professionId, marketValues,
+      version: 2, economyVersion: STARTER_ECONOMY_VERSION, playerName, steps, cash, ferryBusiness, neighborhood, owned, rented, selected, showPortfolio, professionId, marketValues,
       hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty,
       businessStats, autoSupplyByProperty, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, eventChain, experience, dailySalesLog, dailySalesRevenue, careerReputation, enrolledCourse, certificates, log: log.slice(0, 5), developments
     };
     supabase.from('player_saves').upsert({ user_id: session.user.id, state, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
       .then(({ error }) => { if (error) setMultiplayerStatus('Kayıt eşitlenemedi · ' + error.message); });
-  }, [session?.user?.id, supabase, cloudReady, playerName, steps, cash, ferryBusiness, owned, rented, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, autoSupplyByProperty, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, eventChain, experience, dailySalesLog, dailySalesRevenue, careerReputation, enrolledCourse, certificates, log, developments]);
+  }, [session?.user?.id, supabase, cloudReady, playerName, steps, cash, ferryBusiness, neighborhood, owned, rented, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, autoSupplyByProperty, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, eventChain, experience, dailySalesLog, dailySalesRevenue, careerReputation, enrolledCourse, certificates, log, developments]);
 
 
   const tell = (text) => {
@@ -4059,7 +4083,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     if (session && supabase) { tell('Ortak şehirde yeni oyun sıfırlaması şimdilik kapalı; mülk sahipliğinin kaybolmaması için.'); return; }
     if (sendAction('resetGame')) return;
     if (typeof window !== 'undefined' && !window.confirm('Yeni oyun başlatılsın mı? Mevcut mahalle kaydı silinecek.')) return;
-    setSteps(0); setCash(STARTING_CASH); setFerryBusiness(normaliseFerryBusiness(null)); setOwned([]); setRented([]); setSelected(1); setShowPortfolio(false);
+    setSteps(0); setCash(STARTING_CASH); setFerryBusiness(normaliseFerryBusiness(null)); setNeighborhood(normalizeNeighborhood(null)); setOwned([]); setRented([]); setSelected(1); setShowPortfolio(false);
     setProfessionId('amele'); setHour(8); setDay(1); setMonth(1); setYear(1923);
     setWorkHours(0); setCareerHours(0); setShopPropertyId(null); setWineBottles(0); setBusinessPlans({}); setStockByProperty({}); setBusinessStats({});
     setLog([{ id: Date.now(), text: 'Yeni bir hikaye başladı. Gündelik işçilikle sermaye biriktir veya uygun bir dükkan edin.' }]);
