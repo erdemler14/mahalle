@@ -7,6 +7,8 @@ import { createStreetWalker } from './streetWalk.js';
 import { createCloseupFacades } from './facadeCloseup.js';
 import { createGlbArchitecture } from './glbArchitecture.js';
 import { createHarborScene } from './harborScene.js';
+import { applyWaterfrontZoning } from './waterfrontZoning.js';
+import { createPeriodStreetLife } from './periodStreetLife.js';
 import FerryBusinessPanel from './FerryBusinessPanel.jsx';
 import { FERRY_LICENSE_PRICE, FERRY_UPGRADES, normaliseFerryBusiness, calculateFerryDay, applyFerrySettlement } from './ferryBusiness.js';
 
@@ -115,6 +117,8 @@ Object.assign(properties.find(property => property.id === 36), { x: 20.7, z: 5.3
 Object.assign(properties.find(property => property.id === 39), { x: -20.5, z: -5.3, rotation: 0.02 });
 Object.assign(properties.find(property => property.id === 40), { x: -20.5, z: 5.3, rotation: 0.01 });
 Object.assign(properties.find(property => property.id === 41), { x: 27.2, z: 22.5, rotation: -0.03 });
+// Apply after commercial-shop build scripts: property IDs, names, prices and owners never change.
+applyWaterfrontZoning(properties);
 
 const SAVE_KEY = 'mahalle-save-v1';
 const SAVE_BACKUP_KEY = 'mahalle-save-v1-backup';
@@ -739,6 +743,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
     const closeupFacades = createCloseupFacades({ properties, buildingMeshes, mobile: isMobileScene, developments });
     const harborScene = createHarborScene({ scene, oldFerry: ferry, isMobile: isMobileScene, ferryStateRef });
     const glbArchitecture = createGlbArchitecture({ properties, buildingMeshes, mobile: isMobileScene, developments, owned, ownerByProperty, playerId });
+    const periodStreetLife = createPeriodStreetLife({ scene, properties, isMobile: isMobileScene });
 
     // A subtle pulsing ring makes the currently selected property easy to spot.
     const selectionRingMaterial = new THREE.MeshStandardMaterial({
@@ -753,6 +758,9 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
     // Background frontage has repeated window bays and cornices rather than blank cubes.
     const fillerColors = ['#c9b7a2', '#b8c5be', '#d8c3a9', '#c7a7a0', '#d9d0b9', '#b9c4d0', '#d8bda7', '#c7b9cf'];
     for (let i = 0; i < 10; i++) {
+      // The eastern frontage now belongs to quay buildings and public pier use;
+      // do not spawn generic houses across the water-edge promenade.
+      if (i % 2 === 1) continue;
       const height = 2.5 + (i % 4) * 0.58;
       const width = 1.9 + (i % 3) * 0.22;
       const depth = 1.75;
@@ -1412,6 +1420,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
       const cityWeather = livingCity.update({ hour: currentHour, day: dayRef.current, month: monthRef.current, elapsed, delta });
       periodVisuals.update({ hour: currentHour, elapsed, delta, weather: cityWeather });
       harborScene.update({ hour: currentHour, day: dayRef.current, month: monthRef.current, elapsed });
+      periodStreetLife.update({ hour: currentHour, elapsed, delta, weather: cityWeather });
       streetMat.roughness = cityWeather.damp ? 0.56 : 1;
       streetMat.metalness = cityWeather.damp ? 0.12 : 0;
       scene.fog.near = cityWeather.raining ? 32 : 42;
