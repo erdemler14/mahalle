@@ -241,6 +241,19 @@ export function describeNeighborhoodClock(hour) {
   if(hour>=20&&hour<23)return 'Akşam · kahvehane ve meyhaneler';
   return 'Mahalle uykuda · gece seferleri seyrek';
 }
+// Population schedules are calculated once per clock hour, not once for each
+// storefront and every React render. This keeps 180 virtual residents cheap.
+const scheduleCache=new WeakMap();
+function cachedIntentions(properties,population,clock) {
+  const key=cityDateKey(clock)+':'+clock.hour+':'+population.length;
+  let cache=scheduleCache.get(properties);
+  if (!cache || cache.key!==key) {
+    cache={key,plans:population.map(person=>visitIntent(person,clock,properties))};
+    scheduleCache.set(properties,cache);
+  }
+  return cache.plans;
+}
+
 export function customerFlow({property,clock,properties,population,ferryBusiness,neighborhood,businessStats={}}){
   if(!property||!isBusinessOpen(property,clock.hour))return {
     visits:0,nearby:0,demand:.25,supplyModifier:1,reputation:normalizeNeighborhood(neighborhood).reputation,
@@ -248,8 +261,7 @@ export function customerFlow({property,clock,properties,population,ferryBusiness
   };
   const state=normalizeNeighborhood(neighborhood);
   const p=property;
-  const passers=population.reduce((total,n)=>{
-    const intent=visitIntent(n,clock,properties);
+  const passers=cachedIntentions(properties,population,clock).reduce((total,intent)=>{
     if(!intent)return total;
     if(intent.purpose==='shop' && intent.to?.id===p.id)return total+1;
     if(intent.purpose==='commute' && Math.abs(intent.to?.z-p.z)<4&&Math.abs(intent.to?.x-p.x)<13)return total+.18;
@@ -260,7 +272,8 @@ export function customerFlow({property,clock,properties,population,ferryBusiness
   const transit=(nearQuay?2.5:nearTram?1.25:.75)
     +(nearQuay&&ferryBusiness?.owned?2.1:0)
     +(nearQuay&&ferryBusiness?.upgrades?.secondFerry?1.8:0);
-  const realVisits=Math.max(0,Math.round(passers));
+  const rainy=[2,6,10].includes((clock.day*7+clock.month*11)%13);
+  const realVisits=Math.max(0,Math.round(passers*(rainy?.85:1)));
   const reputation=clamp(state.reputation+Math.min(12,(Number(businessStats?.[p.id]?.unitsSold)||0)/20),0,100);
   const footTraffic=Math.max(0,realVisits+transit);
   const demand=clamp(.38+footTraffic*.085+(reputation-50)*.004, .26,1.73);
