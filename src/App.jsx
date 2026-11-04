@@ -1525,6 +1525,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     if (!hasProperty && Number(saved.economyVersion || 0) < STARTER_ECONOMY_VERSION && (!Number.isFinite(saved.cash) || saved.cash <= 75)) return STARTING_CASH;
     return Number.isFinite(saved.cash) ? saved.cash : STARTING_CASH;
   });
+  const [ferryBusiness, setFerryBusiness] = useState(() => normaliseFerryBusiness(saved.ferryBusiness));
   const [owned, setOwned] = useState(() => Array.isArray(saved.owned) ? saved.owned.filter(id => properties.some(p => p.id === id)) : []);
   const [rented, setRented] = useState(() => Array.isArray(saved.rented) ? saved.rented.filter(id => properties.some(p => p.id === id)) : []);
   const [unitOwners, setUnitOwners] = useState(() => saved.unitOwners && typeof saved.unitOwners === 'object' ? saved.unitOwners : {});
@@ -2576,13 +2577,13 @@ function App({ session = null, supabase = null, authConfigured = false }) {
         window.localStorage.setItem(saveBackupKey, JSON.stringify(previousSave));
       }
       window.localStorage.setItem(saveKey, JSON.stringify({
-        version: 3, economyVersion: STARTER_ECONOMY_VERSION, playerName, steps, cash, owned, rented, unitOwners, unitRented, buildingLevels, selected, showPortfolio, professionId, marketValues,
+        version: 3, economyVersion: STARTER_ECONOMY_VERSION, playerName, steps, cash, ferryBusiness, owned, rented, unitOwners, unitRented, buildingLevels, selected, showPortfolio, professionId, marketValues,
         hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, autoSupplyByProperty, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, eventChain, log: log.slice(0, 5)
       }));
     } catch {
       // The game remains playable if browser storage is disabled or full.
     }
-  }, [playerName, steps, cash, owned, rented, unitOwners, unitRented, buildingLevels, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, autoSupplyByProperty, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, eventChain, log]);
+  }, [playerName, steps, cash, ferryBusiness, owned, rented, unitOwners, unitRented, buildingLevels, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, autoSupplyByProperty, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, eventChain, log]);
 
   useEffect(() => {
     if (!session || !supabase) { setCloudReady(true); return undefined; }
@@ -2643,6 +2644,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
           if (typeof state.playerName === 'string') setPlayerName(state.playerName || displayName);
           if (Number.isFinite(state.steps)) setSteps(state.steps);
           if (Number.isFinite(state.cash)) setCash(state.cash);
+          if (state.ferryBusiness) setFerryBusiness(normaliseFerryBusiness(state.ferryBusiness));
           if (Array.isArray(state.rented)) setRented(state.rented.filter(id => properties.some(p => p.id === id)));
           if (properties.some(p => p.id === state.selected)) setSelected(state.selected);
           if (typeof state.showPortfolio === 'boolean') setShowPortfolio(state.showPortfolio);
@@ -2670,7 +2672,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
           if (Array.isArray(state.log)) setLog(state.log.slice(0, 5));
           if (state.developments && typeof state.developments === 'object') setDevelopments(state.developments);
         } else {
-          const initialState = { version: 2, economyVersion: STARTER_ECONOMY_VERSION, playerName: displayName, steps, cash: STARTING_CASH, owned: [], rented, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, autoSupplyByProperty, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, experience, careerReputation, enrolledCourse, certificates, log: log.slice(0, 5), developments };
+          const initialState = { version: 2, economyVersion: STARTER_ECONOMY_VERSION, playerName: displayName, steps, cash: STARTING_CASH, ferryBusiness: normaliseFerryBusiness(null), owned: [], rented, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, autoSupplyByProperty, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, experience, careerReputation, enrolledCourse, certificates, log: log.slice(0, 5), developments };
           const { error } = await supabase.from('player_saves').upsert({ user_id: userId, state: initialState, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
           if (error) throw error;
           setPlayerName(displayName);
@@ -2700,13 +2702,13 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   useEffect(() => {
     if (!session || !supabase || !cloudReady) return;
     const state = {
-      version: 2, economyVersion: STARTER_ECONOMY_VERSION, playerName, steps, cash, owned, rented, selected, showPortfolio, professionId, marketValues,
+      version: 2, economyVersion: STARTER_ECONOMY_VERSION, playerName, steps, cash, ferryBusiness, owned, rented, selected, showPortfolio, professionId, marketValues,
       hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty,
       businessStats, autoSupplyByProperty, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, eventChain, experience, dailySalesLog, dailySalesRevenue, careerReputation, enrolledCourse, certificates, log: log.slice(0, 5), developments
     };
     supabase.from('player_saves').upsert({ user_id: session.user.id, state, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
       .then(({ error }) => { if (error) setMultiplayerStatus('Kayıt eşitlenemedi · ' + error.message); });
-  }, [session?.user?.id, supabase, cloudReady, playerName, steps, cash, owned, rented, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, autoSupplyByProperty, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, eventChain, experience, dailySalesLog, dailySalesRevenue, careerReputation, enrolledCourse, certificates, log, developments]);
+  }, [session?.user?.id, supabase, cloudReady, playerName, steps, cash, ferryBusiness, owned, rented, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, autoSupplyByProperty, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, eventChain, experience, dailySalesLog, dailySalesRevenue, careerReputation, enrolledCourse, certificates, log, developments]);
 
 
   const tell = (text) => {
@@ -3867,7 +3869,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     if (session && supabase) { tell('Ortak şehirde yeni oyun sıfırlaması şimdilik kapalı; mülk sahipliğinin kaybolmaması için.'); return; }
     if (sendAction('resetGame')) return;
     if (typeof window !== 'undefined' && !window.confirm('Yeni oyun başlatılsın mı? Mevcut mahalle kaydı silinecek.')) return;
-    setSteps(0); setCash(STARTING_CASH); setOwned([]); setRented([]); setSelected(1); setShowPortfolio(false);
+    setSteps(0); setCash(STARTING_CASH); setFerryBusiness(normaliseFerryBusiness(null)); setOwned([]); setRented([]); setSelected(1); setShowPortfolio(false);
     setProfessionId('amele'); setHour(8); setDay(1); setMonth(1); setYear(1923);
     setWorkHours(0); setCareerHours(0); setShopPropertyId(null); setWineBottles(0); setBusinessPlans({}); setStockByProperty({}); setBusinessStats({});
     setLog([{ id: Date.now(), text: 'Yeni bir hikaye başladı. Gündelik işçilikle sermaye biriktir veya uygun bir dükkan edin.' }]);
