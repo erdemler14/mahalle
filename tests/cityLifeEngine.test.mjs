@@ -92,7 +92,7 @@ test('story choices cost real money once and durably alter reputation and suppli
 test('first-person visual characters update without WebGL or a browser',()=>{
   const scene=new THREE.Scene();
   const city=createLivingResidents({scene,properties,isMobile:true});
-  assert.ok(city.residents>=20);
+  assert.equal(city.residents,MAX_RENDERED_RESIDENTS.mobile);
   city.update({clock,elapsed:10,delta:.017,weather:{raining:false}});
   city.update({clock,elapsed:11,delta:.017,weather:{raining:false}});
   assert.ok(scene.children.some(object=>object.visible));
