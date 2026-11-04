@@ -158,13 +158,16 @@ function makeQuay(scene,isMobile){
   const stairZ=-6.7;
   for(let step=0;step<5;step++)block(harbor,materials.masonryLight,.52,.085,1.3,25.3+step*.24,.12-step*.038,stairZ);
   for(let z=-32;z<34;z+=3)block(harbor,materials.coping,.11,.022,2.5,25.31,.23,z);
-  // The historical dry-cleaner's waterfront building (x=27.2,z=22.5)
-  // sits on a connected masonry extension, not on the animated water plane.
-  block(harbor,materials.masonry,4.8,.28,7.4,27.5,-.012,22.5);
-  block(harbor,materials.masonryLight,4.85,.09,7.5,27.5,.14,22.5);
-  block(harbor,materials.coping,.18,.22,7.5,29.92,.04,22.5);
-  for(const z of [19.9,22.5,25.0]) {
-    cylinder(harbor,materials.bridgeIron,.09,.48,29.75,.35,z);
+  // Open slipway for small boats. The obsolete dry-cleaner's artificial island
+  // is gone: no unrelated buildings should appear floating in the estuary.
+  const slipZ=23.3;
+  for(let step=0;step<4;step++){
+    const width=1.2+step*.10;
+    block(harbor,materials.masonryLight,.46,.055,width,25.40+step*.32,.18-step*.045,slipZ);
+  }
+  for(const z of [22.25,24.35]){
+    cylinder(harbor,materials.bridgeIron,.072,.48,25.30,.36,z);
+    cylinder(harbor,materials.brass,.097,.075,25.30,.62,z);
   }
   // Far-bank promenade closes the water basin and gives the Galata span a destination.
   block(harbor,materials.masonry,9.3,.32,74,60.38,-.06,0);
