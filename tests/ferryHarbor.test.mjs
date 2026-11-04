@@ -59,7 +59,7 @@ test('waterfront renders a supported bridge, docks and a second steamer on upgra
   const ferryStateRef={current:{owned:false,upgrades:{}}};
   const harbor=createHarborScene({scene,oldFerry,isMobile:true,ferryStateRef});
   assert.equal(oldFerry.visible,false);
-  assert.ok(harbor.bridge.children.length>20);
+  assert.ok(harbor.bridge.group.children.length>20);
   assert.ok(harbor.coast.group.children.length>25);
   harbor.update({hour:12,elapsed:1,day:1,month:1});
   assert.equal(harbor.steamer.boat.visible,true);
