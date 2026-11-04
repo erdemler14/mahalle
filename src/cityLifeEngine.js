@@ -60,7 +60,7 @@ export const historicMoments=[
   },
   {
     date:'1923-10-26',id:'ilk-milli-mac',title:'Taksim’de Maç Günü',
-    historical:true,source:'https://istanbultarihi.ist/kronoloji',
+    historical:true,source:'https://www.tff.org/default.aspx?ftxtID=42530&pageID=202',
     subtitle:'26 Ekim 1923 · Türkiye–Romanya maçı Taksim Stadı’nda oynandı (2–2).',
     story:'Maça giden kalabalık tramvay duraklarını dolduruyor. Fırıncı ve kahveciler ikramlara yetişmeye çalışıyor.',
     choices:[
