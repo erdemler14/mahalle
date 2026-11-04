@@ -181,7 +181,8 @@ export function createCloseupFacades({ properties, buildingMeshes, mobile = fals
       const dx = camera.position.x - item.root.position.x;
       const dz = camera.position.z - item.root.position.z;
       const distance = dx*dx + dz*dz;
-      item.group.visible = distance < distanceSq || item.id === activeId && distance < distanceSq*2;
+      // GLB kit already supplies detailed windows and doors; avoid stacked duplicates.
+      item.group.visible = !item.root.userData.hasGlbModel && (distance < distanceSq || item.id === activeId && distance < distanceSq*2);
     }
   }
 
