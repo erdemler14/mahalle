@@ -46,15 +46,12 @@ test('offer workflow is persistent and only the two participants can read offers
   assert.match(app,/rpc\('respond_property_offer'/);
 });
 
-test('beta test fund is exactly 70,000 TL, claimed once per account',()=>{
-  assert.match(migration,/v_new_cash:=v_cash\+v_invite.amount/);
-  assert.match(migration,/values \('[0-9a-f]{64}',70000\)/);
-  assert.match(migration,/v_invite.redeemed_by is not null/);
-  assert.match(migration,/primary key\(user_id,grant_key\)/);
-  assert.match(migration,/if exists\(select 1 from public\.player_beta_funds/);
-  assert.match(migration,/function public\.claim_beta_test_fund_20261104/);
-  assert.match(app,/rpc\('claim_beta_test_fund_20261104',\{p_invite_code:/);
-  assert.match(app,/betaTestFundClaimed/);
+test('old 70000 TL test grant is absent from the app and revoked by later migration',()=>{
+  const revoke=fs.readFileSync('supabase/migrations/202611040002_retire_beta_credit.sql','utf8');
+  assert.doesNotMatch(app,/claimBetaTestFund|betaTestCode|beta-credit-panel|betaTestFundClaimed|claim_beta_test_fund_20261104/);
+  assert.match(revoke,/drop function if exists public\.claim_beta_test_fund_20261104\(text\)/);
+  assert.match(revoke,/drop table if exists public\.beta_fund_invites/);
+  assert.doesNotMatch(app,/\+70000|cash\s*\/\s*70000/);
 });
 
 test('new pier businesses exist in shared city property table',()=>{
