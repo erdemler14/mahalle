@@ -27,3 +27,7 @@
 .beta-credit-panel button:disabled{opacity:.45;cursor:default}
 .beta-credit-panel small{font:10px/1.4 'Space Grotesk',sans-serif;color:#b3c4b5}
 @media(max-width:560px){.shared-offer-actions label{width:100%}.shared-offer-actions input{flex:1;min-width:80px}.shared-offer-actions label button{flex:none}}
+
+.beta-credit-code-label{display:grid;gap:5px;font:800 10px 'IBM Plex Mono',monospace;color:#dcc8a2;letter-spacing:.4px}
+.beta-credit-code-label input{width:100%;min-height:39px;background:#f8f0df;color:#24352e;border:1px solid #b7a17c;border-radius:6px;padding:9px 11px;font:600 12px 'Space Grotesk',sans-serif;letter-spacing:0;outline-offset:2px}
+.beta-credit-code-label input:focus-visible{outline:2px solid #e5c28f}
