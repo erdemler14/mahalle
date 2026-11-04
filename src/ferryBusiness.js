@@ -50,13 +50,13 @@ export function calculateFerryDay(raw, {year,month,day}) {
   const festival = day>=8 && day<=14;
   const busy = day%6===0;
   const upgrades=state.upgrades;
-  const basePassengers=25+(day*3+month)%9+(festival?7:0)+(busy?3:0);
-  const weatherPenalty=weather==='Yağmurlu'?0.79:1;
-  const passengers=Math.round((basePassengers+(upgrades.ticketOffice?8:0)+(upgrades.secondFerry?16:0)+(upgrades.nightService?6:0))*weatherPenalty);
-  const fares=passengers*0.85;
-  const cargo=upgrades.cargoHold ? 9 + (day%4)*1.5 : 0;
+  const basePassengers=76+(day*7+month)%23+(festival?26:0)+(busy?13:0);
+  const weatherPenalty=weather==='Yağmurlu'?0.83:1;
+  const passengers=Math.round((basePassengers+(upgrades.ticketOffice?24:0)+(upgrades.secondFerry?49:0)+(upgrades.nightService?18:0))*weatherPenalty);
+  const fares=passengers*1.45;
+  const cargo=upgrades.cargoHold ? 26 + (day%4)*4.5 : 0;
   const gross=round(fares+cargo);
-  const cost=round(10.25+(upgrades.secondFerry?5.8:0)+(upgrades.nightService?2.6:0)+(upgrades.cargoHold?2.8:0)+(weather==='Yağmurlu'?1.3:0));
+  const cost=round(21.5+(upgrades.secondFerry?17:0)+(upgrades.nightService?6.5:0)+(upgrades.cargoHold?8:0)+(weather==='Yağmurlu'?4:0));
   return {key,passengers,gross,cost,net:round(gross-cost),skipped:false,weather};
 }
 
