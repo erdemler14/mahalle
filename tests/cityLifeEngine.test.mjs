@@ -6,7 +6,7 @@ import {
   storyForDay,applyStoryDecision,normalizeNeighborhood,neighborhoodPulse,
   walkWaypoints,interpolateWaypoints,isBusinessOpen
 } from '../src/cityLifeEngine.js';
-import {createLivingResidents} from '../src/livingResidents3d.js';
+import {createLivingResidents,stepResident,WALK_SPEED,MAX_RENDERED_RESIDENTS} from '../src/livingResidents3d.js';
 
 const properties=[
   {id:1,name:'Pera Apartmanı',x:-8.8,z:1,type:'Konut',floors:3},
@@ -96,4 +96,33 @@ test('first-person visual characters update without WebGL or a browser',()=>{
   city.update({clock,elapsed:10,delta:.017,weather:{raining:false}});
   city.update({clock,elapsed:11,delta:.017,weather:{raining:false}});
   assert.ok(scene.children.some(object=>object.visible));
+});
+
+test('residents walk slowly with bounded movement and retain positions',()=>{
+  assert.ok(WALK_SPEED<=0.75);
+  assert.ok(MAX_RENDERED_RESIDENTS.mobile<=18);
+  assert.ok(MAX_RENDERED_RESIDENTS.desktop<=40);
+  const npc={
+    group:{position:{x:0,y:0,z:0},rotation:{y:0}},
+    path:[{x:0,z:0},{x:14,z:0}],nextPoint:1,journeySpeed:1
+  };
+  stepResident(npc,0.1);
+  const first=npc.group.position.x;
+  assert.ok(first>0&&first<0.1);
+  stepResident(npc,0.1);
+  assert.ok(npc.group.position.x>first);
+  assert.ok(npc.group.position.x<0.2);
+  stepResident(npc,50); // a suspended tab cannot teleport NPCs.
+  assert.ok(npc.group.position.x<0.4);
+});
+
+test('NPCs stay in place across game-hour boundaries until they move',()=>{
+  const scene=new THREE.Scene();
+  const city=createLivingResidents({scene,properties,isMobile:true});
+  const first=scene.children[0];
+  city.update({clock,elapsed:1,delta:.016});
+  city.update({clock,elapsed:1.016,delta:.016});
+  const before={x:first.position.x,z:first.position.z};
+  city.update({clock:{...clock,hour:clock.hour+1},elapsed:1.032,delta:.016});
+  assert.ok(Math.hypot(first.position.x-before.x,first.position.z-before.z)<0.2);
 });
