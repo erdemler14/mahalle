@@ -2717,6 +2717,27 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     setLog(old => [{ id: Date.now(), text }, ...old].slice(0, 5));
   };
 
+  const purchaseFerryLine = () => {
+    if (session && !cloudReady) { tell('Hesap kaydı yüklenmeden vapur hattı satın alınamaz.'); return; }
+    if (ferryBusiness.owned) { tell('Vapur hattı işletme imtiyazı zaten senin.'); return; }
+    if (cash < FERRY_LICENSE_PRICE) { tell('Vapur hattı için ₺200 gerekiyor.'); return; }
+    setCash(value => Math.round((value - FERRY_LICENSE_PRICE) * 100) / 100);
+    setFerryBusiness(previous => ({ ...normaliseFerryBusiness(previous), owned: true }));
+    tell('Haliç Vapur Hattı işletme imtiyazını ₺200 karşılığında aldın. Yolcu seferlerinin net geliri her oyun günü sonunda tahsil edilir.');
+  };
+  const upgradeFerryLine = id => {
+    if (session && !cloudReady) return;
+    const item = FERRY_UPGRADES.find(upgrade => upgrade.id === id);
+    if (!item || !ferryBusiness.owned || ferryBusiness.upgrades[id]) return;
+    if (cash < item.price) { tell(item.name + ' için ₺' + item.price + ' gerekiyor.'); return; }
+    setCash(value => Math.round((value - item.price) * 100) / 100);
+    setFerryBusiness(previous => ({
+      ...normaliseFerryBusiness(previous),
+      upgrades: { ...normaliseFerryBusiness(previous).upgrades, [id]: true }
+    }));
+    tell(item.name + ' tamamlandı. Haliç hattının kapasitesi ve görsel altyapısı geliştirildi.');
+  };
+
   const gameHourIndex = (y = year, m = month, d = day, h = hour) => (((y * 12 + (m - 1)) * 30 + (d - 1)) * 24 + h);
   const currentGameDateKey = year + '-' + month + '-' + day;
   const updateDailyTask = (taskId, amount = 1) => setDailyTasks(old => old.map(task => task.id === taskId && !task.claimed ? { ...task, progress: Math.min(task.target, (Number(task.progress) || 0) + amount) } : task));
@@ -2891,6 +2912,8 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       const business = settleDailyBusinesses();
       const maintenance = portfolio.reduce((sum, p) => sum + Math.max(0.01, Math.round((getMarketValue(p) * 0.003 / 365) * 100) / 100), 0);
       const dailyCost = DAILY_LIVING_COST + maintenance + business.costs;
+      const ferryClosing = calculateFerryDay(ferryBusiness, { year, month, day });
+      if (!ferryClosing.skipped) setFerryBusiness(previous => applyFerrySettlement(previous, ferryClosing));
       const dailyRent = Math.round((properties.filter(p => owned.includes(p.id) && rented.includes(p.id)).reduce((sum, p) => sum + Number(p.rent || 0) / 30, 0) + Object.entries(unitRented).reduce((sum, [key, activeRent]) => { if (!activeRent) return sum; const [pid] = key.split(':'); const p = properties.find(item => item.id === Number(pid)); const unitOwner = unitOwners[key]; return sum + (p && unitOwner?.playerId === playerId ? Number(p.rent || 0) / (p.units || 1) / 30 : 0); }, 0)) * 100) / 100;
       const dryCleanOwned = owned.includes(41) && !rented.includes(41);
       let dryCleanDelta = 0;
@@ -2910,11 +2933,12 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       }
       const reportRows = [...dailySalesLog];
       if (business.entries.length) reportRows.push(...business.entries.map(text => ({ text, kind: 'daily' })));
+      if (!ferryClosing.skipped) reportRows.push({ text: 'Haliç vapuru: ' + ferryClosing.passengers + ' yolcu · hasılat +₺' + ferryClosing.gross.toFixed(2) + ' · gider -₺' + ferryClosing.cost.toFixed(2) + ' · net +₺' + ferryClosing.net.toFixed(2), kind: 'daily' });
       const daySalesRevenue = Math.max(0, Number(dailySalesRevenue) || 0);
-      setZReport({ date: `${day}.${String(month).padStart(2, '0')}.${year}`, nextDate: `${nextDay}.${String(nextMonth).padStart(2, '0')}.${nextMonthRaw > 12 ? year + 1 : year}`, rows: reportRows, totalRevenue: daySalesRevenue, costs: Number(dailyCost) || 0, rent: Number(dailyRent) || 0, net: Number(dailyRent + daySalesRevenue - dailyCost + dryCleanDelta) || 0, dryCleanDelta });
+      setZReport({ date: `${day}.${String(month).padStart(2, '0')}.${year}`, nextDate: `${nextDay}.${String(nextMonth).padStart(2, '0')}.${nextMonthRaw > 12 ? year + 1 : year}`, rows: reportRows, totalRevenue: daySalesRevenue + ferryClosing.gross, costs: (Number(dailyCost) || 0) + ferryClosing.cost, rent: Number(dailyRent) || 0, net: Number(dailyRent + daySalesRevenue - dailyCost + dryCleanDelta + ferryClosing.net) || 0, dryCleanDelta });
       setDailySalesLog([]);
       setDailySalesRevenue(0);
-      const dailyNet = dailyRent + business.revenue - dailyCost + dryCleanDelta;
+      const dailyNet = dailyRent + business.revenue - dailyCost + dryCleanDelta + ferryClosing.net;
       setCash(v => Math.round((v + dailyNet) * 100) / 100);
       setDay(nextDay);
       setMonth(nextMonth);
@@ -2923,7 +2947,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       if (nextMonthRaw > 12) setYear(v => v + 1);
       setHour(6);
       setWorkHours(0);
-      tell(`Yeni gün başladı. Kira +₺${dailyRent.toFixed(2)}, gün içi işletme satışları kasaya işlendi, yaşam ve bakım -₺${(DAILY_LIVING_COST + maintenance).toFixed(2)}, işletme gideri -₺${business.costs.toFixed(2)}; net ₺${dailyNet.toFixed(2)}.${business.entries.length ? ' ' + business.entries.slice(0, 3).join(' · ') : ''}${dryCleanNews}`);
+      tell(`Yeni gün başladı. Kira +₺${dailyRent.toFixed(2)}, gün içi işletme satışları kasaya işlendi, yaşam ve bakım -₺${(DAILY_LIVING_COST + maintenance).toFixed(2)}, işletme gideri -₺${business.costs.toFixed(2)}; net ₺${dailyNet.toFixed(2)}.${business.entries.length ? ' ' + business.entries.slice(0, 3).join(' · ') : ''}${dryCleanNews}${!ferryClosing.skipped ? ' Vapur hattı net +₺' + ferryClosing.net.toFixed(2) + '.' : ''}`);
       return;
     }
     const isWorkingHour = hour >= 8 && hour < 19;
@@ -3342,11 +3366,14 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     }
     const maintenance = portfolio.reduce((sum, p) => sum + Math.max(0.01, Math.round((getMarketValue(p) * 0.003 / 365) * 100) / 100), 0);
     const upkeep = DAILY_LIVING_COST + maintenance + business.costs;
+    const ferryClosing = calculateFerryDay(ferryBusiness, { year, month, day });
+    if (!ferryClosing.skipped) setFerryBusiness(previous => applyFerrySettlement(previous, ferryClosing));
     const rent = Math.round((properties.filter(p => owned.includes(p.id) && rented.includes(p.id)).reduce((sum, p) => sum + Number(p.rent || 0) / 30, 0) + Object.entries(unitRented).reduce((sum, [key, activeRent]) => { if (!activeRent) return sum; const [pid] = key.split(':'); const p = properties.find(item => item.id === Number(pid)); const unitOwner = unitOwners[key]; return sum + (p && unitOwner?.playerId === playerId ? Number(p.rent || 0) / (p.units || 1) / 30 : 0); }, 0)) * 100) / 100;
     const totalCosts = upkeep + sales.officialFees;
-    const net = rent + business.revenue + sales.revenue - totalCosts;
+    const net = rent + business.revenue + sales.revenue - totalCosts + ferryClosing.net;
     const reportRows = [...dailySalesLog, ...sales.entries.map(text => ({ text, kind: 'sale' })), ...business.entries.map(text => ({ text, kind: 'daily' }))];
-    setZReport({ date: `${day}.${String(month).padStart(2, '0')}.${year}`, nextDate: `${nextDay}.${String(nextMonth).padStart(2, '0')}.${nextMonthRaw > 12 ? year + 1 : year}`, rows: [...reportRows, ...sales.officialFeeEntries.map(text => ({ text, kind: 'daily' }))], totalRevenue: Math.round(((Number(dailySalesRevenue) || 0) + sales.revenue + business.revenue) * 100) / 100, costs: totalCosts, rent, net });
+    if (!ferryClosing.skipped) reportRows.push({ text: 'Haliç vapuru: ' + ferryClosing.passengers + ' yolcu · net +₺' + ferryClosing.net.toFixed(2), kind: 'daily' });
+    setZReport({ date: `${day}.${String(month).padStart(2, '0')}.${year}`, nextDate: `${nextDay}.${String(nextMonth).padStart(2, '0')}.${nextMonthRaw > 12 ? year + 1 : year}`, rows: [...reportRows, ...sales.officialFeeEntries.map(text => ({ text, kind: 'daily' }))], totalRevenue: Math.round(((Number(dailySalesRevenue) || 0) + sales.revenue + business.revenue + ferryClosing.gross) * 100) / 100, costs: totalCosts + ferryClosing.cost, rent, net });
     setDailySalesLog([]);
     setDailySalesRevenue(0);
     setCash(v => Math.round((v + net) * 100) / 100);
@@ -3357,7 +3384,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     if (nextMonthRaw > 12) setYear(v => v + 1);
     setHour(6);
     setWorkHours(0);
-    tell(`Gün kapandı. Kira +₺${rent.toFixed(2)}, satış geliri +₺${sales.revenue.toFixed(2)}, yaşam ve bakım -₺${(DAILY_LIVING_COST + maintenance).toFixed(2)}, işletme giderleri -₺${business.costs.toFixed(2)}. Net: ₺${net.toFixed(2)}.${sales.entries.length ? ' ' + sales.entries.slice(0, 5).join(' · ') : ' Bugün satış olmadı.'}`);
+    tell(`Gün kapandı. Kira +₺${rent.toFixed(2)}, satış geliri +₺${sales.revenue.toFixed(2)}, yaşam ve bakım -₺${(DAILY_LIVING_COST + maintenance).toFixed(2)}, işletme giderleri -₺${business.costs.toFixed(2)}. Net: ₺${net.toFixed(2)}.${!ferryClosing.skipped ? ' Vapur hattı net +₺' + ferryClosing.net.toFixed(2) + '.' : ''}${sales.entries.length ? ' ' + sales.entries.slice(0, 5).join(' · ') : ' Bugün satış olmadı.'}`);
   };
 
   const selectBusinessPlan = (plan) => {
