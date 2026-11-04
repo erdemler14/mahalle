@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import Peer from 'peerjs';
+import { createLivingCity, cityLifePhase } from './livingCity.js';
 
 const properties = [
   { id: 1, name: 'Madam Eleni’nin Bakkal ve Şarküterisi', type: 'Ticaret', price: 1890, rent: 26, x: -4.2, z: -1.1, color: '#d9b99c', floors: 3, style: 'Galata taş cephesi' },
@@ -157,7 +158,7 @@ function supportsProfessionAt(property, professionId) {
   return Boolean(property && venueTypesByProfession[professionId]?.includes(property.type));
 }
 
-function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', onSelect, onUniversity, hour, overlay }) {
+function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', onSelect, onUniversity, hour, day = 1, month = 1, overlay, developments = {}, buildingLevels = {} }) {
   const host = useRef(null);
   const overlayRef = useRef(null);
   const selectRef = useRef(onSelect);
@@ -168,6 +169,9 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
   useEffect(() => { selectRef.current = onSelect; }, [onSelect]);
   useEffect(() => { selectedRef.current = selected; }, [selected]);
   useEffect(() => { hourRef.current = hour; }, [hour]);
+  const dayRef = useRef(day);
+  const monthRef = useRef(month);
+  useEffect(() => { dayRef.current = day; monthRef.current = month; }, [day, month]);
   useEffect(() => {
     const property = properties.find(item => item.id === selected);
     if (property) cameraControlRef.current?.('focus', property);
@@ -703,6 +707,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
     };
 
     properties.forEach((p, i) => addBuilding(p, i, owned.includes(p.id), ownerByProperty[p.id], playerId));
+    const livingCity = createLivingCity({ scene, properties, buildingMeshes, isMobile: isMobileScene, developments, buildingLevels });
 
     // A subtle pulsing ring makes the currently selected property easy to spot.
     const selectionRingMaterial = new THREE.MeshStandardMaterial({
@@ -1173,7 +1178,14 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
       hemisphere.intensity = isNight ? 0.72 : isDusk ? 1.2 : 2.0;
       sun.intensity = isNight ? 0.28 : isDusk ? 1.35 : 3.0;
       lampGlass.emissiveIntensity = isNight ? 1.15 : isDusk ? 0.55 : 0.18;
-      tram.position.z = -23 + ((elapsed * 1.45) % 46);
+      const cityWeather = livingCity.update({ hour: currentHour, day: dayRef.current, month: monthRef.current, elapsed, delta });
+      streetMat.roughness = cityWeather.damp ? 0.56 : 1;
+      streetMat.metalness = cityWeather.damp ? 0.12 : 0;
+      scene.fog.near = cityWeather.raining ? 32 : 42;
+      scene.fog.far = cityWeather.raining ? 65 : 88;
+      ferry.position.x = 34.5 + Math.sin(elapsed * 0.036) * 1.25;
+      ferry.rotation.z = Math.sin(elapsed * 0.75) * 0.013;
+      tram.position.z = livingCity.tramPosition(elapsed);
       const peakCrowd = currentHour >= 7 && currentHour < 9 ? 22 : currentHour >= 12 && currentHour < 14 ? 26 : currentHour >= 17 && currentHour < 20 ? 30 : currentHour >= 9 && currentHour < 17 ? 18 : currentHour >= 20 && currentHour < 22 ? 11 : 6;
       pedestrians.forEach((ped, i) => {
         ped.person.visible = ped.crowdIndex < peakCrowd;
@@ -1224,9 +1236,9 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
       renderer.dispose();
       renderer.domElement.remove();
     };
-  }, [owned, ownerByProperty, playerId]);
+  }, [owned, ownerByProperty, playerId, developments, buildingLevels]);
 
-  return <div className="scene-host" ref={host} aria-label="Beyoğlu 1923 3D mahalle sahnesi"><div className="scene-building-overlay" ref={overlayRef}>{overlay}</div><div className="map-camera-toolbar"><div className="map-view-presets" role="group" aria-label="Kamera görünümü"><button type="button" title="Mahallenin genel görünümü" onClick={() => cameraControlRef.current?.('view','iso')}>Mahalle</button><button type="button" title="Sokak seviyesine yaklaş" onClick={() => cameraControlRef.current?.('view','street')}>Sokak</button><button type="button" title="Yukarıdan plan görünümü" onClick={() => cameraControlRef.current?.('view','top')}>Üstten</button></div><div className="map-camera-tools"><button type="button" className={cameraMode === 'rotate' ? 'active' : ''} aria-pressed={cameraMode === 'rotate'} aria-label="Sürükleyerek döndür" title="Sol tuşla sürükleyerek haritayı döndür" onClick={() => { setCameraMode('rotate'); cameraControlRef.current?.('mode','rotate'); }}>⟳ Döndür</button><button type="button" className={cameraMode === 'pan' ? 'active' : ''} aria-pressed={cameraMode === 'pan'} aria-label="Haritayı taşıma modu" title="Sol tuşla sürükleyerek haritayı taşı" onClick={() => { setCameraMode('pan'); cameraControlRef.current?.('mode','pan'); }}>✥ Taşı</button><button type="button" aria-label="Sola döndür" title="Sola döndür" onClick={() => cameraControlRef.current?.('rotate','left')}>↶</button><button type="button" aria-label="Sağa döndür" title="Sağa döndür" onClick={() => cameraControlRef.current?.('rotate','right')}>↷</button><button type="button" aria-label="Açıyı yükselt" title="Açıyı yükselt" onClick={() => cameraControlRef.current?.('tilt','up')}>↑</button><button type="button" aria-label="Açıyı alçalt" title="Açıyı alçalt" onClick={() => cameraControlRef.current?.('tilt','down')}>↓</button></div></div><div className="map-zoom-controls"><button type="button" aria-label="Yakınlaştır" title="Yakınlaştır" onClick={() => cameraControlRef.current?.('in')}>＋</button><button type="button" aria-label="Uzaklaştır" title="Uzaklaştır" onClick={() => cameraControlRef.current?.('out')}>−</button><button type="button" aria-label="Seçili binaya odaklan" title="Seçili binaya odaklan" onClick={() => cameraControlRef.current?.('focus', properties.find(item => item.id === selected))}>⌖</button><button type="button" aria-label="Haritayı ortala" title="Haritayı ortala" onClick={() => cameraControlRef.current?.('reset')}>⌂</button><button type="button" aria-label="Üniversite ve meslek eğitimleri" title="Üniversite ve meslek eğitimleri" onClick={() => onUniversity?.()}>▤</button></div><div className="map-hint">Sürükle: taşı · Sağ tuş: döndür · Tekerlek: yakınlaştır · Oklar: kamera açısı</div></div>;
+  return <div className="scene-host" ref={host} aria-label="Beyoğlu 1923 3D mahalle sahnesi"><div className="scene-building-overlay" ref={overlayRef}>{overlay}</div><div className="city-life-pill" aria-label={"1920ler şehir hareketi: " + cityLifePhase(hour)}><span className="city-life-spark" />{cityLifePhase(hour)}</div><div className="map-camera-toolbar"><div className="map-view-presets" role="group" aria-label="Kamera görünümü"><button type="button" title="Mahallenin genel görünümü" onClick={() => cameraControlRef.current?.('view','iso')}>Mahalle</button><button type="button" title="Sokak seviyesine yaklaş" onClick={() => cameraControlRef.current?.('view','street')}>Sokak</button><button type="button" title="Yukarıdan plan görünümü" onClick={() => cameraControlRef.current?.('view','top')}>Üstten</button></div><div className="map-camera-tools"><button type="button" className={cameraMode === 'rotate' ? 'active' : ''} aria-pressed={cameraMode === 'rotate'} aria-label="Sürükleyerek döndür" title="Sol tuşla sürükleyerek haritayı döndür" onClick={() => { setCameraMode('rotate'); cameraControlRef.current?.('mode','rotate'); }}>⟳ Döndür</button><button type="button" className={cameraMode === 'pan' ? 'active' : ''} aria-pressed={cameraMode === 'pan'} aria-label="Haritayı taşıma modu" title="Sol tuşla sürükleyerek haritayı taşı" onClick={() => { setCameraMode('pan'); cameraControlRef.current?.('mode','pan'); }}>✥ Taşı</button><button type="button" aria-label="Sola döndür" title="Sola döndür" onClick={() => cameraControlRef.current?.('rotate','left')}>↶</button><button type="button" aria-label="Sağa döndür" title="Sağa döndür" onClick={() => cameraControlRef.current?.('rotate','right')}>↷</button><button type="button" aria-label="Açıyı yükselt" title="Açıyı yükselt" onClick={() => cameraControlRef.current?.('tilt','up')}>↑</button><button type="button" aria-label="Açıyı alçalt" title="Açıyı alçalt" onClick={() => cameraControlRef.current?.('tilt','down')}>↓</button></div></div><div className="map-zoom-controls"><button type="button" aria-label="Yakınlaştır" title="Yakınlaştır" onClick={() => cameraControlRef.current?.('in')}>＋</button><button type="button" aria-label="Uzaklaştır" title="Uzaklaştır" onClick={() => cameraControlRef.current?.('out')}>−</button><button type="button" aria-label="Seçili binaya odaklan" title="Seçili binaya odaklan" onClick={() => cameraControlRef.current?.('focus', properties.find(item => item.id === selected))}>⌖</button><button type="button" aria-label="Haritayı ortala" title="Haritayı ortala" onClick={() => cameraControlRef.current?.('reset')}>⌂</button><button type="button" aria-label="Üniversite ve meslek eğitimleri" title="Üniversite ve meslek eğitimleri" onClick={() => onUniversity?.()}>▤</button></div><div className="map-hint">Sürükle: taşı · Sağ tuş: döndür · Tekerlek: yakınlaştır · Oklar: kamera açısı</div></div>;
 }
 
 function App({ session = null, supabase = null, authConfigured = false }) {
@@ -3825,7 +3837,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     <section className="game-layout fullscreen-layout">
       <div className="world-panel">
         <div className="world-topline"><span><span className="live-dot" /> BEYOĞLU MERKEZİ</span><label className="property-finder"><span>⌕</span><input aria-label="Mülk ara ve haritada göster" list="mahalle-property-options" placeholder="Mülk adı yaz..." value={mapSearch} onChange={event => { const value = event.target.value; setMapSearch(value); const match = properties.find(property => property.name.toLocaleLowerCase('tr-TR') === value.trim().toLocaleLowerCase('tr-TR')); if (match) { selectProperty(match.id); setMapSearch(''); } }} /><datalist id="mahalle-property-options">{properties.map(property => <option key={property.id} value={property.name}>{owned.includes(property.id) ? 'Senin mülkün' : 'Satılık'}</option>)}</datalist><small>{properties.length} MÜLK</small></label><span className="world-year">OYUN DÜNYASI <i>·</i> {year}</span></div>
-        <CityScene selected={selected} owned={owned} ownerByProperty={ownerByProperty} playerId={playerId} onSelect={selectProperty} onUniversity={() => setActiveHudPanel(v => v === 'university' ? null : 'university')} hour={hour} overlay={<div className="scene-action-card">
+        <CityScene selected={selected} owned={owned} ownerByProperty={ownerByProperty} playerId={playerId} onSelect={selectProperty} onUniversity={() => setActiveHudPanel(v => v === 'university' ? null : 'university')} hour={hour} day={day} month={month} developments={developments} buildingLevels={buildingLevels} overlay={<div className="scene-action-card">
           <div className="scene-action-eyebrow">SEÇİLİ BİNA · {String(active.id).padStart(2, '0')}</div><strong>{active.name}</strong>
           <span>{ownerByProperty[active.id] ? (ownerByProperty[active.id].playerId === playerId ? `Sahibi: ${ownerByProperty[active.id].name} (sen)` : `Sahibi: ${ownerByProperty[active.id].name}`) : 'Satılık'} · ₺{getMarketValue(active).toLocaleString('tr-TR')}</span>
           <div className="scene-action-buttons">
