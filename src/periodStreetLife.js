@@ -271,7 +271,7 @@ export function createPeriodStreetLife({scene,properties=[],isMobile=false}){
       if(rain && p.index%4===0 && p.role!=='porter')active=false;
       p.group.visible=active;
       if(!active)continue;
-      const t=elapsed*(p.isMoving ? .74 : .24)+p.phase;
+      const t=elapsed*(p.isMoving ? .32 : .12)+p.phase;
       if(p.isMoving){
         p.group.position.x=p.x+Math.sin(t*.45)*.11;
         p.group.position.z=p.z+Math.cos(t*.7)*.24;
@@ -281,8 +281,8 @@ export function createPeriodStreetLife({scene,properties=[],isMobile=false}){
       }
       p.group.rotation.y+=Math.sin(t)*delta*.018;
       for(let j=0;j<2;j++){
-        p.legs[j].rotation.x=(j===0?1:-1)*Math.sin(t*4.3)*(p.isMoving?.16:.025);
-        p.arms[j].rotation.x=(j===0?-1:1)*Math.sin(t*3.1)*.12;
+        p.legs[j].rotation.x=(j===0?1:-1)*Math.sin(t*3.0)*(p.isMoving ? .11 : .018);
+        p.arms[j].rotation.x=(j===0?-1:1)*Math.sin(t*2.4)*.075;
       }
     }
     frames+=1;
