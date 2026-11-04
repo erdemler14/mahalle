@@ -55,9 +55,7 @@ export function createStreetWalker(camera, properties) {
       ];
       const [spawnX, spawnZ] = destinations.find(([px,pz])=>isFree(px,pz)) || [2.5, -0.5];
       position.set(spawnX, eyeHeight, spawnZ);
-      const towardPropertyX = x - spawnX;
-      const towardPropertyZ = z - spawnZ;
-      yaw = yawTarget = Math.atan2(towardPropertyX, -towardPropertyZ);
+      yaw = yawTarget = (z > 0 ? 0 : Math.PI) + (x >= 0 ? (z > 0 ? -0.22 : 0.22) : (z > 0 ? 0.22 : -0.22));
       pitch = pitchTarget = 0.055;
     }
     active = true;
@@ -72,7 +70,7 @@ export function createStreetWalker(camera, properties) {
   }
 
   function rotate(dx, dy, sensitivity = 0.0049) {
-    yawTarget -= dx * sensitivity;
+    yawTarget += dx * sensitivity;
     pitchTarget = clamp(pitchTarget - dy * sensitivity * 0.80, -1.07, 1.04);
   }
 
