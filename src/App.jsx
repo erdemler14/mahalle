@@ -10,6 +10,7 @@ import { createHarborScene } from './harborScene.js';
 import { applyWaterfrontZoning } from './waterfrontZoning.js';
 import { createPeriodStreetLife } from './periodStreetLife.js';
 import FerryBusinessPanel from './FerryBusinessPanel.jsx';
+import SharedOffersPanel from './SharedOffersPanel.jsx';
 import { FERRY_LICENSE_PRICE, FERRY_UPGRADES, normaliseFerryBusiness, calculateFerryDay, applyFerrySettlement } from './ferryBusiness.js';
 
 const properties = [
@@ -1508,6 +1509,13 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   const saveKey = session?.user?.id ? `${SAVE_KEY}:${session.user.id}` : SAVE_KEY;
   const saveBackupKey = session?.user?.id ? `${SAVE_BACKUP_KEY}:${session.user.id}` : SAVE_BACKUP_KEY;
   const [cloudReady, setCloudReady] = useState(!session || !supabase);
+  const [purchaseBusy, setPurchaseBusy] = useState(false);
+  const [offerBusy, setOfferBusy] = useState(false);
+  const [cloudOffers, setCloudOffers] = useState([]);
+  const [cloudOffersError, setCloudOffersError] = useState('');
+  const [testFundBusy, setTestFundBusy] = useState(false);
+  const [cloudOfferRefresh, setCloudOfferRefresh] = useState(0);
+  const acceptedOffersSeenRef = useRef(new Set());
   const [sharedRentByProperty, setSharedRentByProperty] = useState({});
   const saveRef = useRef(undefined);
   if (saveRef.current === undefined) {
@@ -1528,6 +1536,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     ? backupSaved
     : primarySaved;
   const [steps, setSteps] = useState(() => Number.isFinite(saved.steps) ? saved.steps : 0);
+  const [betaTestFundClaimed, setBetaTestFundClaimed] = useState(() => Boolean(saved.betaTestFundClaimed));
   const [cash, setCash] = useState(() => {
     const hasProperty = Array.isArray(saved.owned) && saved.owned.length > 0;
     // Upgrade legacy fresh saves from the old ₺75 start to the new starter fund.
@@ -1654,6 +1663,31 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     return [property.id,Math.max(property.price*0.45,Math.min(property.price*3.5,Math.round(next*100)/100))];
   })));
   const sendOffer = () => {
+    if (session && supabase) {
+      if (!cloudReady || offerBusy) { tell('Teklif için hesap bağlantısının tamamlanmasını bekle.'); return; }
+      const p = Math.round(Number(offerPriceInput)*100)/100;
+      if (!Number.isFinite(p) || p <= 0) { tell('Geçerli bir teklif bedeli gir.'); return; }
+      if (cash < p) { tell('Bu teklif için yeterli nakit bulunmuyor.'); return; }
+      if (ownerByProperty[active.id]?.playerId === session.user.id || !ownerByProperty[active.id]) {
+        tell('Teklif için başka bir oyuncunun mülkünü seç.'); return;
+      }
+      setOfferBusy(true);
+      supabase.rpc('create_property_offer',{p_property_id:active.id,p_price:p})
+        .then(({data,error})=>{
+          if (error) throw error;
+          if (data?.success !== true) throw new Error('Teklif sunucuda kaydedilemedi.');
+          setOfferComposerOpen(false);
+          setActiveHudPanel('social');
+          setCloudOfferRefresh(v=>v+1);
+          tell(active.name+' için ₺'+p.toLocaleString('tr-TR')+' teklif gönderildi. Yanıtlar ODA → Mülk Teklifleri bölümünde.');
+        })
+        .catch(error=>{
+          tell(error?.code==='PGRST202'||error?.code==='42P01'
+            ? 'Ortak şehir teklif tablosu henüz kurulmamış. Supabase SQL migration 202611040001 uygulanmalı.'
+            : 'Teklif gönderilemedi: '+(error?.message||'Bilinmeyen hata'));
+        }).finally(()=>setOfferBusy(false));
+      return;
+    }
     if(multiplayerRole==='solo'||!connectionRef.current?.open){setNotice('Teklifin ulaşması için iki oyuncunun da aynı odaya bağlı olması gerekir.');setMultiplayerStatus('Teklif gönderilemedi: oyuncu bağlantısı açık değil.');return;}
     const owner=ownerByProperty[active.id] || snapshotRef.current?.owners?.[active.id]; if(!owner||owner.playerId===playerId){setNotice('Bu mülk başka oyuncuya ait olmalı.');return;}
     const price=Math.round(Number(offerPriceInput)*100)/100;
@@ -2586,13 +2620,13 @@ function App({ session = null, supabase = null, authConfigured = false }) {
         window.localStorage.setItem(saveBackupKey, JSON.stringify(previousSave));
       }
       window.localStorage.setItem(saveKey, JSON.stringify({
-        version: 3, economyVersion: STARTER_ECONOMY_VERSION, playerName, steps, cash, ferryBusiness, owned, rented, unitOwners, unitRented, buildingLevels, selected, showPortfolio, professionId, marketValues,
+        version: 3, economyVersion: STARTER_ECONOMY_VERSION, playerName, steps, cash, betaTestFundClaimed, ferryBusiness, owned, rented, unitOwners, unitRented, buildingLevels, selected, showPortfolio, professionId, marketValues,
         hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, autoSupplyByProperty, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, eventChain, log: log.slice(0, 5)
       }));
     } catch {
       // The game remains playable if browser storage is disabled or full.
     }
-  }, [playerName, steps, cash, ferryBusiness, owned, rented, unitOwners, unitRented, buildingLevels, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, autoSupplyByProperty, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, eventChain, log]);
+  }, [playerName, steps, cash, betaTestFundClaimed, ferryBusiness, owned, rented, unitOwners, unitRented, buildingLevels, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, autoSupplyByProperty, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, eventChain, log]);
 
   useEffect(() => {
     if (!session || !supabase) { setCloudReady(true); return undefined; }
@@ -2653,6 +2687,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
           if (typeof state.playerName === 'string') setPlayerName(state.playerName || displayName);
           if (Number.isFinite(state.steps)) setSteps(state.steps);
           if (Number.isFinite(state.cash)) setCash(state.cash);
+          if (typeof state.betaTestFundClaimed === 'boolean') setBetaTestFundClaimed(state.betaTestFundClaimed);
           if (state.ferryBusiness) setFerryBusiness(normaliseFerryBusiness(state.ferryBusiness));
           if (Array.isArray(state.rented)) setRented(state.rented.filter(id => properties.some(p => p.id === id)));
           if (properties.some(p => p.id === state.selected)) setSelected(state.selected);
@@ -2681,7 +2716,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
           if (Array.isArray(state.log)) setLog(state.log.slice(0, 5));
           if (state.developments && typeof state.developments === 'object') setDevelopments(state.developments);
         } else {
-          const initialState = { version: 2, economyVersion: STARTER_ECONOMY_VERSION, playerName: displayName, steps, cash: STARTING_CASH, ferryBusiness: normaliseFerryBusiness(null), owned: [], rented, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, autoSupplyByProperty, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, experience, careerReputation, enrolledCourse, certificates, log: log.slice(0, 5), developments };
+          const initialState = { version: 2, economyVersion: STARTER_ECONOMY_VERSION, playerName: displayName, steps, cash: STARTING_CASH, betaTestFundClaimed: false, ferryBusiness: normaliseFerryBusiness(null), owned: [], rented, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, autoSupplyByProperty, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, experience, careerReputation, enrolledCourse, certificates, log: log.slice(0, 5), developments };
           const { error } = await supabase.from('player_saves').upsert({ user_id: userId, state: initialState, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
           if (error) throw error;
           setPlayerName(displayName);
@@ -2711,13 +2746,13 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   useEffect(() => {
     if (!session || !supabase || !cloudReady) return;
     const state = {
-      version: 2, economyVersion: STARTER_ECONOMY_VERSION, playerName, steps, cash, ferryBusiness, owned, rented, selected, showPortfolio, professionId, marketValues,
+      version: 2, economyVersion: STARTER_ECONOMY_VERSION, playerName, steps, cash, betaTestFundClaimed, ferryBusiness, owned, rented, selected, showPortfolio, professionId, marketValues,
       hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty,
       businessStats, autoSupplyByProperty, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, eventChain, experience, dailySalesLog, dailySalesRevenue, careerReputation, enrolledCourse, certificates, log: log.slice(0, 5), developments
     };
     supabase.from('player_saves').upsert({ user_id: session.user.id, state, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
       .then(({ error }) => { if (error) setMultiplayerStatus('Kayıt eşitlenemedi · ' + error.message); });
-  }, [session?.user?.id, supabase, cloudReady, playerName, steps, cash, ferryBusiness, owned, rented, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, autoSupplyByProperty, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, eventChain, experience, dailySalesLog, dailySalesRevenue, careerReputation, enrolledCourse, certificates, log, developments]);
+  }, [session?.user?.id, supabase, cloudReady, playerName, steps, cash, betaTestFundClaimed, ferryBusiness, owned, rented, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, autoSupplyByProperty, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, eventChain, experience, dailySalesLog, dailySalesRevenue, careerReputation, enrolledCourse, certificates, log, developments]);
 
 
   const tell = (text) => {
@@ -3905,7 +3940,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     if (session && supabase) { tell('Ortak şehirde yeni oyun sıfırlaması şimdilik kapalı; mülk sahipliğinin kaybolmaması için.'); return; }
     if (sendAction('resetGame')) return;
     if (typeof window !== 'undefined' && !window.confirm('Yeni oyun başlatılsın mı? Mevcut mahalle kaydı silinecek.')) return;
-    setSteps(0); setCash(STARTING_CASH); setFerryBusiness(normaliseFerryBusiness(null)); setOwned([]); setRented([]); setSelected(1); setShowPortfolio(false);
+    setSteps(0); setCash(STARTING_CASH); setBetaTestFundClaimed(false); setFerryBusiness(normaliseFerryBusiness(null)); setOwned([]); setRented([]); setSelected(1); setShowPortfolio(false);
     setProfessionId('amele'); setHour(8); setDay(1); setMonth(1); setYear(1923);
     setWorkHours(0); setCareerHours(0); setShopPropertyId(null); setWineBottles(0); setBusinessPlans({}); setStockByProperty({}); setBusinessStats({});
     setLog([{ id: Date.now(), text: 'Yeni bir hikaye başladı. Gündelik işçilikle sermaye biriktir veya uygun bir dükkan edin.' }]);
