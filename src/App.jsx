@@ -3869,7 +3869,8 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     tell((existingUnits > 0 ? 'Üretim kuyruğuna eklendi: ' : 'Üretim başladı: ') + item.name + ' ×' + quantity + '. İlk ürün yaklaşık ' + Math.max(1, Math.ceil((firstReadyAt - now) / 1000)) + ' sn içinde hazır.');
   };
   const buy = async () => {
-    if (active.type === 'Konut' && active.units) {
+    if (purchaseBusy) return;
+    if (active.type === 'Konut' && active.units && !(session && supabase)) {
       const key = active.id + ':' + selectedUnit;
       if (unitOwners[key]) { tell('Bu daire zaten satın alınmış.'); return; }
       const price = Math.round(getMarketValue(active) * 1.18 / active.units);
@@ -3881,34 +3882,58 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       return;
     }
     if (session && supabase) {
-      if (ownerByProperty[active.id] || owned.includes(active.id)) { tell('Bu mülkün zaten bir sahibi var.'); return; }
+      if (!cloudReady) { tell('Ortak şehir hesabı yükleniyor. Biraz sonra tekrar dene.'); return; }
+      if (ownerByProperty[active.id] || owned.includes(active.id)) {
+        tell('Bu mülk artık satılık değil. Başka oyuncunun mülküne teklif verebilirsin.');
+        return;
+      }
+      setPurchaseBusy(true);
       try {
-        const purchaseMarketValue = Number(getMarketValue(active));
-        const purchaseResponse = await supabase.rpc('purchase_property_v2', {
-          p_property_id: Number(active.id),
-          p_market_value: purchaseMarketValue,
-          p_current_cash: Number(cash)
+        // v3 reads price and money on the server. Fall back gracefully while
+        // older databases are being migrated, without silently treating
+        // missing RPCs as successful purchases.
+        let response = await supabase.rpc('purchase_property_v3', {
+          p_property_id: Number(active.id)
         });
-        if (purchaseResponse.error) {
-          const error = purchaseResponse.error;
-          const detail = [error.message, error.details, error.hint, error.code].filter(Boolean).join(' · ');
-          throw new Error('Satın alma tamamlanamadı: ' + (detail || 'Veritabanı hatası') + (error.code === 'PGRST202' ? ' · Supabase migration uygulanmamış olabilir.' : ''));
+        if (['PGRST202','42883'].includes(response.error?.code)) {
+          const args = {
+            p_property_id: Number(active.id),
+            p_market_value: Number(getMarketValue(active)),
+            p_current_cash: Number(cash)
+          };
+          response = await supabase.rpc('purchase_property_v2', args);
+          if (['PGRST202','42883'].includes(response.error?.code)) {
+            response = await supabase.rpc('claim_property', args);
+          }
         }
-        const result = Array.isArray(purchaseResponse.data) ? purchaseResponse.data[0] : purchaseResponse.data;
-        if (!result || result.success !== true || Number(result.property_id) !== Number(active.id) || !Number.isFinite(Number(result.cash))) {
-          throw new Error('Sunucu satın alma işlemini doğrulamadı. Mülkiyet ve bakiye değiştirilmedi.');
+        if (response.error) {
+          const error = response.error;
+          const details = [error.message,error.details,error.hint].filter(Boolean).join(' · ');
+          if (/mülk.*bulunamadı|property.*not found|not registered|ortak şehirde henüz kayıtlı|PGRST202|42883/i.test(details)||['PGRST202','42883'].includes(error.code)) {
+            throw new Error('Ortak şehir satın alma fonksiyonu veya mülk kaydı eksik. Supabase 202611040001 SQL güncellemesi gerekli. Ayrıntı: '+details);
+          }
+          throw new Error(details||'Sunucu satın alma işlemini reddetti.');
+        }
+        const result=Array.isArray(response.data)?response.data[0]:response.data;
+        if (!result || result.success===false ||
+          Number(result.property_id)!==Number(active.id) ||
+          !Number.isFinite(Number(result.cash))) {
+          throw new Error('Sunucu mülk devrini ve yeni bakiyeyi doğrulamadı. İşlem tamamlanmadı.');
         }
         setCash(Number(result.cash));
-        setOwned(old => old.includes(active.id) ? old : [...old, active.id]);
-        setRented(old => old.filter(id => id !== active.id));
-        setOwnerByProperty(old => ({ ...old, [active.id]: { playerId: session.user.id, name: result.owner_name || playerName.trim() || 'Mahalle sakini' } }));
+        setOwned(old => old.includes(active.id)?old:[...old,active.id]);
+        setRented(old=>old.filter(id=>id!==active.id));
+        setOwnerByProperty(old=>({...old,[active.id]:{
+          playerId:session.user.id,name:result.owner_name||playerName.trim()||'Mahalle sakini'
+        }}));
         setShopPropertyId(null);
-        setSteps(v => v + 1);
-        tell(active.name + ' ortak şehirde satın alındı. Mülkiyet sunucuda güvenceye alındı.');
-      } catch (error) {
-        const message = error?.message || 'Mülk satın alınamadı. Bağlantını kontrol edip tekrar dene.';
-        tell(message);
-        if (typeof window !== 'undefined') window.alert(message);
+        setSteps(v=>v+1);
+        tell(active.name+' satın alındı. Sunucunun onayladığı fiyat: ₺'+
+          Number(result.paid||result.market_value||getMarketValue(active)).toLocaleString('tr-TR')+'.');
+      } catch(error) {
+        tell('Mülk satın alınamadı: '+(error?.message||'Bağlantı hatası'));
+      } finally {
+        setPurchaseBusy(false);
       }
       return;
     }
@@ -4276,7 +4301,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
           <div className="scene-action-eyebrow">SEÇİLİ BİNA · {String(active.id).padStart(2, '0')}</div><strong>{active.name}</strong>
           <span>{ownerByProperty[active.id] ? (ownerByProperty[active.id].playerId === playerId ? `Sahibi: ${ownerByProperty[active.id].name} (sen)` : `Sahibi: ${ownerByProperty[active.id].name}`) : 'Satılık'} · ₺{getMarketValue(active).toLocaleString('tr-TR')}</span>
           <div className="scene-action-buttons">
-            {!ownerByProperty[active.id] && !owned.includes(active.id) && <button onClick={buy}>SATIN AL</button>}
+            {!ownerByProperty[active.id] && !owned.includes(active.id) && <button onClick={buy} disabled={purchaseBusy}>{purchaseBusy?'İŞLENİYOR':'SATIN AL'}</button>}
             {ownerByProperty[active.id]?.playerId === playerId && owned.includes(active.id) && <button onClick={toggleRent}>{rented.includes(active.id) ? 'KİRACILIĞI BİTİR' : 'KİRAYA VER'}</button>}
             {owned.includes(active.id) && <button onClick={sellProperty}>MÜLKÜ SAT · ₺{Math.round(getMarketValue(active) * 0.95).toLocaleString('tr-TR')}</button>}
             {ownerByProperty[active.id] && ownerByProperty[active.id].playerId !== playerId && <><button onClick={() => { setOfferPriceInput(String(getMarketValue(active))); setOfferComposerOpen(v => !v); }}>SATIN ALMA TEKLİFİ</button>{offerComposerOpen && <div className="offer-composer"><label>Teklifin (₺)<input type="number" min="1" value={offerPriceInput} onChange={e => setOfferPriceInput(e.target.value)} /></label><small>Güncel piyasa değeri: ₺{getMarketValue(active).toLocaleString('tr-TR')}</small><button onClick={sendOffer}>TEKLİFİ GÖNDER</button></div>}</>}
@@ -4385,7 +4410,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
             <div><span>Kat sayısı</span><strong>{active.floors} kat</strong></div>
             <div><span>Durum</span><strong className={owned.includes(active.id) ? 'owned-text' : ''}>{!owned.includes(active.id) ? 'SATILIK' : rented.includes(active.id) ? 'KİRADA' : 'PORTFÖYÜNDE'}</strong></div>
           </div>
-          {active.type === 'Konut' && active.units ? <div className="unit-market"><div className="card-label">DAİRELER · {active.units} BAĞIMSIZ BÖLÜM</div><p>Bir daireyle başla. Binadaki tüm daireleri toplarsan binayı yenileyip kira potansiyelini artırabilirsin.</p><div className="unit-grid">{Array.from({length:active.units},(_,i)=>{const n=i+1,key=active.id+':'+n,o=unitOwners[key],mine=o?.playerId===playerId,price=Math.round(getMarketValue(active)*1.18/active.units);return <button key={key} className={'unit-tile '+(mine?'unit-mine':o?'unit-taken':'')} onClick={()=>setSelectedUnit(n)}><strong>{n}. daire</strong><small>{o?(o.name+(mine?' · SENİN':' · SATILDI')):'₺'+price.toLocaleString('tr-TR')}</small>{selectedUnit===n?<span>SEÇİLİ</span>:null}</button>})}</div><div className="unit-action"><span>Seçili daire: {selectedUnit} · Günlük kira potansiyeli ₺{(active.rent/active.units/30).toFixed(2)}</span>{!unitOwners[active.id+':'+selectedUnit] ? <button className="buy-button" onClick={buy}>DAİREYİ SATIN AL</button> : unitOwners[active.id+':'+selectedUnit].playerId===playerId ? <button className="rent-button" onClick={()=>{const k=active.id+':'+selectedUnit;setUnitRented(old=>({...old,[k]:!old[k]}));tell(unitRented[k]?'Dairenin kiralaması durduruldu.':'Daire kiraya verildi. Kira geliri göstergesi güncellendi.');}}>{unitRented[active.id+':'+selectedUnit]?'KİRAYI DURDUR':'DAİREYİ KİRAYA VER'}</button>:null}</div>{Array.from({length:active.units},(_,i)=>i+1).every(n=>unitOwners[active.id+':'+n]?.playerId===playerId)&&<div className="building-upgrade"><strong>BİNANIN TAMAMI SENİN</strong><p>Seviye {Number(buildingLevels[active.id])||1} · tüm dairelerin sahibi olduğun için binayı yenileyebilirsin.</p><button className="buy-button" onClick={()=>{const lv=Number(buildingLevels[active.id])||1,cost=Math.round(getMarketValue(active)*(0.2+lv*0.12));if(lv>=5){tell('Bina en yüksek seviyede.');return;}if(cash<cost){tell('Yenileme için ₺'+cost.toLocaleString('tr-TR')+' gerekiyor.');return;}setCash(v=>v-cost);setBuildingLevels(old=>({...old,[active.id]:lv+1}));setMarketValues(old=>({...old,[active.id]:Math.round(getMarketValue(active)*1.15*100)/100}));tell('Bina yenilendi: seviye '+(lv+1)+'. Değeri yükseldi.');}}>BİNAYI YENİLE · ₺{Math.round(getMarketValue(active)*((Number(buildingLevels[active.id])||1)*0.12+0.2)).toLocaleString('tr-TR')}</button></div>}</div> : !ownerByProperty[active.id] && <button className={owned.includes(active.id) ? 'buy-button is-owned' : 'buy-button'} onClick={buy} disabled={owned.includes(active.id)}>{owned.includes(active.id) ? 'MÜLK SENİN' : 'MÜLKÜ SATIN AL'} <span>{owned.includes(active.id) ? '✓' : '↗'}</span></button>}
+          {active.type === 'Konut' && active.units && !(session && supabase) ? <div className="unit-market"><div className="card-label">DAİRELER · {active.units} BAĞIMSIZ BÖLÜM</div><p>Bir daireyle başla. Binadaki tüm daireleri toplarsan binayı yenileyip kira potansiyelini artırabilirsin.</p><div className="unit-grid">{Array.from({length:active.units},(_,i)=>{const n=i+1,key=active.id+':'+n,o=unitOwners[key],mine=o?.playerId===playerId,price=Math.round(getMarketValue(active)*1.18/active.units);return <button key={key} className={'unit-tile '+(mine?'unit-mine':o?'unit-taken':'')} onClick={()=>setSelectedUnit(n)}><strong>{n}. daire</strong><small>{o?(o.name+(mine?' · SENİN':' · SATILDI')):'₺'+price.toLocaleString('tr-TR')}</small>{selectedUnit===n?<span>SEÇİLİ</span>:null}</button>})}</div><div className="unit-action"><span>Seçili daire: {selectedUnit} · Günlük kira potansiyeli ₺{(active.rent/active.units/30).toFixed(2)}</span>{!unitOwners[active.id+':'+selectedUnit] ? <button className="buy-button" onClick={buy}>DAİREYİ SATIN AL</button> : unitOwners[active.id+':'+selectedUnit].playerId===playerId ? <button className="rent-button" onClick={()=>{const k=active.id+':'+selectedUnit;setUnitRented(old=>({...old,[k]:!old[k]}));tell(unitRented[k]?'Dairenin kiralaması durduruldu.':'Daire kiraya verildi. Kira geliri göstergesi güncellendi.');}}>{unitRented[active.id+':'+selectedUnit]?'KİRAYI DURDUR':'DAİREYİ KİRAYA VER'}</button>:null}</div>{Array.from({length:active.units},(_,i)=>i+1).every(n=>unitOwners[active.id+':'+n]?.playerId===playerId)&&<div className="building-upgrade"><strong>BİNANIN TAMAMI SENİN</strong><p>Seviye {Number(buildingLevels[active.id])||1} · tüm dairelerin sahibi olduğun için binayı yenileyebilirsin.</p><button className="buy-button" onClick={()=>{const lv=Number(buildingLevels[active.id])||1,cost=Math.round(getMarketValue(active)*(0.2+lv*0.12));if(lv>=5){tell('Bina en yüksek seviyede.');return;}if(cash<cost){tell('Yenileme için ₺'+cost.toLocaleString('tr-TR')+' gerekiyor.');return;}setCash(v=>v-cost);setBuildingLevels(old=>({...old,[active.id]:lv+1}));setMarketValues(old=>({...old,[active.id]:Math.round(getMarketValue(active)*1.15*100)/100}));tell('Bina yenilendi: seviye '+(lv+1)+'. Değeri yükseldi.');}}>BİNAYI YENİLE · ₺{Math.round(getMarketValue(active)*((Number(buildingLevels[active.id])||1)*0.12+0.2)).toLocaleString('tr-TR')}</button></div>}</div> : !ownerByProperty[active.id] && <button className={owned.includes(active.id) ? 'buy-button is-owned' : 'buy-button'} onClick={buy} disabled={owned.includes(active.id)||purchaseBusy}>{owned.includes(active.id) ? 'MÜLK SENİN' : purchaseBusy ? 'SATIN ALINIYOR…' : 'MÜLKÜ SATIN AL'} <span>{owned.includes(active.id) ? '✓' : '↗'}</span></button>}
           {ownerByProperty[active.id] && ownerByProperty[active.id].playerId !== playerId && <><button className="buy-button" onClick={() => { setOfferPriceInput(String(getMarketValue(active))); setOfferComposerOpen(v => !v); }}>SATIN ALMA TEKLİFİ GÖNDER <span>↗</span></button>{offerComposerOpen && <div className="offer-composer"><label>Teklifin (₺)<input type="number" min="1" value={offerPriceInput} onChange={e => setOfferPriceInput(e.target.value)} /></label><small>Piyasa değeri: ₺{getMarketValue(active).toLocaleString('tr-TR')}</small><button onClick={sendOffer}>TEKLİFİ GÖNDER</button></div>}</>}
           {owned.includes(active.id) && <button className="rent-button" onClick={toggleRent}>{rented.includes(active.id) ? 'KİRACIYI ÇIKAR' : 'KİRACI BUL VE KİRAYA VER'}</button>}
           {owned.includes(active.id) && <button className="sell-button" onClick={sellProperty}>MÜLKÜ SAT · ₺{Math.round(getMarketValue(active) * 0.95).toLocaleString('tr-TR')}</button>}
