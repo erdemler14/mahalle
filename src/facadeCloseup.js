@@ -94,7 +94,7 @@ export function createCloseupFacades({ properties, buildingMeshes, mobile = fals
     const root = buildingMeshes[index];
     if (!root) continue;
     const width = Number(p.width) ||
-      (grandIds.has(p.id) ? 2.75 : [9, 25, 31, 39].includes(p.id) ? 2.45 : 2.05);
+      ([4, 10, 21, 24, 27, 40].includes(p.id) ? 2.75 : [9, 25, 31, 39].includes(p.id) ? 2.45 : 2.05);
     const depth = Number(p.depth) || ([2,8,21,24,27].includes(p.id) ? 2.35 : 1.9);
     const front = depth / 2;
     const grand = p.floors >= 4 || grandIds.has(p.id);
