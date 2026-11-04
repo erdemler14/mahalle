@@ -1513,8 +1513,6 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   const [offerBusy, setOfferBusy] = useState(false);
   const [cloudOffers, setCloudOffers] = useState([]);
   const [cloudOffersError, setCloudOffersError] = useState('');
-  const [testFundBusy, setTestFundBusy] = useState(false);
-  const [betaTestCode, setBetaTestCode] = useState('');
   const [cloudOfferRefresh, setCloudOfferRefresh] = useState(0);
   const acceptedOffersSeenRef = useRef(new Set());
   const [sharedRentByProperty, setSharedRentByProperty] = useState({});
@@ -1537,7 +1535,6 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     ? backupSaved
     : primarySaved;
   const [steps, setSteps] = useState(() => Number.isFinite(saved.steps) ? saved.steps : 0);
-  const [betaTestFundClaimed, setBetaTestFundClaimed] = useState(() => Boolean(saved.betaTestFundClaimed));
   const [cash, setCash] = useState(() => {
     const hasProperty = Array.isArray(saved.owned) && saved.owned.length > 0;
     // Upgrade legacy fresh saves from the old ₺75 start to the new starter fund.
@@ -1742,33 +1739,6 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     } catch(error) {
       tell('Teklif yanıtı işlenemedi: '+(error?.message||'Bilinmeyen sunucu hatası'));
     } finally {setOfferBusy(false);}
-  };
-  const claimBetaTestFund = async () => {
-    if (betaTestFundClaimed || testFundBusy) return;
-    setTestFundBusy(true);
-    try {
-      if (session && supabase) {
-        if (!cloudReady) {tell('Hesap yüklenmesini bekle.');return;}
-        if (!betaTestCode.trim()) {tell('Kurucu test fonu için tek kullanımlık kodunu gir.');return;}
-        const {data,error}=await supabase.rpc('claim_beta_test_fund_20261104',{p_invite_code:betaTestCode.trim()});
-        if (error) throw error;
-        if (!data?.granted && !data?.already_claimed) throw new Error('Sunucu test fonunu doğrulamadı.');
-        if (Number.isFinite(Number(data.cash))) setCash(Number(data.cash));
-        setBetaTestFundClaimed(true);
-        tell(data.granted
-          ? 'Hesabına tek seferlik ₺70.000 beta test fonu eklendi.'
-          : 'Bu hesap beta test fonunu daha önce almış.');
-      } else {
-        // Offline local beta prototype: one grant per local save, no remote balance.
-        setCash(value=>Math.round((value+70000)*100)/100);
-        setBetaTestFundClaimed(true);
-        tell('Yerel oyun kaydına ₺70.000 beta test fonu eklendi.');
-      }
-    } catch(error) {
-      tell(error?.code==='PGRST202'
-        ? '70.000 TL test fonu henüz sunucuda etkin değil. Supabase 202611040001 SQL güncellemesi gerekli.'
-        : 'Test fonu alınamadı: '+(error?.message||'Bilinmeyen hata'));
-    } finally {setTestFundBusy(false);}
   };
 
   const sendOffer = () => {
@@ -2729,13 +2699,13 @@ function App({ session = null, supabase = null, authConfigured = false }) {
         window.localStorage.setItem(saveBackupKey, JSON.stringify(previousSave));
       }
       window.localStorage.setItem(saveKey, JSON.stringify({
-        version: 3, economyVersion: STARTER_ECONOMY_VERSION, playerName, steps, cash, betaTestFundClaimed, ferryBusiness, owned, rented, unitOwners, unitRented, buildingLevels, selected, showPortfolio, professionId, marketValues,
+        version: 3, economyVersion: STARTER_ECONOMY_VERSION, playerName, steps, cash, ferryBusiness, owned, rented, unitOwners, unitRented, buildingLevels, selected, showPortfolio, professionId, marketValues,
         hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, autoSupplyByProperty, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, eventChain, log: log.slice(0, 5)
       }));
     } catch {
       // The game remains playable if browser storage is disabled or full.
     }
-  }, [playerName, steps, cash, betaTestFundClaimed, ferryBusiness, owned, rented, unitOwners, unitRented, buildingLevels, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, autoSupplyByProperty, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, eventChain, log]);
+  }, [playerName, steps, cash, ferryBusiness, owned, rented, unitOwners, unitRented, buildingLevels, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, autoSupplyByProperty, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, eventChain, log]);
 
   useEffect(() => {
     if (!session || !supabase) { setCloudReady(true); return undefined; }
@@ -2811,7 +2781,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
           if (typeof state.playerName === 'string') setPlayerName(state.playerName || displayName);
           if (Number.isFinite(state.steps)) setSteps(state.steps);
           if (Number.isFinite(state.cash)) setCash(state.cash);
-          if (typeof state.betaTestFundClaimed === 'boolean') setBetaTestFundClaimed(state.betaTestFundClaimed);
+          
           if (state.ferryBusiness) setFerryBusiness(normaliseFerryBusiness(state.ferryBusiness));
           if (Array.isArray(state.rented)) setRented(state.rented.filter(id => properties.some(p => p.id === id)));
           if (properties.some(p => p.id === state.selected)) setSelected(state.selected);
@@ -2840,7 +2810,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
           if (Array.isArray(state.log)) setLog(state.log.slice(0, 5));
           if (state.developments && typeof state.developments === 'object') setDevelopments(state.developments);
         } else {
-          const initialState = { version: 2, economyVersion: STARTER_ECONOMY_VERSION, playerName: displayName, steps, cash: STARTING_CASH, betaTestFundClaimed: false, ferryBusiness: normaliseFerryBusiness(null), owned: [], rented, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, autoSupplyByProperty, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, experience, careerReputation, enrolledCourse, certificates, log: log.slice(0, 5), developments };
+          const initialState = { version: 2, economyVersion: STARTER_ECONOMY_VERSION, playerName: displayName, steps, cash: STARTING_CASH, ferryBusiness: normaliseFerryBusiness(null), owned: [], rented, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, autoSupplyByProperty, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, experience, careerReputation, enrolledCourse, certificates, log: log.slice(0, 5), developments };
           const { error } = await supabase.from('player_saves').upsert({ user_id: userId, state: initialState, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
           if (error) throw error;
           setPlayerName(displayName);
@@ -2870,13 +2840,13 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   useEffect(() => {
     if (!session || !supabase || !cloudReady) return;
     const state = {
-      version: 2, economyVersion: STARTER_ECONOMY_VERSION, playerName, steps, cash, betaTestFundClaimed, ferryBusiness, owned, rented, selected, showPortfolio, professionId, marketValues,
+      version: 2, economyVersion: STARTER_ECONOMY_VERSION, playerName, steps, cash, ferryBusiness, owned, rented, selected, showPortfolio, professionId, marketValues,
       hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty,
       businessStats, autoSupplyByProperty, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, eventChain, experience, dailySalesLog, dailySalesRevenue, careerReputation, enrolledCourse, certificates, log: log.slice(0, 5), developments
     };
     supabase.from('player_saves').upsert({ user_id: session.user.id, state, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
       .then(({ error }) => { if (error) setMultiplayerStatus('Kayıt eşitlenemedi · ' + error.message); });
-  }, [session?.user?.id, supabase, cloudReady, playerName, steps, cash, betaTestFundClaimed, ferryBusiness, owned, rented, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, autoSupplyByProperty, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, eventChain, experience, dailySalesLog, dailySalesRevenue, careerReputation, enrolledCourse, certificates, log, developments]);
+  }, [session?.user?.id, supabase, cloudReady, playerName, steps, cash, ferryBusiness, owned, rented, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, autoSupplyByProperty, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, eventChain, experience, dailySalesLog, dailySalesRevenue, careerReputation, enrolledCourse, certificates, log, developments]);
 
 
   const tell = (text) => {
@@ -4089,7 +4059,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     if (session && supabase) { tell('Ortak şehirde yeni oyun sıfırlaması şimdilik kapalı; mülk sahipliğinin kaybolmaması için.'); return; }
     if (sendAction('resetGame')) return;
     if (typeof window !== 'undefined' && !window.confirm('Yeni oyun başlatılsın mı? Mevcut mahalle kaydı silinecek.')) return;
-    setSteps(0); setCash(STARTING_CASH); setBetaTestFundClaimed(false); setFerryBusiness(normaliseFerryBusiness(null)); setOwned([]); setRented([]); setSelected(1); setShowPortfolio(false);
+    setSteps(0); setCash(STARTING_CASH); setFerryBusiness(normaliseFerryBusiness(null)); setOwned([]); setRented([]); setSelected(1); setShowPortfolio(false);
     setProfessionId('amele'); setHour(8); setDay(1); setMonth(1); setYear(1923);
     setWorkHours(0); setCareerHours(0); setShopPropertyId(null); setWineBottles(0); setBusinessPlans({}); setStockByProperty({}); setBusinessStats({});
     setLog([{ id: Date.now(), text: 'Yeni bir hikaye başladı. Gündelik işçilikle sermaye biriktir veya uygun bir dükkan edin.' }]);
@@ -4382,16 +4352,8 @@ function App({ session = null, supabase = null, authConfigured = false }) {
           <div className="card-label">02 / CEPTEKİ SERMAYE</div>
           <div className="balance-number"><span>₺</span>{cash.toLocaleString('tr-TR', { maximumFractionDigits: 2 })}</div>
           <div className="balance-foot"><span>Gün {day} · {workHours} saat çalıştın</span><span className={cash > 0 ? 'positive' : 'negative'}>{cash > 0 ? 'AYAKTA' : 'SERMAYE BİTTİ'}</span></div>
-          <div className="balance-rule"><span style={{width: `${Math.min(100, cash / 70000 * 100)}%`}} /></div>
-          <div className="beta-credit-panel">
-            <strong>₺70.000 · BETA TEST FONU</strong>
-            <p>Mevcut oyunun korunur. Tek seferlik test sermayesi, hesabındaki bakiyeye eklenir.</p>
-            {session && !betaTestFundClaimed && <label className="beta-credit-code-label">KURUCUNUN TEST KODU<input aria-label="Özel test fonu kodu" type="text" autoComplete="off" spellCheck={false} placeholder="Özel davet kodunu gir" value={betaTestCode} onChange={event=>setBetaTestCode(event.target.value.slice(0,100))}/></label>}
-            <button type="button" disabled={betaTestFundClaimed||testFundBusy||Boolean(session&&!cloudReady)||Boolean(session&&!betaTestCode.trim())} onClick={claimBetaTestFund}>
-              {testFundBusy?'İŞLENİYOR…':betaTestFundClaimed?'FON ALINDI':'₺70.000 TEST FONU AL'}
-            </button>
-            <small>{session?'Özel davet kodu yalnızca bir hesapta kullanılabilir. Yeni SQL migration uygulanmalıdır.':'Bu tarayıcıdaki yerel test kaydı için bir defaya mahsustur.'}</small>
-          </div>
+          <div className="balance-rule"><span style={{width: `${Math.min(100, cash / 3000 * 100)}%`}} /></div>
+
         </section>
 
         <section className="progression-card" aria-label="Gelişim hedefi">
