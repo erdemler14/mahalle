@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
+import {getCityPopulation} from '../src/cityLifeEngine.js';
 import {
   WATERFRONT_RELOCATIONS,WATERFRONT_NEW_VENUES,
   applyWaterfrontZoning,validateWaterfrontPlacement
@@ -16,7 +17,7 @@ function readBuiltProperties() {
   assert.ok(start>=0 && end>start,'Could not find built property scene layout');
   assert.ok(file.includes('applyWaterfrontZoning(properties);'), 'The zoning stage is not wired to App.jsx');
   const preamble=file.slice(start,end).replace('const properties = [','var properties = [');
-  const sandbox={applyWaterfrontZoning};
+  const sandbox={applyWaterfrontZoning,getCityPopulation};
   vm.runInNewContext(preamble,sandbox,{timeout:1000});
   return sandbox.properties;
 }
