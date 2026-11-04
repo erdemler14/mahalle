@@ -2879,6 +2879,25 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     setLog(old => [{ id: Date.now(), text }, ...old].slice(0, 5));
   };
 
+  const onCityStoryChoice = (story, choiceId) => {
+    const currentStory = storyForDay({year,month,day,hour});
+    if (!story || story.key !== currentStory.key) {
+      tell('Bu hikâyenin günü geçti. Güncel hikâyeyi aç.');return;
+    }
+    if (session && !cloudReady) {tell('Önce hesabının yüklenmesini bekle.');return;}
+    if (storyActionLock.current === story.key || neighborhood.choices[story.key]) {
+      tell('Bu mahalle hikâyesini zaten tamamladın.');return;
+    }
+    const result = applyStoryDecision(neighborhood,story,choiceId,cash);
+    if (!result.applied) {
+      tell(result.reason==='funds'?'Bu seçenek için yeterli oyun liran yok.':'Seçim uygulanamadı.');return;
+    }
+    storyActionLock.current=story.key;
+    setCash(v=>Math.round((v-result.cost)*100)/100);
+    setNeighborhood(result.state);
+    tell(story.title+' — '+result.choice.reply);
+  };
+
   const purchaseFerryLine = () => {
     if (session && !cloudReady) { tell('Hesap kaydı yüklenmeden vapur hattı satın alınamaz.'); return; }
     if (ferryBusiness.owned) { tell('Vapur hattı işletme imtiyazı zaten senin.'); return; }
@@ -4271,6 +4290,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       <button className={activeHudPanel === 'goals' ? 'active' : ''} onClick={() => setActiveHudPanel(activeHudPanel === 'goals' ? null : 'goals')} aria-label="Gelişim hedefleri" title="Hedefler"><span>◇</span><small>HEDEFLER</small></button>
       <button className={activeHudPanel === 'orders' ? 'active' : ''} onClick={() => setActiveHudPanel(activeHudPanel === 'orders' ? null : 'orders')} aria-label="Siparişler ve görevler" title="Siparişler"><span>▣</span><small>SİPARİŞ</small></button>
       <button className={activeHudPanel === 'ferry' ? 'active' : ''} onClick={() => setActiveHudPanel(activeHudPanel === 'ferry' ? null : 'ferry')} aria-label="Haliç Vapur Hattı" title="Vapur Hattı"><span>⚓</span><small>VAPUR</small></button>
+      <button className={activeHudPanel === 'city' ? 'active' : ''} onClick={() => setActiveHudPanel(activeHudPanel === 'city' ? null : 'city')} aria-label="Yaşayan şehir, ekonomi ve hikâyeler" title="Şehir hikâyeleri"><span>◉</span><small>ŞEHİR</small></button>
       <button className={activeHudPanel === 'portfolio' ? 'active' : ''} onClick={() => setActiveHudPanel(activeHudPanel === 'portfolio' ? null : 'portfolio')} aria-label="Portföy" title="Portföy"><span>▦</span><small>PORTFÖY</small></button>
       <button className={activeHudPanel === 'time' ? 'active' : ''} onClick={() => setActiveHudPanel(activeHudPanel === 'time' ? null : 'time')} aria-label="Oyun zamanı" title="Zaman"><span>◷</span><small>ZAMAN</small></button>
       <button className={activeHudPanel === 'social' ? 'active' : ''} onClick={() => setActiveHudPanel(activeHudPanel === 'social' ? null : 'social')} aria-label="Oyuncular ve mülk teklifleri" title="Teklifler"><span>♙</span><small>{session ? 'TEKLİFLER' : 'ODA'}{session && cloudOffers.some(o=>((o.status==='pending'&&o.seller_user_id===session.user.id)||(o.status==='countered'&&o.buyer_user_id===session.user.id)))?' •':''}</small></button>
@@ -4313,7 +4333,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     <section className="game-layout fullscreen-layout">
       <div className="world-panel">
         <div className="world-topline"><span><span className="live-dot" /> BEYOĞLU MERKEZİ</span><label className="property-finder"><span>⌕</span><input aria-label="Mülk ara ve haritada göster" list="mahalle-property-options" placeholder="Mülk adı yaz..." value={mapSearch} onChange={event => { const value = event.target.value; setMapSearch(value); const match = properties.find(property => property.name.toLocaleLowerCase('tr-TR') === value.trim().toLocaleLowerCase('tr-TR')); if (match) { selectProperty(match.id); setMapSearch(''); } }} /><datalist id="mahalle-property-options">{properties.map(property => <option key={property.id} value={property.name}>{owned.includes(property.id) ? 'Senin mülkün' : 'Satılık'}</option>)}</datalist><small>{properties.length} MÜLK</small></label><span className="world-year">OYUN DÜNYASI <i>·</i> {year}</span></div>
-        <CityScene selected={selected} owned={owned} ownerByProperty={ownerByProperty} playerId={playerId} onSelect={selectProperty} ferryBusiness={ferryBusiness} onUniversity={() => setActiveHudPanel(v => v === 'university' ? null : 'university')} hour={hour} day={day} month={month} developments={developments} buildingLevels={buildingLevels} overlay={<div className="scene-action-card">
+        <CityScene selected={selected} owned={owned} ownerByProperty={ownerByProperty} playerId={playerId} onSelect={selectProperty} ferryBusiness={ferryBusiness} onUniversity={() => setActiveHudPanel(v => v === 'university' ? null : 'university')} hour={hour} day={day} month={month} year={year} neighborhood={neighborhood} developments={developments} buildingLevels={buildingLevels} overlay={<div className="scene-action-card">
           <div className="scene-action-eyebrow">SEÇİLİ BİNA · {String(active.id).padStart(2, '0')}</div><strong>{active.name}</strong>
           <span>{ownerByProperty[active.id] ? (ownerByProperty[active.id].playerId === playerId ? `Sahibi: ${ownerByProperty[active.id].name} (sen)` : `Sahibi: ${ownerByProperty[active.id].name}`) : 'Satılık'} · ₺{getMarketValue(active).toLocaleString('tr-TR')}</span>
           <div className="scene-action-buttons">
@@ -4334,6 +4354,9 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       </div>
 
       <aside className={'side-panel hud-side-panel hud-panel-content-' + (activeHudPanel || 'none')} aria-label="Oyun menüsü">
+        <CityLifePanel properties={properties} clock={{year,month,day,hour}} neighborhood={neighborhood}
+          ferryBusiness={ferryBusiness} stats={businessStats} cash={cash} owned={owned}
+          onChoice={onCityStoryChoice} busy={Boolean(session&&!cloudReady)}/>
         <FerryBusinessPanel state={ferryBusiness} cash={cash} year={year} month={month} day={day} hour={hour} onPurchase={purchaseFerryLine} onUpgrade={upgradeFerryLine} disabled={!!session && !cloudReady} />
         <section className="orders-panel">
           <div className="card-label">MAHALLE PAZARI · SİPARİŞLER</div><h2>Müşteri talepleri</h2>
@@ -4413,7 +4436,15 @@ function App({ session = null, supabase = null, authConfigured = false }) {
           <h2>{active.name}</h2>
           {ownerByProperty[active.id] && <div className="owner-chip">MÜLK SAHİBİ: {ownerByProperty[active.id].name}{ownerByProperty[active.id].playerId === playerId ? ' (SEN)' : ''}</div>}
           <p className="property-description">{active.style}. {active.history ? active.history + " " : ""}Bu taşınmazı alabilir, işletme olarak kullanabilir veya ileride kiraya verebilirsin.</p>
-          <div className="property-stats">
+          {['İşletme','Ticaret','Atölye','Depo'].includes(active.type) && (() => {
+              const crowd=shopCustomerFlow(active,hour);
+              return <div className="shop-footfall-readout" role="status">
+                <strong><span className="live-dot"/> YAŞAYAN İŞLETME</strong>
+                <span>Bu saat {crowd.visits} müşteri · Talep çarpanı ×{crowd.demand.toLocaleString('tr-TR',{maximumFractionDigits:2})}</span>
+                <small>Ulaşım ve itibara göre tedarik: ×{crowd.supplyModifier.toLocaleString('tr-TR',{maximumFractionDigits:2})} · Ziyaretçiler dükkânın kapısına yürür.</small>
+              </div>;
+            })()}
+           <div className="property-stats">
             <div><span>Güncel piyasa değeri</span><strong>₺{getMarketValue(active).toLocaleString('tr-TR')}</strong></div>
             <div><span>Günlük kira</span><strong>₺{(active.rent / 30).toFixed(2)}</strong></div><div><span>Yıllık kira potansiyeli</span><strong>₺{(active.rent * 12).toLocaleString('tr-TR')}</strong></div>
             <div><span>Kat sayısı</span><strong>{active.floors} kat</strong></div>
