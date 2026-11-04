@@ -5,10 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "node scripts/generate-period-glb.mjs && node scripts/validate-period-glb.mjs && vite",
-    "build": "node scripts/apply-property-taxes.mjs && node scripts/apply-commercial-shops.mjs && node scripts/apply-multiplayer-ownership.mjs && node scripts/apply-textile-shop-balance.mjs && node scripts/apply-property-development.mjs && node scripts/generate-period-glb.mjs && node scripts/validate-period-glb.mjs && vite build",
+    "build": "node scripts/apply-property-taxes.mjs && node scripts/apply-commercial-shops.mjs && node scripts/apply-multiplayer-ownership.mjs && node scripts/apply-textile-shop-balance.mjs && node scripts/apply-property-development.mjs && node scripts/generate-period-glb.mjs && node scripts/validate-period-glb.mjs && npm test && vite build",
     "preview": "vite preview",
     "generate:models": "node scripts/generate-period-glb.mjs",
-    "validate:models": "node scripts/validate-period-glb.mjs"
+    "validate:models": "node scripts/validate-period-glb.mjs",
+    "test": "node --test tests/ferryHarbor.test.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "4.4.1",
