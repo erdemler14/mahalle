@@ -1124,7 +1124,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
         orbitInertia = 0;
         return property;
       }
-      if (walker.active && action === 'view') cameraControlRef.current('walk', false);
+      if (walker.active && (action === 'view' || action === 'district' || action === 'pivot')) cameraControlRef.current('walk', false);
       if (action === 'mode') { leftDragMode = argument === 'rotate' ? 'rotate' : 'pan'; orbitInertia = 0; return; }
       if (action === 'district') {
         // View toward the main façades, not across their backs.
