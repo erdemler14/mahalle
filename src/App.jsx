@@ -168,7 +168,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
   const selectedRef = useRef(selected);
   const hourRef = useRef(hour);
   const cameraControlRef = useRef(null);
-  const [cameraMode, setCameraMode] = useState('pan');
+  const [cameraMode, setCameraMode] = useState('rotate');
   const [walkMode, setWalkMode] = useState(false);
   const walkModeRef = useRef(false);
   const skipNextFocusRef = useRef(false);
@@ -1026,8 +1026,8 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
     let thetaGoal = theta;
     let radiusGoal = radius;
     let phiGoal = phi;
-    let dragMode = 'pan';
-    let leftDragMode = 'pan';
+    let dragMode = 'rotate';
+    let leftDragMode = 'rotate';
     let orbitInertia = 0;
     const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
     const MIN_DISTANCE = 3.4;
@@ -1123,7 +1123,27 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
         return property;
       }
       if (walker.active && action === 'view') cameraControlRef.current('walk', false);
-      if (action === 'mode') { leftDragMode = argument === 'rotate' ? 'rotate' : 'pan'; return; }
+      if (action === 'mode') { leftDragMode = argument === 'rotate' ? 'rotate' : 'pan'; orbitInertia = 0; return; }
+      if (action === 'district') {
+        // View toward the main façades, not across their backs.
+        const east = argument === 'east';
+        orbitInertia = 0;
+        targetGoal.set(east ? 20.7 : -20.5, 0.7, 1.1);
+        radiusGoal = 24;
+        thetaGoal = east ? -0.74 : 0.74;
+        phiGoal = 0.91;
+        return;
+      }
+      if (action === 'pivot') {
+        const property = properties.find(item => item.id === selectedRef.current);
+        if (property) {
+          orbitInertia = 0;
+          targetGoal.set(property.x, 0.78, property.z);
+          radiusGoal = Math.min(radiusGoal, 18);
+          phiGoal = Math.max(phiGoal, 0.75);
+        }
+        return;
+      }
       if (action === 'in') { orbitInertia = 0; zoomAround(0.82); }
       else if (action === 'out') zoomAround(1.22);
       else if (action === 'focus') { orbitInertia = 0; focusOn(argument); }
@@ -1169,8 +1189,18 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
         moved = false;
         lastX = event.clientX;
         lastY = event.clientY;
-        dragMode = walker.active ? 'walk' : event.button === 2 || event.altKey || event.shiftKey ? 'rotate' : leftDragMode;
-        if (dragMode === 'rotate') orbitInertia = 0;
+        dragMode = walker.active ? 'walk' : event.shiftKey ? 'pan' : (event.button === 2 || event.altKey ? 'rotate' : leftDragMode);
+        if (dragMode === 'rotate') {
+          orbitInertia = 0;
+          // Orbit around the street/building under the pointer, so the far-right
+          // blocks remain accessible rather than spinning around the map origin.
+          const targetProperty = buildingUnderPointer(event);
+          const pivot = targetProperty ? new THREE.Vector3(targetProperty.x, 0, targetProperty.z) : worldAtPointer(event.clientX, event.clientY);
+          if (pivot && Math.hypot(pivot.x - targetGoal.x, pivot.z - targetGoal.z) > 1.6) {
+            targetGoal.set(clamp(pivot.x, -PAN_BOUNDS, PAN_BOUNDS), 0.72,
+              clamp(pivot.z, -PAN_BOUNDS, PAN_BOUNDS));
+          }
+        }
       } else {
         moved = true;
         const pinch = pinchData();
@@ -1436,7 +1466,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
     };
   }, [owned, ownerByProperty, playerId, developments, buildingLevels]);
 
-  return <div className="scene-host" ref={host} aria-label="Beyoğlu 1923 3D mahalle sahnesi"><div className="scene-building-overlay" ref={overlayRef}>{overlay}</div><div className="city-life-pill" aria-label={"1920ler şehir hareketi: " + cityLifePhase(hour)}><span className="city-life-spark" />{cityLifePhase(hour)}</div><div className="map-camera-toolbar"><div className="map-view-presets" role="group" aria-label="Kamera görünümü"><button type="button" title="Mahallenin genel görünümü" onClick={() => cameraControlRef.current?.('view','iso')}>Mahalle</button><button type="button" title="Sokak seviyesine yaklaş" onClick={() => cameraControlRef.current?.('view','street')}>Sokak</button><button type="button" className={walkMode ? 'active' : ''} aria-pressed={walkMode} title="1920'lerin sokaklarında yürüyerek gez" onClick={() => cameraControlRef.current?.('walk', !walkMode)}>Yürü</button><button type="button" title="Yukarıdan plan görünümü" onClick={() => cameraControlRef.current?.('view','top')}>Üstten</button></div>{!walkMode && <div className="map-camera-tools"><button type="button" className={cameraMode === 'rotate' ? 'active' : ''} aria-pressed={cameraMode === 'rotate'} aria-label="Sürükleyerek döndür" title="Sol tuşla sürükleyerek haritayı döndür" onClick={() => { setCameraMode('rotate'); cameraControlRef.current?.('mode','rotate'); }}>⟳ Döndür</button><button type="button" className={cameraMode === 'pan' ? 'active' : ''} aria-pressed={cameraMode === 'pan'} aria-label="Haritayı taşıma modu" title="Sol tuşla sürükleyerek haritayı taşı" onClick={() => { setCameraMode('pan'); cameraControlRef.current?.('mode','pan'); }}>✥ Taşı</button><button type="button" aria-label="Sola döndür" title="Sola döndür" onClick={() => cameraControlRef.current?.('rotate','left')}>↶</button><button type="button" aria-label="Sağa döndür" title="Sağa döndür" onClick={() => cameraControlRef.current?.('rotate','right')}>↷</button><button type="button" aria-label="Açıyı yükselt" title="Açıyı yükselt" onClick={() => cameraControlRef.current?.('tilt','up')}>↑</button><button type="button" aria-label="Açıyı alçalt" title="Açıyı alçalt" onClick={() => cameraControlRef.current?.('tilt','down')}>↓</button></div>}</div>{!walkMode && <div className="map-zoom-controls"><button type="button" aria-label="Yakınlaştır" title="Yakınlaştır" onClick={() => cameraControlRef.current?.('in')}>＋</button><button type="button" aria-label="Uzaklaştır" title="Uzaklaştır" onClick={() => cameraControlRef.current?.('out')}>−</button><button type="button" aria-label="Seçili binaya odaklan" title="Seçili binaya odaklan" onClick={() => cameraControlRef.current?.('focus', properties.find(item => item.id === selected))}>⌖</button><button type="button" aria-label="Haritayı ortala" title="Haritayı ortala" onClick={() => cameraControlRef.current?.('reset')}>⌂</button><button type="button" aria-label="Üniversite ve meslek eğitimleri" title="Üniversite ve meslek eğitimleri" onClick={() => onUniversity?.()}>▤</button></div>}
+  return <div className="scene-host" ref={host} aria-label="Beyoğlu 1923 3D mahalle sahnesi"><div className="scene-building-overlay" ref={overlayRef}>{overlay}</div><div className="city-life-pill" aria-label={"1920ler şehir hareketi: " + cityLifePhase(hour)}><span className="city-life-spark" />{cityLifePhase(hour)}</div><div className="map-camera-toolbar"><div className="map-view-presets" role="group" aria-label="Kamera görünümü"><button type="button" title="Mahallenin genel görünümü" onClick={() => cameraControlRef.current?.('view','iso')}>Mahalle</button><button type="button" title="Sağ taraftaki sokak ve bina cephelerini göster" onClick={() => cameraControlRef.current?.('district','east')}>Sağ Sokaklar →</button><button type="button" title="Sol taraftaki sokak ve bina cephelerini göster" onClick={() => cameraControlRef.current?.('district','west')}>← Sol Sokaklar</button><button type="button" title="Sokak seviyesine yaklaş" onClick={() => cameraControlRef.current?.('view','street')}>Sokak</button><button type="button" className={walkMode ? 'active' : ''} aria-pressed={walkMode} title="1920'lerin sokaklarında yürüyerek gez" onClick={() => cameraControlRef.current?.('walk', !walkMode)}>Yürü</button><button type="button" title="Yukarıdan plan görünümü" onClick={() => cameraControlRef.current?.('view','top')}>Üstten</button></div>{!walkMode && <div className="map-camera-tools"><button type="button" className={cameraMode === 'rotate' ? 'active' : ''} aria-pressed={cameraMode === 'rotate'} aria-label="Sürükleyerek döndür" title="Sürükle: binanın ya da sokağın etrafında 360° döndür" onClick={() => { setCameraMode('rotate'); cameraControlRef.current?.('mode','rotate'); }}>⟳ Döndür</button><button type="button" className={cameraMode === 'pan' ? 'active' : ''} aria-pressed={cameraMode === 'pan'} aria-label="Haritayı taşıma modu" title="Sol tuşla sürükleyerek haritayı taşı" onClick={() => { setCameraMode('pan'); cameraControlRef.current?.('mode','pan'); }}>✥ Taşı</button><button type="button" aria-label="Seçili bina etrafında döndür" title="Seçili yapıyı dönme merkezi yap" onClick={() => cameraControlRef.current?.('pivot')}>◎</button><button type="button" aria-label="Sola döndür" title="Sola döndür" onClick={() => cameraControlRef.current?.('rotate','left')}>↶</button><button type="button" aria-label="Sağa döndür" title="Sağa döndür" onClick={() => cameraControlRef.current?.('rotate','right')}>↷</button><button type="button" aria-label="Açıyı yükselt" title="Açıyı yükselt" onClick={() => cameraControlRef.current?.('tilt','up')}>↑</button><button type="button" aria-label="Açıyı alçalt" title="Açıyı alçalt" onClick={() => cameraControlRef.current?.('tilt','down')}>↓</button></div>}</div>{!walkMode && <div className="map-zoom-controls"><button type="button" aria-label="Yakınlaştır" title="Yakınlaştır" onClick={() => cameraControlRef.current?.('in')}>＋</button><button type="button" aria-label="Uzaklaştır" title="Uzaklaştır" onClick={() => cameraControlRef.current?.('out')}>−</button><button type="button" aria-label="Seçili binaya odaklan" title="Seçili binaya odaklan" onClick={() => cameraControlRef.current?.('focus', properties.find(item => item.id === selected))}>⌖</button><button type="button" aria-label="Haritayı ortala" title="Haritayı ortala" onClick={() => cameraControlRef.current?.('reset')}>⌂</button><button type="button" aria-label="Üniversite ve meslek eğitimleri" title="Üniversite ve meslek eğitimleri" onClick={() => onUniversity?.()}>▤</button></div>}
   {walkMode && <>
     <div className="walk-reticle" aria-hidden="true"><span /></div>
     <div className="walk-top-actions">
@@ -1451,7 +1481,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
       <button type="button" className="walk-right" aria-label="Sağa yürü" {...walkPressProps('right')}>→</button>
     </div>
   </>}
-  <div className="map-hint">{walkMode ? 'WASD: yürü · Sürükle: etrafa bak · Shift: koş · F: incele · Esc: çık' : 'Sürükle: gez · Sağ tık / Alt: döndür · Tekerlek: yakınlaştır · Çift tık: git · WASD: hareket'}</div></div>;
+  <div className="map-hint">{walkMode ? 'WASD: yürü · Sürükle: etrafa bak · Shift: koş · F: incele · Esc: çık' : 'Sürükle: 360° döndür · Shift+sürükle: taşı · Tekerlek: yakınlaştır · Sağ Sokaklar: sağ mahalleye git'}</div></div>;
 }
 
 function App({ session = null, supabase = null, authConfigured = false }) {
