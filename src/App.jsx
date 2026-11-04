@@ -1545,6 +1545,8 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   });
   const [ferryBusiness, setFerryBusiness] = useState(() => normaliseFerryBusiness(saved.ferryBusiness));
   const [owned, setOwned] = useState(() => Array.isArray(saved.owned) ? saved.owned.filter(id => properties.some(p => p.id === id)) : []);
+  const ownedIdsRef = useRef(owned);
+  useEffect(() => { ownedIdsRef.current = owned; }, [owned]);
   const [rented, setRented] = useState(() => Array.isArray(saved.rented) ? saved.rented.filter(id => properties.some(p => p.id === id)) : []);
   const [unitOwners, setUnitOwners] = useState(() => saved.unitOwners && typeof saved.unitOwners === 'object' ? saved.unitOwners : {});
   const [unitRented, setUnitRented] = useState(() => saved.unitRented && typeof saved.unitRented === 'object' ? saved.unitRented : {});
@@ -2752,9 +2754,24 @@ function App({ session = null, supabase = null, authConfigured = false }) {
         rentState[row.property_id] = Boolean(row.rented);
         if (Number.isFinite(Number(row.market_value))) values[row.property_id] = Number(row.market_value);
       }
+      // Server-authoritative offers can transfer ownership while the other
+      // player is online. Refresh that player's wallet BEFORE committing the
+      // new portfolio state, otherwise an old autosave could undo the transfer.
+      const previousMine=ownedIdsRef.current;
+      const ownershipChanged=mine.length!==previousMine.length ||
+        mine.some(id=>!previousMine.includes(id));
+      if (ownershipChanged) {
+        const {data:wallet,error:walletError} = await supabase.from('player_saves')
+          .select('state').eq('user_id',userId).maybeSingle();
+        if (!walletError && active && Number.isFinite(Number(wallet?.state?.cash))) {
+          setCash(Number(wallet.state.cash));
+        }
+      }
+      if (!active) return;
       setOwnerByProperty(owners);
       setSharedRentByProperty(rentState);
       setMarketValues(old => ({ ...old, ...values }));
+      ownedIdsRef.current=mine;
       setOwned(mine);
     };
     const hydrate = async () => {
