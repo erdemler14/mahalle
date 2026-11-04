@@ -77,6 +77,68 @@ function teddy(parent,x,y,z){
   }
   sphere(g,dark,.040,0,.45,.14);
 }
+
+function toyKite(parent,x,y,z,index=0){
+  const cloth=material(['#ca654a','#568d86','#d7ab54'][index%3]),frame=material('#6f4b31');
+  const g=new THREE.Group();g.position.set(x,y,z);parent.add(g);
+  const diamond=new THREE.Mesh(new THREE.OctahedronGeometry(.23,0),cloth);
+  diamond.scale.set(1,1.45,.12);diamond.position.y=.33;g.add(diamond);
+  box(g,frame,.022,.64,.018,0,.33,.035);
+  box(g,frame,.40,.018,.018,0,.36,.035);
+  for(let i=0;i<3;i++)sphere(g,cloth,.045,Math.sin(i*1.3)*.10,-.15-i*.15,0);
+}
+function hoopToy(parent,x,y,z){
+  const brass=material('#ba8748',.49,.36),wooden=material('#9f6441');
+  const torus=new THREE.Mesh(new THREE.TorusGeometry(.26,.027,8,24),brass);
+  torus.position.set(x,y+.37,z);parent.add(torus);
+  const stick=cylinder(parent,wooden,.028,.65,x+.28,y+.32,z);
+  stick.rotation.z=-.3;
+}
+function tinSoldier(parent,x,y,z){
+  const blue=material('#46627e'),red=material('#a7433e'),gold=material('#d3aa5c');
+  const g=new THREE.Group();g.position.set(x,y,z);parent.add(g);
+  box(g,blue,.13,.28,.105,0,.19,0);
+  box(g,red,.14,.07,.12,0,.34,0);
+  sphere(g,material('#ddb693'),.065,0,.43,0);
+  box(g,blue,.14,.12,.12,0,.53,0);
+  box(g,gold,.15,.025,.13,0,.60,0);
+  for(const xx of [-.04,.04])box(g,blue,.042,.12,.05,xx,.035,0);
+}
+function toyDrum(parent,x,y,z){
+  const red=material('#b54d3d'),cream=material('#f0d5a0');
+  cylinder(parent,red,.16,.26,x,y+.20,z);
+  cylinder(parent,cream,.165,.025,x,y+.34,z);
+  cylinder(parent,cream,.165,.025,x,y+.07,z);
+}
+function periodDisplay(scene){
+  const wine=material('#973b48'),teal=material('#477d7b'),ochre=material('#d4a54c');
+  const brass=material('#c59b5d',.42,.32),wooden=material('#90603c');
+  // Repeated geometric wall friezes suggest early-1920s decorated shop interiors.
+  for(const z of [-3.9,-2.8,-1.7,-.6,.5,1.6,2.7,3.8]){
+    for(const side of [-1,1]){
+      box(scene,ochre,.022,.035,.74,side*3.56,2.58,z);
+      box(scene,teal,.024,.24,.055,side*3.55,2.45,z);
+      box(scene,wine,.025,.11,.12,side*3.54,2.45,z+.20);
+    }
+  }
+  // Colorful tabletop: period toys made with wood, cloth, paper and painted tin.
+  box(scene,wooden,1.38,.70,.74,1.34,.38,-1.45);
+  box(scene,brass,1.46,.055,.82,1.34,.76,-1.45);
+  toyDrum(scene,1.04,.80,-1.45);
+  tinSoldier(scene,1.34,.80,-1.45);
+  toyKite(scene,1.73,.80,-1.45,1);
+  // Narrow wall displays do not obstruct the central walking aisle.
+  for(const [x,z] of [[-2.7,-3.8],[2.7,-3.8],[-2.7,1.65],[2.7,1.65]]){
+    toyKite(scene,x,1.80,z,Math.round(z+4));
+  }
+  hoopToy(scene,2.45,.43,3.75);
+  for(const [x,z] of [[-2.20,3.92],[2.14,3.92]]){
+    toyDrum(scene,x,.44,z);
+  }
+  sign(scene,'RENKLİ TAHTA OYUNCAKLAR',0,3.07,-4.73,3.1);
+  sign(scene,'BEBEKLER · TOPAÇLAR',2.0,2.77,-4.72,2.45);
+}
+
 function addShelves(scene,walls){
   const shelf=material('#815638'),edge=material('#bc945d');
   const instances=[];
@@ -170,6 +232,7 @@ function room(scene){
   }
   // A period poster on the right back wall.
   sign(scene,'TAHTA · BEZ · OYUN',1.85,2.48,-4.72,2.25);
+  periodDisplay(scene);
 }
 export const TOY_SHOP_ID=48;
 export const TOY_SHOP_ROOM={width:7.4,depth:10,eye:1.58,
@@ -257,7 +320,7 @@ export default function ToyShopInterior({onExit,property,owned=false,stock=0}){
     onPointerCancel:()=>{command.current[type]=false;},onLostPointerCapture:()=>{command.current[type]=false;}});
   return <div className="toy-interior-modal" role="dialog" aria-modal="true" aria-label="Oyuncakçı dükkânı içi">
     <div className="toy-interior-frame">
-      <header className="toy-interior-top"><div><span className="toy-interior-kicker">MAHALLE / BEYOĞLU 1923 · İÇ MEKÂN TESTİ</span><h2>{property?.name||'Oyuncakçı Dükkânı'}</h2><small>Ahşap trenler · bez bebekler · sallanan atlar · vitrin</small></div><button type="button" onClick={onExit} aria-label="Oyuncakçıdan çık">← SOKAĞA DÖN</button></header>
+      <header className="toy-interior-top"><div><span className="toy-interior-kicker">MAHALLE / BEYOĞLU 1923 · OYUNCAKÇI</span><h2>{property?.name||'Oyuncakçı Dükkânı'}</h2><small>Ahşap trenler · teneke askerler · uçurtmalar · davullar · topaçlar</small></div><button type="button" onClick={onExit} aria-label="Oyuncakçıdan çık">← SOKAĞA DÖN</button></header>
       <div className="toy-interior-canvas" ref={canvasHost}/>
       <div className="toy-interior-bottom">
         <div className="toy-interior-caption"><strong>OYUNCAKÇININ İÇİNDE</strong><span>{owned?'Bu dükkân sana ait.':'Dükkânı satın almadan da gezebilirsin.'} {stock>0?'· Vitrindeki kayıtlı ürün: '+stock:''}</span><small>WASD / ok tuşları: yürü · Ekranı sürükle: etrafa bak · Esc: çık</small></div>
