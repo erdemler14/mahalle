@@ -164,7 +164,7 @@ function makeBoat(scene, x, z, index) {
   return { group, originX: x, originZ: z, oarL, oarR, phase: index * 2.3 };
 }
 
-export function createPeriodVisualPass({ scene, properties, buildingMeshes, isMobile = false, waterMaterial = null, renderer }) {
+export function createPeriodVisualPass({ scene, properties, buildingMeshes, isMobile = false, waterMaterial = null, renderer, developments = {} }) {
   const sandstone = material('#c8bba1', 0.96);
   const limestone = material('#b0a28e', 0.98);
   const darkStone = material('#8b8275', 0.97);
@@ -184,8 +184,8 @@ export function createPeriodVisualPass({ scene, properties, buildingMeshes, isMo
     const w = Number(property.width) || ([4, 10, 21, 24, 27, 40].includes(property.id) ? 2.75 : [9, 25, 31, 39].includes(property.id) ? 2.45 : 2.05);
     const d = Number(property.depth) || ([2, 8, 21, 24, 27].includes(property.id) ? 2.35 : 1.9);
     const floorHeight = property.floors >= 4 ? 0.91 : 0.88;
-    const h = group.children.reduce((max, item) => item.isMesh && item.geometry?.type === 'BoxGeometry' ? Math.max(max, item.position.y * 2) : max, property.floors * floorHeight);
-    const height = property.floors * floorHeight;
+    const addedFloors = limit(Number(developments[property.id]) || 0, 0, 3);
+    const height = (property.floors + addedFloors) * floorHeight;
     const frontage = d / 2;
     const count = Math.max(1, Math.min(4, property.floors - 1));
     const fancy = property.floors >= 4 || [4, 10, 21, 24, 27].includes(property.id);
