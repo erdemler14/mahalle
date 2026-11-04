@@ -1258,8 +1258,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
         return;
       }
       if (building) {
-        selectRef.current(building.id);
-        focusOn(building);
+        cameraControlRef.current?.('inspect', building);
       } else {
         const destination = worldAtPointer(event.clientX, event.clientY);
         if (destination) {
