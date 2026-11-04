@@ -4125,6 +4125,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     if (session && supabase) { tell('Ortak şehirde yeni oyun sıfırlaması şimdilik kapalı; mülk sahipliğinin kaybolmaması için.'); return; }
     if (sendAction('resetGame')) return;
     if (typeof window !== 'undefined' && !window.confirm('Yeni oyun başlatılsın mı? Mevcut mahalle kaydı silinecek.')) return;
+    storyActionLock.current = null;
     setSteps(0); setCash(STARTING_CASH); setFerryBusiness(normaliseFerryBusiness(null)); setNeighborhood(normalizeNeighborhood(null)); setOwned([]); setRented([]); setSelected(1); setShowPortfolio(false);
     setProfessionId('amele'); setHour(8); setDay(1); setMonth(1); setYear(1923);
     setWorkHours(0); setCareerHours(0); setShopPropertyId(null); setWineBottles(0); setBusinessPlans({}); setStockByProperty({}); setBusinessStats({});
