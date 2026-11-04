@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import Peer from 'peerjs';
 import { createLivingCity, cityLifePhase } from './livingCity.js';
 import { createPeriodVisualPass, makeHistoricFacadeMaps } from './periodVisualPass.js';
+import { createStreetWalker } from './streetWalk.js';
 
 const properties = [
   { id: 1, name: 'Madam Eleni’nin Bakkal ve Şarküterisi', type: 'Ticaret', price: 1890, rent: 26, x: -4.2, z: -1.1, color: '#d9b99c', floors: 3, style: 'Galata taş cephesi' },
@@ -167,6 +168,10 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
   const hourRef = useRef(hour);
   const cameraControlRef = useRef(null);
   const [cameraMode, setCameraMode] = useState('pan');
+  const [walkMode, setWalkMode] = useState(false);
+  const walkModeRef = useRef(false);
+  const skipNextFocusRef = useRef(false);
+  const setWalkKey = (key, pressed) => cameraControlRef.current?.('key', { key, pressed });
   useEffect(() => { selectRef.current = onSelect; }, [onSelect]);
   useEffect(() => { selectedRef.current = selected; }, [selected]);
   useEffect(() => { hourRef.current = hour; }, [hour]);
@@ -175,7 +180,10 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
   useEffect(() => { dayRef.current = day; monthRef.current = month; }, [day, month]);
   useEffect(() => {
     const property = properties.find(item => item.id === selected);
-    if (property) cameraControlRef.current?.('focus', property);
+    if (property && !walkModeRef.current) {
+      if (skipNextFocusRef.current) skipNextFocusRef.current = false;
+      else cameraControlRef.current?.('focus', property);
+    }
   }, [selected]);
 
   useEffect(() => {
@@ -994,6 +1002,8 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
     const pointer = new THREE.Vector2();
     const target = new THREE.Vector3(0, 0, 0);
     const targetGoal = target.clone();
+    const walker = createStreetWalker(camera, properties);
+    if (walkModeRef.current) walker.begin(properties.find(item => item.id === selectedRef.current));
     let dragging = false;
     let moved = false;
     let lastX = 0;
@@ -1006,6 +1016,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
     let phiGoal = phi;
     let dragMode = 'pan';
     let leftDragMode = 'pan';
+    let orbitInertia = 0;
     const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
     const MIN_DISTANCE = 5.5;
     const MAX_DISTANCE = 56;
@@ -1066,15 +1077,50 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
       phiGoal = 0.98;
     };
     cameraControlRef.current = (action, argument) => {
+      if (action === 'key') { walker.setInput(argument.key, argument.pressed); return; }
+      if (action === 'walk') {
+        const enabled = Boolean(argument);
+        if (enabled) walker.begin(properties.find(item => item.id === selectedRef.current));
+        else if (walker.active) {
+          walker.end();
+          targetGoal.set(walker.position.x, 0.7, walker.position.z);
+          thetaGoal = walker.yaw;
+          phiGoal = 1.08;
+          radiusGoal = 11;
+          theta = thetaGoal; phi = phiGoal; radius = radiusGoal;
+          camera.fov = 38;
+          camera.updateProjectionMatrix();
+        }
+        walkModeRef.current = enabled;
+        setWalkMode(enabled);
+        orbitInertia = 0;
+        return;
+      }
+      if (action === 'inspect') {
+        const property = argument || walker.centerHit(buildingMeshes) ||
+          properties.find(item => item.id === selectedRef.current);
+        if (!property) return null;
+        if (walker.active) cameraControlRef.current('walk', false);
+        skipNextFocusRef.current = true;
+        selectRef.current(property.id);
+        targetGoal.set(property.x, 1.28, property.z);
+        phiGoal = 1.07;
+        thetaGoal = property.x >= 0 ? -Math.PI / 2 : Math.PI / 2;
+        radiusGoal = 5.5;
+        orbitInertia = 0;
+        return property;
+      }
+      if (walker.active && action === 'view') cameraControlRef.current('walk', false);
       if (action === 'mode') { leftDragMode = argument === 'rotate' ? 'rotate' : 'pan'; return; }
-      if (action === 'in') zoomAround(0.82);
+      if (action === 'in') { orbitInertia = 0; zoomAround(0.82); }
       else if (action === 'out') zoomAround(1.22);
-      else if (action === 'focus') focusOn(argument);
+      else if (action === 'focus') { orbitInertia = 0; focusOn(argument); }
       else if (action === 'view') {
         if (argument === 'street') { phiGoal = 1.32; radiusGoal = 11.5; targetGoal.y = 0.9; }
         else if (argument === 'top') { phiGoal = 0.24; radiusGoal = 32; targetGoal.y = 0; }
         else { phiGoal = 0.75; thetaGoal = Math.PI / 4; radiusGoal = 36; targetGoal.set(0, 0.4, 0); }
       } else if (action === 'rotate') {
+        orbitInertia = 0;
         thetaGoal += (argument === 'left' ? -1 : 1) * Math.PI / 8;
       } else if (action === 'tilt') {
         phiGoal = clamp(phiGoal + (argument === 'up' ? -0.13 : 0.13), 0.20, 1.42);
@@ -1111,7 +1157,8 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
         moved = false;
         lastX = event.clientX;
         lastY = event.clientY;
-        dragMode = event.button === 2 || event.altKey || event.shiftKey ? 'rotate' : leftDragMode;
+        dragMode = walker.active ? 'walk' : event.button === 2 || event.altKey || event.shiftKey ? 'rotate' : leftDragMode;
+        if (dragMode === 'rotate') orbitInertia = 0;
       } else {
         moved = true;
         const pinch = pinchData();
@@ -1126,7 +1173,8 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
       activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
       if (activePointers.size >= 2) {
         const pinch = pinchData();
-        if (pinchDistance > 0 && pinch.distance > 0) {
+        if (walker.active) walker.rotate(pinch.center.x - pinchCenter.x, pinch.center.y - pinchCenter.y, 0.0028);
+        else if (pinchDistance > 0 && pinch.distance > 0) {
           zoomAround(pinchDistance / pinch.distance, pinch.center.x, pinch.center.y);
           panBy(pinch.center.x - pinchCenter.x, pinch.center.y - pinchCenter.y);
         }
@@ -1138,9 +1186,13 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
       const dx = event.clientX - lastX;
       const dy = event.clientY - lastY;
       if (Math.abs(dx) + Math.abs(dy) > 2) moved = true;
-      if (dragMode === 'rotate') {
-        thetaGoal -= dx * 0.0055;
-        phiGoal = clamp(phiGoal + dy * 0.0038, 0.20, 1.42);
+      if (walker.active) {
+        walker.rotate(dx, dy, event.pointerType === 'touch' ? 0.0054 : 0.0044);
+      } else if (dragMode === 'rotate') {
+        const angularChange = -dx * 0.0068;
+        thetaGoal += angularChange;
+        phiGoal = clamp(phiGoal + dy * 0.0044, 0.20, 1.42);
+        orbitInertia = clamp(angularChange * 15, -1.25, 1.25);
       } else {
         panBy(dx, dy);
       }
@@ -1158,13 +1210,16 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
         lastX = remaining.x;
         lastY = remaining.y;
       }
-      if (!dragging) renderer.domElement.style.cursor = 'grab';
+      if (!dragging) renderer.domElement.style.cursor = walker.active ? 'crosshair' : 'grab';
     };
     const onWheel = event => {
       event.preventDefault();
       // Normalised zoom handles both trackpads and traditional mouse wheels.
       const deltaPixels = event.deltaMode === 1 ? event.deltaY * 16 : event.deltaMode === 2 ? event.deltaY * 200 : event.deltaY;
-      zoomAround(Math.exp(clamp(deltaPixels, -120, 120) * 0.00145), event.clientX, event.clientY);
+      if (walker.active) {
+        camera.fov = clamp(camera.fov + deltaPixels * 0.018, 34, 65);
+        camera.updateProjectionMatrix();
+      } else zoomAround(Math.exp(clamp(deltaPixels, -120, 120) * 0.00145), event.clientX, event.clientY);
     };
     const onContextMenu = event => event.preventDefault();
     const buildingUnderPointer = event => {
@@ -1186,6 +1241,10 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
     const onDoubleClick = event => {
       event.preventDefault();
       const building = buildingUnderPointer(event);
+      if (walker.active) {
+        if (building) cameraControlRef.current?.('inspect', building);
+        return;
+      }
       if (building) {
         selectRef.current(building.id);
         focusOn(building);
@@ -1198,7 +1257,23 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
         }
       }
     };
+    const onWalkKeyDown = event => {
+      if (!walker.active) return;
+      if (event.target?.closest?.('input, textarea, select, [contenteditable="true"]')) return;
+      const key = event.key.toLowerCase();
+      if (key === 'escape') { cameraControlRef.current?.('walk', false); event.preventDefault(); return; }
+      if (key === 'f') { cameraControlRef.current?.('inspect'); event.preventDefault(); return; }
+      if (['w','a','s','d','arrowup','arrowleft','arrowdown','arrowright','shift'].includes(key)) {
+        walker.setInput(key, true);
+        event.preventDefault();
+      }
+    };
+    const onWalkKeyUp = event => {
+      if (walker.active) walker.setInput(event.key.toLowerCase(), false);
+    };
+    const onWalkBlur = () => walker.clearInputs();
     const onKeyDown = event => {
+      if (walker.active) return;
       const key = event.key.toLowerCase();
       if (['arrowup','w','arrowdown','s','arrowleft','a','arrowright','d','q','e','+','=','-','_','home','0','f'].indexOf(key) === -1) return;
       event.preventDefault();
@@ -1222,6 +1297,9 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
     renderer.domElement.addEventListener('click', onClick);
     renderer.domElement.addEventListener('dblclick', onDoubleClick);
     renderer.domElement.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keydown', onWalkKeyDown);
+    window.addEventListener('keyup', onWalkKeyUp);
+    window.addEventListener('blur', onWalkBlur);
     renderer.domElement.addEventListener('wheel', onWheel, { passive: false });
     renderer.domElement.addEventListener('contextmenu', onContextMenu);
     renderer.domElement.style.cursor = 'grab';
@@ -1236,12 +1314,18 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
       // Frame-rate-independent damping makes zoom, pan, rotate and focus glide into place.
       const delta = Math.min(0.05, Math.max(0, (now - lastCameraFrame) / 1000));
       lastCameraFrame = now;
-      const ease = 1 - Math.exp(-delta * 10);
-      radius += (radiusGoal - radius) * ease;
-      theta += (thetaGoal - theta) * ease;
-      phi += (phiGoal - phi) * ease;
-      target.lerp(targetGoal, ease);
-      placeCamera();
+      if (!walker.active) {
+        const ease = 1 - Math.exp(-delta * 12);
+        if (!dragging && Math.abs(orbitInertia) > 0.0003) {
+          thetaGoal += orbitInertia * delta;
+          orbitInertia *= Math.exp(-delta * 8);
+        }
+        radius += (radiusGoal - radius) * ease;
+        theta += (thetaGoal - theta) * ease;
+        phi += (phiGoal - phi) * ease;
+        target.lerp(targetGoal, ease);
+        placeCamera();
+      } else walker.update(delta);
       traffic.forEach(({ cart, laneX, direction, speed, wheels, legs }) => {
         cart.position.z += direction * speed * delta;
         if (cart.position.z > 25) cart.position.z = -25;
@@ -1261,7 +1345,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
           const visible = anchor.z > -1 && anchor.z < 1 && x > 0 && x < el.clientWidth && y > 0 && y < el.clientHeight;
           overlayRef.current.style.left = `${x}px`;
           overlayRef.current.style.top = `${y}px`;
-          overlayRef.current.style.visibility = visible ? 'visible' : 'hidden';
+          overlayRef.current.style.visibility = visible && !walker.active ? 'visible' : 'hidden';
         }
       }
       const pulse = 1 + Math.sin(elapsed * 2.4) * 0.035;
@@ -1317,6 +1401,9 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
       renderer.domElement.removeEventListener('click', onClick);
       renderer.domElement.removeEventListener('dblclick', onDoubleClick);
       renderer.domElement.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keydown', onWalkKeyDown);
+      window.removeEventListener('keyup', onWalkKeyUp);
+      window.removeEventListener('blur', onWalkBlur);
       renderer.domElement.removeEventListener('pointerdown', onPointerDown);
       renderer.domElement.removeEventListener('pointermove', onPointerMove);
       renderer.domElement.removeEventListener('pointerup', onPointerUp);
