@@ -6,6 +6,9 @@ import { createPeriodVisualPass, makeHistoricFacadeMaps } from './periodVisualPa
 import { createStreetWalker } from './streetWalk.js';
 import { createCloseupFacades } from './facadeCloseup.js';
 import { createGlbArchitecture } from './glbArchitecture.js';
+import { createHarborScene } from './harborScene.js';
+import FerryBusinessPanel from './FerryBusinessPanel.jsx';
+import { FERRY_LICENSE_PRICE, FERRY_UPGRADES, normaliseFerryBusiness, calculateFerryDay, applyFerrySettlement } from './ferryBusiness.js';
 
 const properties = [
   { id: 1, name: 'Madam Eleni’nin Bakkal ve Şarküterisi', type: 'Ticaret', price: 1890, rent: 26, x: -4.2, z: -1.1, color: '#d9b99c', floors: 3, style: 'Galata taş cephesi' },
@@ -162,12 +165,13 @@ function supportsProfessionAt(property, professionId) {
   return Boolean(property && venueTypesByProfession[professionId]?.includes(property.type));
 }
 
-function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', onSelect, onUniversity, hour, day = 1, month = 1, overlay, developments = {}, buildingLevels = {} }) {
+function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', onSelect, onUniversity, hour, day = 1, month = 1, overlay, developments = {}, buildingLevels = {}, ferryBusiness = {} }) {
   const host = useRef(null);
   const overlayRef = useRef(null);
   const selectRef = useRef(onSelect);
   const selectedRef = useRef(selected);
   const hourRef = useRef(hour);
+  const ferryStateRef = useRef(ferryBusiness);
   const cameraControlRef = useRef(null);
   const [cameraMode, setCameraMode] = useState('rotate');
   const [walkMode, setWalkMode] = useState(false);
@@ -187,6 +191,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
   useEffect(() => { selectRef.current = onSelect; }, [onSelect]);
   useEffect(() => { selectedRef.current = selected; }, [selected]);
   useEffect(() => { hourRef.current = hour; }, [hour]);
+  useEffect(() => { ferryStateRef.current = ferryBusiness; }, [ferryBusiness]);
   const dayRef = useRef(day);
   const monthRef = useRef(month);
   useEffect(() => { dayRef.current = day; monthRef.current = month; }, [day, month]);
@@ -241,9 +246,9 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
       color: '#477f91', roughness: 0.28, metalness: 0.12,
       transparent: true, opacity: 0.94
     });
-    const halicWater = new THREE.Mesh(new THREE.PlaneGeometry(42, 72, 1, 1), halicWaterMat);
+    const halicWater = new THREE.Mesh(new THREE.PlaneGeometry(30.4, 72, 1, 1), halicWaterMat);
     halicWater.rotation.x = -Math.PI / 2;
-    halicWater.position.set(47.5, -0.12, 0);
+    halicWater.position.set(40.8, -0.032, 0);
     halicWater.receiveShadow = true;
     scene.add(halicWater);
 
@@ -732,6 +737,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
     const livingCity = createLivingCity({ scene, properties, buildingMeshes, isMobile: isMobileScene, developments, buildingLevels });
     const periodVisuals = createPeriodVisualPass({ scene, properties, buildingMeshes, isMobile: isMobileScene, waterMaterial: halicWaterMat, renderer, developments });
     const closeupFacades = createCloseupFacades({ properties, buildingMeshes, mobile: isMobileScene, developments });
+    const harborScene = createHarborScene({ scene, oldFerry: ferry, isMobile: isMobileScene, ferryStateRef });
     const glbArchitecture = createGlbArchitecture({ properties, buildingMeshes, mobile: isMobileScene, developments, owned, ownerByProperty, playerId });
 
     // A subtle pulsing ring makes the currently selected property easy to spot.
@@ -1405,12 +1411,11 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
       lampGlass.emissiveIntensity = isNight ? 1.15 : isDusk ? 0.55 : 0.18;
       const cityWeather = livingCity.update({ hour: currentHour, day: dayRef.current, month: monthRef.current, elapsed, delta });
       periodVisuals.update({ hour: currentHour, elapsed, delta, weather: cityWeather });
+      harborScene.update({ hour: currentHour, day: dayRef.current, month: monthRef.current, elapsed });
       streetMat.roughness = cityWeather.damp ? 0.56 : 1;
       streetMat.metalness = cityWeather.damp ? 0.12 : 0;
       scene.fog.near = cityWeather.raining ? 32 : 42;
       scene.fog.far = cityWeather.raining ? 65 : 88;
-      ferry.position.x = 34.5 + Math.sin(elapsed * 0.036) * 1.25;
-      ferry.rotation.z = Math.sin(elapsed * 0.75) * 0.013;
       tram.position.z = livingCity.tramPosition(elapsed);
       const peakCrowd = currentHour >= 7 && currentHour < 9 ? 22 : currentHour >= 12 && currentHour < 14 ? 26 : currentHour >= 17 && currentHour < 20 ? 30 : currentHour >= 9 && currentHour < 17 ? 18 : currentHour >= 20 && currentHour < 22 ? 11 : 6;
       pedestrians.forEach((ped, i) => {
@@ -1455,6 +1460,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
       renderer.domElement.removeEventListener('pointercancel', onPointerUp);
       renderer.domElement.removeEventListener('wheel', onWheel);
       renderer.domElement.removeEventListener('contextmenu', onContextMenu);
+      harborScene.dispose();
       glbArchitecture.dispose();
       cameraControlRef.current = null;
       scene.traverse(o => {
@@ -4085,7 +4091,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     <section className="game-layout fullscreen-layout">
       <div className="world-panel">
         <div className="world-topline"><span><span className="live-dot" /> BEYOĞLU MERKEZİ</span><label className="property-finder"><span>⌕</span><input aria-label="Mülk ara ve haritada göster" list="mahalle-property-options" placeholder="Mülk adı yaz..." value={mapSearch} onChange={event => { const value = event.target.value; setMapSearch(value); const match = properties.find(property => property.name.toLocaleLowerCase('tr-TR') === value.trim().toLocaleLowerCase('tr-TR')); if (match) { selectProperty(match.id); setMapSearch(''); } }} /><datalist id="mahalle-property-options">{properties.map(property => <option key={property.id} value={property.name}>{owned.includes(property.id) ? 'Senin mülkün' : 'Satılık'}</option>)}</datalist><small>{properties.length} MÜLK</small></label><span className="world-year">OYUN DÜNYASI <i>·</i> {year}</span></div>
-        <CityScene selected={selected} owned={owned} ownerByProperty={ownerByProperty} playerId={playerId} onSelect={selectProperty} onUniversity={() => setActiveHudPanel(v => v === 'university' ? null : 'university')} hour={hour} day={day} month={month} developments={developments} buildingLevels={buildingLevels} overlay={<div className="scene-action-card">
+        <CityScene selected={selected} owned={owned} ownerByProperty={ownerByProperty} playerId={playerId} onSelect={selectProperty} ferryBusiness={ferryBusiness} onUniversity={() => setActiveHudPanel(v => v === 'university' ? null : 'university')} hour={hour} day={day} month={month} developments={developments} buildingLevels={buildingLevels} overlay={<div className="scene-action-card">
           <div className="scene-action-eyebrow">SEÇİLİ BİNA · {String(active.id).padStart(2, '0')}</div><strong>{active.name}</strong>
           <span>{ownerByProperty[active.id] ? (ownerByProperty[active.id].playerId === playerId ? `Sahibi: ${ownerByProperty[active.id].name} (sen)` : `Sahibi: ${ownerByProperty[active.id].name}`) : 'Satılık'} · ₺{getMarketValue(active).toLocaleString('tr-TR')}</span>
           <div className="scene-action-buttons">
