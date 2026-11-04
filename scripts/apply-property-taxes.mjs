@@ -25,7 +25,11 @@ const periodShops = `  { id: 32, name: 'Küçük matbaa ve kırtasiye', type: 'A
   { id: 59, name: 'Arka Sokak Kahvesi', type: 'İşletme', price: 720, rent: 54, x: 0, z: 0, color: '#a98d75', floors: 2, style: 'Arka sokakta küçük mahalle kahvesi' },
   { id: 60, name: 'Hamam ve Tellaklar', type: 'İşletme', price: 2150, rent: 160, x: 0, z: 0, color: '#b8aa93', floors: 2, style: 'Kubbeli mahalle hamamı ve sıcaklık bölümü' },
   { id: 61, name: 'Avlulu Han', type: 'Ticaret', price: 2450, rent: 180, x: 0, z: 0, color: '#b9a58e', floors: 4, style: 'Esnaf odaları, avlu ve yükleme girişi' },
-  { id: 62, name: 'Arka Sokak Meyhanesi', type: 'İşletme', price: 980, rent: 74, x: 0, z: 0, color: '#a78368', floors: 2, style: 'Dar sokakta küçük meyhane ve meze tezgahı' }
+  { id: 62, name: 'Arka Sokak Meyhanesi', type: 'İşletme', price: 980, rent: 74, x: 0, z: 0, color: '#a78368', floors: 2, style: 'Dar sokakta küçük meyhane ve meze tezgahı' },
+  { id: 63, name: 'Galata İskele Kahvesi', type: 'İşletme', price: 320, rent: 36, x: 0, z: 0, width: 2.0, depth: 1.6, color: '#b9a183', floors: 2, style: 'Yolculara kahve ve şerbet sunan iskele kahvesi', history: '1920’lerin Karaköy iskelesi çevresindeki küçük kahvehane ve yolcu bekleme mekânlarından esinlenir.' },
+  { id: 64, name: 'Rıhtım Gazete ve Tütün Büfesi', type: 'Ticaret', price: 160, rent: 20, x: 0, z: 0, width: 1.55, depth: 1.45, color: '#c9b38e', floors: 1, style: 'Tahta kepenkli küçük gazete ve tütün büfesi', history: 'Vapur saatlerini bekleyen yolcuların gazete, kartpostal ve küçük ihtiyaçları aldığı iskele önü satış noktalarını temsil eder.' },
+  { id: 65, name: 'Karaköy Deniz Levazımatçısı', type: 'Ticaret', price: 390, rent: 46, x: 0, z: 0, width: 2.25, depth: 1.8, color: '#b6b5a4', floors: 2, style: 'Halat, fener, branda ve deniz malzemeleri satan dükkân', history: 'Liman ticaretinin halat, yelken bezi, boya ve yükleme ekipmanı ihtiyacından esinlenen bir ticarethanedir.' },
+  { id: 66, name: 'Haliç Rıhtım Emanet Ambarı', type: 'Depo', price: 630, rent: 52, x: 0, z: 0, width: 2.65, depth: 2.0, color: '#a49b88', floors: 2, style: 'Küçük yük, posta ve sandık emanet deposu', history: 'Buharlı vapurların geliş-gidiş saatlerine bağlı kıyı yükleme ve geçici emanet depolarından esinlenir.' }
 ];`;
 const additionalShops = periodShops.slice(periodShops.indexOf(',\n') + 2, periodShops.lastIndexOf('\n];'));
 {
