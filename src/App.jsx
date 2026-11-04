@@ -166,7 +166,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
   const selectedRef = useRef(selected);
   const hourRef = useRef(hour);
   const cameraControlRef = useRef(null);
-  const [cameraMode, setCameraMode] = useState('rotate');
+  const [cameraMode, setCameraMode] = useState('pan');
   useEffect(() => { selectRef.current = onSelect; }, [onSelect]);
   useEffect(() => { selectedRef.current = selected; }, [selected]);
   useEffect(() => { hourRef.current = hour; }, [hour]);
@@ -990,6 +990,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
     }
 
     const raycaster = new THREE.Raycaster();
+    const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
     const pointer = new THREE.Vector2();
     const target = new THREE.Vector3(0, 0, 0);
     const targetGoal = target.clone();
@@ -1003,14 +1004,21 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
     let thetaGoal = theta;
     let radiusGoal = radius;
     let phiGoal = phi;
-    let dragMode = 'rotate';
-    let leftDragMode = 'rotate';
+    let dragMode = 'pan';
+    let leftDragMode = 'pan';
     const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+    const MIN_DISTANCE = 5.5;
+    const MAX_DISTANCE = 56;
+    const PAN_BOUNDS = 43;
+    const clampTarget = () => {
+      targetGoal.x = clamp(targetGoal.x, -PAN_BOUNDS, PAN_BOUNDS);
+      targetGoal.z = clamp(targetGoal.z, -PAN_BOUNDS, PAN_BOUNDS);
+    };
     const placeCamera = () => {
-      phi = clamp(phi, 0.28, 1.28);
-      radius = clamp(radius, 5.5, 40);
-      target.x = clamp(target.x, -34, 34);
-      target.z = clamp(target.z, -34, 34);
+      phi = clamp(phi, 0.20, 1.42);
+      radius = clamp(radius, MIN_DISTANCE, MAX_DISTANCE);
+      target.x = clamp(target.x, -PAN_BOUNDS, PAN_BOUNDS);
+      target.z = clamp(target.z, -PAN_BOUNDS, PAN_BOUNDS);
       camera.position.set(
         target.x + radius * Math.sin(phi) * Math.sin(theta),
         target.y + radius * Math.cos(phi),
@@ -1018,117 +1026,202 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
       );
       camera.lookAt(target);
     };
-    cameraControlRef.current = (action, property) => {
-      if (action === 'mode') { leftDragMode = property === 'pan' ? 'pan' : 'rotate'; return; }
-      if (action === 'in') radiusGoal = clamp(radiusGoal * 0.84, 8, 40);
-      else if (action === 'out') radiusGoal = clamp(radiusGoal * 1.18, 8, 48);
-      else if (action === 'focus' && property) {
-        targetGoal.set(clamp(property.x || 0, -34, 34), 0.8, clamp(property.z || 0, -34, 34));
-        radiusGoal = 13;
-        phiGoal = 0.82;
-      } else if (action === 'view') {
-        if (property === 'street') { phiGoal = 1.12; radiusGoal = 25; thetaGoal = 0; targetGoal.set(0,0,0); }
-        else if (property === 'top') { phiGoal = 0.34; radiusGoal = 34; thetaGoal = 0; targetGoal.set(0,0,0); }
-        else { phiGoal = 0.72; thetaGoal = Math.PI / 4; radiusGoal = 34; targetGoal.set(0,0,0); }
+    const worldAtPointer = (x, y) => {
+      const rect = renderer.domElement.getBoundingClientRect();
+      if (!rect.width || !rect.height) return null;
+      pointer.set(((x - rect.left) / rect.width) * 2 - 1, -((y - rect.top) / rect.height) * 2 + 1);
+      raycaster.setFromCamera(pointer, camera);
+      const hit = raycaster.ray.intersectPlane(groundPlane, new THREE.Vector3());
+      return hit && Math.abs(hit.x) < 57 && Math.abs(hit.z) < 57 ? hit : null;
+    };
+    // View-relative pan means dragging always follows the screen, regardless of rotation.
+    const panBy = (dx, dy) => {
+      const scale = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2)
+        * radiusGoal / Math.max(1, renderer.domElement.clientHeight);
+      const across = dx * scale;
+      const depth = dy * scale / Math.max(0.23, Math.cos(phiGoal));
+      targetGoal.x -= across * Math.cos(thetaGoal) + depth * Math.sin(thetaGoal);
+      targetGoal.z += across * Math.sin(thetaGoal) - depth * Math.cos(thetaGoal);
+      clampTarget();
+    };
+    const zoomAround = (factor, x, y) => {
+      const previous = radiusGoal;
+      const next = clamp(previous * factor, MIN_DISTANCE, MAX_DISTANCE);
+      const actualFactor = next / previous;
+      if (Number.isFinite(x) && Number.isFinite(y)) {
+        const world = worldAtPointer(x, y);
+        if (world) {
+          targetGoal.x += (world.x - targetGoal.x) * (1 - actualFactor) * 0.83;
+          targetGoal.z += (world.z - targetGoal.z) * (1 - actualFactor) * 0.83;
+          clampTarget();
+        }
+      }
+      radiusGoal = next;
+    };
+    const focusOn = property => {
+      if (!property) return;
+      targetGoal.set(clamp(Number(property.x) || 0, -PAN_BOUNDS, PAN_BOUNDS), 0.82,
+        clamp(Number(property.z) || 0, -PAN_BOUNDS, PAN_BOUNDS));
+      radiusGoal = 11.5;
+      phiGoal = 0.98;
+    };
+    cameraControlRef.current = (action, argument) => {
+      if (action === 'mode') { leftDragMode = argument === 'rotate' ? 'rotate' : 'pan'; return; }
+      if (action === 'in') zoomAround(0.82);
+      else if (action === 'out') zoomAround(1.22);
+      else if (action === 'focus') focusOn(argument);
+      else if (action === 'view') {
+        if (argument === 'street') { phiGoal = 1.32; radiusGoal = 11.5; targetGoal.y = 0.9; }
+        else if (argument === 'top') { phiGoal = 0.24; radiusGoal = 32; targetGoal.y = 0; }
+        else { phiGoal = 0.75; thetaGoal = Math.PI / 4; radiusGoal = 36; targetGoal.set(0, 0.4, 0); }
       } else if (action === 'rotate') {
-        thetaGoal += (property === 'left' ? -1 : 1) * Math.PI / 8;
+        thetaGoal += (argument === 'left' ? -1 : 1) * Math.PI / 8;
       } else if (action === 'tilt') {
-        phiGoal = clamp(phiGoal + (property === 'up' ? -0.12 : 0.12), 0.3, 1.18);
+        phiGoal = clamp(phiGoal + (argument === 'up' ? -0.13 : 0.13), 0.20, 1.42);
       } else if (action === 'pan') {
-        const step = radiusGoal * 0.12;
-        if (property === 'left') targetGoal.x = clamp(targetGoal.x - step, -34, 34);
-        else if (property === 'right') targetGoal.x = clamp(targetGoal.x + step, -34, 34);
-        else if (property === 'up') targetGoal.z = clamp(targetGoal.z - step, -34, 34);
-        else if (property === 'down') targetGoal.z = clamp(targetGoal.z + step, -34, 34);
+        const step = 105;
+        if (argument === 'left') panBy(step, 0);
+        else if (argument === 'right') panBy(-step, 0);
+        else if (argument === 'up') panBy(0, step);
+        else if (argument === 'down') panBy(0, -step);
       } else {
-        radiusGoal = 34; thetaGoal = Math.PI / 4; phiGoal = 0.72; targetGoal.set(0, 0, 0);
+        radiusGoal = 36;
+        thetaGoal = Math.PI / 4;
+        phiGoal = 0.75;
+        targetGoal.set(0, 0.4, 0);
       }
     };
     const activePointers = new Map();
     let pinchDistance = 0;
-    const pointerDistance = () => {
+    let pinchCenter = { x: 0, y: 0 };
+    const pinchData = () => {
       const points = [...activePointers.values()];
-      if (points.length < 2) return 0;
-      return Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y);
+      if (points.length < 2) return null;
+      return {
+        distance: Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y),
+        center: { x: (points[0].x + points[1].x) / 2, y: (points[0].y + points[1].y) / 2 }
+      };
     };
-    const onPointerDown = (event) => {
+    const onPointerDown = event => {
       if (event.pointerType === 'mouse' && event.button !== 0 && event.button !== 2) return;
       activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      renderer.domElement.focus({ preventScroll: true });
       dragging = true;
       if (activePointers.size === 1) {
-        moved = false; lastX = event.clientX; lastY = event.clientY;
-        // The selected mode controls left-drag and one-finger gestures. Right-drag always rotates.
-        dragMode = event.pointerType === 'touch' ? leftDragMode : (event.button === 2 ? 'rotate' : leftDragMode);
+        moved = false;
+        lastX = event.clientX;
+        lastY = event.clientY;
+        dragMode = event.button === 2 || event.altKey || event.shiftKey ? 'rotate' : leftDragMode;
       } else {
         moved = true;
-        pinchDistance = pointerDistance();
+        const pinch = pinchData();
+        pinchDistance = pinch.distance;
+        pinchCenter = pinch.center;
       }
       renderer.domElement.style.cursor = 'grabbing';
       renderer.domElement.setPointerCapture?.(event.pointerId);
     };
-    const onPointerMove = (event) => {
+    const onPointerMove = event => {
       if (!activePointers.has(event.pointerId)) return;
       activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
       if (activePointers.size >= 2) {
-        const nextDistance = pointerDistance();
-        if (pinchDistance > 0 && nextDistance > 0) {
-          radiusGoal = clamp(radiusGoal * (pinchDistance / nextDistance), 5.5, 40);
-          if (Math.abs(nextDistance - pinchDistance) > 1) moved = true;
+        const pinch = pinchData();
+        if (pinchDistance > 0 && pinch.distance > 0) {
+          zoomAround(pinchDistance / pinch.distance, pinch.center.x, pinch.center.y);
+          panBy(pinch.center.x - pinchCenter.x, pinch.center.y - pinchCenter.y);
         }
-        pinchDistance = nextDistance;
+        pinchDistance = pinch.distance;
+        pinchCenter = pinch.center;
+        moved = true;
         return;
       }
-      if (!dragging) return;
       const dx = event.clientX - lastX;
       const dy = event.clientY - lastY;
-      if (Math.abs(dx) + Math.abs(dy) > 3) moved = true;
+      if (Math.abs(dx) + Math.abs(dy) > 2) moved = true;
       if (dragMode === 'rotate') {
-        thetaGoal -= dx * 0.006;
-        phiGoal = clamp(phiGoal + dy * 0.004, 0.28, 1.28);
+        thetaGoal -= dx * 0.0055;
+        phiGoal = clamp(phiGoal + dy * 0.0038, 0.20, 1.42);
       } else {
-        const panScale = radiusGoal * 0.0017;
-        targetGoal.x = clamp(targetGoal.x - dx * panScale * Math.cos(thetaGoal) + dy * panScale * Math.sin(thetaGoal) * 0.45, -42, 42);
-        targetGoal.z = clamp(targetGoal.z + dx * panScale * Math.sin(thetaGoal) + dy * panScale * Math.cos(thetaGoal) * 0.45, -42, 42);
+        panBy(dx, dy);
       }
-      lastX = event.clientX; lastY = event.clientY;
+      lastX = event.clientX;
+      lastY = event.clientY;
     };
-    const onPointerUp = (event) => {
+    const onPointerUp = event => {
       if (event?.pointerId != null) activePointers.delete(event.pointerId);
       dragging = activePointers.size > 0;
-      pinchDistance = activePointers.size >= 2 ? pointerDistance() : 0;
+      const pinch = pinchData();
+      pinchDistance = pinch?.distance || 0;
+      if (pinch) pinchCenter = pinch.center;
       if (activePointers.size === 1) {
         const remaining = [...activePointers.values()][0];
-        lastX = remaining.x; lastY = remaining.y;
+        lastX = remaining.x;
+        lastY = remaining.y;
       }
       if (!dragging) renderer.domElement.style.cursor = 'grab';
     };
-    const onWheel = (event) => {
+    const onWheel = event => {
       event.preventDefault();
-      // Exponential, clamped dolly input avoids large jumps on high-resolution trackpads.
-      const zoomFactor = Math.exp(clamp(event.deltaY, -120, 120) * 0.00115);
-      radiusGoal = clamp(radiusGoal * zoomFactor, 5.5, 55);
+      // Normalised zoom handles both trackpads and traditional mouse wheels.
+      const deltaPixels = event.deltaMode === 1 ? event.deltaY * 16 : event.deltaMode === 2 ? event.deltaY * 200 : event.deltaY;
+      zoomAround(Math.exp(clamp(deltaPixels, -120, 120) * 0.00145), event.clientX, event.clientY);
     };
-    const onContextMenu = (event) => event.preventDefault();
-    const onClick = (event) => {
-      if (moved) return;
+    const onContextMenu = event => event.preventDefault();
+    const buildingUnderPointer = event => {
       const rect = renderer.domElement.getBoundingClientRect();
-      pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-      pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+      pointer.set(((event.clientX - rect.left) / rect.width) * 2 - 1, -((event.clientY - rect.top) / rect.height) * 2 + 1);
       raycaster.setFromCamera(pointer, camera);
-      const hits = raycaster.intersectObjects(buildingMeshes, true);
-      let selectedBuilding = false;
-      for (const hit of hits) {
-        let obj = hit.object;
-        while (obj && obj.userData.propertyId == null) obj = obj.parent;
-        if (obj?.userData.propertyId != null) { selectRef.current(obj.userData.propertyId); selectedBuilding = true; break; }
+      for (const hit of raycaster.intersectObjects(buildingMeshes, true)) {
+        let object = hit.object;
+        while (object && object.userData.propertyId == null) object = object.parent;
+        if (object?.userData.propertyId != null) return properties.find(p => p.id === object.userData.propertyId);
       }
-      // Empty-space clicks do not unexpectedly change the camera; use explicit zoom controls.
+      return null;
     };
+    const onClick = event => {
+      if (moved) return;
+      const building = buildingUnderPointer(event);
+      if (building) selectRef.current(building.id);
+    };
+    const onDoubleClick = event => {
+      event.preventDefault();
+      const building = buildingUnderPointer(event);
+      if (building) {
+        selectRef.current(building.id);
+        focusOn(building);
+      } else {
+        const destination = worldAtPointer(event.clientX, event.clientY);
+        if (destination) {
+          targetGoal.set(clamp(destination.x, -PAN_BOUNDS, PAN_BOUNDS), 0.8,
+            clamp(destination.z, -PAN_BOUNDS, PAN_BOUNDS));
+          radiusGoal = Math.min(radiusGoal, 16);
+        }
+      }
+    };
+    const onKeyDown = event => {
+      const key = event.key.toLowerCase();
+      if (['arrowup','w','arrowdown','s','arrowleft','a','arrowright','d','q','e','+','=','-','_','home','0','f'].indexOf(key) === -1) return;
+      event.preventDefault();
+      if (key === 'arrowup' || key === 'w') panBy(0, 80);
+      else if (key === 'arrowdown' || key === 's') panBy(0, -80);
+      else if (key === 'arrowleft' || key === 'a') panBy(80, 0);
+      else if (key === 'arrowright' || key === 'd') panBy(-80, 0);
+      else if (key === 'q') thetaGoal -= Math.PI / 12;
+      else if (key === 'e') thetaGoal += Math.PI / 12;
+      else if (key === '+' || key === '=') zoomAround(0.85);
+      else if (key === '-' || key === '_') zoomAround(1.18);
+      else if (key === 'f') focusOn(properties.find(p => p.id === selectedRef.current));
+      else cameraControlRef.current?.('reset');
+    };
+    renderer.domElement.tabIndex = 0;
+    renderer.domElement.setAttribute('aria-label', '3D mahalle. Sürükle: gezin, sağ tık veya Alt: döndür, çift tık: odaklan, WASD: hareket.');
     renderer.domElement.addEventListener('pointerdown', onPointerDown);
     renderer.domElement.addEventListener('pointermove', onPointerMove);
     renderer.domElement.addEventListener('pointerup', onPointerUp);
     renderer.domElement.addEventListener('pointercancel', onPointerUp);
     renderer.domElement.addEventListener('click', onClick);
+    renderer.domElement.addEventListener('dblclick', onDoubleClick);
+    renderer.domElement.addEventListener('keydown', onKeyDown);
     renderer.domElement.addEventListener('wheel', onWheel, { passive: false });
     renderer.domElement.addEventListener('contextmenu', onContextMenu);
     renderer.domElement.style.cursor = 'grab';
@@ -1222,6 +1315,8 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
       cancelAnimationFrame(frame);
       observer.disconnect();
       renderer.domElement.removeEventListener('click', onClick);
+      renderer.domElement.removeEventListener('dblclick', onDoubleClick);
+      renderer.domElement.removeEventListener('keydown', onKeyDown);
       renderer.domElement.removeEventListener('pointerdown', onPointerDown);
       renderer.domElement.removeEventListener('pointermove', onPointerMove);
       renderer.domElement.removeEventListener('pointerup', onPointerUp);
@@ -1242,7 +1337,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
     };
   }, [owned, ownerByProperty, playerId, developments, buildingLevels]);
 
-  return <div className="scene-host" ref={host} aria-label="Beyoğlu 1923 3D mahalle sahnesi"><div className="scene-building-overlay" ref={overlayRef}>{overlay}</div><div className="city-life-pill" aria-label={"1920ler şehir hareketi: " + cityLifePhase(hour)}><span className="city-life-spark" />{cityLifePhase(hour)}</div><div className="map-camera-toolbar"><div className="map-view-presets" role="group" aria-label="Kamera görünümü"><button type="button" title="Mahallenin genel görünümü" onClick={() => cameraControlRef.current?.('view','iso')}>Mahalle</button><button type="button" title="Sokak seviyesine yaklaş" onClick={() => cameraControlRef.current?.('view','street')}>Sokak</button><button type="button" title="Yukarıdan plan görünümü" onClick={() => cameraControlRef.current?.('view','top')}>Üstten</button></div><div className="map-camera-tools"><button type="button" className={cameraMode === 'rotate' ? 'active' : ''} aria-pressed={cameraMode === 'rotate'} aria-label="Sürükleyerek döndür" title="Sol tuşla sürükleyerek haritayı döndür" onClick={() => { setCameraMode('rotate'); cameraControlRef.current?.('mode','rotate'); }}>⟳ Döndür</button><button type="button" className={cameraMode === 'pan' ? 'active' : ''} aria-pressed={cameraMode === 'pan'} aria-label="Haritayı taşıma modu" title="Sol tuşla sürükleyerek haritayı taşı" onClick={() => { setCameraMode('pan'); cameraControlRef.current?.('mode','pan'); }}>✥ Taşı</button><button type="button" aria-label="Sola döndür" title="Sola döndür" onClick={() => cameraControlRef.current?.('rotate','left')}>↶</button><button type="button" aria-label="Sağa döndür" title="Sağa döndür" onClick={() => cameraControlRef.current?.('rotate','right')}>↷</button><button type="button" aria-label="Açıyı yükselt" title="Açıyı yükselt" onClick={() => cameraControlRef.current?.('tilt','up')}>↑</button><button type="button" aria-label="Açıyı alçalt" title="Açıyı alçalt" onClick={() => cameraControlRef.current?.('tilt','down')}>↓</button></div></div><div className="map-zoom-controls"><button type="button" aria-label="Yakınlaştır" title="Yakınlaştır" onClick={() => cameraControlRef.current?.('in')}>＋</button><button type="button" aria-label="Uzaklaştır" title="Uzaklaştır" onClick={() => cameraControlRef.current?.('out')}>−</button><button type="button" aria-label="Seçili binaya odaklan" title="Seçili binaya odaklan" onClick={() => cameraControlRef.current?.('focus', properties.find(item => item.id === selected))}>⌖</button><button type="button" aria-label="Haritayı ortala" title="Haritayı ortala" onClick={() => cameraControlRef.current?.('reset')}>⌂</button><button type="button" aria-label="Üniversite ve meslek eğitimleri" title="Üniversite ve meslek eğitimleri" onClick={() => onUniversity?.()}>▤</button></div><div className="map-hint">Sürükle: taşı · Sağ tuş: döndür · Tekerlek: yakınlaştır · Oklar: kamera açısı</div></div>;
+  return <div className="scene-host" ref={host} aria-label="Beyoğlu 1923 3D mahalle sahnesi"><div className="scene-building-overlay" ref={overlayRef}>{overlay}</div><div className="city-life-pill" aria-label={"1920ler şehir hareketi: " + cityLifePhase(hour)}><span className="city-life-spark" />{cityLifePhase(hour)}</div><div className="map-camera-toolbar"><div className="map-view-presets" role="group" aria-label="Kamera görünümü"><button type="button" title="Mahallenin genel görünümü" onClick={() => cameraControlRef.current?.('view','iso')}>Mahalle</button><button type="button" title="Sokak seviyesine yaklaş" onClick={() => cameraControlRef.current?.('view','street')}>Sokak</button><button type="button" title="Yukarıdan plan görünümü" onClick={() => cameraControlRef.current?.('view','top')}>Üstten</button></div><div className="map-camera-tools"><button type="button" className={cameraMode === 'rotate' ? 'active' : ''} aria-pressed={cameraMode === 'rotate'} aria-label="Sürükleyerek döndür" title="Sol tuşla sürükleyerek haritayı döndür" onClick={() => { setCameraMode('rotate'); cameraControlRef.current?.('mode','rotate'); }}>⟳ Döndür</button><button type="button" className={cameraMode === 'pan' ? 'active' : ''} aria-pressed={cameraMode === 'pan'} aria-label="Haritayı taşıma modu" title="Sol tuşla sürükleyerek haritayı taşı" onClick={() => { setCameraMode('pan'); cameraControlRef.current?.('mode','pan'); }}>✥ Taşı</button><button type="button" aria-label="Sola döndür" title="Sola döndür" onClick={() => cameraControlRef.current?.('rotate','left')}>↶</button><button type="button" aria-label="Sağa döndür" title="Sağa döndür" onClick={() => cameraControlRef.current?.('rotate','right')}>↷</button><button type="button" aria-label="Açıyı yükselt" title="Açıyı yükselt" onClick={() => cameraControlRef.current?.('tilt','up')}>↑</button><button type="button" aria-label="Açıyı alçalt" title="Açıyı alçalt" onClick={() => cameraControlRef.current?.('tilt','down')}>↓</button></div></div><div className="map-zoom-controls"><button type="button" aria-label="Yakınlaştır" title="Yakınlaştır" onClick={() => cameraControlRef.current?.('in')}>＋</button><button type="button" aria-label="Uzaklaştır" title="Uzaklaştır" onClick={() => cameraControlRef.current?.('out')}>−</button><button type="button" aria-label="Seçili binaya odaklan" title="Seçili binaya odaklan" onClick={() => cameraControlRef.current?.('focus', properties.find(item => item.id === selected))}>⌖</button><button type="button" aria-label="Haritayı ortala" title="Haritayı ortala" onClick={() => cameraControlRef.current?.('reset')}>⌂</button><button type="button" aria-label="Üniversite ve meslek eğitimleri" title="Üniversite ve meslek eğitimleri" onClick={() => onUniversity?.()}>▤</button></div><div className="map-hint">Sürükle: gez · Sağ tık / Alt: döndür · Tekerlek: yakınlaştır · Çift tık: git · WASD: hareket</div></div>;
 }
 
 function App({ session = null, supabase = null, authConfigured = false }) {
