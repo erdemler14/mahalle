@@ -123,6 +123,26 @@ const EXTRA_TRADE_CATALOG = {
   62: [
     { id: 'arka-meyhane-meze', name: 'Meze tabağı', cost: 7, price: 18, units: 8 },
     { id: 'arka-meyhane-sarap', name: 'Kadeh şarap', cost: 8, price: 20, units: 8 }
+  ],
+  63: [
+    { id: 'iskele-kahve', name: 'Fincan Türk kahvesi', cost: 0, price: 5, units: 0, service: true },
+    { id: 'iskele-serbet', name: 'Şerbet ve limonata', cost: 0, price: 4, units: 0, service: true },
+    { id: 'iskele-ikram', name: 'Kahve ve lokum ikramı', cost: 0, price: 8, units: 0, service: true }
+  ],
+  64: [
+    { id: 'iskele-gazete', name: 'Günlük gazete', cost: 8, price: 4, units: 12 },
+    { id: 'iskele-kartpostal', name: 'İstanbul kartpostalı', cost: 7, price: 4, units: 9 },
+    { id: 'iskele-tutun', name: 'Tütün kesesi', cost: 15, price: 6, units: 8 }
+  ],
+  65: [
+    { id: 'rihtim-halat', name: 'Yelken ve halat bağı', cost: 17, price: 7, units: 6 },
+    { id: 'rihtim-fener', name: 'Gemici feneri', cost: 24, price: 10, units: 5 },
+    { id: 'rihtim-branda', name: 'Branda ve yelken bezi', cost: 22, price: 10, units: 5 }
+  ],
+  66: [
+    { id: 'rihtim-emanet', name: 'Sandık ve bagaj emanet hizmeti', cost: 0, price: 9, units: 0, service: true },
+    { id: 'rihtim-yuk', name: 'Küçük yük sevkiyatı', cost: 0, price: 14, units: 0, service: true },
+    { id: 'rihtim-posta', name: 'Posta ve paket teslim hizmeti', cost: 0, price: 7, units: 0, service: true }
   ]
 };
 
