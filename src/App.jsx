@@ -5,6 +5,7 @@ import { createLivingCity, cityLifePhase } from './livingCity.js';
 import { createPeriodVisualPass, makeHistoricFacadeMaps } from './periodVisualPass.js';
 import { createStreetWalker } from './streetWalk.js';
 import { createCloseupFacades } from './facadeCloseup.js';
+import { createGlbArchitecture } from './glbArchitecture.js';
 
 const properties = [
   { id: 1, name: 'Madam Eleni’nin Bakkal ve Şarküterisi', type: 'Ticaret', price: 1890, rent: 26, x: -4.2, z: -1.1, color: '#d9b99c', floors: 3, style: 'Galata taş cephesi' },
@@ -731,6 +732,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
     const livingCity = createLivingCity({ scene, properties, buildingMeshes, isMobile: isMobileScene, developments, buildingLevels });
     const periodVisuals = createPeriodVisualPass({ scene, properties, buildingMeshes, isMobile: isMobileScene, waterMaterial: halicWaterMat, renderer, developments });
     const closeupFacades = createCloseupFacades({ properties, buildingMeshes, mobile: isMobileScene, developments });
+    const glbArchitecture = createGlbArchitecture({ properties, buildingMeshes, mobile: isMobileScene, developments, owned, ownerByProperty, playerId });
 
     // A subtle pulsing ring makes the currently selected property easy to spot.
     const selectionRingMaterial = new THREE.MeshStandardMaterial({
@@ -1368,6 +1370,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
         placeCamera();
       } else walker.update(delta);
       closeupFacades.update(camera, selectedRef.current);
+      glbArchitecture.update(hourRef.current);
       traffic.forEach(({ cart, laneX, direction, speed, wheels, legs }) => {
         cart.position.z += direction * speed * delta;
         if (cart.position.z > 25) cart.position.z = -25;
@@ -1452,6 +1455,8 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
       renderer.domElement.removeEventListener('pointercancel', onPointerUp);
       renderer.domElement.removeEventListener('wheel', onWheel);
       renderer.domElement.removeEventListener('contextmenu', onContextMenu);
+      glbArchitecture.dispose();
+      cameraControlRef.current = null;
       scene.traverse(o => {
         if (o.geometry) o.geometry.dispose();
         if (o.material) {
