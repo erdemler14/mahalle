@@ -107,7 +107,11 @@ function room(scene){
   // Plank pattern as physical narrow floor gaps.
   const plank=material('#754e35');
   for(let x=-3.6;x<3.8;x+=.56)box(scene,plank,.015,.004,9.8,x,.001,0);
-  for(const z of [-4.96,4.96])box(scene,wallMat,7.4,3.55,.17,0,1.78,z);
+  // Rear masonry wall is solid; the front must remain a real glass storefront.
+  // Do not place an opaque wall behind the shop window/entrance.
+  box(scene,wallMat,7.4,3.55,.17,0,1.78,-4.96);
+  for(const x of [-3.28,3.28])box(scene,wallMat,.74,3.55,.18,x,1.78,4.93);
+  box(scene,wallMat,5.85,.56,.18,0,3.28,4.93);
   for(const x of [-3.67,3.67])box(scene,wallMat,.15,3.55,10,x,1.78,0);
   box(scene,plaster,7.4,.10,10,0,3.5,0);
   for(const z of [-4.86,4.86])box(scene,trim,7.35,.12,.13,0,.18,z);
