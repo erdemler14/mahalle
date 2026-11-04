@@ -38,6 +38,6 @@ test('walking works on touchscreen and keyboard and cleans up WebGL resources',(
 
 test('interior is exploration only and does not silently mutate economy or ownership',()=>{
   assert.doesNotMatch(room,/setCash|setOwned|supabase\.rpc|purchase_property/);
-  assert.match(room,/owned=\{owned\.includes\(TOY_SHOP_ID\)\}/);
-  assert.match(room,/stock=\{getTotalStock\(TOY_SHOP_ID\)\}/);
+  assert.match(app,/owned=\{owned\.includes\(TOY_SHOP_ID\)\}/);
+  assert.match(app,/stock=\{getTotalStock\(TOY_SHOP_ID\)\}/);
 });
