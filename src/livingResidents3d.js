@@ -59,54 +59,83 @@ function makePerson(index,role){
   group.scale.setScalar(child?.75:1);
   return {group,legs,arms,index,role};
 }
+// Walking is measured in world units per real second, NOT a percentage of the
+// four-second game hour. This prevents characters from racing across the map.
+export const WALK_SPEED = 0.62;
+export const MAX_RENDERED_RESIDENTS = { mobile: 16, desktop: 36 };
+export function stepResident(npc,seconds){
+  const path=npc.path || [];
+  if(path.length<2) return false;
+  let available=Math.min(.12,Math.max(0,Number(seconds)||0))*WALK_SPEED*npc.journeySpeed;
+  while(available>0&&npc.nextPoint<path.length){
+    const end=path[npc.nextPoint];
+    const x=end.x-npc.group.position.x,z=end.z-npc.group.position.z;
+    const dist=Math.hypot(x,z);
+    if(dist<.001){npc.nextPoint++;continue;}
+    const step=Math.min(available,dist);
+    npc.group.position.x+=x/dist*step;
+    npc.group.position.z+=z/dist*step;
+    // Smooth facing avoids an instant rotation at every corner.
+    const target=Math.atan2(x,z);
+    const difference=Math.atan2(Math.sin(target-npc.group.rotation.y),Math.cos(target-npc.group.rotation.y));
+    npc.group.rotation.y+=difference*Math.min(1,seconds*5);
+    available-=step;
+    if(step>=dist-.001)npc.nextPoint++;
+  }
+  return npc.nextPoint<path.length;
+}
 export function createLivingResidents({scene,properties,isMobile=false}){
   const roster=getCityPopulation(properties);
-  const activePeople=roster.slice(0,isMobile?34:76).map(person=>{
+  // Keep the large simulated population for the economy but draw only a
+  // lightweight crowd. Old 76/34 detailed rigs were expensive on phones.
+  const activePeople=roster.slice(0,isMobile?MAX_RENDERED_RESIDENTS.mobile:MAX_RENDERED_RESIDENTS.desktop).map(person=>{
     const rig=makePerson(person.id,person.role);
+    const home=properties.find(p=>p.id===person.homeId);
+    const homeX=home?.x||0, homeZ=home?.z||0;
+    rig.group.position.set(homeX,0,homeZ);
     scene.add(rig.group);
-    return {...person,...rig,path:[],intent:null};
+    return {...person,...rig,path:[],nextPoint:0,intent:null};
   });
-  let currentKey='',changeElapsed=0,frame=0;
-  const locations=new Map(properties.map(p=>[p.id,p]));
-  function update({clock,elapsed,delta,weather={}}){
+  let currentKey='',lastElapsed=null,frame=0;
+  function update({clock,elapsed,weather={}}){
     const dateKey=[clock.year,clock.month,clock.day,clock.hour].join('/');
     if(dateKey!==currentKey){
       currentKey=dateKey;
-      changeElapsed=elapsed;
       for(const npc of activePeople){
         const intent=visitIntent(npc,clock,properties);
         npc.intent=intent;
-        npc.path=intent?walkWaypoints(intent.from,intent.to):[];
+        if(!intent)continue;
+        const destination=walkWaypoints(intent.from,intent.to);
+        const here={x:npc.group.position.x,z:npc.group.position.z};
+        const upcoming=destination.slice(1);
+        // We retain the NPC's actual previous position. Hour changes no longer
+        // snap them back to their house, workplace or the start of a route.
+        npc.path=[here,...upcoming];
+        npc.nextPoint=1;
       }
     }
-    const progress=Math.min(1,Math.max(0,(elapsed-changeElapsed)/4.1));
+    const seconds=lastElapsed===null?0:Math.min(.12,Math.max(0,elapsed-lastElapsed));
+    lastElapsed=elapsed;
+    frame++;
+    // 30 fps animation for residents, keeping the rest of the Three.js world
+    // at its normal update rate. Time is accumulated from elapsed, not frames.
+    if(frame%2===1)return;
     for(const npc of activePeople){
       const intent=npc.intent;
       if(!intent){npc.group.visible=false;continue;}
-      const purpose=intent.purpose;
       const evening=clock.hour>=23||clock.hour<6;
-      const indoors=(purpose==='home'||purpose==='work');
-      const shopper=purpose==='shop';
-      const disappear=indoors?progress>.18:shopper?progress>.91:progress>.97;
+      const moving=stepResident(npc,seconds*2);
       const raining=!!weather.raining;
-      npc.group.visible=(!evening||npc.role==='porter')&&!disappear &&
-        !(raining&&npc.index%5===0);
+      npc.group.visible=(!evening||npc.role==='porter')&&!(raining&&npc.index%5===0);
       if(!npc.group.visible)continue;
-      // Residents never wander randomly: each route follows sidewalks and
-      // the next destination is their real shop, home, workplace or quay.
-      const journey=shopper||purpose==='commute';
-      const location=journey
-        ?interpolateWaypoints(npc.path,Math.min(.999,progress*npc.journeySpeed))
-        :interpolateWaypoints(npc.path,0);
-      npc.group.position.set(location.x,.018+Math.abs(Math.sin(elapsed*9+npc.index))*.012,location.z);
-      npc.group.rotation.y=journey?location.angle:Math.sin(npc.index)*.65;
-      const walk=journey?.26:.025;
-      npc.legs[0].rotation.x=Math.sin(elapsed*8.2+npc.index)*walk;
-      npc.legs[1].rotation.x=-Math.sin(elapsed*8.2+npc.index)*walk;
-      npc.arms[0].rotation.x=-Math.sin(elapsed*8.2+npc.index)*walk*.75;
-      npc.arms[1].rotation.x=Math.sin(elapsed*8.2+npc.index)*walk*.75;
+      const pace=moving?1:0.15;
+      const stride=elapsed*5.3+npc.index;
+      npc.group.position.y=.018+Math.abs(Math.sin(stride))*.008*pace;
+      npc.legs[0].rotation.x=Math.sin(stride)*.17*pace;
+      npc.legs[1].rotation.x=-Math.sin(stride)*.17*pace;
+      npc.arms[0].rotation.x=-Math.sin(stride)*.13*pace;
+      npc.arms[1].rotation.x=Math.sin(stride)*.13*pace;
     }
-    frame++;
   }
   return {update,get residents(){return activePeople.length},get roster(){return roster}};
 }
