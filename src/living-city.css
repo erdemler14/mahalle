@@ -1,0 +1,13 @@
+/* Living Beyoğlu: restrained in-world status without reducing map space. */
+.city-life-pill{
+  position:absolute;left:14px;bottom:15px;z-index:7;
+  display:flex;align-items:center;gap:9px;max-width:calc(100% - 110px);
+  padding:9px 12px;border:1px solid rgba(219,194,141,.45);border-radius:7px;
+  background:rgba(24,31,33,.79);box-shadow:0 8px 25px rgba(8,12,17,.22);
+  color:#f0dec0;font:700 10px/1.25 'Space Grotesk',sans-serif;
+  letter-spacing:1.1px;backdrop-filter:blur(8px);pointer-events:none;
+}
+.city-life-spark{display:block;flex:none;width:7px;height:7px;border-radius:50%;background:#dfb46b;box-shadow:0 0 0 3px rgba(223,180,107,.18);animation:city-life-pulse 3s ease-in-out infinite}
+@keyframes city-life-pulse{50%{box-shadow:0 0 0 7px rgba(223,180,107,0)}}
+@media(max-width:680px){.city-life-pill{left:9px;bottom:10px;padding:7px 9px;gap:6px;font-size:8px;letter-spacing:.6px;max-width:calc(100% - 85px)}}
+@media(prefers-reduced-motion:reduce){.city-life-spark{animation:none}}
