@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { createArchitectureKit } from './architecturalKits.js';
 
 // Optimised, procedural architectural and street-level art direction for Beyoğlu c. 1923.
 // Historical references inform the visual vocabulary; this is a stylised simulation, not a survey reconstruction.
@@ -175,6 +176,7 @@ export function createPeriodVisualPass({ scene, properties, buildingMeshes, isMo
   const soot = material('#655b51', 0.99);
   const developedTrim = material('#c8ad7b', 0.65, 0.28);
   const chimneyGroups = [];
+  const architectureKit = createArchitectureKit(renderer, { mobile: isMobile });
 
   for (let index = 0; index < properties.length; index++) {
     const property = properties[index];
@@ -264,6 +266,7 @@ export function createPeriodVisualPass({ scene, properties, buildingMeshes, isMo
       block(group, enamel, 0.18, 0.16, 0.023, -w * 0.37, 0.77, frontage + 0.095);
       block(group, paper, 0.10, 0.018, 0.027, -w * 0.37, 0.77, frontage + 0.113);
     }
+    architectureKit.decorate({ group, property, width: w, depth: d, height, floorHeight, index });
   }
 
   const markets = [
