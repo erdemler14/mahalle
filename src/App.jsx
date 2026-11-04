@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import Peer from 'peerjs';
 import { createLivingCity, cityLifePhase } from './livingCity.js';
+import { createPeriodVisualPass, makeHistoricFacadeMaps } from './periodVisualPass.js';
 
 const properties = [
   { id: 1, name: 'Madam Eleni’nin Bakkal ve Şarküterisi', type: 'Ticaret', price: 1890, rent: 26, x: -4.2, z: -1.1, color: '#d9b99c', floors: 3, style: 'Galata taş cephesi' },
@@ -432,12 +433,13 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
       cart.position.set(laneX, 0, startZ);
       cart.rotation.y = direction > 0 ? 0 : Math.PI;
       scene.add(cart);
-      traffic.push({ cart, laneX, direction, speed: 1.15 + Math.random() * 0.45, wheels: cart.children.filter(child => child.geometry?.type === 'CylinderGeometry'), legs: horse.children.filter(child => child.geometry?.type === 'BoxGeometry' && child.position.y === 0.28) });
+      traffic.push({ cart, laneX, direction, speed: 1.15 + Math.random() * 0.45, wheels: cart.children.filter(child => child.geometry?.type === 'CylinderGeometry'), legs });
     };
     makeCart(-18, -3.05, 1, '#79563b');
     makeCart(9, 3.05, -1, '#8a6240');
 
     const buildingMeshes = [];
+    const facadeMaps = makeHistoricFacadeMaps(renderer);
     const addBuilding = (p, idx, isOwned, ownerInfo, currentPlayerId) => {
       const group = new THREE.Group();
       const isShopfront = ['Ticaret', 'İşletme'].includes(p.type) || [1, 4, 7, 9, 10, 12].includes(p.id);
@@ -450,7 +452,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
       // Muted Pera palette: lime plaster, faded ochre, dusty rose and blue-grey masonry.
       const facadeColors = ['#d7c5a8', '#b9b1a1', '#c9b7a8', '#d8c8ad', '#c1c6bf', '#c9ad9d', '#d6c7b6', '#b8b7ad', '#d3c0a4', '#c4b4a2', '#d2c9b8', '#b7a899', '#c5c8c0', '#cdb7a7'];
       const baseColor = ownerInfo ? (ownerInfo.playerId === currentPlayerId ? '#b9c8b2' : '#b8c8d9') : (isOwned ? '#b9c8b2' : facadeColors[(idx * 5 + p.id * 3) % facadeColors.length]);
-      const mat = new THREE.MeshStandardMaterial({ color: baseColor, roughness: 0.94 });
+      const mat = new THREE.MeshStandardMaterial({ color: baseColor, map: facadeMaps[p.id % facadeMaps.length], bumpMap: facadeMaps[p.id % facadeMaps.length], bumpScale: 0.014, roughness: 0.94 });
       const trimMat = new THREE.MeshStandardMaterial({ color: isTimberHouse ? '#665044' : (isGrandFacade ? '#e5d7bd' : '#e2d3b9'), roughness: 0.94 });
       const darkWood = new THREE.MeshStandardMaterial({ color: isTimberHouse ? '#4a3025' : '#594033', roughness: 0.96 });
       const fadedWood = new THREE.MeshStandardMaterial({ color: '#78604a', roughness: 1 });
@@ -708,6 +710,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
 
     properties.forEach((p, i) => addBuilding(p, i, owned.includes(p.id), ownerByProperty[p.id], playerId));
     const livingCity = createLivingCity({ scene, properties, buildingMeshes, isMobile: isMobileScene, developments, buildingLevels });
+    const periodVisuals = createPeriodVisualPass({ scene, properties, buildingMeshes, isMobile: isMobileScene, waterMaterial: halicWaterMat, renderer, developments });
 
     // A subtle pulsing ring makes the currently selected property easy to spot.
     const selectionRingMaterial = new THREE.MeshStandardMaterial({
@@ -725,7 +728,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
       const height = 2.5 + (i % 4) * 0.58;
       const width = 1.9 + (i % 3) * 0.22;
       const depth = 1.75;
-      const facadeMat = new THREE.MeshStandardMaterial({ color: fillerColors[i % fillerColors.length], roughness: 0.94 });
+      const facadeMat = new THREE.MeshStandardMaterial({ color: fillerColors[i % fillerColors.length], map: facadeMaps[i % facadeMaps.length], roughness: 0.94 });
       const detailMat = new THREE.MeshStandardMaterial({ color: '#e8deca', roughness: 0.9 });
       const glassMat = new THREE.MeshStandardMaterial({ color: '#526970', roughness: 0.5 });
       const b = new THREE.Group();
@@ -1179,6 +1182,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
       sun.intensity = isNight ? 0.28 : isDusk ? 1.35 : 3.0;
       lampGlass.emissiveIntensity = isNight ? 1.15 : isDusk ? 0.55 : 0.18;
       const cityWeather = livingCity.update({ hour: currentHour, day: dayRef.current, month: monthRef.current, elapsed, delta });
+      periodVisuals.update({ hour: currentHour, elapsed, delta, weather: cityWeather });
       streetMat.roughness = cityWeather.damp ? 0.56 : 1;
       streetMat.metalness = cityWeather.damp ? 0.12 : 0;
       scene.fog.near = cityWeather.raining ? 32 : 42;
