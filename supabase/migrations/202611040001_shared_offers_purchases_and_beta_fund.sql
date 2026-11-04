@@ -68,8 +68,9 @@ $$;
 revoke all on function public.purchase_property_v3(integer) from public,anon;
 grant execute on function public.purchase_property_v3(integer) to authenticated;
 
--- One-time explicit beta test fund for signed-in players (per account, not per click).
--- No anonymous or arbitrary-amount grant is exposed.
+-- A unique, single-use, private beta founder credit; the repository contains
+-- the SHA-256 of the invitation code but NEVER the secret code itself.
+-- The first logged-in account that redeems it receives 70,000 game lira.
 create table if not exists public.player_beta_funds (
   user_id uuid not null references auth.users(id) on delete cascade,
   grant_key text not null,
@@ -80,7 +81,19 @@ create table if not exists public.player_beta_funds (
 alter table public.player_beta_funds enable row level security;
 revoke all on public.player_beta_funds from public,anon,authenticated;
 
-create or replace function public.claim_beta_test_fund_20261104()
+create table if not exists public.beta_fund_invites (
+  code_hash text primary key,
+  amount numeric(14,2) not null check(amount>0),
+  redeemed_by uuid references auth.users(id) on delete set null,
+  redeemed_at timestamptz
+);
+alter table public.beta_fund_invites enable row level security;
+revoke all on public.beta_fund_invites from public,anon,authenticated;
+insert into public.beta_fund_invites(code_hash,amount)
+values ('adc26c1a4b6baed14b0b02858e44188fb37caace07e4af6f6f78cd1a2e30b1fe',70000)
+on conflict (code_hash) do nothing;
+
+create or replace function public.claim_beta_test_fund_20261104(p_invite_code text)
 returns jsonb
 language plpgsql
 security definer
@@ -88,32 +101,48 @@ set search_path = public
 as $$
 declare
   v_user uuid := auth.uid();
+  v_invite public.beta_fund_invites%rowtype;
   v_save public.player_saves%rowtype;
   v_cash numeric(14,2);
   v_new_cash numeric(14,2);
 begin
   if v_user is null then raise exception 'Test fonunu almak için giriş yapmalısın.'; end if;
+  if p_invite_code is null or length(p_invite_code)<16 then
+    raise exception 'Geçerli kurucu test kodunu gir.'; end if;
+  select * into v_invite from public.beta_fund_invites
+  where code_hash=encode(sha256(convert_to(p_invite_code,'UTF8')),'hex') for update;
+  if not found then raise exception 'Test fonu kodu yanlış.'; end if;
   select * into v_save from public.player_saves where user_id=v_user for update;
   if not found then raise exception 'Önce oyuna giriş yapıp hesabının yüklenmesini bekle.'; end if;
+  if v_invite.redeemed_by is not null then
+    if v_invite.redeemed_by=v_user then
+      return jsonb_build_object('granted',false,'already_claimed',true,
+        'cash',coalesce((v_save.state->>'cash')::numeric,0));
+    end if;
+    raise exception 'Bu test kodu başka bir hesapta daha önce kullanılmış.';
+  end if;
   if exists(select 1 from public.player_beta_funds where user_id=v_user and grant_key='test_fonu_70000_20261104') then
     return jsonb_build_object('granted',false,'already_claimed',true,
       'cash',coalesce((v_save.state->>'cash')::numeric,0));
   end if;
   v_cash:=round(coalesce((v_save.state->>'cash')::numeric,0),2);
-  v_new_cash:=v_cash+70000;
+  v_new_cash:=v_cash+v_invite.amount;
   insert into public.player_beta_funds(user_id,grant_key,amount)
-  values(v_user,'test_fonu_70000_20261104',70000);
+  values(v_user,'test_fonu_70000_20261104',v_invite.amount);
   update public.player_saves
   set state=jsonb_set(
       jsonb_set(coalesce(v_save.state,'{}'::jsonb),'{cash}',to_jsonb(v_new_cash),true),
       '{betaTestFundClaimed}','true'::jsonb,true),
       updated_at=now()
   where user_id=v_user;
-  return jsonb_build_object('granted',true,'amount',70000,'cash',v_new_cash);
+  update public.beta_fund_invites
+  set redeemed_by=v_user,redeemed_at=now()
+  where code_hash=v_invite.code_hash;
+  return jsonb_build_object('granted',true,'amount',v_invite.amount,'cash',v_new_cash);
 end;
 $$;
-revoke all on function public.claim_beta_test_fund_20261104() from public,anon;
-grant execute on function public.claim_beta_test_fund_20261104() to authenticated;
+revoke all on function public.claim_beta_test_fund_20261104(text) from public,anon;
+grant execute on function public.claim_beta_test_fund_20261104(text) to authenticated;
 
 -- Shared-city offers, not PeerJS-only ephemeral room messages.
 create table if not exists public.property_offers (
