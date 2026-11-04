@@ -176,7 +176,7 @@ function makeQuay(scene,isMobile){
   }
   // Stone pylons and lines visually connect the pier and bank.
   scene.add(harbor);
-  return {pierLights, update(hour){for(const lamp of pierLights)lamp.emissiveIntensity=hour>=18||hour<=6?1.2:.12}};
+  return {group:harbor,pierLights, update(hour){for(const lamp of pierLights)lamp.emissiveIntensity=hour>=18||hour<=6?1.2:.12}};
 }
 
 function makeSteamer(scene,variant=0){
