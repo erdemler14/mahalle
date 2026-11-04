@@ -1,0 +1,56 @@
+/* Mahalle Living City 2.0 — editorial, compact city-sim HUD. */
+.hud-panel-city .hud-side-panel>.living-economy-panel{display:block!important}
+.living-economy-panel{
+  color:#eadfca;background:linear-gradient(150deg,#1d2c31,#152129 65%,#1e2728);
+  border:1px solid #b9a58055;border-radius:13px;padding:16px;
+  display:grid;gap:13px;box-shadow:inset 0 1px 0 #ffffff0d;
+  font-family:'Space Grotesk',sans-serif;
+}
+.living-kicker{color:#cbb992;font:700 10px 'IBM Plex Mono',monospace;letter-spacing:1px}
+.living-economy-panel h2{font:500 27px/1.12 Georgia,serif;color:#f4e7c9;letter-spacing:-.6px;margin:0}
+.living-intro{font:11px/1.55 'Space Grotesk',sans-serif;color:#b9c9c3;margin:0}
+.living-pulse-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.living-pulse-grid>div{background:#223239;border:1px solid #79847755;border-radius:8px;min-width:0;padding:11px;display:flex;flex-direction:column;gap:8px}
+.living-pulse-grid small{color:#b1c0b6;font:700 9px/1.4 'IBM Plex Mono',monospace;letter-spacing:.3px}
+.living-pulse-grid strong{color:#edd5a4;font:600 24px/1 'Space Grotesk',sans-serif}
+.living-pulse-grid em{font:500 12px 'Space Grotesk',sans-serif;color:#aab7ac}
+.living-note{color:#99aaa6;font:10px/1.3 'Space Grotesk',sans-serif}
+.living-meter{height:4px;border-radius:99px;background:#70877e44;overflow:hidden}
+.living-meter span{display:block;height:100%;background:#dcbf88;border-radius:99px;transition:width .3s ease}
+.living-street-note{border-left:2px solid #c9ac7e;padding:9px 11px;background:#b5ab8510}
+.living-street-note>strong{color:#e7d4ab;font:700 12px 'Space Grotesk',sans-serif}
+.living-street-note p{color:#b7c1b9;font:11px/1.55 'Space Grotesk',sans-serif;margin:6px 0 0}
+.living-story{display:grid;gap:10px;border-top:1px solid #66766b66;padding-top:14px}
+.living-story-top{display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px;color:#d3b98e;font:700 9px/1.3 'IBM Plex Mono',monospace;letter-spacing:.4px}
+.living-story h3{color:#f0dcb4;font:500 24px/1.2 Georgia,serif;margin:0}
+.living-subtitle{color:#b8bca8;font:700 10px/1.5 'IBM Plex Mono',monospace}
+.living-story p{color:#c9d0c3;font:12px/1.65 'Space Grotesk',sans-serif;margin:0}
+.living-story>a{color:#dcc391;font:11px 'Space Grotesk',sans-serif;text-decoration:underline}
+.living-decisions{display:grid;gap:7px}
+.living-decisions button{
+  display:flex;gap:10px;justify-content:space-between;align-items:center;
+  text-align:left;background:#2b3a3e;border:1px solid #86918b66;color:#f0e5d2;
+  border-radius:8px;min-height:57px;padding:10px;cursor:pointer;
+}
+.living-decisions button:hover:not(:disabled),.living-decisions button:focus-visible{background:#354945;border-color:#d4b986;outline:1px solid #cdb88d}
+.living-decisions button:disabled{opacity:.44;cursor:not-allowed}
+.living-decisions button span{display:grid;gap:5px;min-width:0}
+.living-decisions button strong{font:700 11px 'Space Grotesk',sans-serif}
+.living-decisions button small{font:10px 'Space Grotesk',sans-serif;color:#b7c7b7}
+.living-decisions button b{white-space:nowrap;color:#f1d6a5;font:700 10px 'IBM Plex Mono',monospace}
+.living-story-result{border-radius:8px;background:#2b493d;border:1px solid #83b39777;padding:12px;display:grid;gap:7px}
+.living-story-result strong{color:#b6dfc0;font:700 10px 'IBM Plex Mono',monospace}
+.living-story-result p{color:#d4e6d4}
+.living-story-result small{color:#b5cebf;font:10px 'IBM Plex Mono',monospace}
+.living-owned{display:grid;gap:8px;padding-top:12px;border-top:1px solid #68776e55}
+.living-owned>strong{font:700 10px 'IBM Plex Mono',monospace;color:#d3c29c}
+.living-owned>p{font:11px/1.5 'Space Grotesk',sans-serif;color:#b8c8be;margin:0}
+.living-venue{display:flex;align-items:center;justify-content:space-between;gap:7px;border-bottom:1px solid #6a776e33;padding-bottom:6px}
+.living-venue span{color:#d9dfd0;font:11px 'Space Grotesk',sans-serif}
+.living-venue strong{white-space:nowrap;color:#e5cda7;font:700 9px 'IBM Plex Mono',monospace}
+.living-disclaimer{color:#889a98;font:10px/1.5 'Space Grotesk',sans-serif}
+.shop-footfall-readout{margin:8px 0 12px;border:1px solid #809f8a67;border-radius:8px;background:#253b36;padding:11px;display:grid;gap:6px;color:#e3e9d8}
+.shop-footfall-readout strong{display:flex;align-items:center;gap:7px;font:800 10px 'IBM Plex Mono',monospace;letter-spacing:.5px;color:#d1e6bf}
+.shop-footfall-readout>span{font:700 12px 'Space Grotesk',sans-serif}
+.shop-footfall-readout small{color:#b3c8bb;font:10px/1.5 'Space Grotesk',sans-serif}
+@media(max-width:690px){.living-economy-panel{padding:12px}.living-pulse-grid>div{padding:9px}.living-venue{align-items:flex-start;flex-direction:column;gap:4px}.living-decisions button{min-height:51px}}
