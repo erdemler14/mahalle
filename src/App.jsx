@@ -3253,6 +3253,25 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const isPharmacy = property => property?.id === 15 || /eczane|eczacı/i.test(property?.name || '');
     const isBusiness = property => ['İşletme','Atölye','Ticaret'].includes(property?.type);
 
+    // Historically dated events in 1923; specific trades see different demand.
+    // Narrative character scenes attached to these dates are fictional.
+    if (year===1923 && month===10 && day===6) {
+      events.push({id:'istanbul-1923-6oct',name:'İstanbul’da Yeni Dönem',detail:'6 Ekim’de Türk birliklerinin şehre girişi haberleri yayılıyor; gazete ve kahvehane talebi artıyor.',effect:(p,product)=>{
+        const news=isBookshop(p)||/gazete|matbaa|kâğıt|kağıt|ilan/i.test((p?.name||'')+' '+(product?.name||''));
+        return {sales:news?1.35:isFood(product)?1.12:1.02,chance:news?1.2:1.04};
+      }});
+    }
+    if (year===1923 && month===10 && day===13) {
+      events.push({id:'ankara-1923-13oct',name:'Ankara Başkent',detail:'13 Ekim’de başkent haberleri rıhtımda ve matbaalarda konuşuluyor; haber ve lojistik hizmetleri canlanıyor.',effect:(p,product)=>{
+        const shipping=/iskele|rıhtım|ambar|gazete|matbaa|posta|levazımat/i.test((p?.name||'')+' '+(product?.name||''));
+        return {sales:shipping?1.32:1.02,chance:shipping?1.17:1.01};
+      }});
+    }
+    if (year===1923 && month===10 && day===26) {
+      events.push({id:'taksim-1923-football',name:'Taksim’de Maç Günü',detail:'26 Ekim’de Türkiye–Romanya maçı oynanıyor; Taksim’e giden yolcular yiyecek ve kahveye yöneliyor.',effect:(p,product)=>({
+        sales:isFood(product)||isEntertainment(p)?1.34:1.03,chance:isFood(product)||isEntertainment(p)?1.24:1.02
+      })});
+    }
     if ((month === 12 && day >= 30) || (month === 1 && day <= 2)) {
       events.push({ id: 'new-year', name: 'Yılbaşı alışverişi', detail: 'Yılbaşı alışverişi ticareti canlandırıyor.', effect: (p, product) => ({ sales: isFood(product) || isGiftOrRetail(product) || isEntertainment(p) ? 1.35 : 1.08, chance: 1.18 }) });
     }
@@ -3741,7 +3760,8 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       candidates.forEach(x=>{if(room<=0)return;const take=Math.min(x.have-x.keep-x.already,room);if(take>0){returns.set(x.m.id,(returns.get(x.m.id)||0)+take);room-=take;}});
       if(room>0)continue;
       const refund=Math.round([...returns].reduce((sum,[id,n])=>sum+getMaterialUnitValue(propertyId,id)*n*.85,0)*100)/100;
-      const purchaseCost=Math.round(deficits.reduce((s,p)=>s+p.material.cost*p.missing/p.material.batch,0)*100)/100;
+      const logisticsFactor = getSupplyModifier(properties.find(p=>p.id===Number(propertyId)),{ferryBusiness,neighborhood});
+      const purchaseCost=Math.round(deficits.reduce((s,p)=>s+p.material.cost*p.missing/p.material.batch,0)*logisticsFactor*100)/100;
       if(purchaseCost>maxBudget+refund)continue;
       return {batch,deficits,returns,refund,purchaseCost,profile};
     }
