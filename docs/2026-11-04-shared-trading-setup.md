@@ -1,32 +1,20 @@
-# 4 Kasım 2026 — Ortak şehir ticareti ve test bakiyesi
+# Mahalle ortak şehir / şehir ekonomisi kurulumu (4 Kasım 2026)
 
-Bu dağıtım üç parça içerir: React arayüzü, GitHub/Vercel üzerinde üretim derlemesi, Supabase şemasını güncelleyen SQL migration.
+## Aktif özellikler
+- Mülk satın alma, satış teklifi ve devirler için \`supabase/migrations/202611040001_shared_offers_purchases_and_beta_fund.sql\` dosyasındaki satın alma ve teklif tabloları gerekir.
+- **₺70.000 test fonu kaldırılmıştır.** İlk migration, geçmiş kurulumlarda fonu içerir; işlemi kapatmak için hemen ardından \`supabase/migrations/202611040002_retire_beta_credit.sql\` çalıştırılmalıdır.
+- İkinci migration fonu veren RPC'yi ve davet tablosunu siler; geçmiş işlemlerin muhasebe kaydı korunur. Daha önce verilmiş parayı otomatik silmez, çünkü sonradan yapılan gerçek oyun işlemleriyle iç içe olabilir.
+- Yaşayan Şehir, hikâyeler, NPC günlük programları, tedarik ve mahalle itibarı mevcut oyuncu oyun kaydında (\`neighborhood\`) saklanır; ayrı bir migration gerekmez.
 
-## Gerekli tek seferlik kurulum
+## Canlıya hazırlama
+1. Doğru Supabase projesini SQL Editor'de aç.
+2. İlk SQL dosyası daha önce uygulanmadıysa uygula.
+3. İkinci kaldırma migration'ını uygula.
+4. İki ayrı oturumla mülk satın alma, teklif, kabul ve ret akışını kontrol et.
+5. Şehir menüsünü aç, hikâye seçiminin bir kez uygulandığını ve mahalle itibarını etkilediğini doğrula.
+6. Dükkân sahibiysen müşteri yoğunluğunun satış oranına, tedarik koşullarının hammadde harcamalarına etkisini gözlemle.
 
-1. Supabase Dashboard → doğru Mahalle projesi → SQL Editor.
-2. \`supabase/migrations/202611040001_shared_offers_purchases_and_beta_fund.sql\` içeriğini SQL Editor içine yapıştırıp **Run** ile uygula. Proje sahibi yetkileri gerekir.
-3. Oyun sayfasını yeniden aç. Giriş yap ve birkaç saniye hesap kaydının yüklenmesini bekle.
-4. Satılık bir mülkü satın almayı dene. Sunucu artık fiyatı ve bakiyeyi doğrudan \`world_properties\` ve \`player_saves\` üzerinden kontrol eder.
-5. Başka hesaba ait bir mülke teklif gönder. **TEKLİFLER** menüsünde satıcı kabul, ret veya karşı teklif ile yanıt verebilir. Her iki oyuncunun aynı odada bulunması gerekmez.
-6. Sermaye → **Kurucunun Test Kodu** alanına özel olarak verilen tek kullanımlık kodu yaz. Kodu GitHub'a, ekran görüntüsüne veya issue içine ekleme. Kod ilk doğrulayan hesapta kalıcı olarak tüketilir; o hesaba **+₺70.000** eklenir.
-
-## Dikkat edilmesi gerekenler
-
-- GitHub'a SQL dosyası push etmek **Supabase'e migration çalıştırmaz**. SQL Editor adımı zorunludur.
-- \`purchase_property_v3\` işlemi nakdi istemciden almak yerine sunucunun kayıtlı nakdini kullanır. Mevcut eski veritabanlarında web uygulaması eski \`purchase_property_v2\` ve \`claim_property\` fonksiyonlarını denemeye devam eder; güvenli yeni akış için migration'ı uygula.
-- Yeni mülkler #63–#66 sunucunun mülk tablosuna eklenir. Var olan sahiplikleri değişmez.
-- \`property_offers\` teklifleri saklar. Satıcı cevap vermese de alıcı ve satıcı hesabında görünebilir; teklif 7 gerçek gün sonra geçersiz olur.
-- Kabul edilen teklifin mülk devri ve iki tarafa ait nakit değişimi bir PostgreSQL transaction'ında yapılır. Bakiye yetersizse devir iptal edilir.
-- ₺70.000 fon bir **oyun içi beta test kredisi** olup gerçek para değildir. Kodu ilk kullanan tek hesap alabilir. Fon mevcut bakiyeye eklenir, bakiyeyi ₺70.000'e sabitlemez.
-- Sunucu güncellemesinden sonra daha önce açık kalmış oyun sekmelerini kapatıp yeniden açmak eski kayıtların üzerine yazılmasını engeller.
-
-## Kontrol
-
-\`npm test\` yerleşim, temel deniz sahnesi, vapur ekonomisi, işlem modeli ve migration gereksinimlerini doğrular. Ancak veritabanında uçtan uca teklif ve ödeme işleyişini doğrulamak için iki ayrı Supabase hesabıyla canlı test gerekir.
-
-Olası hata mesajları:
-- \`PGRST202\`: SQL fonksiyonu henüz uygulanmamış veya şema önbelleği güncel değil.
-- \`42P01\`: teklif veya test fonu tablosu henüz oluşturulmamış.
-- \`Mülk ... kayıtlı değil\`: ortak şehir tablosundaki mülk seed verisi eski.
-- \`Bakiye yetersiz\`: sunucu bakiye kaydı satın alma bedelini karşılamıyor.
+## Güvenlik ve oyun dengesi
+- Kesinleşmiş satın alma ve devirler server tarafında nakit ve mülkiyet denetimiyle yürütülür.
+- Tarihî olay tarihlerinin kaynağı resmî 1923 kronolojisi ve İstanbul şehir kronolojisidir. Günlük karakter öyküleri açıkça oyun kurgusudur.
+- Ekonomik çarpanlar gerçek 1923 fiyatlarına dair iddia değildir; oyuncuların özel ekonomi dengesinin parçasıdır.
