@@ -178,9 +178,8 @@ export default function ToyShopInterior({onExit,property,owned=false,stock=0}){
   const canvasHost=useRef(null);
   const command=useRef({forward:false,back:false,left:false,right:false});
   const rotate=useRef({x:0,y:0});
-  const [inspect,setInspect]=useState('Oyuncak raflarına yaklaşmak için yön tuşlarını kullan. Sürükleyerek etrafına bak.');
-  const [walking,setWalking]=useState(false);
-  const [muted,setMuted]=useState(false);
+  const onExitRef=useRef(onExit);
+  useEffect(()=>{onExitRef.current=onExit},[onExit]);
   useEffect(()=>{
     const el=canvasHost.current;if(!el)return;
     const scene=new THREE.Scene();scene.background=new THREE.Color('#dfc8a8');
@@ -213,7 +212,7 @@ export default function ToyShopInterior({onExit,property,owned=false,stock=0}){
     renderer.domElement.addEventListener('pointerup',pointerUp);
     renderer.domElement.addEventListener('pointercancel',pointerUp);
     const key=e=>{const k=e.key.toLowerCase();
-      if(k==='escape'){onExit?.();return;}
+      if(k==='escape'){onExitRef.current?.();return;}
       const map={w:'forward',arrowup:'forward',s:'back',arrowdown:'back',a:'left',arrowleft:'left',d:'right',arrowright:'right'};
       if(map[k]){command.current[map[k]]=e.type==='keydown';e.preventDefault();}
     };
@@ -248,7 +247,7 @@ export default function ToyShopInterior({onExit,property,owned=false,stock=0}){
       scene.traverse(o=>{if(o.isMesh){o.geometry?.dispose();const mats=Array.isArray(o.material)?o.material:[o.material];
         mats.forEach(m=>{m?.map?.dispose();m?.dispose();});}});
       renderer.dispose();renderer.domElement.remove();};
-  },[onExit]);
+  },[]);
   const moveProps=(type)=>({onPointerDown:e=>{e.preventDefault();e.currentTarget.setPointerCapture(e.pointerId);command.current[type]=true;},
     onPointerUp:e=>{e.preventDefault();command.current[type]=false;},
     onPointerCancel:()=>{command.current[type]=false;},onLostPointerCapture:()=>{command.current[type]=false;}});
