@@ -1662,6 +1662,111 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const next=current*(1+inflation+area+demand-0.001+(Math.random()-0.5)*0.018);
     return [property.id,Math.max(property.price*0.45,Math.min(property.price*3.5,Math.round(next*100)/100))];
   })));
+  // Shared city offers live in Supabase, so both players can answer without
+  // PeerJS rooms or being online at the same moment.
+  useEffect(() => {
+    if (!session?.user?.id || !supabase || !cloudReady) return undefined;
+    let alive = true;
+    const uid = session.user.id;
+    const poll = async () => {
+      const {data,error} = await supabase.from('property_offers')
+        .select('id,property_id,buyer_user_id,seller_user_id,buyer_name,seller_name,price,status,created_at,updated_at')
+        .or('buyer_user_id.eq.'+uid+',seller_user_id.eq.'+uid)
+        .order('updated_at',{ascending:false}).limit(40);
+      if (!alive) return;
+      if (error) {
+        setCloudOffersError(error.code === '42P01' || error.code === 'PGRST205'
+          ? 'Teklif tablosu henüz aktif değil. Supabase 202611040001 SQL güncellemesi gerekli.'
+          : 'Teklifler yüklenemedi: '+(error.message||'Bağlantı hatası'));
+        return;
+      }
+      setCloudOffersError('');
+      const offers=(data||[]).map(offer=>({...offer,property_name:properties.find(p=>p.id===offer.property_id)?.name||'Mülk'}));
+      setCloudOffers(offers);
+      const accepted=offers.filter(offer=>offer.status==='accepted');
+      const hasNew=accepted.some(offer=>!acceptedOffersSeenRef.current.has(offer.id));
+      for (const offer of accepted) acceptedOffersSeenRef.current.add(offer.id);
+      // Re-sync with the server after a remotely accepted bid. Otherwise seller
+      // would see transferred ownership but a stale wallet until the next login.
+      if (hasNew) {
+        const {data:save} = await supabase.from('player_saves').select('state').eq('user_id',uid).maybeSingle();
+        if (alive && Number.isFinite(Number(save?.state?.cash))) {
+          setCash(Number(save.state.cash));
+        }
+        const {data:world} = await supabase.from('world_properties').select('property_id,owner_user_id,owner_name,rented,market_value');
+        if (alive && Array.isArray(world)) {
+          setOwned(world.filter(row=>row.owner_user_id===uid).map(row=>Number(row.property_id)));
+          setOwnerByProperty(Object.fromEntries(world.filter(row=>row.owner_user_id)
+            .map(row=>[row.property_id,{playerId:row.owner_user_id,name:row.owner_name||'Mahalle sakini'}])));
+        }
+      }
+    };
+    poll().catch(e=>{if(alive)setCloudOffersError('Teklif kontrolü: '+(e?.message||'Bağlantı hatası'));});
+    const timer=setInterval(()=>poll().catch(()=>{}),6500);
+    return ()=>{alive=false;clearInterval(timer);};
+  },[session?.user?.id,supabase,cloudReady,cloudOfferRefresh]);
+
+  const respondSharedOffer = async (offer,decision,price) => {
+    if (!session || !supabase || !cloudReady || offerBusy) return;
+    if (decision==='counter' && (!Number.isFinite(price)||price<=0)) {
+      tell('Geçerli bir karşı teklif tutarı gir.');return;
+    }
+    setOfferBusy(true);
+    try {
+      const {data,error} = await supabase.rpc('respond_property_offer',{
+        p_offer_id:offer.id,p_decision:decision,p_counter_price:decision==='counter'?price:null
+      });
+      if (error) throw error;
+      if (data?.success!==true) throw new Error('Sunucu teklif yanıtını kaydedemedi.');
+      if (data.status==='accepted') {
+        setCash(Number(data.cash));
+        const belongsToMe=offer.buyer_user_id===session.user.id;
+        setOwned(old=>belongsToMe
+          ? (old.includes(offer.property_id)?old:[...old,offer.property_id])
+          : old.filter(id=>id!==offer.property_id));
+        setOwnerByProperty(old=>({...old,[offer.property_id]:{
+          playerId:offer.buyer_user_id,name:offer.buyer_name||'Mahalle sakini'
+        }}));
+        setRented(old=>old.filter(id=>id!==offer.property_id));
+        if (!belongsToMe) {
+          setBusinessPlans(old=>{const next={...old};delete next[offer.property_id];return next;});
+          setStockByProperty(old=>{const next={...old};delete next[offer.property_id];return next;});
+          setBusinessStats(old=>{const next={...old};delete next[offer.property_id];return next;});
+        }
+        tell((offer.property_name||'Mülk')+' devredildi. ₺'+Number(data.price).toLocaleString('tr-TR')+' işlem bedeli karşılıklı hesaba işlendi.');
+      } else tell(decision==='reject'?'Teklif reddedildi.':'Karşı teklif gönderildi.');
+      setCloudOfferRefresh(v=>v+1);
+    } catch(error) {
+      tell('Teklif yanıtı işlenemedi: '+(error?.message||'Bilinmeyen sunucu hatası'));
+    } finally {setOfferBusy(false);}
+  };
+  const claimBetaTestFund = async () => {
+    if (betaTestFundClaimed || testFundBusy) return;
+    setTestFundBusy(true);
+    try {
+      if (session && supabase) {
+        if (!cloudReady) {tell('Hesap yüklenmesini bekle.');return;}
+        const {data,error}=await supabase.rpc('claim_beta_test_fund_20261104');
+        if (error) throw error;
+        if (!data?.granted && !data?.already_claimed) throw new Error('Sunucu test fonunu doğrulamadı.');
+        if (Number.isFinite(Number(data.cash))) setCash(Number(data.cash));
+        setBetaTestFundClaimed(true);
+        tell(data.granted
+          ? 'Hesabına tek seferlik ₺70.000 beta test fonu eklendi.'
+          : 'Bu hesap beta test fonunu daha önce almış.');
+      } else {
+        // Offline local beta prototype: one grant per local save, no remote balance.
+        setCash(value=>Math.round((value+70000)*100)/100);
+        setBetaTestFundClaimed(true);
+        tell('Yerel oyun kaydına ₺70.000 beta test fonu eklendi.');
+      }
+    } catch(error) {
+      tell(error?.code==='PGRST202'
+        ? '70.000 TL test fonu henüz sunucuda etkin değil. Supabase 202611040001 SQL güncellemesi gerekli.'
+        : 'Test fonu alınamadı: '+(error?.message||'Bilinmeyen hata'));
+    } finally {setTestFundBusy(false);}
+  };
+
   const sendOffer = () => {
     if (session && supabase) {
       if (!cloudReady || offerBusy) { tell('Teklif için hesap bağlantısının tamamlanmasını bekle.'); return; }
