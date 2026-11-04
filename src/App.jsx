@@ -1030,7 +1030,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
     let leftDragMode = 'pan';
     let orbitInertia = 0;
     const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
-    const MIN_DISTANCE = 5.5;
+    const MIN_DISTANCE = 3.4;
     const MAX_DISTANCE = 56;
     const PAN_BOUNDS = 43;
     const clampTarget = () => {
@@ -1118,7 +1118,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
         targetGoal.set(property.x, 1.28, property.z);
         phiGoal = 1.07;
         thetaGoal = property.x >= 0 ? -Math.PI / 2 : Math.PI / 2;
-        radiusGoal = 5.5;
+        radiusGoal = 4.3;
         orbitInertia = 0;
         return property;
       }
@@ -1358,7 +1358,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
           const visible = anchor.z > -1 && anchor.z < 1 && x > 0 && x < el.clientWidth && y > 0 && y < el.clientHeight;
           overlayRef.current.style.left = `${x}px`;
           overlayRef.current.style.top = `${y}px`;
-          overlayRef.current.style.visibility = visible && !walker.active ? 'visible' : 'hidden';
+          overlayRef.current.style.visibility = visible && !walker.active && radiusGoal > 6.2 ? 'visible' : 'hidden';
         }
       }
       const pulse = 1 + Math.sin(elapsed * 2.4) * 0.035;
