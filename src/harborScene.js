@@ -158,6 +158,14 @@ function makeQuay(scene,isMobile){
   const stairZ=-6.7;
   for(let step=0;step<5;step++)block(harbor,materials.masonryLight,.52,.085,1.3,25.3+step*.24,.12-step*.038,stairZ);
   for(let z=-32;z<34;z+=3)block(harbor,materials.coping,.11,.022,2.5,25.31,.23,z);
+  // The historical dry-cleaner's waterfront building (x=27.2,z=22.5)
+  // sits on a connected masonry extension, not on the animated water plane.
+  block(harbor,materials.masonry,4.8,.28,7.4,27.5,-.012,22.5);
+  block(harbor,materials.masonryLight,4.85,.09,7.5,27.5,.14,22.5);
+  block(harbor,materials.coping,.18,.22,7.5,29.92,.04,22.5);
+  for(const z of [19.9,22.5,25.0]) {
+    cylinder(harbor,materials.bridgeIron,.09,.48,29.75,.35,z);
+  }
   // Far-bank promenade closes the water basin and gives the Galata span a destination.
   block(harbor,materials.masonry,9.3,.32,74,60.38,-.06,0);
   block(harbor,materials.coping,.25,.52,74,55.66,-.13,0);
@@ -234,16 +242,28 @@ export function createHarborScene({scene, oldFerry, isMobile=false, ferryStateRe
     [V(30.8,.08,16.6),V(32.3,.08,20),V(35.6,.08,26),V(40.1,.08,29),V(41,.08,27),V(35.1,.08,22.2),V(31.1,.08,18.1),V(30.8,.08,16.6)]
   ];
   const curves=routes.map(points=>new THREE.CatmullRomCurve3(points,true,'catmullrom',.25));
+  const upgradeCargo=new THREE.Group();
+  // Loose cargo is only shown after the operator purchases quay freight handling.
+  for(let i=0;i<7;i++) {
+    const crate=block(upgradeCargo,materials.timber,.43,.31,.40,26.2+i%3*.47,.38,14.45+Math.floor(i/3)*.44);
+    crate.rotation.y=(i%3)*.12;
+    block(upgradeCargo,materials.brass,.05,.32,.043,crate.position.x,.38,crate.position.z+.22);
+  }
+  scene.add(upgradeCargo);
+  const ticketOffice=new THREE.Group();
+  block(ticketOffice,materials.burgundy,.86,.28,.075,26.38,1.27,-16.43);
+  block(ticketOffice,materials.brass,.94,.04,.09,26.38,1.45,-16.43);
+  scene.add(ticketOffice);
   const dayMarker=new THREE.Group();
   for(const point of [-.4,.4])block(dayMarker,materials.brass,.06,.17,.05,point,.34,0);
   dayMarker.position.set(29.65,.1,-17.2);scene.add(dayMarker);
-  const originalPosition=oldFerry.position.clone();
 
   function animateSteamer(ferry,routeIndex,elapsed,phase,hour,active,owned) {
     ferry.boat.visible=active;
-    ferry.wake.visible=active;
+    ferry.wake.visible=active && hour>=6 && hour<=22;
     if(!active)return;
-    const cycle=45, progress=((elapsed+phase)%cycle)/cycle;
+    const cycle=45, operating=hour>=6 && hour<=21;
+    const progress=operating?((elapsed+phase)%cycle)/cycle:0;
     // Pause alongside quay before embarking again.
     const t=progress<.15?0:progress>.96?0:clamp((progress-.15)/.81,0,1);
     const curve=curves[routeIndex];
@@ -274,8 +294,10 @@ export function createHarborScene({scene, oldFerry, isMobile=false, ferryStateRe
     // The transport company is a visible public service before purchase;
     // ownership changes livery and adds capacity instead of conjuring ferry transport.
     dayMarker.visible=business.owned===true;
+    ticketOffice.visible=business.owned===true && !!upgrade.ticketOffice;
+    upgradeCargo.visible=business.owned===true && !!upgrade.cargoHold;
     animateSteamer(steamer,0,elapsed,0,hour,true,business.owned);
-    animateSteamer(second,1,elapsed,21,hour,!!upgrade.secondFerry,!!business.owned);
+    animateSteamer(second,1,elapsed,21,hour,business.owned===true && !!upgrade.secondFerry,!!business.owned);
     steamer.boat.scale.setScalar(1);
     steamer.boat.traverse(obj=>{
       if(obj.isMesh && obj.material===materials.burgundy)obj.material.emissiveIntensity=business.owned?.18:0;
