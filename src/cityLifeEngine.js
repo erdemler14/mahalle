@@ -37,7 +37,7 @@ export function businessClass(p) {
 
 export const historicMoments=[
   {
-    date:'1923-10-6',id:'istanbul-kurtulus',title:'İstanbul’da Yeni Bir Sabah',
+    date:'1923-10-06',id:'istanbul-kurtulus',title:'İstanbul’da Yeni Bir Sabah',
     historical:true,source:'https://www.ktb.gov.tr/TR-96330/1923.html',
     subtitle:'6 Ekim 1923 · İstanbul’un yönetimi Türk birliklerine geçti.',
     story:'Sokakta gazeteler elden ele dolaşıyor. Matbaacı sabah baskısına yetişmek isterken vapur yolcuları haberleri soruyor. Esnafın nasıl yardım edeceğine sen karar ver.',
@@ -276,7 +276,7 @@ export function customerFlow({property,clock,properties,population,ferryBusiness
   const realVisits=Math.max(0,Math.round(passers*(rainy?.85:1)));
   const reputation=clamp(state.reputation+Math.min(12,(Number(businessStats?.[p.id]?.unitsSold)||0)/20),0,100);
   const footTraffic=Math.max(0,realVisits+transit);
-  const demand=clamp(.38+footTraffic*.085+(reputation-50)*.004, .26,1.73);
+  const demand=clamp(.36+Math.sqrt(footTraffic)*.102+(reputation-50)*.004, .26,1.95);
   const supplyModifier=getSupplyModifier(p,{ferryBusiness,neighborhood});
   return {visits:realVisits,nearby:round2(transit),demand:round2(demand),
     supplyModifier,reputation:Math.round(reputation),footTraffic:round2(footTraffic),
