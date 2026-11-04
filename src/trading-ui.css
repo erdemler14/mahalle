@@ -19,15 +19,3 @@
 .shared-offer-history{font:10px/1.6 'Space Grotesk',sans-serif;color:#c9d3c9}
 .shared-offer-history summary{cursor:pointer;font-weight:700}
 .shared-offer-history div{padding:5px 0;border-bottom:1px solid #65756b44}
-.beta-credit-panel{margin-top:12px;display:grid;gap:7px;padding:12px;border-radius:8px;background:#22332e;border:1px solid #a38c6066}
-.beta-credit-panel>strong{font:800 11px 'IBM Plex Mono',monospace;color:#eed3a7;letter-spacing:.5px}
-.beta-credit-panel p{font:11px/1.5 'Space Grotesk',sans-serif;color:#c7d3c7;margin:0}
-.beta-credit-panel button{min-height:39px;background:#edd3a1;color:#283932;border:0;border-radius:6px;font:800 11px 'Space Grotesk',sans-serif;cursor:pointer}
-.beta-credit-panel button:hover:not(:disabled){background:#f8e3b8}
-.beta-credit-panel button:disabled{opacity:.45;cursor:default}
-.beta-credit-panel small{font:10px/1.4 'Space Grotesk',sans-serif;color:#b3c4b5}
-@media(max-width:560px){.shared-offer-actions label{width:100%}.shared-offer-actions input{flex:1;min-width:80px}.shared-offer-actions label button{flex:none}}
-
-.beta-credit-code-label{display:grid;gap:5px;font:800 10px 'IBM Plex Mono',monospace;color:#dcc8a2;letter-spacing:.4px}
-.beta-credit-code-label input{width:100%;min-height:39px;background:#f8f0df;color:#24352e;border:1px solid #b7a17c;border-radius:6px;padding:9px 11px;font:600 12px 'Space Grotesk',sans-serif;letter-spacing:0;outline-offset:2px}
-.beta-credit-code-label input:focus-visible{outline:2px solid #e5c28f}
