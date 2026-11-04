@@ -1440,11 +1440,11 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
       scene.fog.near = cityWeather.raining ? 32 : 42;
       scene.fog.far = cityWeather.raining ? 65 : 88;
       tram.position.z = livingCity.tramPosition(elapsed);
-      const peakCrowd = currentHour >= 7 && currentHour < 9 ? 22 : currentHour >= 12 && currentHour < 14 ? 26 : currentHour >= 17 && currentHour < 20 ? 30 : currentHour >= 9 && currentHour < 17 ? 18 : currentHour >= 20 && currentHour < 22 ? 11 : 6;
+      const peakCrowd = currentHour >= 7 && currentHour < 9 ? 16 : currentHour >= 12 && currentHour < 14 ? 20 : currentHour >= 17 && currentHour < 20 ? 22 : currentHour >= 9 && currentHour < 17 ? 14 : currentHour >= 20 && currentHour < 22 ? 8 : 4;
       pedestrians.forEach((ped, i) => {
         ped.person.visible = ped.crowdIndex < peakCrowd;
-        const progress = (elapsed * ped.speed + ped.phase) % 1;
-        const stride = elapsed * ped.speed * Math.PI * 24 + i;
+        const progress = (elapsed * ped.speed * 0.38 + ped.phase) % 1;
+        const stride = elapsed * ped.speed * Math.PI * 9 + i;
         if (ped.axis === 'z') {
           ped.person.position.set(ped.lane, 0.015 + Math.abs(Math.sin(stride)) * 0.018, ped.direction > 0 ? -11 + progress * 22 : 11 - progress * 22);
           ped.person.rotation.y = ped.direction > 0 ? 0 : Math.PI;
@@ -1452,8 +1452,8 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
           ped.person.position.set(ped.direction > 0 ? -12 + progress * 24 : 12 - progress * 24, 0.015 + Math.abs(Math.sin(stride)) * 0.018, ped.lane);
           ped.person.rotation.y = ped.direction > 0 ? Math.PI / 2 : -Math.PI / 2;
         }
-        ped.leftLeg.rotation.x = Math.sin(stride) * 0.48;
-        ped.rightLeg.rotation.x = -Math.sin(stride) * 0.48;
+        ped.leftLeg.rotation.x = Math.sin(stride) * 0.24;
+        ped.rightLeg.rotation.x = -Math.sin(stride) * 0.24;
         ped.leftArm.rotation.x = -Math.sin(stride) * 0.3;
         ped.rightArm.rotation.x = Math.sin(stride) * 0.3;
       });
