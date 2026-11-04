@@ -106,7 +106,7 @@ function makePontoonBridge(scene,isMobile){
   }
   scene.add(bridge);
   return {
-    lamps,pedestrians,
+    group:bridge,lamps,pedestrians,
     update({hour,elapsed}) {
       const dusk=hour>=18||hour<=6;
       for(const lamp of lamps)lamp.emissiveIntensity=dusk?1.15:.12;
