@@ -86,12 +86,12 @@ export function stepResident(npc,seconds){
 }
 // Named residents use the same low-poly rig and the same street movement as the city's other people.
 const HISTORIC_PEOPLE=[
-  {name:'Yahya Kemal Beyatlı',homeId:48,visitId:49,dialogue:'Beyoğlu’nda bir pastane masası, bazen uzun bir şiirin başlangıcıdır.'},
-  {name:'Ahmet Haşim',homeId:49,visitId:48,dialogue:'Akşam ışıkları bu sokağı bambaşka gösteriyor.'},
-  {name:'İbrahim Çallı',homeId:53,visitId:48,dialogue:'Bu şehrin her köşesi yeni bir resim olabilir.'},
-  {name:'Muhsin Ertuğrul',homeId:50,visitId:52,dialogue:'Elhamra’da bu akşam yeni bir gösteri var.'},
-  {name:'Ali Bey',homeId:55,visitId:53,dialogue:'Tramvayla pasaj arasında her gün gidip geliyorum.'},
-  {name:'Ayşe Hanım',homeId:49,visitId:53,dialogue:'Pastanenin önünde bugün çok kalabalık vardı.'}
+  {name:'Yahya Kemal Beyatlı',homeId:70,visitId:71,dialogue:'Beyoğlu’nda bir pastane masası, bazen uzun bir şiirin başlangıcıdır.'},
+  {name:'Ahmet Haşim',homeId:71,visitId:70,dialogue:'Akşam ışıkları bu sokağı bambaşka gösteriyor.'},
+  {name:'İbrahim Çallı',homeId:75,visitId:70,dialogue:'Bu şehrin her köşesi yeni bir resim olabilir.'},
+  {name:'Muhsin Ertuğrul',homeId:72,visitId:74,dialogue:'Elhamra’da bu akşam yeni bir gösteri var.'},
+  {name:'Ali Bey',homeId:77,visitId:75,dialogue:'Tramvayla pasaj arasında her gün gidip geliyorum.'},
+  {name:'Ayşe Hanım',homeId:71,visitId:75,dialogue:'Pastanenin önünde bugün çok kalabalık vardı.'}
 ];
 export function createLivingResidents({scene,properties,isMobile=false}){
   const roster=getCityPopulation(properties);
