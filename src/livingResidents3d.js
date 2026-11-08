@@ -84,6 +84,15 @@ export function stepResident(npc,seconds){
   }
   return npc.nextPoint<path.length;
 }
+// Named residents use the same low-poly rig and the same street movement as the city's other people.
+const HISTORIC_PEOPLE=[
+  {name:'Yahya Kemal Beyatlı',homeId:48,visitId:49,dialogue:'Beyoğlu’nda bir pastane masası, bazen uzun bir şiirin başlangıcıdır.'},
+  {name:'Ahmet Haşim',homeId:49,visitId:48,dialogue:'Akşam ışıkları bu sokağı bambaşka gösteriyor.'},
+  {name:'İbrahim Çallı',homeId:53,visitId:48,dialogue:'Bu şehrin her köşesi yeni bir resim olabilir.'},
+  {name:'Muhsin Ertuğrul',homeId:50,visitId:52,dialogue:'Elhamra’da bu akşam yeni bir gösteri var.'},
+  {name:'Ali Bey',homeId:55,visitId:53,dialogue:'Tramvayla pasaj arasında her gün gidip geliyorum.'},
+  {name:'Ayşe Hanım',homeId:49,visitId:53,dialogue:'Pastanenin önünde bugün çok kalabalık vardı.'}
+];
 export function createLivingResidents({scene,properties,isMobile=false}){
   const roster=getCityPopulation(properties);
   // Keep the large simulated population for the economy but draw only a
@@ -96,11 +105,31 @@ export function createLivingResidents({scene,properties,isMobile=false}){
     scene.add(rig.group);
     return {...person,...rig,path:[],nextPoint:0,intent:null};
   });
+  const historicResidents = HISTORIC_PEOPLE.map((person,i)=>{
+    const rig=makePerson(i+112,'artist');
+    const home=properties.find(p=>p.id===person.homeId);
+    rig.group.position.set((home?.x||0)+(i%2?.8:-.8),0,(home?.z||0)+1.6);
+    rig.group.userData.historicPerson=i;
+    rig.group.name=person.name;
+    scene.add(rig.group);
+    return {...person,...rig,index:112+i,path:[],nextPoint:0,journeySpeed:.65,goingHome:false};
+  });
   let currentKey='',lastElapsed=null,frame=0;
   function update({clock,elapsed,weather={}}){
     const dateKey=[clock.year,clock.month,clock.day,clock.hour].join('/');
     if(dateKey!==currentKey){
       currentKey=dateKey;
+      for(const npc of historicResidents){
+        const target=properties.find(p=>p.id===(npc.goingHome?npc.homeId:npc.visitId));
+        npc.goingHome=!npc.goingHome;
+        if(target){
+          const here={x:npc.group.position.x,z:npc.group.position.z};
+          const destination={x:target.x+(npc.index%2?.8:-.8),z:target.z+1.6};
+          npc.path=[here,...walkWaypoints(here,destination).slice(1)];
+          if(npc.path.length<2)npc.path=[here,destination];
+          npc.nextPoint=1;
+        }
+      }
       for(const npc of activePeople){
         const intent=visitIntent(npc,clock,properties);
         npc.intent=intent;
@@ -120,6 +149,17 @@ export function createLivingResidents({scene,properties,isMobile=false}){
     // 30 fps animation for residents, keeping the rest of the Three.js world
     // at its normal update rate. Time is accumulated from elapsed, not frames.
     if(frame%2===1)return;
+    for(const npc of historicResidents){
+      const moving=stepResident(npc,seconds*2);
+      const stride=elapsed*4.5+npc.index;
+      const pace=moving?1:.08;
+      npc.group.position.y=.018+Math.abs(Math.sin(stride))*.008*pace;
+      npc.legs[0].rotation.x=Math.sin(stride)*.17*pace;
+      npc.legs[1].rotation.x=-Math.sin(stride)*.17*pace;
+      npc.arms[0].rotation.x=-Math.sin(stride)*.13*pace;
+      npc.arms[1].rotation.x=Math.sin(stride)*.13*pace;
+      npc.group.visible=clock.hour>=6&&clock.hour<23;
+    }
     for(const npc of activePeople){
       const intent=npc.intent;
       if(!intent){npc.group.visible=false;continue;}
@@ -137,5 +177,17 @@ export function createLivingResidents({scene,properties,isMobile=false}){
       npc.arms[1].rotation.x=Math.sin(stride)*.13*pace;
     }
   }
-  return {update,get residents(){return activePeople.length},get roster(){return roster}};
+  function pick(raycaster){
+    const hits=raycaster.intersectObjects(historicResidents.map(n=>n.group),true);
+    for(const hit of hits){
+      let root=hit.object;
+      while(root && root.userData.historicPerson==null)root=root.parent;
+      if(root && hit.distance<24) {
+        const person=HISTORIC_PEOPLE[root.userData.historicPerson];
+        return person ? {name:person.name,dialogue:person.dialogue} : null;
+      }
+    }
+    return null;
+  }
+  return {update,pick,get residents(){return activePeople.length+historicResidents.length},get roster(){return roster}};
 }
