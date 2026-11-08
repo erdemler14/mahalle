@@ -3998,7 +3998,11 @@ function App({ session = null, supabase = null, authConfigured = false }) {
         tell(active.name+' satın alındı. Sunucunun onayladığı fiyat: ₺'+
           Number(result.paid||result.market_value||getMarketValue(active)).toLocaleString('tr-TR')+'.');
       } catch(error) {
-        tell('Mülk satın alınamadı: '+(error?.message||'Bağlantı hatası'));
+        const message = 'Mülk satın alınamadı: ' + (error?.message || 'Bağlantı hatası');
+        console.error('[Mahalle purchase]', { propertyId: active.id, userId: session?.user?.id, error });
+        tell(message);
+        // Keep transaction failures visible even if the in-game notice is obscured.
+        if (typeof window !== 'undefined') window.alert(message);
       } finally {
         setPurchaseBusy(false);
       }
