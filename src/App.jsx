@@ -193,11 +193,12 @@ function supportsProfessionAt(property, professionId) {
   return Boolean(property && venueTypesByProfession[professionId]?.includes(property.type));
 }
 
-function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', onSelect, onUniversity, hour, day = 1, month = 1, year = 1923, overlay, developments = {}, buildingLevels = {}, ferryBusiness = {}, neighborhood = {} }) {
+function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', onSelect, onTalk, onUniversity, hour, day = 1, month = 1, year = 1923, overlay, developments = {}, buildingLevels = {}, ferryBusiness = {}, neighborhood = {} }) {
   const host = useRef(null);
   const overlayRef = useRef(null);
   const overlayContentRef = useRef(overlay);
   const selectRef = useRef(onSelect);
+  const talkRef = useRef(onTalk);
   const selectedRef = useRef(selected);
   const hourRef = useRef(hour);
   const ferryStateRef = useRef(ferryBusiness);
@@ -218,6 +219,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
     onLostPointerCapture: () => setWalkKey(key, false)
   });
   useEffect(() => { selectRef.current = onSelect; }, [onSelect]);
+  useEffect(() => { talkRef.current = onTalk; }, [onTalk]);
   useEffect(() => { selectedRef.current = selected; }, [selected]);
   useEffect(() => {
     overlayContentRef.current = overlay;
@@ -1327,6 +1329,11 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
     };
     const onClick = event => {
       if (moved) return;
+      const rect=renderer.domElement.getBoundingClientRect();
+      pointer.set(((event.clientX-rect.left)/rect.width)*2-1,-((event.clientY-rect.top)/rect.height)*2+1);
+      raycaster.setFromCamera(pointer,camera);
+      const person=livingResidents.pick(raycaster);
+      if(person){ talkRef.current?.(person.name+' — '+person.dialogue);return; }
       const building = buildingUnderPointer(event);
       if (building) selectRef.current(building.id);
     };
@@ -4379,7 +4386,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     <section className="game-layout fullscreen-layout">
       <div className="world-panel">
         <div className="world-topline"><span><span className="live-dot" /> BEYOĞLU MERKEZİ</span><label className="property-finder"><span>⌕</span><input aria-label="Mülk ara ve haritada göster" list="mahalle-property-options" placeholder="Mülk adı yaz..." value={mapSearch} onChange={event => { const value = event.target.value; setMapSearch(value); const match = properties.find(property => property.name.toLocaleLowerCase('tr-TR') === value.trim().toLocaleLowerCase('tr-TR')); if (match) { selectProperty(match.id); setMapSearch(''); } }} /><datalist id="mahalle-property-options">{properties.map(property => <option key={property.id} value={property.name}>{owned.includes(property.id) ? 'Senin mülkün' : 'Satılık'}</option>)}</datalist><small>{properties.length} MÜLK</small></label><span className="world-year">OYUN DÜNYASI <i>·</i> {year}</span></div>
-        <CityScene selected={selected} owned={owned} ownerByProperty={ownerByProperty} playerId={playerId} onSelect={selectProperty} ferryBusiness={ferryBusiness} onUniversity={() => setActiveHudPanel(v => v === 'university' ? null : 'university')} hour={hour} day={day} month={month} year={year} neighborhood={neighborhood} developments={developments} buildingLevels={buildingLevels} overlay={sceneActionDismissed ? null : <div className="scene-action-card" style={{ position: 'relative', paddingTop: 28 }}>
+        <CityScene selected={selected} owned={owned} ownerByProperty={ownerByProperty} playerId={playerId} onSelect={selectProperty} onTalk={tell} ferryBusiness={ferryBusiness} onUniversity={() => setActiveHudPanel(v => v === 'university' ? null : 'university')} hour={hour} day={day} month={month} year={year} neighborhood={neighborhood} developments={developments} buildingLevels={buildingLevels} overlay={sceneActionDismissed ? null : <div className="scene-action-card" style={{ position: 'relative', paddingTop: 28 }}>
           <button type="button" aria-label="Seçili bina penceresini kapat" title="Kapat" onClick={() => setSceneActionDismissed(true)} style={{ position: 'absolute', top: 7, right: 8, zIndex: 5, width: 28, height: 28, border: '1px solid rgba(255,255,255,.35)', borderRadius: 8, background: 'rgba(12,24,48,.72)', color: '#fff', fontSize: 21, lineHeight: '24px', cursor: 'pointer' }}>×</button>
           <div className="scene-action-eyebrow">SEÇİLİ BİNA · {String(active.id).padStart(2, '0')}</div><strong>{active.name}</strong>
           <span>{ownerByProperty[active.id] ? (ownerByProperty[active.id].playerId === playerId ? `Sahibi: ${ownerByProperty[active.id].name} (sen)` : `Sahibi: ${ownerByProperty[active.id].name}`) : 'Satılık'} · ₺{getMarketValue(active).toLocaleString('tr-TR')}</span>
