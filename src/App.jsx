@@ -14,6 +14,7 @@ import SharedOffersPanel from './SharedOffersPanel.jsx';
 import CityLifePanel from './CityLifePanel.jsx';
 import ToyShopInterior, { TOY_SHOP_ID } from './ToyShopInterior.jsx';
 import { createLivingResidents } from './livingResidents3d.js';
+import BeyogluExpansion from './BeyogluExpansion.jsx';
 import {
   getCityPopulation, normalizeNeighborhood, customerFlow, neighborhoodPulse,
   isBusinessOpen, getSupplyModifier, storyForDay, applyStoryDecision
@@ -4747,6 +4748,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
         </div>
       </div>
     )}
+    <BeyogluExpansion cash={cash} setCash={setCash} year={year} month={month} day={day} saveKey={saveKey} />
   </main>;
 }
 
