@@ -4025,31 +4025,18 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     if (session && supabase) {
       try {
         const saleMarketValue = Number(getMarketValue(property));
-        let saleResponse = await supabase.rpc('release_property', {
+        const saleResponse = await supabase.rpc('release_property_v2', {
           p_property_id: Number(property.id),
           p_market_value: saleMarketValue,
           p_current_cash: Number(cash)
         });
-        // Support existing Supabase projects that have not yet refreshed to the
-        // newest three-argument RPC signature. Older signatures read the cloud save.
-        if (saleResponse.error?.code === 'PGRST202' || saleResponse.error?.code === '42883') {
-          saleResponse = await supabase.rpc('release_property', {
-            p_property_id: Number(property.id),
-            p_market_value: saleMarketValue
-          });
-        }
-        if (saleResponse.error?.code === 'PGRST202' || saleResponse.error?.code === '42883') {
-          saleResponse = await supabase.rpc('release_property', {
-            p_property_id: Number(property.id)
-          });
-        }
         const { data, error } = saleResponse;
         if (error) {
           const detail = [error.message, error.details, error.hint, error.code].filter(Boolean).join(' · ');
           throw new Error('Satış veritabanında tamamlanamadı: ' + (detail || 'Bilinmeyen RPC hatası'));
         }
         const result = Array.isArray(data) ? data[0] : data;
-        if (!result || Number(result.property_id) !== Number(property.id) || !Number.isFinite(Number(result.cash)) || !Number.isFinite(Number(result.sale_price))) {
+        if (!result || result.success !== true || Number(result.property_id) !== Number(property.id) || !Number.isFinite(Number(result.cash)) || !Number.isFinite(Number(result.sale_price)) || Number(result.sale_price) <= 0) {
           throw new Error('Sunucu satış işlemini doğrulayamadı. Mülkiyet ve bakiye değiştirilmedi.');
         }
         setCash(Number(result.cash));
