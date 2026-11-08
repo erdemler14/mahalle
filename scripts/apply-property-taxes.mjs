@@ -57,7 +57,8 @@ s = s.replace(
 // Scale the newly injected shop properties in the source itself, matching the base properties.
 const addedPropertyBlock = /\{ id: (\d+), name: '[^']+', type: '[^']+', price: (\d+), rent: (\d+),/g;
 s = s.replace(addedPropertyBlock, (match, id, price, rent) => {
-  if (Number(id) < 33) return match;
+  // Preserve deliberately priced 1920s Beyoğlu landmark investments (70–77), especially Maxime at 500 TL.
+  if (Number(id) < 33 || (Number(id) >= 70 && Number(id) <= 77)) return match;
   return match.replace('price: ' + price + ', rent: ' + rent + ',', 'price: ' + Math.round(Number(price) * 4.5) + ', rent: ' + Math.max(8, Math.round(Number(rent) * 0.8)) + ',');
 });
 
