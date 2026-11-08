@@ -67,14 +67,14 @@ const properties = [
   { id: 46, name: 'SMMM ve Muhasebe Yazıhanesi', type: 'İşletme', price: 3950, rent: 66, x: -7.5, z: -15.5, color: '#c5b8a8', floors: 2, width: 2.5, depth: 2.1, style: 'Defterler, hesap cetvelleri ve evrak dolabı bulunan yazıhane', history: 'Esnaf defterleri, hesap tutma ve vergi evrakı hizmeti sunar.' },
   { id: 47, name: 'Beyoğlu Ticaret ve Meslek Mektebi', type: 'İşletme', price: 12800, rent: 180, x: -2.5, z: -15.5, color: '#b7c4cf', floors: 3, width: 3.2, depth: 2.7, style: 'Üç katlı tarihî eğitim binası, amfiler ve meslek sınıfları', history: 'Hekimlik, hukuk, eczacılık ve teknik meslekler için uzun süreli ücretli eğitimler sunar.' },
 
-  { id: 48, name: 'Lebon Pastanesi', type: 'İşletme', price: 900, rent: 80, x: -31, z: -14, color: '#d9c0a2', floors: 3, width: 3.4, depth: 2.7, style: 'Pera pastanesi; aynalı vitrin, mermer masalar, süslü kapı ve pirinç detaylar', history: 'Pera edebiyat çevresinin tarihî buluşma noktalarından Lebon Pastanesi.' },
-  { id: 49, name: 'Nisuaz Pastanesi', type: 'İşletme', price: 720, rent: 72, x: 31, z: -14, color: '#dac4b4', floors: 3, width: 3.2, depth: 2.6, style: '1923 Pera pastanesi; yüksek cam vitrin, tatlı teşhiri ve ahşap doğrama', history: '1923 yılında açılan, edebiyat ve gece sohbetleriyle tanınan Nisuaz.' },
-  { id: 50, name: 'Elhamra Sineması', type: 'İşletme', price: 1800, rent: 145, x: -31, z: -5, color: '#c6a68f', floors: 4, width: 4.5, depth: 3.5, style: 'Elhamra sineması; gösterişli taş giriş, afiş panoları ve tiyatro kanopisi', history: '1920’lerde sinema ve gösterilerin merkezi Elhamra.' },
-  { id: 51, name: 'Maxime Gece Kulübü', type: 'İşletme', price: 500, rent: 15600, x: 31, z: -5, color: '#9a7c73', floors: 3, width: 4.0, depth: 3.0, style: 'Pera caz kulübü; Art Deco esintili cephesi, ışıklı tabela ve orkestra salonu', history: 'Özel erken yatırım: 500 TL giriş bedeliyle satın alındıktan sonra 8.500 TL mülk değerine ulaşır, her oyun günü 520 TL net gelir elde eder.' },
-  { id: 52, name: 'Tokatlıyan Oteli', type: 'İşletme', price: 2200, rent: 180, x: -31, z: 5, color: '#d1bba4', floors: 5, width: 4.4, depth: 3.6, style: 'Büyük Pera oteli; yüksek kemerli pencereler, balkonlar ve görkemli saçak', history: 'Beyoğlu’nda konaklama ve seçkin davetlerin önemli adresi.' },
-  { id: 53, name: 'Çiçek Pasajı', type: 'Ticaret', price: 1350, rent: 120, x: 31, z: 5, color: '#cdb69c', floors: 4, width: 4.5, depth: 3.7, style: 'Avrupa pasajı; kemerli taş giriş, uzun cam çatı ve çoklu dükkân vitrinleri', history: '19. yüzyıldan kalma tarihî pasaj, Pera ticaret ve sosyal hayatının parçası.' },
-  { id: 54, name: 'Degüstasyon Lokantası', type: 'İşletme', price: 800, rent: 95, x: -31, z: 14, color: '#bba08d', floors: 2, width: 3.3, depth: 2.8, style: 'Çiçek Pasajı çevresinde tarihî lokanta; ahşap panjur, tente ve vitrin', history: '1928 yılında açılan Degüstasyon lokantası; 1928 öncesi satın alınamaz.', opens: 1928 },
-  { id: 55, name: 'Beyoğlu Elektrikli Tramvay İşletmesi', type: 'İşletme', price: 1400, rent: 150, x: 31, z: 14, color: '#b9b1a0', floors: 2, width: 4.6, depth: 3.7, style: 'Tramvay işletme binası; vagon deposu kapıları, bilet gişesi ve saat panosu', history: '1914 sonrasında hizmet veren elektrikli tramvayları işletebilir; her oyun günü 90 TL ek net gelir getirir.' }
+  { id: 70, name: 'Lebon Pastanesi', type: 'İşletme', price: 900, rent: 80, x: -31, z: -14, color: '#d9c0a2', floors: 3, width: 3.4, depth: 2.7, style: 'Pera pastanesi; aynalı vitrin, mermer masalar, süslü kapı ve pirinç detaylar', history: 'Pera edebiyat çevresinin tarihî buluşma noktalarından Lebon Pastanesi.' },
+  { id: 71, name: 'Nisuaz Pastanesi', type: 'İşletme', price: 720, rent: 72, x: 31, z: -14, color: '#dac4b4', floors: 3, width: 3.2, depth: 2.6, style: '1923 Pera pastanesi; yüksek cam vitrin, tatlı teşhiri ve ahşap doğrama', history: '1923 yılında açılan, edebiyat ve gece sohbetleriyle tanınan Nisuaz.' },
+  { id: 72, name: 'Elhamra Sineması', type: 'İşletme', price: 1800, rent: 145, x: -31, z: -5, color: '#c6a68f', floors: 4, width: 4.5, depth: 3.5, style: 'Elhamra sineması; gösterişli taş giriş, afiş panoları ve tiyatro kanopisi', history: '1920’lerde sinema ve gösterilerin merkezi Elhamra.' },
+  { id: 73, name: 'Maxime Gece Kulübü', type: 'İşletme', price: 500, rent: 15600, x: 31, z: -5, color: '#9a7c73', floors: 3, width: 4.0, depth: 3.0, style: 'Pera caz kulübü; Art Deco esintili cephesi, ışıklı tabela ve orkestra salonu', history: 'Özel erken yatırım: 500 TL giriş bedeliyle satın alındıktan sonra 8.500 TL mülk değerine ulaşır, her oyun günü 520 TL net gelir elde eder.' },
+  { id: 74, name: 'Tokatlıyan Oteli', type: 'İşletme', price: 2200, rent: 180, x: -31, z: 5, color: '#d1bba4', floors: 5, width: 4.4, depth: 3.6, style: 'Büyük Pera oteli; yüksek kemerli pencereler, balkonlar ve görkemli saçak', history: 'Beyoğlu’nda konaklama ve seçkin davetlerin önemli adresi.' },
+  { id: 75, name: 'Çiçek Pasajı', type: 'Ticaret', price: 1350, rent: 120, x: 31, z: 5, color: '#cdb69c', floors: 4, width: 4.5, depth: 3.7, style: 'Avrupa pasajı; kemerli taş giriş, uzun cam çatı ve çoklu dükkân vitrinleri', history: '19. yüzyıldan kalma tarihî pasaj, Pera ticaret ve sosyal hayatının parçası.' },
+  { id: 76, name: 'Degüstasyon Lokantası', type: 'İşletme', price: 800, rent: 95, x: -31, z: 14, color: '#bba08d', floors: 2, width: 3.3, depth: 2.8, style: 'Çiçek Pasajı çevresinde tarihî lokanta; ahşap panjur, tente ve vitrin', history: '1928 yılında açılan Degüstasyon lokantası; 1928 öncesi satın alınamaz.', opens: 1928 },
+  { id: 77, name: 'Beyoğlu Elektrikli Tramvay İşletmesi', type: 'İşletme', price: 1400, rent: 150, x: 31, z: 14, color: '#b9b1a0', floors: 2, width: 4.6, depth: 3.7, style: 'Tramvay işletme binası; vagon deposu kapıları, bilet gişesi ve saat panosu', history: '1914 sonrasında hizmet veren elektrikli tramvayları işletebilir; her oyun günü 90 TL ek net gelir getirir.' }
 ];
 
 // Short, period-grounded vignettes give every building a distinct neighbourhood memory.
@@ -136,8 +136,8 @@ Object.assign(properties.find(property => property.id === 40), { x: -20.5, z: 5.
 Object.assign(properties.find(property => property.id === 41), { x: 27.2, z: 22.5, rotation: -0.03 });
 // Added Pera culture quarter: fixed sites beyond the existing property frontages.
 const peraLocations = {
-  48: [-31, -14], 49: [31, -14], 50: [-31, -5], 51: [31, -5],
-  52: [-31, 5], 53: [31, 5], 54: [-31, 14], 55: [31, 14]
+  70: [-31, -14], 71: [31, -14], 72: [-31, -5], 73: [31, -5],
+  74: [-31, 5], 75: [31, 5], 76: [-31, 14], 77: [31, 14]
 };
 properties.forEach(p => { if (peraLocations[p.id]) { [p.x, p.z] = peraLocations[p.id]; p.rotation = 0; } });
 // Apply after commercial-shop build scripts: property IDs, names, prices and owners never change.
@@ -1713,7 +1713,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const area=[1,4,10,12].includes(property.id)?0.0022:[3,17,18].includes(property.id)?-0.0008:0;
     const demand=property.type==='Ticaret'?0.0012:property.type==='Konut'?0.0007:property.type==='Atölye'?0.0003:0;
     const next=current*(1+inflation+area+demand-0.001+(Math.random()-0.5)*0.018);
-    return [property.id,Math.max(property.id === 51 && owned.includes(51) ? 8500 : property.price*0.45,Math.min(property.id === 51 && owned.includes(51) ? 20000 : property.price*3.5,Math.round(next*100)/100))];
+    return [property.id,Math.max(property.id === 73 && owned.includes(73) ? 8500 : property.price*0.45,Math.min(property.id === 73 && owned.includes(73) ? 20000 : property.price*3.5,Math.round(next*100)/100))];
   })));
   // Shared city offers live in Supabase, so both players can answer without
   // PeerJS rooms or being online at the same moment.
@@ -3150,10 +3150,10 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       if (business.entries.length) reportRows.push(...business.entries.map(text => ({ text, kind: 'daily' })));
       if (!ferryClosing.skipped) reportRows.push({ text: 'Haliç vapuru: ' + ferryClosing.passengers + ' yolcu · hasılat +₺' + ferryClosing.gross.toFixed(2) + ' · gider -₺' + ferryClosing.cost.toFixed(2) + ' · net +₺' + ferryClosing.net.toFixed(2), kind: 'daily' });
       const daySalesRevenue = Math.max(0, Number(dailySalesRevenue) || 0);
-      setZReport({ date: `${day}.${String(month).padStart(2, '0')}.${year}`, nextDate: `${nextDay}.${String(nextMonth).padStart(2, '0')}.${nextMonthRaw > 12 ? year + 1 : year}`, rows: reportRows, totalRevenue: daySalesRevenue + ferryClosing.gross, costs: (Number(dailyCost) || 0) + ferryClosing.cost, rent: Number(dailyRent) || 0, net: Number(dailyRent + daySalesRevenue - dailyCost + dryCleanDelta + ferryClosing.net + (owned.includes(51) && !rented.includes(51) ? 520 : 0) + (owned.includes(55) && !rented.includes(55) ? 90 : 0)) || 0, dryCleanDelta });
+      setZReport({ date: `${day}.${String(month).padStart(2, '0')}.${year}`, nextDate: `${nextDay}.${String(nextMonth).padStart(2, '0')}.${nextMonthRaw > 12 ? year + 1 : year}`, rows: reportRows, totalRevenue: daySalesRevenue + ferryClosing.gross, costs: (Number(dailyCost) || 0) + ferryClosing.cost, rent: Number(dailyRent) || 0, net: Number(dailyRent + daySalesRevenue - dailyCost + dryCleanDelta + ferryClosing.net + (owned.includes(73) && !rented.includes(73) ? 520 : 0) + (owned.includes(77) && !rented.includes(77) ? 90 : 0)) || 0, dryCleanDelta });
       setDailySalesLog([]);
       setDailySalesRevenue(0);
-      const culturalNet = (owned.includes(51) && !rented.includes(51) ? 520 : 0) + (owned.includes(55) && !rented.includes(55) ? 90 : 0);
+      const culturalNet = (owned.includes(73) && !rented.includes(73) ? 520 : 0) + (owned.includes(77) && !rented.includes(77) ? 90 : 0);
       const dailyNet = dailyRent + business.revenue - dailyCost + dryCleanDelta + ferryClosing.net + culturalNet;
       setCash(v => Math.round((v + dailyNet) * 100) / 100);
       setDay(nextDay);
@@ -3608,7 +3608,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     if (!ferryClosing.skipped) setFerryBusiness(previous => applyFerrySettlement(previous, ferryClosing));
     const rent = Math.round((properties.filter(p => owned.includes(p.id) && rented.includes(p.id)).reduce((sum, p) => sum + Number(p.rent || 0) / 30, 0) + Object.entries(unitRented).reduce((sum, [key, activeRent]) => { if (!activeRent) return sum; const [pid] = key.split(':'); const p = properties.find(item => item.id === Number(pid)); const unitOwner = unitOwners[key]; return sum + (p && unitOwner?.playerId === playerId ? Number(p.rent || 0) / (p.units || 1) / 30 : 0); }, 0)) * 100) / 100;
     const totalCosts = upkeep + sales.officialFees;
-    const culturalNet = (owned.includes(51) && !rented.includes(51) ? 520 : 0) + (owned.includes(55) && !rented.includes(55) ? 90 : 0);
+    const culturalNet = (owned.includes(73) && !rented.includes(73) ? 520 : 0) + (owned.includes(77) && !rented.includes(77) ? 90 : 0);
     const net = rent + business.revenue + sales.revenue - totalCosts + ferryClosing.net + culturalNet;
     const reportRows = [...dailySalesLog, ...sales.entries.map(text => ({ text, kind: 'sale' })), ...business.entries.map(text => ({ text, kind: 'daily' }))];
     if (!ferryClosing.skipped) reportRows.push({ text: 'Haliç vapuru: ' + ferryClosing.passengers + ' yolcu · net +₺' + ferryClosing.net.toFixed(2), kind: 'daily' });
@@ -4014,7 +4014,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
         }
         setCash(Number(result.cash));
         setOwned(old => old.includes(active.id)?old:[...old,active.id]);
-        if (active.id === 51) setMarketValues(old => ({ ...old, [51]: 8500 }));
+        if (active.id === 73) setMarketValues(old => ({ ...old, [73]: 8500 }));
         setRented(old=>old.filter(id=>id!==active.id));
         setOwnerByProperty(old=>({...old,[active.id]:{
           playerId:session.user.id,name:result.owner_name||playerName.trim()||'Mahalle sakini'
@@ -4039,7 +4039,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     if (cash < purchasePrice) { tell('Bu mülk için ₺' + purchasePrice.toLocaleString('tr-TR') + ' gerekiyor. Önce çalışıp birikim yap.'); return; }
     setCash(v => v - purchasePrice);
     setOwned(v => [...v, active.id]);
-    if (active.id === 51) setMarketValues(old => ({ ...old, [51]: 8500 }));
+    if (active.id === 73) setMarketValues(old => ({ ...old, [73]: 8500 }));
     setRented(v => v.filter(id => id !== active.id));
     publishOwners({ ...ownerByProperty, [active.id]: { playerId, name: playerName.trim() || (playerId === 'host' ? 'Ev sahibi' : playerId === 'guest' ? 'Oyuncu 2' : 'Ben') } });
     setShopPropertyId(null);
