@@ -24,7 +24,7 @@ const categories={
   food:/kahve|kahvehane|kafe|pastane|fırın|firin|lokanta|meyhane|gazino|erzak|manav|balık|balik|şarap|sarap|büfe|bufe|tatlı/i,
   market:/gazete|tütün|tutun|kitap|terzi|kumaş|kumas|çiçek|cicek|kundura|saatçi|saatci|sabun|eczane|levazımat/i,
   leisure:/meyhane|gazino|sinema|salon|kahve|otel|lokanta|pastane|hamam/i,
-  industry:/matbaa|atölye|atolye|depo|ambar|dokuma|kundura|marangoz|demirci|imalathane/i,
+  industry:/matbaa|atölye|atolye|depo|ambar|dokuma|kundura|marangoz|demirci|imalathane|kereste|bıçkı|bicki/i,
   maritime:/deniz|rıhtım|rihtim|iskele|gemi|yelken|liman|levazımat|levazimat|tekne|halat/i,
   flowers:/çiçek|cicek|çiçekçi|cicekci|buket|aranjman|orkide/i
 };
@@ -45,7 +45,7 @@ export function getCityEconomicProfile({properties=[],clock={},ferryBusiness={},
   const inventory=Math.max(0,Number(stock)||0);
   const target=Math.max(1,Number(targetStock)||10);
   const scarcity=clamp(1.18-(inventory/(target*2))*.36,.82,1.18);
-  const demandEffect=clamp(.82+(demand-1)*.48,.72,1.30);
+  const demandEffect=clamp(1+(demand-1)*.48,.72,1.30);
   const index=clamp(demandEffect*scarcity,.72,1.52);
   return round2(Math.max(0,Number(basePrice)||0)*index);
 }
