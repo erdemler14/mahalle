@@ -259,7 +259,8 @@ export function createLivingResidents({scene,properties,isMobile=false,onVisit=(
     playerRig.legs[1].rotation.x=-Math.sin(playerStride)*.19*playerPace;
     playerRig.arms[0].rotation.x=-Math.sin(playerStride)*.14*playerPace;
     playerRig.arms[1].rotation.x=Math.sin(playerStride)*.14*playerPace;
-    playerRig.group.visible=clock.hour>=6&&clock.hour<23;
+    // Keep the player's own avatar visible at all hours so 'Find me' has a visible target.
+    playerRig.group.visible=true;
     for(const npc of historicResidents){
       if(elapsed < npc.insideUntil){npc.group.visible=false;continue;}
       if(npc.insideUntil && elapsed >= npc.insideUntil){npc.group.visible=true;npc.insideUntil=0;}

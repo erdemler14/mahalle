@@ -210,7 +210,14 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
   const avatarProfileRef = useRef(avatarProfile);
   const avatarSetterRef = useRef(null);
   useEffect(() => { avatarProfileRef.current = avatarProfile; avatarSetterRef.current?.(avatarProfile); }, [avatarProfile]);
-  useEffect(() => { if (focusPersona) cameraControlRef.current?.('focus-player'); }, [focusPersona, focusPersonaToken]);
+  useEffect(() => {
+    if (!focusPersona) return;
+    // Wait one animation frame for the scene's camera controller to initialize.
+    const frame = requestAnimationFrame(() => {
+      cameraControlRef.current?.('focus-player');
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [focusPersona, focusPersonaToken]);
   const selectedRef = useRef(selected);
   const hourRef = useRef(hour);
   const ferryStateRef = useRef(ferryBusiness);
