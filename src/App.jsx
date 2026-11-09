@@ -4878,7 +4878,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
             {(() => {
               const level = getBusinessSalesLevel(active.id);
               const allProducts = (tradeCatalog[active.id] || []).filter(item => item.price > 0);
-              const availableProducts = allProducts.filter(item => isBusinessProductUnlocked(propertyId, item) );
+              const availableProducts = allProducts.filter(item => isBusinessProductUnlocked(active.id, item) );
               const selectedProduct = availableProducts.find(item => item.id === businessPlans[active.id]) || availableProducts[0];
               const profile = getBusinessProfile(active.id);
               const inventory = getInventoryState(active.id);
@@ -4928,7 +4928,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
                 </div>
                 <div className="production-product-picker">
                   {allProducts.map(item => {
-                    const unlocked = isBusinessProductUnlocked(propertyId, item) ;
+                    const unlocked = isBusinessProductUnlocked(active.id, item) ;
                     const chosen = selectedProduct?.id === item.id;
                     return <button type="button" key={item.id} className={`production-product-choice ${chosen ? 'active' : ''} ${!unlocked ? 'locked' : ''}`} disabled={!unlocked} onClick={() => setBusinessPlans(old => ({...old,[active.id]:item.id}))}>
                       <strong>{item.name}</strong>
