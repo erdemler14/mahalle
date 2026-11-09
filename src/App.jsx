@@ -21,6 +21,7 @@ import {
 } from './cityLifeEngine.js';
 import { FERRY_LICENSE_PRICE, FERRY_UPGRADES, normaliseFerryBusiness, calculateFerryDay, applyFerrySettlement } from './ferryBusiness.js';
 import { TRAMWAY_LICENSE_PRICE, TRAMWAY_UPGRADES, normaliseTramwayBusiness, calculateTramwayDay, applyTramwaySettlement } from './tramwayBusiness.js';
+import { validateBusinessCatalog } from './businessCatalogValidation.js';
 
 const properties = [
   { id: 1, name: 'Madam Eleni’nin Bakkal ve Şarküterisi', type: 'Ticaret', price: 1890, rent: 26, x: -4.2, z: -1.1, color: '#d9b99c', floors: 3, style: 'Galata taş cephesi' },
@@ -2834,6 +2835,23 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const recipeCost = getBusinessRecipeCost(propertyId, product);
     return Math.round(Math.max(Number(product.price) || 0, recipeCost * 1.38) * 100) / 100;
   };
+
+  // Audit every stocked catalog item at startup so missing or broken recipes
+  // are visible during development instead of surfacing as a player-facing error.
+  useEffect(() => {
+    const issues = validateBusinessCatalog({
+      properties,
+      catalog: tradeCatalog,
+      getProfile: getBusinessProfile,
+      getRecipe: getBusinessRecipe,
+      exemptPropertyIds: [42, 43, 44, 45, 46, 47]
+    });
+    if (issues.length) {
+      console.groupCollapsed('[Mahalle] İşletme katalog / reçete denetimi: ' + issues.length + ' sorun');
+      issues.forEach(issue => console.warn(issue.message, issue));
+      console.groupEnd();
+    }
+  }, []);
 
   const profession = professionOptions.find(p => p.id === professionId) || professionOptions.find(p => p.id === 'amele');
   const active = properties.find(p => p.id === selected) || properties[0];

@@ -126,3 +126,50 @@ test('NPCs stay in place across game-hour boundaries until they move',()=>{
   city.update({clock:{...clock,hour:clock.hour+1},elapsed:1.032,delta:.016});
   assert.ok(Math.hypot(first.position.x-before.x,first.position.z-before.z)<0.2);
 });
+
+test('business catalog audit catches missing recipes, foreign materials, invalid quantities and duplicate IDs', async () => {
+  const { validateBusinessCatalog } = await import('../src/businessCatalogValidation.js');
+  const properties = [{ id: 3, name: 'Deniz Levazımatçısı' }, { id: 34, name: 'Çiçekçi' }];
+  const catalog = {
+    3: [
+      { id: 'rope', name: 'Halat', price: 10 },
+      { id: 'sail', name: 'Yelken', price: 20 },
+      { id: 'bad', name: 'Bozuk ürün', price: 5 },
+      { id: 'rope', name: 'Tekrar halat', price: 10 }
+    ],
+    34: [{ id: 'hotel-flowers', name: 'Otel çiçek aboneliği', price: 30 }]
+  };
+  const profiles = {
+    3: { materials: [{ id: 'hemp' }, { id: 'canvas' }] },
+    34: { materials: [{ id: 'fresh-flower' }] }
+  };
+  const recipes = {
+    '3:rope': [{ id: 'hemp', qty: 1 }],
+    '3:sail': [{ id: 'unknown-canvas', qty: 1 }],
+    '3:bad': [{ id: 'canvas', qty: 0 }],
+    '34:hotel-flowers': []
+  };
+  const issues = validateBusinessCatalog({
+    properties, catalog,
+    getProfile: id => profiles[id],
+    getRecipe: (id, product) => recipes[id + ':' + product.id] || []
+  });
+  assert.deepEqual(issues.map(issue => issue.code).sort(), [
+    'duplicate-product-id', 'invalid-quantity', 'missing-recipe', 'unknown-material'
+  ]);
+});
+
+test('business catalog audit accepts complete shop-specific recipes and skips service-only offices', async () => {
+  const { validateBusinessCatalog } = await import('../src/businessCatalogValidation.js');
+  const issues = validateBusinessCatalog({
+    properties: [{ id: 34, name: 'Çiçekçi' }, { id: 43, name: 'Hukuk Bürosu' }],
+    catalog: {
+      34: [{ id: 'bouquet', name: 'Buket', price: 12 }],
+      43: [{ id: 'consult', name: 'Danışmanlık', price: 25, service: true }]
+    },
+    getProfile: id => id === 34 ? { materials: [{ id: 'flower' }] } : { materials: [] },
+    getRecipe: () => [{ id: 'flower', qty: 2 }],
+    exemptPropertyIds: [43]
+  });
+  assert.deepEqual(issues, []);
+});
