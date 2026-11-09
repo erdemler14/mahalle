@@ -92,7 +92,7 @@ test('story choices cost real money once and durably alter reputation and suppli
 test('first-person visual characters update without WebGL or a browser',()=>{
   const scene=new THREE.Scene();
   const city=createLivingResidents({scene,properties,isMobile:true});
-  assert.equal(city.residents,MAX_RENDERED_RESIDENTS.mobile);
+  assert.equal(city.residents,MAX_RENDERED_RESIDENTS.mobile + 1); // Includes the player's visible roaming persona.
   city.update({clock,elapsed:10,delta:.017,weather:{raining:false}});
   city.update({clock,elapsed:11,delta:.017,weather:{raining:false}});
   assert.ok(scene.children.some(object=>object.visible));
