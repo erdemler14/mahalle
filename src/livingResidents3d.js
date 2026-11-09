@@ -122,8 +122,38 @@ const venueKeywords={
   meyhane:/meyhane|lokanta/i,
   gazino:/gazino|maxim|musiki/i,
   plak:/plak|gramofon|gazino/i,
-  market:/pasaj|çiçek|cicek|dükkân|dukkan|mağaza|magaza/i
+  market:/pasaj|çiçek|cicek|dükkân|dukkan|mağaza|magaza/i,
+  architecture:/mimarlık|mühendislik|şantiye|atölye|teknik büro/i
 };
+function describeActivity(person,place,purpose,clock,enRoute=false){
+  const venue=String(place?.name||'mahalle').toLocaleLowerCase('tr-TR');
+  const profession=String(person?.profession||person?.bio||person?.role||'').toLocaleLowerCase('tr-TR');
+  if(enRoute)return (place?.name||'mahalle')+' yönünde yürüyor';
+  let options;
+  if(/mimar|architecture|mühendis/.test(profession)) options=/mimarlık|mühendislik|büro|atölye/.test(venue)?['proje çizimlerini inceliyor','yeni bir yapı taslağı üzerinde çalışıyor','teknik planları gözden geçiriyor']:['yapı cephelerini inceliyor','sokak dokusu üzerine notlar alıyor'];
+  else if(/oyuncu|tiyatro|sinema/.test(profession)) options=/sinem|tiyatro|elhamra/.test(venue)?['gösterim programını inceliyor','prova ve sahne hazırlıklarını takip ediyor','kuliste sanat çevresiyle sohbet ediyor']:['yeni oyun üzerine konuşuyor','sanat çevresinden dostlarıyla buluşuyor'];
+  else if(/şair|yazar|edebiyat/.test(profession)) options=/matbaa|gazete|basım/.test(venue)?['yeni yazısının provalarını inceliyor','gazete ve dergileri gözden geçiriyor']:['şiir ve yazı notları alıyor','edebiyat sohbetine katılıyor','yeni bir metin üzerine düşünüyor'];
+  else if(/tarihçi|akademisyen|araştırmacı|türkoloji/.test(profession)) options=/mektep|okul|üniversite|eğitim/.test(venue)?['ders ve araştırma notlarını gözden geçiriyor','öğrencilerle ilmî konuları konuşuyor']:['kitap ve kaynakları inceliyor','tarihî notlarını düzenliyor','bir araştırma üzerine düşünüyor'];
+  else if(/ressam|sanatçı/.test(profession)) options=['eskiz defterine çizimler yapıyor','çevresindeki insanları ve yapıları gözlemliyor','sanat üzerine sohbet ediyor'];
+  else if(/porter|hamal|taşıyıcı/.test(profession)) options=['yükleri teslim ediyor','yeni bir taşıma işi arıyor'];
+  else if(/student|öğrenci/.test(profession)) options=['ders notlarını gözden geçiriyor','kitap ve kırtasiye bakıyor'];
+  else if(/matbaa|gazete|basım/.test(venue)) options=['gazetenin yeni nüshalarını inceliyor','ilan ve baskı işlerini takip ediyor'];
+  else if(/sinem|tiyatro|elhamra/.test(venue)) options=['gösterim programına göz atıyor','afişleri inceliyor'];
+  else if(/pastane|kahve|kıraathane|café|cafe/.test(venue)) options=['kahve molası veriyor','tanıdıklarıyla sohbet ediyor','gazete ve dergileri karıştırıyor'];
+  else if(/kitap|kitabevi/.test(venue)) options=['kitapları karıştırıyor','yeni çıkan yayınlara göz atıyor'];
+  else if(/lokanta|meyhane|restoran|gazino/.test(venue)) options=['yemek molası veriyor','musiki ve sohbet eşliğinde vakit geçiriyor'];
+  else if(/mimarlık|mühendislik|büro/.test(venue)) options=['mesleki görüşme yapıyor','plan ve çizimleri inceliyor'];
+  else options=['alışveriş yapıyor','mahalle sakinleriyle sohbet ediyor','günlük işlerini hallediyor'];
+  const seed=Math.abs(Math.sin((Number(person?.index)||Number(person?.id)||1)*17.31+(Number(place?.id)||0)*9.17+(Number(clock?.day)||1)*3.71+(Number(clock?.hour)||0)*1.91));
+  return options[Math.floor(seed*options.length)];
+}
+function rememberVisit(person,place,activity,clock){
+  if(!person||!place)return;
+  person.currentPlaceName=place.name||'Mahalle'; person.currentActivity=activity;
+  person.recentVisits=person.recentVisits||[];
+  person.recentVisits.unshift({place:person.currentPlaceName,activity,time:(clock?.day||1)+'. gün · '+String(clock?.hour||0).padStart(2,'0')+':00'});
+  person.recentVisits=person.recentVisits.slice(0,4);
+}
 function historicVenueFor(person,properties,clock){
   const hour=Number(clock.hour)||0;
   const tags=person.hangouts||['coffee','literary'];
@@ -162,7 +192,7 @@ export function createLivingResidents({scene,properties,isMobile=false,onVisit=(
     rig.group.userData.residentName=person.name || 'Mahalle sakini';
     addPersonHitTarget(rig.group,0.9,0.54);
     scene.add(rig.group);
-    return {...person,...rig,path:[],nextPoint:0,intent:null};
+    return {...person,...rig,path:[],nextPoint:0,intent:null,currentActivity:'Mahallede dolaşıyor',currentPlaceName:'Beyoğlu sokakları',recentVisits:[],lastActivityTargetId:null};
   });
   // The player's own persistent persona is a visible resident in the shared streets.
   let playerRig=makePerson(901,'player',avatarProfile.gender||'male',avatarProfile);
@@ -181,6 +211,9 @@ export function createLivingResidents({scene,properties,isMobile=false,onVisit=(
   addPersonHitTarget(playerRig.group,.94,.62);
   scene.add(playerRig.group);
   let playerPath=[],playerNext=0,playerTarget={x:2.5,z:1.2},playerLastDestination=-1;
+  let playerTargetId=null,playerLastRecordedTargetId=null;
+  let playerCurrentActivity='Mahallede dolaşıyor',playerCurrentPlaceName='Beyoğlu sokakları';
+  const playerRecentVisits=[];
   function applyAvatarProfile(profile={}){
     const position=playerRig.group.position.clone(),rotation=playerRig.group.rotation.y;
     scene.remove(playerRig.group);
@@ -212,7 +245,7 @@ export function createLivingResidents({scene,properties,isMobile=false,onVisit=(
     rig.group.userData.residentName=person.name;
     rig.group.name=person.name;
     scene.add(rig.group);
-    return {...person,...rig,index:112+i,path:[],nextPoint:0,journeySpeed:.65,goingHome:false,insideUntil:0,visitCount:0};
+    return {...person,...rig,index:112+i,path:[],nextPoint:0,journeySpeed:.65,goingHome:false,insideUntil:0,visitCount:0,currentActivity:'Pera’da dolaşıyor',currentPlaceName:'Beyoğlu sokakları',recentVisits:[],lastActivityTargetId:null};
   });
   let currentKey='',lastElapsed=null,frame=0,avatarElapsed=0;
   function update({clock,elapsed,weather={}}){
@@ -223,7 +256,8 @@ export function createLivingResidents({scene,properties,isMobile=false,onVisit=(
         // Let each resident finish the current walk and spend time at the venue before choosing another destination.
         if(npc.path.length>1 && npc.nextPoint<npc.path.length) continue;
         if(elapsed < npc.insideUntil) continue;
-        const target=npc.goingHome ? properties.find(p=>p.id===npc.homeId) : historicVenueFor(npc,properties,clock);
+        const returningHome=npc.goingHome;
+        const target=returningHome ? properties.find(p=>p.id===npc.homeId) : historicVenueFor(npc,properties,clock);
         npc.goingHome=!npc.goingHome;
         if(target){
           const here={x:npc.group.position.x,z:npc.group.position.z};
@@ -233,6 +267,7 @@ export function createLivingResidents({scene,properties,isMobile=false,onVisit=(
           const destination={x:target.x+lane*.62,z:target.z+((target.depth||2.4)/2)+.45+side*(.55+(npc.index%3)*.28)};
           npc.path=[here,...walkWaypoints(here,destination).slice(1)];
           npc.pathTargetId=target.id;
+          npc.currentActivity=describeActivity(npc,target,returningHome?'home':'visit',clock,true);
           if(npc.path.length<2)npc.path=[here,destination];
           npc.nextPoint=1;
           npc.justVisited=false;
@@ -242,6 +277,9 @@ export function createLivingResidents({scene,properties,isMobile=false,onVisit=(
         const intent=visitIntent(npc,clock,properties);
         npc.intent=intent;
         if(!intent)continue;
+        npc.currentDestinationId=intent.to?.id;
+        npc.currentPurpose=intent.purpose;
+        npc.currentActivity=describeActivity(npc,intent.to,intent.purpose,clock,true);
         const destination=walkWaypoints(intent.from,intent.to);
         const here={x:npc.group.position.x,z:npc.group.position.z};
         const upcoming=destination.slice(1);
@@ -255,15 +293,21 @@ export function createLivingResidents({scene,properties,isMobile=false,onVisit=(
     lastElapsed=elapsed;
     avatarElapsed+=seconds;
     if(playerNext>=playerPath.length || playerPath.length<2){
-      const destinations=[[-20,-16],[-14,8],[-6,-20],[3,14],[15,-12],[21,7],[8,22],[-23,4],[0,-5],[18,18]];
-      let choice=Math.floor(Math.abs(Math.sin(Math.floor(avatarElapsed/8)*17.31+901)*destinations.length))%destinations.length;
-      if(choice===playerLastDestination)choice=(choice+3)%destinations.length;
-      playerLastDestination=choice;
-      const [x,z]=destinations[choice];
-      const here={x:playerRig.group.position.x,z:playerRig.group.position.z};
-      playerPath=walkWaypoints(here,{x,z});
-      if(playerPath.length<2)playerPath=[here,{x,z}];
-      playerNext=1;
+      const destinations=properties.filter(p=>['İşletme','Ticaret','Atölye'].includes(p.type)&&(p.opens==null||Number(clock.year)>=p.opens));
+      if(destinations.length){
+        let choice=Math.floor(Math.abs(Math.sin(Math.floor(avatarElapsed/8)*17.31+901)*destinations.length))%destinations.length;
+        if(destinations[choice]?.id===playerLastDestination)choice=(choice+3)%destinations.length;
+        const target=destinations[choice],here={x:playerRig.group.position.x,z:playerRig.group.position.z};
+        playerLastDestination=target.id;playerTargetId=target.id;playerTarget={x:target.x,z:target.z};
+        const destination={x:target.x+((choice%5)-2)*.48,z:target.z+((target.depth||2.4)/2)+.9};
+        playerPath=walkWaypoints(here,destination);
+        if(playerPath.length<2)playerPath=[here,destination];
+        playerNext=1;playerCurrentPlaceName=target.name;
+        playerCurrentActivity=describeActivity({id:901,profession:avatarProfile.bio||''},target,'visit',clock,true);
+      }else{
+        const fallback={x:playerRig.group.position.x+4,z:playerRig.group.position.z+3};
+        playerPath=walkWaypoints({x:playerRig.group.position.x,z:playerRig.group.position.z},fallback);playerNext=1;
+      }
     }
     frame++;
     // 30 fps animation for residents, keeping the rest of the Three.js world
@@ -271,6 +315,15 @@ export function createLivingResidents({scene,properties,isMobile=false,onVisit=(
     if(frame%2===1)return;
     const playerWalker={group:playerRig.group,path:playerPath,nextPoint:playerNext,journeySpeed:.52};
     const playerMoving=stepResident(playerWalker,seconds*2);playerNext=playerWalker.nextPoint;
+    if(!playerMoving && playerTargetId!=null && playerLastRecordedTargetId!==playerTargetId){
+      const place=properties.find(p=>p.id===playerTargetId);
+      if(place){
+        const activity=describeActivity({id:901,profession:avatarProfile.bio||''},place,'visit',clock,false);
+        playerCurrentActivity=activity;playerCurrentPlaceName=place.name;
+        playerRecentVisits.unshift({place:place.name,activity,time:(clock.day||1)+'. gün · '+String(clock.hour||0).padStart(2,'0')+':00'});
+        playerRecentVisits.splice(4);playerLastRecordedTargetId=playerTargetId;
+      }
+    }
     const playerStride=elapsed*4.7;
     const playerPace=playerMoving?1:.08;
     playerRig.group.position.y=.018+Math.abs(Math.sin(playerStride))*.009*playerPace;
@@ -284,9 +337,14 @@ export function createLivingResidents({scene,properties,isMobile=false,onVisit=(
       if(elapsed < npc.insideUntil){npc.group.visible=false;continue;}
       if(npc.insideUntil && elapsed >= npc.insideUntil){npc.group.visible=true;npc.insideUntil=0;}
       const moving=stepResident(npc,seconds*2);
-      if(!moving && npc.path.length>1 && npc.nextPoint>=npc.path.length && npc.pathTargetId && npc.pathTargetId!==npc.homeId && !npc.justVisited){
-        npc.justVisited=true;npc.visitCount++;onVisit(npc.pathTargetId);
-        npc.insideUntil=elapsed+18+((npc.index*7)%24);npc.group.visible=false;
+      if(!moving && npc.path.length>1 && npc.nextPoint>=npc.path.length && npc.pathTargetId && !npc.justVisited){
+        npc.justVisited=true;
+        const place=properties.find(p=>p.id===npc.pathTargetId);
+        if(npc.pathTargetId!==npc.homeId && place){
+          npc.visitCount++;onVisit(npc.pathTargetId);
+          rememberVisit(npc,place,describeActivity(npc,place,'visit',clock,false),clock);
+          npc.insideUntil=elapsed+18+((npc.index*7)%24);npc.group.visible=false;
+        }else if(place){npc.currentPlaceName=place.name||'Evi';npc.currentActivity='Evinde dinleniyor';}
       } else if(moving) npc.justVisited=false;
       const stride=elapsed*4.5+npc.index;
       const pace=moving?1:.08;
@@ -302,6 +360,11 @@ export function createLivingResidents({scene,properties,isMobile=false,onVisit=(
       if(!intent){npc.group.visible=false;continue;}
       const evening=clock.hour>=23||clock.hour<6;
       const moving=stepResident(npc,seconds*2);
+      const target=properties.find(p=>p.id===npc.currentDestinationId);
+      if(!moving && target && npc.lastActivityTargetId!==target.id){
+        rememberVisit(npc,target,describeActivity(npc,target,npc.currentPurpose,clock,false),clock);
+        npc.lastActivityTargetId=target.id;
+      }
       const raining=!!weather.raining;
       npc.group.visible=(!evening||npc.role==='porter')&&!(raining&&npc.index%5===0);
       if(!npc.group.visible)continue;
@@ -323,11 +386,11 @@ export function createLivingResidents({scene,properties,isMobile=false,onVisit=(
       let root=hit.object;
       while(root && !root.userData.isPlayerAvatar && root.userData.historicPersonId==null && root.userData.residentId==null)root=root.parent;
       if(!root)continue;
-      if(root.userData.isPlayerAvatar) return {kind:'player',id:'player-persona',name:avatarProfile.name || 'Benim personam',gender:avatarProfile.gender,bio:avatarProfile.bio || 'Beyoğlu mahallesinde kendi hikâyeni yazıyorsun.',dialogue:'Bu, mahallede oluşturduğun kişisel karakterin.',marker:'PERSONAN'};
+      if(root.userData.isPlayerAvatar) return {kind:'player',id:'player-persona',name:avatarProfile.name || 'Benim personam',gender:avatarProfile.gender,bio:avatarProfile.bio || 'Beyoğlu mahallesinde kendi hikâyeni yazıyorsun.',dialogue:'Bu, mahallede oluşturduğun kişisel karakterin.',marker:'PERSONAN',currentActivity:playerCurrentActivity,currentPlaceName:playerCurrentPlaceName,recentVisits:playerRecentVisits.slice(0,4)};
       const historic=historicResidents.find(npc=>npc.group===root);
-      if(historic) return {kind:'historic',id:historic.id,name:historic.name,gender:historic.gender,bio:historic.bio || historic.dialogue,dialogue:historic.dialogue,marker:'TARİHÎ ŞAHSİYET'};
+      if(historic) return {kind:'historic',id:historic.id,name:historic.name,gender:historic.gender,profession:historic.profession,bio:historic.bio || historic.dialogue,dialogue:historic.dialogue,marker:'TARİHÎ ŞAHSİYET',currentActivity:historic.currentActivity,currentPlaceName:historic.currentPlaceName,recentVisits:(historic.recentVisits||[]).slice(0,4)};
       const resident=activePeople.find(npc=>npc.group===root);
-      if(resident) return {kind:'resident',id:resident.id,name:resident.name || 'Mahalle sakini',gender:resident.gender,bio:resident.bio || resident.dialogue || 'Beyoğlu’nun gündelik hayatından bir mahalle sakini.',dialogue:resident.dialogue || 'Mahallenin gündelik hayatı burada akıp gidiyor.',marker:'MAHALLE SAKİNİ'};
+      if(resident) return {kind:'resident',id:resident.id,name:resident.name || ('Mahalle sakini #'+(resident.id+1)),gender:resident.gender,profession:resident.role,bio:resident.bio || 'Beyoğlu’nun gündelik hayatından bir mahalle sakini.',dialogue:resident.dialogue || 'Mahallenin gündelik hayatı burada akıp gidiyor.',marker:'MAHALLE SAKİNİ',currentActivity:resident.currentActivity,currentPlaceName:resident.currentPlaceName,recentVisits:(resident.recentVisits||[]).slice(0,4)};
     }
     return null;
   }

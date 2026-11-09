@@ -1427,3 +1427,14 @@ body{overflow:hidden}
 .production-selected-controls>.stock-button{flex:1;min-height:38px}
 .production-queue-summary{margin-top:8px;color:#77735f;font-size:10px}
 @media(max-width:560px){.production-product-picker{grid-template-columns:1fr}.production-selected-controls{align-items:stretch;flex-direction:column}.production-selected-controls .production-batch-picker{align-self:stretch}}
+
+.person-profession{margin:-3px 0 10px;color:#75654f;font:600 11px/1.35 'IBM Plex Mono',monospace;letter-spacing:.02em}
+.person-current-activity{display:grid;gap:4px;margin:12px 0 10px;padding:10px 11px;border:1px solid rgba(93,119,105,.24);border-radius:9px;background:rgba(224,235,222,.55)}
+.person-current-activity>span,.person-visit-history>span{color:#6d765e;font:700 9px/1.2 'IBM Plex Mono',monospace;letter-spacing:.1em}
+.person-current-activity strong{font:600 13px/1.35 Georgia,'Times New Roman',serif;color:#34483d}
+.person-current-activity small{color:#6f6a5e;font-size:10px}
+.person-visit-history{display:grid;gap:7px;margin:10px 0 4px}
+.person-visit-row{display:grid;gap:2px;padding:6px 0;border-bottom:1px solid rgba(128,103,69,.14)}
+.person-visit-row:last-child{border-bottom:0}
+.person-visit-row strong{font-size:11px;color:#443a2e}
+.person-visit-row small{font-size:10px;line-height:1.35;color:#777064}
