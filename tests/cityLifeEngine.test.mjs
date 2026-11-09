@@ -173,3 +173,54 @@ test('business catalog audit accepts complete shop-specific recipes and skips se
   });
   assert.deepEqual(issues, []);
 });
+
+
+test('city economy reacts to ferry, tramway, summer season and neighbourhood growth', async () => {
+  const { getCityEconomicProfile, businessClass, customerFlow } = await import('../src/cityLifeEngine.js');
+  const city = [
+    { id: 1, name: 'Konut A', type: 'Konut', floors: 3, units: 6, x: 0, z: 0 },
+    { id: 2, name: 'Konut B', type: 'Konut', floors: 4, units: 8, x: 1, z: 1 },
+    { id: 3, name: 'Karaköy Deniz Levazımatçısı', type: 'Ticaret', x: 23, z: 0 },
+    { id: 4, name: 'Çiçekçi', type: 'Ticaret', x: 5, z: 0 },
+    { id: 5, name: 'Pera Oteli', type: 'İşletme', x: 8, z: 0 },
+    { id: 6, name: 'Haliç Gazinosu', type: 'İşletme', x: 9, z: 0 }
+  ];
+  const quiet = getCityEconomicProfile({ properties: city, clock: { month: 2 }, neighborhood: { reputation: 40 } });
+  const active = getCityEconomicProfile({
+    properties: city, clock: { month: 7 }, neighborhood: { reputation: 85, supplyTrust: 75 },
+    ferryBusiness: { owned: true, upgrades: { cargoHold: true, secondFerry: true } },
+    tramwayBusiness: { owned: true }
+  });
+  assert.ok(active.portActivity > quiet.portActivity);
+  assert.ok(active.tourism > quiet.tourism);
+  assert.ok(active.purchasingPower > quiet.purchasingPower);
+  assert.equal(businessClass(city[2]), 'maritime');
+  assert.equal(businessClass(city[3]), 'flowers');
+  assert.ok(active.demand.maritime > quiet.demand.maritime);
+  assert.ok(active.demand.flowers > quiet.demand.flowers);
+  const maritimeFlow = customerFlow({
+    property: city[2], clock: { ...clock, hour: 12, month: 7 }, properties: city,
+    population: getCityPopulation(city, 40), ferryBusiness: { owned: true }, neighborhood: { reputation: 85 }
+  });
+  assert.equal(maritimeFlow.sector, 'maritime');
+  assert.ok(maritimeFlow.sectorDemand > 1);
+});
+
+test('city economy remains bounded for empty and very large cities', async () => {
+  const { getCityEconomicProfile } = await import('../src/cityLifeEngine.js');
+  const empty = getCityEconomicProfile();
+  assert.ok(empty.portActivity >= 5 && empty.portActivity <= 100);
+  assert.ok(empty.tourism >= 5 && empty.tourism <= 100);
+  const large = getCityEconomicProfile({
+    properties: Array.from({ length: 300 }, (_, i) => ({
+      id: i, name: i % 5 === 0 ? 'Otel' : 'Ticarethane',
+      type: i % 4 === 0 ? 'Konut' : 'Ticaret', floors: 8, units: 20, x: 23, z: 0
+    })),
+    clock: { month: 7 },
+    ferryBusiness: { owned: true, upgrades: { cargoHold: true, secondFerry: true } },
+    tramwayBusiness: { owned: true },
+    neighborhood: { reputation: 100 }
+  });
+  for (const value of Object.values(large.demand)) assert.ok(value >= .72 && value <= 1.48);
+  assert.ok(large.population <= 100 && large.portActivity <= 100 && large.tourism <= 100);
+});

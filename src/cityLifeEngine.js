@@ -24,15 +24,46 @@ const categories={
   food:/kahve|kahvehane|kafe|pastane|fırın|firin|lokanta|meyhane|gazino|erzak|manav|balık|balik|şarap|sarap|büfe|bufe|tatlı/i,
   market:/gazete|tütün|tutun|kitap|terzi|kumaş|kumas|çiçek|cicek|kundura|saatçi|saatci|sabun|eczane|levazımat/i,
   leisure:/meyhane|gazino|sinema|salon|kahve|otel|lokanta|pastane|hamam/i,
-  industry:/matbaa|atölye|atolye|depo|ambar|dokuma|kundura|marangoz|demirci|imalathane/i
+  industry:/matbaa|atölye|atolye|depo|ambar|dokuma|kundura|marangoz|demirci|imalathane/i,
+  maritime:/deniz|rıhtım|rihtim|iskele|gemi|yelken|liman|levazımat|levazimat|tekne|halat/i,
+  flowers:/çiçek|cicek|çiçekçi|cicekci|buket|aranjman|orkide/i
 };
 export function businessClass(p) {
   const str=String(p?.name||'')+' '+String(p?.style||'');
+  if(categories.maritime.test(str))return 'maritime';
+  if(categories.flowers.test(str))return 'flowers';
   if(categories.food.test(str))return 'food';
   if(categories.industry.test(str))return 'industry';
   if(categories.leisure.test(str))return 'leisure';
   if(categories.market.test(str))return 'market';
   return p?.type==='Konut'?'home':'market';
+}
+
+// Derived city indices make demand respond to the actual neighbourhood state.
+export function getCityEconomicProfile({properties=[],clock={},ferryBusiness={},tramwayBusiness={},neighborhood={}}={}) {
+  const shops=properties.filter(p=>['Ticaret','Atölye','İşletme','Depo'].includes(p.type));
+  const homes=properties.filter(p=>p.type==='Konut');
+  const lodging=shops.filter(p=>/otel|han|pansiyon|konaklama/i.test(p.name||'')).length;
+  const leisure=shops.filter(p=>/gazino|sinema|kahve|kahvehane|meyhane|hamam|lokanta|pastane/i.test(p.name||'')).length;
+  const portBusinesses=shops.filter(p=>businessClass(p)==='maritime'||(p.x>=19&&p.x<=26)).length;
+  const luxury=shops.filter(p=>/parfüm|parfum|mücevher|lüks|salon|balosu|gramofon/i.test(p.name||'')).length;
+  const residentialUnits=homes.reduce((sum,p)=>sum+Math.max(1,Number(p.units)||Number(p.floors)||1),0);
+  const state=normalizeNeighborhood(neighborhood);
+  const summer=[5,6,7,8].includes(Number(clock.month)||0);
+  const population=clamp(22+homes.length*5+residentialUnits*.65+shops.length*.35,10,100);
+  const portActivity=clamp(12+portBusinesses*13+(ferryBusiness?.owned?24:0)+(ferryBusiness?.upgrades?.cargoHold?8:0)+(ferryBusiness?.upgrades?.secondFerry?7:0),5,100);
+  const tourism=clamp(8+lodging*13+leisure*5+(ferryBusiness?.owned?18:0)+(tramwayBusiness?.owned?8:0)+(summer?12:0)+state.reputation*.18,5,100);
+  const purchasingPower=clamp(18+state.reputation*.42+shops.length*1.1+luxury*5,5,100);
+  const multiplier=value=>round2(clamp(value,.72,1.48));
+  const demand={
+    food:multiplier(.72+population*.0032+tourism*.0028),
+    market:multiplier(.76+population*.0025+purchasingPower*.0027),
+    leisure:multiplier(.66+tourism*.0062+purchasingPower*.0018),
+    industry:multiplier(.78+portActivity*.0028+shops.length*.003),
+    maritime:multiplier(.58+portActivity*.0085+tourism*.0012),
+    flowers:multiplier(.68+tourism*.005+purchasingPower*.0022),home:1
+  };
+  return {population:Math.round(population),portActivity:Math.round(portActivity),tourism:Math.round(tourism),purchasingPower:Math.round(purchasingPower),season:summer?'yaz':'normal',demand};
 }
 
 export const historicMoments=[
@@ -254,7 +285,7 @@ function cachedIntentions(properties,population,clock) {
   return cache.plans;
 }
 
-export function customerFlow({property,clock,properties,population,ferryBusiness,neighborhood,businessStats={}}){
+export function customerFlow({property,clock,properties,population,ferryBusiness,tramwayBusiness,neighborhood,businessStats={}}){
   if(!property||!isBusinessOpen(property,clock.hour))return {
     visits:0,nearby:0,demand:.25,supplyModifier:1,reputation:normalizeNeighborhood(neighborhood).reputation,
     footTraffic:0,routeAccess:0
@@ -276,11 +307,14 @@ export function customerFlow({property,clock,properties,population,ferryBusiness
   const realVisits=Math.max(0,Math.round(passers*(rainy?.85:1)));
   const reputation=clamp(state.reputation+Math.min(12,(Number(businessStats?.[p.id]?.unitsSold)||0)/20),0,100);
   const footTraffic=Math.max(0,realVisits+transit);
-  const demand=clamp(.36+Math.sqrt(footTraffic)*.102+(reputation-50)*.004, .26,1.95);
+  const cityEconomy=getCityEconomicProfile({properties,clock,ferryBusiness,tramwayBusiness,neighborhood});
+  const sector=businessClass(p);
+  const sectorDemand=cityEconomy.demand[sector]||1;
+  const demand=clamp((.36+Math.sqrt(footTraffic)*.102+(reputation-50)*.004)*sectorDemand, .20,2.35);
   const supplyModifier=getSupplyModifier(p,{ferryBusiness,neighborhood});
   return {visits:realVisits,nearby:round2(transit),demand:round2(demand),
     supplyModifier,reputation:Math.round(reputation),footTraffic:round2(footTraffic),
-    routeAccess:nearQuay?2:nearTram?1:0};
+    routeAccess:nearQuay?2:nearTram?1:0,sector,sectorDemand,cityEconomy};
 }
 export function getSupplyModifier(p,{ferryBusiness,neighborhood}={}){
   const state=normalizeNeighborhood(neighborhood);

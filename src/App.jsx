@@ -17,7 +17,7 @@ import ToyShopInterior, { TOY_SHOP_ID } from './ToyShopInterior.jsx';
 import { createLivingResidents } from './livingResidents3d.js';
 import {
   getCityPopulation, normalizeNeighborhood, customerFlow, neighborhoodPulse,
-  isBusinessOpen, getSupplyModifier, storyForDay, applyStoryDecision
+  getCityEconomicProfile, isBusinessOpen, getSupplyModifier, storyForDay, applyStoryDecision
 } from './cityLifeEngine.js';
 import { FERRY_LICENSE_PRICE, FERRY_UPGRADES, normaliseFerryBusiness, calculateFerryDay, applyFerrySettlement } from './ferryBusiness.js';
 import { TRAMWAY_LICENSE_PRICE, TRAMWAY_UPGRADES, normaliseTramwayBusiness, calculateTramwayDay, applyTramwaySettlement } from './tramwayBusiness.js';
@@ -1679,7 +1679,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   }),[year,month,day,hour,ferryBusiness,neighborhood,businessStats]);
   const shopCustomerFlow = (property, salesHour = hour) => customerFlow({
     property,clock:{year,month,day,hour:salesHour},properties,
-    population:CITY_POPULATION,ferryBusiness,neighborhood,businessStats
+    population:CITY_POPULATION,ferryBusiness,tramwayBusiness,neighborhood,businessStats
   });
   const playerLevel = 1 + Math.floor(experience / 100);
   const levelExperience = experience % 100;
@@ -2020,13 +2020,13 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     31: [['pilav','Pilav ve zeytinyağlı',15,5.5,7,2],['kebap','Kebap ve ızgara',22,8,5,3],['tatli-galata','Günün tatlısı',25,9.5,4,4],['usta-sofrasi','Usta sofrası',34,13,3,5]],
     32: [['davetiye-galata','Davetiye ve kartvizit',15,5.5,7,2],['ciltli-eser','Ciltli kitap ve defter',21,7.5,5,3],['afis','Renkli afiş ve ilan',28,10,4,4],['prestij-baski','Prestijli sanat baskısı',36,13,3,5]],
     33: [['ilk-tiras','Tıraş ve sakal bakımı',6,3.2,8,1],['sakal-bakimi','Sakal bakımı ve kolonya',10,4.8,6,2],['sac-kesimi','Saç kesimi ve şekillendirme',15,6.5,5,3],['damat-tirasi','Damat tıraşı ve bakım',22,9.5,4,4],['ustura-seti','Usta işi tıraş ve sıcak havlu',30,13,3,5]],
-    3: [['rihtim-yelken-takimi','Yelken bakım ve onarım takımı',24,58,5,2,55],['rihtim-donanım','Gemi donanım ve bağlantı seti',28,66,4,3,60],['rihtim-seyir','Deniz haritası ve seyir defteri',20,48,5,3,60],['rihtim-kalafat','Tekne kalafat ve bakım kiti',32,76,4,4,68],['rihtim-kaptan','Kaptan ihtiyaç sandığı',42,98,3,5,75]],
-    65: [['rihtim-yelken-takimi','Yelken bakım ve onarım takımı',24,58,5,2,55],['rihtim-donanım','Gemi donanım ve bağlantı seti',28,66,4,3,60],['rihtim-seyir','Deniz haritası ve seyir defteri',20,48,5,3,60],['rihtim-kalafat','Tekne kalafat ve bakım kiti',32,76,4,4,68],['rihtim-kaptan','Kaptan ihtiyaç sandığı',42,98,3,5,75]]
+    3: [['rihtim-yelken-takimi','Yelken bakım ve onarım takımı',24,58,5,2,55,35],['rihtim-donanım','Gemi donanım ve bağlantı seti',28,66,4,3,60,42],['rihtim-seyir','Deniz haritası ve seyir defteri',20,48,5,3,60,42],['rihtim-kalafat','Tekne kalafat ve bakım kiti',32,76,4,4,68,55],['rihtim-kaptan','Kaptan ihtiyaç sandığı',42,98,3,5,75,65]],
+    65: [['rihtim-yelken-takimi','Yelken bakım ve onarım takımı',24,58,5,2,55,35],['rihtim-donanım','Gemi donanım ve bağlantı seti',28,66,4,3,60,42],['rihtim-seyir','Deniz haritası ve seyir defteri',20,48,5,3,60,42],['rihtim-kalafat','Tekne kalafat ve bakım kiti',32,76,4,4,68,55],['rihtim-kaptan','Kaptan ihtiyaç sandığı',42,98,3,5,75,65]]
   };
   Object.entries(advancedProducts).forEach(([id, rows]) => {
     if (!tradeCatalog[id]) tradeCatalog[id] = [];
-    rows.forEach(([productId, name, cost, price, units, unlockLevel, unlockReputation]) => {
-      if (!tradeCatalog[id].some(item => item.id === productId)) tradeCatalog[id].push({ id: productId, name, cost, price, units, unlockLevel, unlockReputation });
+    rows.forEach(([productId, name, cost, price, units, unlockLevel, unlockReputation, unlockPortActivity, unlockTourism]) => {
+      if (!tradeCatalog[id].some(item => item.id === productId)) tradeCatalog[id].push({ id: productId, name, cost, price, units, unlockLevel, unlockReputation, unlockPortActivity, unlockTourism });
     });
   });
   // Canonical product catalog: only the active commercial properties below are exposed.
@@ -2243,9 +2243,9 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       {id:'cicek-celenk',name:'Tören ve cenaze çelengi',cost:22,price:46,units:4},
       {id:'cicek-dugun',name:'Düğün ve nişan aranjmanı',cost:26,price:54,units:4},
       {id:'cicek-kurumsal',name:'Otel ve mağaza haftalık çiçek düzenlemesi',cost:18,price:39,units:5,service:true,unlockLevel:3,unlockReputation:58},
-      {id:'cicek-mevsimlik-aranjman',name:'Mevsimlik özel salon aranjmanı',cost:24,price:52,units:4,unlockLevel:3,unlockReputation:60},
-      {id:'cicek-ithal-orkide',name:'Nadir ithal orkide ve saksı bitkisi',cost:32,price:72,units:3,unlockLevel:4,unlockReputation:68},
-      {id:'cicek-otel-abonelik',name:'Otel ve konaklar için haftalık çiçek aboneliği',cost:38,price:86,units:3,service:true,unlockLevel:5,unlockReputation:75}
+      {id:'cicek-mevsimlik-aranjman',name:'Mevsimlik özel salon aranjmanı',cost:24,price:52,units:4,unlockLevel:3,unlockReputation:60,unlockTourism:38},
+      {id:'cicek-ithal-orkide',name:'Nadir ithal orkide ve saksı bitkisi',cost:32,price:72,units:3,unlockLevel:4,unlockReputation:68,unlockTourism:48,unlockPurchasingPower:45},
+      {id:'cicek-otel-abonelik',name:'Otel ve konaklar için haftalık çiçek aboneliği',cost:38,price:86,units:3,service:true,unlockLevel:5,unlockReputation:75,unlockTourism:55}
     ],
     35: [
       {id:'gazino-meze',name:'Gazino meze tabağı',cost:14,price:30,units:8},
@@ -3601,7 +3601,12 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     if (!item) return false;
     const level = getBusinessSalesLevel(propertyId);
     const reputation = normalizeNeighborhood(neighborhood).reputation;
-    return (Number(item.unlockLevel) || 1) <= level && reputation >= (Number(item.unlockReputation) || 0);
+    const economy = getCityEconomicProfile({properties,clock:{year,month,day,hour},ferryBusiness,tramwayBusiness,neighborhood});
+    return (Number(item.unlockLevel) || 1) <= level
+      && reputation >= (Number(item.unlockReputation) || 0)
+      && economy.portActivity >= (Number(item.unlockPortActivity) || 0)
+      && economy.tourism >= (Number(item.unlockTourism) || 0)
+      && economy.purchasingPower >= (Number(item.unlockPurchasingPower) || 0);
   };
   // Global player progression complements each shop's own sales-based mastery.
   // Catalog tiers 1–2 stay accessible early; tiers 3–5 require player levels 2–4.
