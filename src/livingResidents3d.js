@@ -224,7 +224,12 @@ export function createLivingResidents({scene,properties,isMobile=false,onVisit=(
     const position=playerRig.group.position.clone(),rotation=playerRig.group.rotation.y;
     scene.remove(playerRig.group);
     playerRig=makePerson(901,'player',profile.gender||'male',profile);
-    playerRig.group.name='Oyuncu karakteri';playerRig.group.position.copy(position);playerRig.group.rotation.y=rotation;playerRig.group.userData.isPlayerAvatar=true;scene.add(playerRig.group);
+    playerRig.group.name='Oyuncu karakteri';playerRig.group.position.copy(position);playerRig.group.rotation.y=rotation;playerRig.group.userData.isPlayerAvatar=true;
+    const marker=new THREE.Group();
+    const stem=new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,.24,8),new THREE.MeshStandardMaterial({color:'#6eaaa0',metalness:.35,roughness:.45,emissive:'#244d49',emissiveIntensity:.35}));stem.position.y=1.34;marker.add(stem);
+    const ring=new THREE.Mesh(new THREE.TorusGeometry(.19,.045,8,24),new THREE.MeshStandardMaterial({color:'#8fd0c2',metalness:.42,roughness:.35,emissive:'#285c55',emissiveIntensity:.45}));ring.position.y=1.55;marker.add(ring);
+    const diamond=new THREE.Mesh(new THREE.OctahedronGeometry(.105,0),new THREE.MeshStandardMaterial({color:'#f1e7c9',metalness:.3,roughness:.4}));diamond.position.y=1.55;marker.add(diamond);
+    playerRig.group.add(marker);addPersonHitTarget(playerRig.group,.94,.62);scene.add(playerRig.group);
   }
   const historicResidents = HISTORIC_PEOPLE.map((person,i)=>{
     const rig=makePerson(i+112,'artist',person.gender || 'male');
