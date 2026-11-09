@@ -4492,6 +4492,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       <button className={activeHudPanel === 'city' ? 'active' : ''} onClick={() => setActiveHudPanel(activeHudPanel === 'city' ? null : 'city')} aria-label="Yaşayan şehir, ekonomi ve hikâyeler" title="Şehir hikâyeleri"><span>◉</span><small>ŞEHİR</small></button>
       <button className={activeHudPanel === 'portfolio' ? 'active' : ''} onClick={() => setActiveHudPanel(activeHudPanel === 'portfolio' ? null : 'portfolio')} aria-label="Portföy" title="Portföy"><span>▦</span><small>PORTFÖY</small></button>
       <button className={activeHudPanel === 'time' ? 'active' : ''} onClick={() => setActiveHudPanel(activeHudPanel === 'time' ? null : 'time')} aria-label="Oyun zamanı" title="Zaman"><span>◷</span><small>ZAMAN</small></button>
+      <button className={activeHudPanel === 'persona' ? 'active' : ''} onClick={() => setActiveHudPanel(activeHudPanel === 'persona' ? null : 'persona')} aria-label="Karakterimi kişiselleştir" title="Persona"><span>♟</span><small>PERSONA</small></button>
       <button className={activeHudPanel === 'social' ? 'active' : ''} onClick={() => setActiveHudPanel(activeHudPanel === 'social' ? null : 'social')} aria-label="Oyuncular ve mülk teklifleri" title="Teklifler"><span>♙</span><small>{session ? 'TEKLİFLER' : 'ODA'}{session && cloudOffers.some(o=>((o.status==='pending'&&o.seller_user_id===session.user.id)||(o.status==='countered'&&o.buyer_user_id===session.user.id)))?' •':''}</small></button>
       <button className={activeHudPanel === 'log' ? 'active' : ''} onClick={() => setActiveHudPanel(activeHudPanel === 'log' ? null : 'log')} aria-label="Mahalle günlüğü" title="Günlük"><span>≡</span><small>GÜNLÜK</small></button>
     </nav>
@@ -4570,6 +4571,32 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       </div>
 
       <aside className={'side-panel hud-side-panel hud-panel-content-' + (activeHudPanel || 'none')} aria-label="Oyun menüsü">
+        <section className="persona-panel">
+          <div className="card-label">BENİM MAHALLEM · KARAKTER ATÖLYESİ</div>
+          <h2 style={{margin:'5px 0 8px',color:'#f2e9d7',fontFamily:'Georgia,serif',fontSize:25}}>1923 Beyoğlu'nda sen</h2>
+          <p style={{color:'#aab8c4',fontSize:12,lineHeight:1.55,margin:'0 0 14px'}}>Kendi mahalle sakinini oluştur. Kıyafetini ve aksesuarlarını seç; görünümün oyun kaydına işlenir.</p>
+          <label className="persona-field">Mahallede görünecek adın
+            <input value={playerName} maxLength={24} onChange={e=>setPlayerName(e.target.value)} placeholder="Adını yaz" />
+          </label>
+          <label className="persona-field">Karakter görünümü
+            <select value={avatarProfile.gender} onChange={e=>setAvatarProfile(p=>({...p,gender:e.target.value}))}><option value="male">Erkek dönemi kıyafeti</option><option value="female">Kadın dönemi kıyafeti</option></select>
+          </label>
+          <label className="persona-field">Kıyafet rengi
+            <select value={avatarProfile.coat} onChange={e=>setAvatarProfile(p=>({...p,coat:e.target.value}))}>{[['#45545b','Lacivert'],['#655044','Kestane'],['#53634f','Zeytin'],['#786b83','Mürdüm'],['#a17a52','Tütün'],['#d0bda0','Krem'],['#7d3438','Bordo']].map(([v,n])=><option key={v} value={v}>{n}</option>)}</select>
+          </label>
+          <label className="persona-field">Şapka
+            <select value={avatarProfile.hat} onChange={e=>setAvatarProfile(p=>({...p,hat:e.target.value}))}><option value="fedora">Fötr şapka</option><option value="flat">Kasket</option><option value="none">Şapkasız</option><option value="cloche">Cloche şapka</option></select>
+          </label>
+          <label className="persona-field">Aksesuar
+            <select value={avatarProfile.accessory} onChange={e=>setAvatarProfile(p=>({...p,accessory:e.target.value}))}><option value="scarf">Atkı / fular</option><option value="bag">Deri çanta</option><option value="cane">Baston</option><option value="glasses">Gözlük</option><option value="none">Aksesuar yok</option></select>
+          </label>
+          <div className="persona-preview">
+            <span className="persona-swatch" style={{background:avatarProfile.coat}} />
+            <div><strong>{playerName.trim()||'Mahalle sakini'}</strong><small>{avatarProfile.gender==='female'?'Kadın':'Erkek'} · {({fedora:'Fötr şapka',flat:'Kasket',none:'Şapkasız',cloche:'Cloche şapka'})[avatarProfile.hat]} · {({scarf:'Atkı / fular',bag:'Deri çanta',cane:'Baston',glasses:'Gözlük',none:'Aksesuar yok'})[avatarProfile.accessory]}</small></div>
+          </div>
+          <button type="button" className="stock-button order-primary-button" style={{width:'100%',marginTop:12}} onClick={()=>{setAvatarEditorOpen(false);setNotice('Personan kaydedildi. Karakter görünümün bu cihazdaki ve hesabındaki oyun kaydına işlendi.');}}>PERSONAMI KAYDET <span>✓</span></button>
+          <p style={{color:'#8fa0ad',fontSize:10,lineHeight:1.5,margin:'10px 0 0'}}>Not: Bu sekme kişisel görünümünü düzenler. Diğer oyuncuların karakterlerini aynı şehirde görme ve anlık eşitleme bağlantısı ayrıca tamamlanmalıdır.</p>
+        </section>
         <CityLifePanel properties={properties} clock={{year,month,day,hour}} neighborhood={neighborhood}
           ferryBusiness={ferryBusiness} stats={businessStats} cash={cash} owned={owned}
           onChoice={onCityStoryChoice} busy={Boolean(session&&!cloudReady)}/>
