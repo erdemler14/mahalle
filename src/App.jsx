@@ -200,7 +200,7 @@ function supportsProfessionAt(property, professionId) {
   return Boolean(property && venueTypesByProfession[professionId]?.includes(property.type));
 }
 
-function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', onSelect, onTalk, onResidentVisit, onUniversity, avatarProfile = {}, focusPersona = false, hour, day = 1, month = 1, year = 1923, overlay, developments = {}, buildingLevels = {}, ferryBusiness = {}, neighborhood = {} }) {
+function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', onSelect, onTalk, onResidentVisit, onUniversity, avatarProfile = {}, focusPersona = false, focusPersonaToken = 0, hour, day = 1, month = 1, year = 1923, overlay, developments = {}, buildingLevels = {}, ferryBusiness = {}, neighborhood = {} }) {
   const host = useRef(null);
   const overlayRef = useRef(null);
   const overlayContentRef = useRef(overlay);
@@ -210,7 +210,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
   const avatarProfileRef = useRef(avatarProfile);
   const avatarSetterRef = useRef(null);
   useEffect(() => { avatarProfileRef.current = avatarProfile; avatarSetterRef.current?.(avatarProfile); }, [avatarProfile]);
-  useEffect(() => { if (focusPersona) cameraControlRef.current?.('focus-player'); }, [focusPersona]);
+  useEffect(() => { if (focusPersona) cameraControlRef.current?.('focus-player'); }, [focusPersona, focusPersonaToken]);
   const selectedRef = useRef(selected);
   const hourRef = useRef(hour);
   const ferryStateRef = useRef(ferryBusiness);
@@ -1625,6 +1625,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   const [toyShopOpen, setToyShopOpen] = useState(false);
   const [mapSearch, setMapSearch] = useState(() => properties.find(p => p.id === saved.selected)?.name || properties[0].name);
   const [activeHudPanel, setActiveHudPanel] = useState(null);
+  const [personaFocusToken, setPersonaFocusToken] = useState(0);
   useEffect(() => { const property = properties.find(p => p.id === selected); if (property) setMapSearch(property.name); }, [selected]);
   const [notice, setNotice] = useState('');
   const [businessAlert, setBusinessAlert] = useState(null);
@@ -4584,7 +4585,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     <section className="game-layout fullscreen-layout">
       <div className="world-panel">
         <div className="world-topline"><span><span className="live-dot" /> BEYOĞLU MERKEZİ</span><label className="property-finder"><span>⌕</span><input aria-label="Mülk ara ve haritada göster" list="mahalle-property-options" placeholder="Mülk adı yaz..." value={mapSearch} onChange={event => { const value = event.target.value; setMapSearch(value); const match = properties.find(property => property.name.toLocaleLowerCase('tr-TR') === value.trim().toLocaleLowerCase('tr-TR')); if (match) { selectProperty(match.id); setMapSearch(''); } }} /><datalist id="mahalle-property-options">{properties.map(property => <option key={property.id} value={property.name}>{owned.includes(property.id) ? 'Senin mülkün' : 'Satılık'}</option>)}</datalist><small>{properties.length} MÜLK</small></label><span className="world-year">OYUN DÜNYASI <i>·</i> {year}</span></div>
-        <CityScene selected={selected} owned={owned} ownerByProperty={ownerByProperty} playerId={playerId} onSelect={selectProperty} onTalk={person => setHistoricStory(person)} onResidentVisit={recordHistoricFootfall} avatarProfile={avatarProfile} focusPersona={activeHudPanel === 'persona'} ferryBusiness={ferryBusiness} onUniversity={() => setActiveHudPanel(v => v === 'university' ? null : 'university')} hour={hour} day={day} month={month} year={year} neighborhood={neighborhood} developments={developments} buildingLevels={buildingLevels} overlay={sceneActionDismissed ? null : <div className="scene-action-card" style={{ position: 'relative', paddingTop: 28 }}>
+        <CityScene selected={selected} owned={owned} ownerByProperty={ownerByProperty} playerId={playerId} onSelect={selectProperty} onTalk={person => setHistoricStory(person)} onResidentVisit={recordHistoricFootfall} avatarProfile={avatarProfile} focusPersona={activeHudPanel === 'persona'} focusPersonaToken={personaFocusToken} ferryBusiness={ferryBusiness} onUniversity={() => setActiveHudPanel(v => v === 'university' ? null : 'university')} hour={hour} day={day} month={month} year={year} neighborhood={neighborhood} developments={developments} buildingLevels={buildingLevels} overlay={sceneActionDismissed ? null : <div className="scene-action-card" style={{ position: 'relative', paddingTop: 28 }}>
           <button type="button" aria-label="Seçili bina penceresini kapat" title="Kapat" onClick={() => setSceneActionDismissed(true)} style={{ position: 'absolute', top: 7, right: 8, zIndex: 5, width: 28, height: 28, border: '1px solid rgba(255,255,255,.35)', borderRadius: 8, background: 'rgba(12,24,48,.72)', color: '#fff', fontSize: 21, lineHeight: '24px', cursor: 'pointer' }}>×</button>
           <div className="scene-action-eyebrow">SEÇİLİ BİNA · {String(active.id).padStart(2, '0')}</div><strong>{active.name}</strong>
           <span>{ownerByProperty[active.id] ? (ownerByProperty[active.id].playerId === playerId ? `Sahibi: ${ownerByProperty[active.id].name} (sen)` : `Sahibi: ${ownerByProperty[active.id].name}`) : 'Satılık'} · ₺{getMarketValue(active).toLocaleString('tr-TR')}</span>
@@ -4637,6 +4638,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
             <div><strong>{playerName.trim()||'Mahalle sakini'}</strong><small>{avatarProfile.gender==='female'?'Kadın':'Erkek'} · {({fedora:'Fötr şapka',flat:'Kasket',none:'Şapkasız',cloche:'Cloche şapka'})[avatarProfile.hat]} · {({scarf:'Atkı / fular',bag:'Deri çanta',cane:'Baston',glasses:'Gözlük',none:'Aksesuar yok'})[avatarProfile.accessory]}</small></div>
           </div>
           <button type="button" className="stock-button order-primary-button" style={{width:'100%',marginTop:12}} onClick={()=>{setAvatarProfile(p=>({...p,bio:(p.bio||'').trim().slice(0,180)}));setNotice('Personan kaydedildi. '+(playerName.trim()||'Mahalle sakini')+' artık Beyoğlu’nda.');}}>PERSONAMI KAYDET <span>✓</span></button>
+          <button type="button" className="stock-button" style={{width:'100%',marginTop:8}} onClick={()=>{setActiveHudPanel('persona');setPersonaFocusToken(v=>v+1);setNotice('Karakterinin bulunduğu sokak gösteriliyor.');}}>BENİ MAHALLEDE BUL <span>⌖</span></button>
 
         </section>
         <CityLifePanel properties={properties} clock={{year,month,day,hour}} neighborhood={neighborhood}
