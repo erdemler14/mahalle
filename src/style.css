@@ -1438,3 +1438,4 @@ body{overflow:hidden}
 .person-visit-row:last-child{border-bottom:0}
 .person-visit-row strong{font-size:11px;color:#443a2e}
 .person-visit-row small{font-size:10px;line-height:1.35;color:#777064}
+.person-visit-empty{padding:8px 0;color:rgba(65,56,46,.62);font-size:11px;line-height:1.45}

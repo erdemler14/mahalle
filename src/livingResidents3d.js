@@ -111,7 +111,12 @@ const HISTORIC_PEOPLE=[
   {id:'neyyire-neyir',gender:'female',name:'Neyyire Neyir',profession:'tiyatro ve sinema oyuncusu',bio:'Ateşten Gömlek filminde rol alan, Türk sinemasının ilk kadın oyuncularından ve tiyatro sanatçılarından.',homeId:27,visitId:72,dialogue:'Perde açılmadan önce kuliste son hazırlıklar yapılır.',hangouts:['cinema','theatre','cafe'],visitHours:[13,17,20],historicalBasis:'Ateşten Gömlek ve 1920’lerin erken Türk sinemasıyla bağlantılı dönem temsili rota.'},
   {id:'vedat-tek',gender:'male',name:'Mimar Vedat Tek',profession:'mimar',bio:'Birinci Ulusal Mimarlık Akımı’nın önde gelen mimarlarından; kamu yapıları ve mimari tasarımlarıyla tanınır.',homeId:8,visitId:45,dialogue:'Bir yapının karakteri, cephesindeki ayrıntılarda saklıdır.',hangouts:['architecture','coffee','book'],visitHours:[9,14,18],historicalBasis:'Dönemin mimarlık ve mühendislik çevrelerini temsil eden kurmaca mesleki rota.'},
   {id:'abdulhak-hamid',gender:'male',name:'Abdülhak Hâmid Tarhan',profession:'şair ve tiyatro yazarı',bio:'Tanzimat sonrası Türk edebiyatının tanınmış şair ve tiyatro yazarlarından; 1920’lerin başında İstanbul’a dönmüştü.',homeId:2,visitId:70,dialogue:'Bir mısra bazen uzun bir yürüyüşün sonunda bulunur.',hangouts:['literary','coffee','restaurant','theatre'],visitHours:[11,15,19],historicalBasis:'Zafer sonrasında İstanbul’a dönüşü ve edebiyat çevreleriyle ilişkilendirilen dönem temsili rota.'},
-  {id:'fuad-koprulu',gender:'male',name:'Mehmed Fuad Köprülü',profession:'tarihçi ve edebiyat araştırmacısı',bio:'Türk edebiyatı tarihi ve Türkoloji alanında öncü akademisyen; 1923’te İstanbul Dârülfünunu Edebiyat Fakültesi’nde önemli görev üstlendi.',homeId:6,visitId:47,dialogue:'Bir milletin geçmişi, kaynaklar dikkatle okunduğunda konuşur.',hangouts:['book','press','literary','coffee'],visitHours:[9,13,17],historicalBasis:'1923’teki akademik görevi ve araştırma hayatından esinlenen dönem temsili rota.'}
+  {id:'fuad-koprulu',gender:'male',name:'Mehmed Fuad Köprülü',profession:'tarihçi ve edebiyat araştırmacısı',bio:'Türk edebiyatı tarihi ve Türkoloji alanında öncü akademisyen; 1923’te İstanbul Dârülfünunu Edebiyat Fakültesi’nde önemli görev üstlendi.',homeId:6,visitId:47,dialogue:'Bir milletin geçmişi, kaynaklar dikkatle okunduğunda konuşur.',hangouts:['book','press','literary','coffee'],visitHours:[9,13,17],historicalBasis:'1923’teki akademik görevi ve araştırma hayatından esinlenen dönem temsili rota.'},
+  {id:'ahmet-rasim',gender:'male',name:'Ahmet Rasim',profession:'gazeteci, yazar ve musiki araştırmacısı',bio:'İstanbul’un gündelik hayatını, semtlerini ve insanlarını yazılarıyla anlatan gazeteci ve yazardır. 1923 İstanbul basın ve edebiyat hayatının tanınmış isimlerindendir.',homeId:5,visitId:78,dialogue:'Bir şehrin en iyi haberi, sokakta yürürken duyulur.',hangouts:['press','literary','coffee','gazino'],visitHours:[9,13,18],historicalBasis:'İstanbul yazıları, gazeteciliği ve musiki merakından esinlenen dönem temsili rota.'},
+  {id:'mimar-kemaleddin',gender:'male',name:'Mimar Kemaleddin Bey',profession:'mimar ve yapı tasarımcısı',bio:'Birinci Ulusal Mimarlık Akımı’nın öncü mimarlarından. 1920’lerde İstanbul’da önemli mimari projeler üzerinde çalışıyordu.',homeId:8,visitId:45,dialogue:'Bir şehrin hafızası, taşına ve cephesine işlenir.',hangouts:['architecture','book','coffee'],visitHours:[8,13,17],historicalBasis:'1920’lerdeki mimarlık çalışmaları ve ulusal mimarlık anlayışından esinlenen mesleki rota.'},
+  {id:'hoca-ali-riza',gender:'male',name:'Hoca Ali Rıza',profession:'ressam ve resim öğretmeni',bio:'İstanbul manzaraları ve gündelik hayatı konu alan resimleriyle tanınan ressam ve öğretmendir. 1923’te İstanbul sanat çevresinin yaşayan ustalarındandı.',homeId:11,visitId:70,dialogue:'Bir sokağın ışığı, bazen bütün bir hikâyeyi anlatır.',hangouts:['art','coffee','book','architecture'],visitHours:[10,14,17],historicalBasis:'İstanbul manzaraları ve resim öğretmenliği faaliyetlerinden esinlenen dönem temsili rota.'},
+  {id:'rauf-yekta',gender:'male',name:'Rauf Yekta Bey',profession:'bestekâr, musiki tarihçisi ve müzikolog',bio:'Türk musikisi üzerine araştırmaları ve besteleriyle tanınan müzik insanı. 1920’lerde İstanbul’un musiki çevrelerinde etkin bir isimdi.',homeId:22,visitId:79,dialogue:'Bir makamı anlamak için önce şehrin sesini dinlemek gerekir.',hangouts:['gazino','plak','coffee','literary'],visitHours:[11,16,20],historicalBasis:'Türk musikisi araştırmaları, besteciliği ve dönemin musiki çevrelerinden esinlenen rota.'},
+  {id:'cemil-topuzlu',gender:'male',name:'Dr. Cemil Topuzlu',profession:'hekim ve cerrah',bio:'Modern cerrahi ve sağlık kurumlarının gelişiminde öncü hekimlerden; İstanbul’da hekimlik ve şehir yönetimiyle tanınan bir isim.',homeId:24,visitId:42,dialogue:'İyi hekimlik, dikkatli gözlem ve sürekli çalışmayla başlar.',hangouts:['medical','coffee','book'],visitHours:[9,14,18],historicalBasis:'İstanbul’daki hekimlik ve cerrahlık faaliyetlerinden esinlenen mesleki rota.'}
 ]; 
 
 const venueKeywords={
@@ -121,7 +126,7 @@ const venueKeywords={
   pastry:/pastane|fırın|firin|şekerleme/i,
   cinema:/sinem|elhamra|tiyatro/i,
   theatre:/tiyatro|sinem|elhamra|gazino/i,
-  art:/kitabevi|matbaa|pasaj|pastane|galeri/i,
+  art:/kitabevi|matbaa|pasaj|pastane|galeri|atölye|sanat|ressam/i,
   book:/kitabevi|kitap|matbaa|gazete/i,
   press:/matbaa|gazete|kitabevi/i,
   restaurant:/lokanta|meyhane|restoran|şarküteri/i,
@@ -129,7 +134,8 @@ const venueKeywords={
   gazino:/gazino|maxim|musiki/i,
   plak:/plak|gramofon|gazino/i,
   market:/pasaj|çiçek|cicek|dükkân|dukkan|mağaza|magaza/i,
-  architecture:/mimarlık|mühendislik|şantiye|atölye|teknik büro/i
+  architecture:/mimarlık|mühendislik|şantiye|atölye|teknik büro/i,
+  medical:/klinik|muayene|hekim|doktor|eczahane|sağlık/i
 };
 function describeActivity(person,place,purpose,clock,enRoute=false){
   const venue=String(place?.name||'mahalle').toLocaleLowerCase('tr-TR');
@@ -140,7 +146,10 @@ function describeActivity(person,place,purpose,clock,enRoute=false){
   else if(/oyuncu|tiyatro|sinema/.test(profession)) options=/sinem|tiyatro|elhamra/.test(venue)?['gösterim programını inceliyor','prova ve sahne hazırlıklarını takip ediyor','kuliste sanat çevresiyle sohbet ediyor']:['yeni oyun üzerine konuşuyor','sanat çevresinden dostlarıyla buluşuyor'];
   else if(/şair|yazar|edebiyat/.test(profession)) options=/matbaa|gazete|basım/.test(venue)?['yeni yazısının provalarını inceliyor','gazete ve dergileri gözden geçiriyor']:['şiir ve yazı notları alıyor','edebiyat sohbetine katılıyor','yeni bir metin üzerine düşünüyor'];
   else if(/tarihçi|akademisyen|araştırmacı|türkoloji/.test(profession)) options=/mektep|okul|üniversite|eğitim/.test(venue)?['ders ve araştırma notlarını gözden geçiriyor','öğrencilerle ilmî konuları konuşuyor']:['kitap ve kaynakları inceliyor','tarihî notlarını düzenliyor','bir araştırma üzerine düşünüyor'];
-  else if(/ressam|sanatçı/.test(profession)) options=['eskiz defterine çizimler yapıyor','çevresindeki insanları ve yapıları gözlemliyor','sanat üzerine sohbet ediyor'];
+  else if(/müzisyen|musiki|bestekâr|bestekar|müzikolog/.test(profession)) options=/gazino|maxim|plak|gramofon|musiki/.test(venue)?['musiki programını ve eser sırasını gözden geçiriyor','yeni bir beste üzerinde çalışıyor','musikişinaslarla makamlar üzerine sohbet ediyor']:['yeni bir beste için notlar alıyor','musiki meclisine yetişmek üzere hazırlanıyor','taş plakları ve kayıtları inceliyor'];
+  else if(/gazeteci|muhabir|basın/.test(profession)) options=/matbaa|gazete|basım/.test(venue)?['gazetenin baskı provasını kontrol ediyor','haber ve yazılarını yayına hazırlıyor','matbaa çalışanlarıyla son düzeltmeleri konuşuyor']:['şehirden haber topluyor','not defterini ve röportaj sorularını düzenliyor','kahvede meslektaşlarıyla gündemi konuşuyor'];
+  else if(/hekim|doktor|cerrah/.test(profession)) options=/klinik|muayene|hekim|doktor|eczahane/.test(venue)?['hasta muayenelerini ve vaka notlarını gözden geçiriyor','tıbbi gelişmeleri takip ediyor','meslektaşlarıyla tedavi yöntemlerini değerlendiriyor']:['tıp dergilerini inceliyor','meslektaşlarıyla sağlık meselelerini konuşuyor','muayenehanesine gitmek üzere yola çıkıyor'];
+  else if(/ressam|sanatçı/.test(profession)) options=/matbaa|kitap|pastane|kahve/.test(venue)?['eskiz defterine yeni çizimler yapıyor','çevresindeki insanları ve yapıları gözlemliyor','sanat çevresinden dostlarıyla buluşuyor']:['renk ve kompozisyon üzerine çalışıyor','İstanbul manzaraları için eskizler yapıyor','sanat üzerine sohbet ediyor'];
   else if(/porter|hamal|taşıyıcı/.test(profession)) options=['yükleri teslim ediyor','yeni bir taşıma işi arıyor'];
   else if(/student|öğrenci/.test(profession)) options=['ders notlarını gözden geçiriyor','kitap ve kırtasiye bakıyor'];
   else if(/matbaa|gazete|basım/.test(venue)) options=['gazetenin yeni nüshalarını inceliyor','ilan ve baskı işlerini takip ediyor'];
@@ -278,7 +287,8 @@ export function createLivingResidents({scene,properties,isMobile=false,onVisit=(
           const destination={x:target.x+lane*.62,z:target.z+((target.depth||2.4)/2)+.45+side*(.55+(npc.index%3)*.28)};
           npc.path=[here,...walkWaypoints(here,destination).slice(1)];
           npc.pathTargetId=target.id;
-          npc.currentActivity=describeActivity(npc,target,returningHome?'home':'visit',clock,true);
+          npc.currentPlaceName=target.name || (returningHome?'Evi':'Beyoğlu');
+          npc.currentActivity=returningHome?'Evine doğru yürüyor':describeActivity(npc,target,'visit',clock,true);
           if(npc.path.length<2)npc.path=[here,destination];
           npc.nextPoint=1;
           npc.justVisited=false;
