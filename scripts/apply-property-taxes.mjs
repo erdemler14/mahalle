@@ -82,23 +82,8 @@ const PROPERTY_TAX_PROGRESSIVE = [1, 1, 1.25, 1.25, 1.6, 1.6, 1.6, 2, 2, 2, 2, 2
 const QUARTER_START_MONTHS = [1, 4, 7, 10];`;
 if (!s.includes('PROPERTY_TAX_RATES')) s = s.replace(marker, marker + '\n' + constants);
 
-const marketAnchor = /^(  const getMarketValue = property => .*;)$/.exec(s);
-const taxHelpers = `  const getPropertyTaxRate = property => PROPERTY_TAX_RATES[property?.type] || 0.0015;
-  const getProgressivePropertyFactor = position => PROPERTY_TAX_PROGRESSIVE[Math.min(Math.max(0, position - 1), PROPERTY_TAX_PROGRESSIVE.length - 1)] || 2.5;
-  const calculateQuarterlyPropertyTax = () => owned.reduce((total, propertyId, index) => {
-    const property = properties.find(item => item.id === propertyId);
-    if (!property) return total;
-    return total + getMarketValue(property) * getPropertyTaxRate(property) / 4 * getProgressivePropertyFactor(index + 1) * 1.10;
-  }, 0);
-  const getBusinessFee = property => {
-    if (!property || !['Ticaret', 'Atölye', 'İşletme'].includes(property.type)) return 0;
-    return (property.type === 'İşletme' ? 1.25 : property.type === 'Atölye' ? 1.0 : 0.75) + ([13,19,25,31,40].includes(property.id) ? 1.25 : 0);
-  };
-  const calculateMonthlyBusinessFees = () => owned.reduce((total, id) => total + (rented.includes(id) ? 0 : getBusinessFee(properties.find(p => p.id === id))), 0);`;
-if (!s.includes('const calculateQuarterlyPropertyTax')) {
-  if (!marketAnchor) throw new Error('Could not locate getMarketValue function to inject tax helpers');
-  s = s.replace(marketAnchor[0], marketAnchor[1] + '\n' + taxHelpers);
-}
+// The tax calculation helpers are maintained directly in src/App.jsx.
+// Do not inject a second copy: this script only applies the settlement/UI patch.
 const old = /  const settleDailyBusinesses = \(\) => \{.*?\n  \};\n\n  const sleepUntilMorning = \(\) => \{.*?\n  \};/s;
 const replacement = `  const settleDailyBusinesses = () => {
     let operatingCosts = 0;
