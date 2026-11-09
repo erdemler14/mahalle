@@ -4668,7 +4668,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
 
         </section>
         <CityLifePanel properties={properties} clock={{year,month,day,hour}} neighborhood={neighborhood}
-          ferryBusiness={ferryBusiness} stats={businessStats} cash={cash} owned={owned}
+          ferryBusiness={ferryBusiness} tramwayBusiness={tramwayBusiness} stats={businessStats} cash={cash} owned={owned}
           onChoice={onCityStoryChoice} busy={Boolean(session&&!cloudReady)}/>
         <FerryBusinessPanel state={ferryBusiness} cash={cash} year={year} month={month} day={day} hour={hour} onPurchase={purchaseFerryLine} onUpgrade={upgradeFerryLine} disabled={!!session && !cloudReady} />
         

@@ -1,12 +1,14 @@
 import React from 'react';
-import { storyForDay, normalizeNeighborhood, neighborhoodPulse } from './cityLifeEngine.js';
+import { storyForDay, normalizeNeighborhood, neighborhoodPulse, getCityEconomicProfile } from './cityLifeEngine.js';
 
 const fmt=v=>Number(v||0).toLocaleString('tr-TR',{maximumFractionDigits:1});
-export default function CityLifePanel({properties,clock,ferryBusiness,neighborhood,stats,owned,cash,onChoice,busy=false}){
+export default function CityLifePanel({properties,clock,ferryBusiness,tramwayBusiness,neighborhood,stats,owned,cash,onChoice,busy=false}){
   const state=normalizeNeighborhood(neighborhood);
   const story=storyForDay(clock);
   const played=state.choices[story.key];
   const pulse=neighborhoodPulse({properties,clock,ferryBusiness,neighborhood:state,businessStats:stats});
+  const economy=getCityEconomicProfile({properties,clock,ferryBusiness,tramwayBusiness,neighborhood:state});
+  const sectors=[['Denizcilik','maritime','⚓'],['Turizm ve eğlence','leisure','✦'],['Çiçekçilik','flowers','❀'],['Gıda','food','◈'],['Sanayi','industry','⚒']];
   const shops=pulse.footfall.filter(p=>owned.includes(p.id)).sort((a,b)=>b.visits-a.visits).slice(0,5);
   return <section className="living-economy-panel" aria-label="Mahalle hikâyeleri ve yaşayan şehir ekonomisi">
     <div className="living-kicker">BEYOĞLU 1923 · YAŞAYAN ŞEHİR</div>
@@ -17,6 +19,17 @@ export default function CityLifePanel({properties,clock,ferryBusiness,neighborho
       <div><small>TEDARİK GÜVENİ</small><strong>{Math.round(pulse.supplyTrust)}<em>/100</em></strong><div className="living-meter"><span style={{width:pulse.supplyTrust+'%'}}/></div></div>
       <div><small>BU SAATKİ MÜŞTERİLER</small><strong>{pulse.totalVisitors}</strong><span className="living-note">Sokak rotalarından modellenen ziyaretler</span></div>
       <div><small>HAREKETLİ İŞLETMELER</small><strong>{pulse.activeShops}</strong><span className="living-note">Müşteri alan dükkânlar</span></div>
+    </div>
+    <div className="living-city-economy">
+      <div className="living-city-economy-head"><div><span>ŞEHRİN TİCARİ GÖSTERGELERİ</span><strong>Ekonominin yönü</strong></div><small>{economy.season==='yaz'?'Yaz sezonu':'Normal sezon'}</small></div>
+      <div className="living-city-index-grid">
+        <div><small>NÜFUS VE YERLEŞİM</small><strong>{economy.population}<em>/100</em></strong></div>
+        <div><small>LİMAN HAREKETİ</small><strong>{economy.portActivity}<em>/100</em></strong></div>
+        <div><small>TURİZM</small><strong>{economy.tourism}<em>/100</em></strong></div>
+        <div><small>ALIM GÜCÜ</small><strong>{economy.purchasingPower}<em>/100</em></strong></div>
+      </div>
+      <div className="living-sector-demand"><span>SEKTÖREL TALEP ÇARPANLARI</span><div>{sectors.map(([label,key,mark])=><div key={key}><small>{mark} {label}</small><strong>×{fmt(economy.demand[key])}</strong></div>)}</div></div>
+      <p className="living-note">Vapur ve tramvay liman/turizm hareketini; mevsim, konaklama işletmeleri ve mahalle itibarı ise sektörlerin müşteri talebini etkiler. Üst segment ürünler bu göstergeler geliştikçe açılır.</p>
     </div>
     <div className="living-street-note">
       <strong>Birbirine bağlı mahalle</strong>
