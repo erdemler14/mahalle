@@ -664,8 +664,8 @@ body{overflow:hidden}
 .hud-panel-persona .hud-side-panel>.persona-panel{display:block!important}
 .persona-panel{padding:15px;border:1px solid #3c4b5b;border-radius:12px;background:linear-gradient(145deg,rgba(34,48,61,.96),rgba(19,28,38,.98));color:#f2e9d7}
 .persona-field{display:block;margin:0 0 11px;color:#c4cdd4;font-size:11px;font-weight:700;letter-spacing:.03em}
-.persona-field input,.persona-field select{display:block;box-sizing:border-box;width:100%;margin-top:5px;padding:10px 11px;border:1px solid #48596a;border-radius:8px;background:#111c27;color:#f4eee2;font:inherit;font-size:12px;outline:none}
-.persona-field input:focus,.persona-field select:focus{border-color:#d1ad69;box-shadow:0 0 0 2px #d1ad6925}
+.persona-field input,.persona-field select,.persona-field textarea{display:block;box-sizing:border-box;width:100%;margin-top:5px;padding:10px 11px;border:1px solid #48596a;border-radius:8px;background:#111c27;color:#f4eee2;font:inherit;font-size:12px;outline:none;resize:vertical;min-height:74px}
+.persona-field input:focus,.persona-field select:focus,.persona-field textarea:focus{border-color:#d1ad69;box-shadow:0 0 0 2px #d1ad6925}
 .persona-preview{display:flex;align-items:center;gap:11px;margin-top:14px;padding:11px;border:1px solid #48596a;border-radius:10px;background:#111c27}
 .persona-swatch{display:block;flex:0 0 34px;width:34px;height:42px;border:2px solid #d1c09c;border-radius:8px}
 .persona-preview strong,.persona-preview small{display:block}

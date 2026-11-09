@@ -172,7 +172,7 @@ export function createLivingResidents({scene,properties,isMobile=false,onVisit=(
   const historicResidents = HISTORIC_PEOPLE.map((person,i)=>{
     const rig=makePerson(i+112,'artist',person.gender || 'male');
     const home=properties.find(p=>p.id===person.homeId);
-    rig.group.position.set((home?.x||0)+(i%2?.8:-.8),0,(home?.z||0)+1.6);
+    rig.group.position.set((home?.x||0)+((i%4)-1.5)*.72,0,(home?.z||0)+1.4+((i%3)-1)*.72);
     rig.group.userData.historicPerson=i;
     rig.group.userData.historicPersonId=person.id;
     rig.group.userData.historicPersonName=person.name;
@@ -205,7 +205,10 @@ export function createLivingResidents({scene,properties,isMobile=false,onVisit=(
         npc.goingHome=!npc.goingHome;
         if(target){
           const here={x:npc.group.position.x,z:npc.group.position.z};
-          const destination={x:target.x+(npc.index%2?.8:-.8),z:target.z+((target.depth||2.4)/2)+.22};
+          // Vary each arrival position along the frontage and across the pavement to prevent a crowd pile-up.
+          const lane=(npc.index%5)-2;
+          const side=(Math.floor(npc.index/5)%2===0?1:-1);
+          const destination={x:target.x+lane*.62,z:target.z+((target.depth||2.4)/2)+.45+side*(.55+(npc.index%3)*.28)};
           npc.path=[here,...walkWaypoints(here,destination).slice(1)];
           npc.pathTargetId=target.id;
           if(npc.path.length<2)npc.path=[here,destination];
@@ -302,5 +305,5 @@ export function createLivingResidents({scene,properties,isMobile=false,onVisit=(
     }
     return null;
   }
-  return {update,pick,setAvatarProfile:applyAvatarProfile,get residents(){return activePeople.length+historicResidents.length+1},get roster(){return roster}};
+  return {update,pick,setAvatarProfile:applyAvatarProfile,getPlayerPosition(){return {x:playerRig.group.position.x,z:playerRig.group.position.z};},get residents(){return activePeople.length+historicResidents.length+1},get roster(){return roster}};
 }
