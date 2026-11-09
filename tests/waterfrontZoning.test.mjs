@@ -45,6 +45,7 @@ test('timber mill and Pera design studio are registered as new properties',()=>{
   assert.match(app,/83: \[\{id:'st-mimari-proje',name:'İç mekân/);
   assert.match(app,/getUpstreamMaterialFactor/);
   assert.match(app,/active\.id === 81 \? 5 : 4/);
+  assert.match(app,/match:\/pipo\/i,recipe:\[\['karakoy-pipo',1\],\['karakoy-tabaka',1\]\]/);
   const migration=fs.readFileSync('supabase/migrations/202611090002_register_timber_and_design_studio.sql','utf8');
   assert.match(migration,/\(82,'Karaköy Kereste Deposu ve Bıçkıhane'/);
   assert.match(migration,/\(83,'Pera Mimari ve Tezyinat Stüdyosu'/);
