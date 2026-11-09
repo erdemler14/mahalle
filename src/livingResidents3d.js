@@ -22,9 +22,9 @@ function block(parent,mat,size,pos){
   mesh.position.set(...pos);mesh.castShadow=false;
   parent.add(mesh);return mesh;
 }
-function makePerson(index,role,gender='male'){
+function makePerson(index,role,gender='male',custom={}){
   const group=new THREE.Group();
-  const outfit=coats[index%coats.length];
+  const outfit=custom.coat ? new THREE.MeshStandardMaterial({color:custom.coat,roughness:.98}) : coats[index%coats.length];
   const woman=gender==='female';
   const child=role==='student';
   block(group,outfit,[.24,.38,.17],[0,.60,0]);
@@ -143,7 +143,7 @@ function historicVenueFor(person,properties,clock){
   return pool[Math.floor(seed*pool.length)].p;
 }
 
-export function createLivingResidents({scene,properties,isMobile=false,onVisit=()=>{}}){
+export function createLivingResidents({scene,properties,isMobile=false,onVisit=()=>{},avatarProfile={}}){
   const roster=getCityPopulation(properties);
   // Keep the large simulated population for the economy but draw only a
   // lightweight crowd. Old 76/34 detailed rigs were expensive on phones.
@@ -156,6 +156,19 @@ export function createLivingResidents({scene,properties,isMobile=false,onVisit=(
     scene.add(rig.group);
     return {...person,...rig,path:[],nextPoint:0,intent:null};
   });
+  // The player's own persistent persona is a visible resident in the shared streets.
+  let playerRig=makePerson(901,'player',avatarProfile.gender||'male',avatarProfile);
+  playerRig.group.name='Oyuncu karakteri';
+  playerRig.group.position.set(2.5,0,1.2);
+  playerRig.group.userData.isPlayerAvatar=true;
+  scene.add(playerRig.group);
+  let playerPath=[],playerNext=0,playerTarget={x:2.5,z:1.2},playerLastDestination=-1;
+  function applyAvatarProfile(profile={}){
+    const position=playerRig.group.position.clone(),rotation=playerRig.group.rotation.y;
+    scene.remove(playerRig.group);
+    playerRig=makePerson(901,'player',profile.gender||'male',profile);
+    playerRig.group.name='Oyuncu karakteri';playerRig.group.position.copy(position);playerRig.group.rotation.y=rotation;playerRig.group.userData.isPlayerAvatar=true;scene.add(playerRig.group);
+  }
   const historicResidents = HISTORIC_PEOPLE.map((person,i)=>{
     const rig=makePerson(i+112,'artist',person.gender || 'male');
     const home=properties.find(p=>p.id===person.homeId);
@@ -182,12 +195,12 @@ export function createLivingResidents({scene,properties,isMobile=false,onVisit=(
     scene.add(rig.group);
     return {...person,...rig,index:112+i,path:[],nextPoint:0,journeySpeed:.65,goingHome:false,insideUntil:0,visitCount:0};
   });
-  let currentKey='',lastElapsed=null,frame=0;
+  let currentKey='',lastElapsed=null,frame=0,avatarElapsed=0;
   function update({clock,elapsed,weather={}}){
     const dateKey=[clock.year,clock.month,clock.day,clock.hour].join('/');
     if(dateKey!==currentKey){
       currentKey=dateKey;
-      for(const npc of historicResidents){
+      const playerMoving=stepResident({group:playerRig.group,path:playerPath,nextPoint:playerNext,journeySpeed:.52},seconds*2);\n    // Keep the current path index after stepResident mutates it.\n    // (The lightweight wrapper shares the path but owns its cursor.)\n    const playerWalker={group:playerRig.group,path:playerPath,nextPoint:playerNext,journeySpeed:.52};\n    stepResident(playerWalker,seconds*2);playerNext=playerWalker.nextPoint;\n    const playerStride=elapsed*4.7;playerRig.group.position.y=.018+Math.abs(Math.sin(playerStride))*.009*(playerMoving?1:.08);playerRig.legs[0].rotation.x=Math.sin(playerStride)*.19*(playerMoving?1:.08);playerRig.legs[1].rotation.x=-Math.sin(playerStride)*.19*(playerMoving?1:.08);playerRig.arms[0].rotation.x=-Math.sin(playerStride)*.14*(playerMoving?1:.08);playerRig.arms[1].rotation.x=Math.sin(playerStride)*.14*(playerMoving?1:.08);playerRig.group.visible=clock.hour>=6&&clock.hour<23;\n    for(const npc of historicResidents){
         const target=npc.goingHome ? properties.find(p=>p.id===npc.homeId) : historicVenueFor(npc,properties,clock);
         npc.goingHome=!npc.goingHome;
         if(target){
@@ -267,5 +280,5 @@ export function createLivingResidents({scene,properties,isMobile=false,onVisit=(
     }
     return null;
   }
-  return {update,pick,get residents(){return activePeople.length+historicResidents.length},get roster(){return roster}};
+  return {update,pick,setAvatarProfile:applyAvatarProfile,get residents(){return activePeople.length+historicResidents.length+1},get roster(){return roster}};
 }

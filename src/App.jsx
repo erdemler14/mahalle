@@ -199,13 +199,15 @@ function supportsProfessionAt(property, professionId) {
   return Boolean(property && venueTypesByProfession[professionId]?.includes(property.type));
 }
 
-function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', onSelect, onTalk, onResidentVisit, onUniversity, hour, day = 1, month = 1, year = 1923, overlay, developments = {}, buildingLevels = {}, ferryBusiness = {}, neighborhood = {} }) {
+function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', onSelect, onTalk, onResidentVisit, onUniversity, avatarProfile = {}, hour, day = 1, month = 1, year = 1923, overlay, developments = {}, buildingLevels = {}, ferryBusiness = {}, neighborhood = {} }) {
   const host = useRef(null);
   const overlayRef = useRef(null);
   const overlayContentRef = useRef(overlay);
   const selectRef = useRef(onSelect);
   const talkRef = useRef(onTalk);
   const residentVisitRef = useRef(onResidentVisit);
+  const avatarProfileRef = useRef(avatarProfile);
+  useEffect(() => { avatarProfileRef.current = avatarProfile; }, [avatarProfile]);
   const selectedRef = useRef(selected);
   const hourRef = useRef(hour);
   const ferryStateRef = useRef(ferryBusiness);
@@ -787,7 +789,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
     const harborScene = createHarborScene({ scene, oldFerry: ferry, isMobile: isMobileScene, ferryStateRef });
     const glbArchitecture = createGlbArchitecture({ properties, buildingMeshes, mobile: isMobileScene, developments, owned, ownerByProperty, playerId });
     const periodStreetLife = createPeriodStreetLife({ scene, properties, isMobile: isMobileScene });
-    const livingResidents = createLivingResidents({ scene, properties, isMobile: isMobileScene, onVisit: propertyId => residentVisitRef.current?.(propertyId) });
+    const livingResidents = createLivingResidents({ scene, properties, isMobile: isMobileScene, onVisit: propertyId => residentVisitRef.current?.(propertyId), avatarProfile: avatarProfileRef.current });
 
     // A subtle pulsing ring makes the currently selected property easy to spot.
     const selectionRingMaterial = new THREE.MeshStandardMaterial({
@@ -1695,6 +1697,13 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   const [roomCode, setRoomCode] = useState('');
   const [joinCode, setJoinCode] = useState('');
   const [playerName, setPlayerName] = useState(() => typeof saved.playerName === 'string' ? saved.playerName : '');
+  const [avatarProfile, setAvatarProfile] = useState(() => ({
+    gender: saved.avatarProfile?.gender === 'female' ? 'female' : 'male',
+    coat: saved.avatarProfile?.coat || '#45545b',
+    hat: saved.avatarProfile?.hat || 'fedora',
+    accessory: saved.avatarProfile?.accessory || 'scarf'
+  }));
+  const [avatarEditorOpen, setAvatarEditorOpen] = useState(false);
   const [opponentName, setOpponentName] = useState('Diğer oyuncu');
   const [ownerByProperty, setOwnerByProperty] = useState(() => Object.fromEntries(
     (Array.isArray(saved.owned) ? saved.owned : []).map(id => [id, {
@@ -2867,13 +2876,13 @@ function App({ session = null, supabase = null, authConfigured = false }) {
         window.localStorage.setItem(saveBackupKey, JSON.stringify(previousSave));
       }
       window.localStorage.setItem(saveKey, JSON.stringify({
-        version: 3, economyVersion: STARTER_ECONOMY_VERSION, playerName, steps, cash, ferryBusiness, tramwayBusiness, neighborhood, owned, rented, unitOwners, unitRented, buildingLevels, selected, showPortfolio, professionId, marketValues,
+        version: 3, economyVersion: STARTER_ECONOMY_VERSION, playerName, avatarProfile, steps, cash, ferryBusiness, tramwayBusiness, neighborhood, owned, rented, unitOwners, unitRented, buildingLevels, selected, showPortfolio, professionId, marketValues,
         hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, autoSupplyByProperty, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, eventChain, log: log.slice(0, 5)
       }));
     } catch {
       // The game remains playable if browser storage is disabled or full.
     }
-  }, [playerName, steps, cash, ferryBusiness, tramwayBusiness, neighborhood, owned, rented, unitOwners, unitRented, buildingLevels, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, autoSupplyByProperty, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, eventChain, log]);
+  }, [playerName, avatarProfile, steps, cash, ferryBusiness, tramwayBusiness, neighborhood, owned, rented, unitOwners, unitRented, buildingLevels, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, autoSupplyByProperty, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, eventChain, log]);
 
   useEffect(() => {
     if (!session || !supabase) { setCloudReady(true); return undefined; }
@@ -3010,13 +3019,13 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   useEffect(() => {
     if (!session || !supabase || !cloudReady) return;
     const state = {
-      version: 2, economyVersion: STARTER_ECONOMY_VERSION, playerName, steps, cash, ferryBusiness, tramwayBusiness, neighborhood, owned, rented, selected, showPortfolio, professionId, marketValues,
+      version: 2, economyVersion: STARTER_ECONOMY_VERSION, playerName, avatarProfile, steps, cash, ferryBusiness, tramwayBusiness, neighborhood, owned, rented, selected, showPortfolio, professionId, marketValues,
       hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty,
       businessStats, autoSupplyByProperty, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, eventChain, experience, dailySalesLog, dailySalesRevenue, careerReputation, enrolledCourse, certificates, log: log.slice(0, 5), developments
     };
     supabase.from('player_saves').upsert({ user_id: session.user.id, state, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
       .then(({ error }) => { if (error) setMultiplayerStatus('Kayıt eşitlenemedi · ' + error.message); });
-  }, [session?.user?.id, supabase, cloudReady, playerName, steps, cash, ferryBusiness, neighborhood, owned, rented, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, autoSupplyByProperty, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, eventChain, experience, dailySalesLog, dailySalesRevenue, careerReputation, enrolledCourse, certificates, log, developments, tramwayBusiness]);
+  }, [session?.user?.id, supabase, cloudReady, playerName, avatarProfile, steps, cash, ferryBusiness, neighborhood, owned, rented, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, autoSupplyByProperty, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, eventChain, experience, dailySalesLog, dailySalesRevenue, careerReputation, enrolledCourse, certificates, log, developments, tramwayBusiness]);
 
 
   const tell = (text) => {
@@ -4466,7 +4475,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     <header className="topbar hud-topbar">
       <a className="wordmark" href="#" aria-label="Mahalle ana sayfa"><span className="mark">M.</span><span>MAHALLE</span></a>
       <div className="top-center"><span className="live-dot" /> BEYOĞLU · {String(day).padStart(2, '0')} {['OCAK','ŞUBAT','MART','NİSAN','MAYIS','HAZİRAN','TEMMUZ','AĞUSTOS','EYLÜL','EKİM','KASIM','ARALIK'][month - 1]} {year} · {String(hour).padStart(2, '0')}:00</div>
-      <div className="top-actions"><button className="reset-button" onClick={resetGame}>YENİ OYUN ↻</button><button className="avatar-button" onClick={() => setShowPortfolio(v => !v)} aria-label="Portföyü aç">CC</button></div>
+      <div className="top-actions"><button className="reset-button" onClick={resetGame}>YENİ OYUN ↻</button><button className="avatar-button" onClick={() => setAvatarEditorOpen(v => !v)} aria-label="Karakterimi kişiselleştir">♙</button></div>
     </header>
 
     <button type="button" className="hud-cash" aria-label="Cepteki sermaye ayrıntıları" onClick={() => setActiveHudPanel(activeHudPanel === 'cash' ? null : 'cash')}><span>₺</span><strong>{cash.toLocaleString('tr-TR', { maximumFractionDigits: 2 })}</strong><small>{cash > 0 ? 'SERMAYE' : 'SERMAYE BİTTİ'}</small></button>
@@ -4517,11 +4526,21 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       {incomingOffer && <div className="incoming-offer" role="alert"><strong>{incomingOffer.isCounter ? 'Karşı teklif geldi' : 'Yeni satın alma teklifi'}</strong><span>{incomingOffer.fromName}, {properties.find(p => p.id === incomingOffer.propertyId)?.name || 'bir mülk'} için ₺{Number(incomingOffer.price).toLocaleString('tr-TR')} teklif ediyor.</span><label>Teklif / karşı teklif (₺)<input type="number" min="1" value={offerPriceInput} onChange={e => setOfferPriceInput(e.target.value)} /></label><div><button onClick={() => respondToOffer('accept')}>KABUL ET</button><button onClick={() => respondToOffer('counter', offerPriceInput)}>KARŞI TEKLİF</button><button onClick={() => respondToOffer('reject')}>REDDET</button></div></div>}
     </section>
 
-    {toyShopOpen && <ToyShopInterior property={properties.find(p=>p.id===TOY_SHOP_ID)} owned={owned.includes(TOY_SHOP_ID)} stock={getTotalStock(TOY_SHOP_ID)} onExit={leaveToyShop}/>}
+    {avatarEditorOpen && <section role="dialog" aria-label="Karakter gardırobu" className="avatar-editor-panel" style={{position:'fixed',zIndex:100000,top:68,right:18,width:'min(340px,calc(100vw - 36px))',padding:18,background:'#f4eee2',color:'#302920',border:'1px solid #9a8463',borderRadius:14,boxShadow:'0 16px 48px rgba(0,0,0,.3)'}}>
+      <button type="button" onClick={()=>setAvatarEditorOpen(false)} style={{float:'right'}}>×</button>
+      <div style={{fontSize:11,letterSpacing:2,fontWeight:800}}>1923 · TERZİ VE GARDIROP</div><h3 style={{margin:'7px 0 14px'}}>Karakterini tasarla</h3>
+      <label style={{display:'block',fontSize:12,marginBottom:10}}>Görünüm<select value={avatarProfile.gender} onChange={e=>setAvatarProfile(p=>({...p,gender:e.target.value}))} style={{display:'block',width:'100%',padding:9,marginTop:4}}><option value="male">Erkek kıyafeti</option><option value="female">Kadın kıyafeti</option></select></label>
+      <label style={{display:'block',fontSize:12,marginBottom:10}}>Ceket / elbise rengi<select value={avatarProfile.coat} onChange={e=>setAvatarProfile(p=>({...p,coat:e.target.value}))} style={{display:'block',width:'100%',padding:9,marginTop:4}}>{[['#45545b','Lacivert'],['#655044','Kestane'],['#53634f','Zeytin'],['#786b83','Mürdüm'],['#a17a52','Tütün'],['#d0bda0','Krem'],['#7d3438','Bordo']].map(([v,n])=><option key={v} value={v}>{n}</option>)}</select></label>
+      <label style={{display:'block',fontSize:12,marginBottom:10}}>Başlık / şapka<select value={avatarProfile.hat} onChange={e=>setAvatarProfile(p=>({...p,hat:e.target.value}))} style={{display:'block',width:'100%',padding:9,marginTop:4}}><option value="fedora">Fötr şapka</option><option value="flat">Kasket</option><option value="none">Şapkasız</option><option value="cloche">Cloche şapka</option></select></label>
+      <label style={{display:'block',fontSize:12,marginBottom:12}}>Aksesuar<select value={avatarProfile.accessory} onChange={e=>setAvatarProfile(p=>({...p,accessory:e.target.value}))} style={{display:'block',width:'100%',padding:9,marginTop:4}}><option value="scarf">Atkı / fular</option><option value="bag">Deri çanta</option><option value="cane">Baston</option><option value="glasses">Gözlük</option><option value="none">Aksesuar yok</option></select></label>
+      <p style={{fontSize:11,opacity:.7,margin:'0 0 12px'}}>Karakterin mahallede kendi başına dolaşır. Kıyafet ve aksesuarlarını değiştirdikçe görünümü güncellenir.</p>
+      <button type="button" onClick={()=>setAvatarEditorOpen(false)} style={{width:'100%',padding:10,background:'#4b4034',color:'#fff',border:0,borderRadius:8}}>GARDIROBU KAPAT</button>
+    </section>}
+\n        {toyShopOpen && <ToyShopInterior property={properties.find(p=>p.id===TOY_SHOP_ID)} owned={owned.includes(TOY_SHOP_ID)} stock={getTotalStock(TOY_SHOP_ID)} onExit={leaveToyShop}/>}
     <section className="game-layout fullscreen-layout">
       <div className="world-panel">
         <div className="world-topline"><span><span className="live-dot" /> BEYOĞLU MERKEZİ</span><label className="property-finder"><span>⌕</span><input aria-label="Mülk ara ve haritada göster" list="mahalle-property-options" placeholder="Mülk adı yaz..." value={mapSearch} onChange={event => { const value = event.target.value; setMapSearch(value); const match = properties.find(property => property.name.toLocaleLowerCase('tr-TR') === value.trim().toLocaleLowerCase('tr-TR')); if (match) { selectProperty(match.id); setMapSearch(''); } }} /><datalist id="mahalle-property-options">{properties.map(property => <option key={property.id} value={property.name}>{owned.includes(property.id) ? 'Senin mülkün' : 'Satılık'}</option>)}</datalist><small>{properties.length} MÜLK</small></label><span className="world-year">OYUN DÜNYASI <i>·</i> {year}</span></div>
-        <CityScene selected={selected} owned={owned} ownerByProperty={ownerByProperty} playerId={playerId} onSelect={selectProperty} onTalk={person => setHistoricStory(person)} onResidentVisit={recordHistoricFootfall} ferryBusiness={ferryBusiness} onUniversity={() => setActiveHudPanel(v => v === 'university' ? null : 'university')} hour={hour} day={day} month={month} year={year} neighborhood={neighborhood} developments={developments} buildingLevels={buildingLevels} overlay={sceneActionDismissed ? null : <div className="scene-action-card" style={{ position: 'relative', paddingTop: 28 }}>
+        <CityScene selected={selected} owned={owned} ownerByProperty={ownerByProperty} playerId={playerId} onSelect={selectProperty} onTalk={person => setHistoricStory(person)} onResidentVisit={recordHistoricFootfall} avatarProfile={avatarProfile} ferryBusiness={ferryBusiness} onUniversity={() => setActiveHudPanel(v => v === 'university' ? null : 'university')} hour={hour} day={day} month={month} year={year} neighborhood={neighborhood} developments={developments} buildingLevels={buildingLevels} overlay={sceneActionDismissed ? null : <div className="scene-action-card" style={{ position: 'relative', paddingTop: 28 }}>
           <button type="button" aria-label="Seçili bina penceresini kapat" title="Kapat" onClick={() => setSceneActionDismissed(true)} style={{ position: 'absolute', top: 7, right: 8, zIndex: 5, width: 28, height: 28, border: '1px solid rgba(255,255,255,.35)', borderRadius: 8, background: 'rgba(12,24,48,.72)', color: '#fff', fontSize: 21, lineHeight: '24px', cursor: 'pointer' }}>×</button>
           <div className="scene-action-eyebrow">SEÇİLİ BİNA · {String(active.id).padStart(2, '0')}</div><strong>{active.name}</strong>
           <span>{ownerByProperty[active.id] ? (ownerByProperty[active.id].playerId === playerId ? `Sahibi: ${ownerByProperty[active.id].name} (sen)` : `Sahibi: ${ownerByProperty[active.id].name}`) : 'Satılık'} · ₺{getMarketValue(active).toLocaleString('tr-TR')}</span>
