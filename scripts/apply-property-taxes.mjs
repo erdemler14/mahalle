@@ -97,44 +97,8 @@ const taxHelpers = `  const getPropertyTaxRate = property => PROPERTY_TAX_RATES[
   const calculateMonthlyBusinessFees = () => owned.reduce((total, id) => total + (rented.includes(id) ? 0 : getBusinessFee(properties.find(p => p.id === id))), 0);`;
 if (!s.includes('const calculateQuarterlyPropertyTax')) {
   if (!marketAnchor) throw new Error('Could not locate getMarketValue function to inject tax helpers');
-  s = s.replace(marketAnchor[0], marketAnchor[1] + '\\n' + taxHelpers);
+  s = s.replace(marketAnchor[0], marketAnchor[1] + '\n' + taxHelpers);
 }
-const taxHelpers = `  const getMarketValue = property => Math.max(1,Math.round((Number(marketValues[property.id])||property.price)*100)/100);
-  const getPropertyTaxRate = property => PROPERTY_TAX_RATES[property.type] || 0.0015;
-  const getProgressivePropertyFactor = position => PROPERTY_TAX_PROGRESSIVE[Math.min(position - 1, PROPERTY_TAX_PROGRESSIVE.length - 1)] || 2.5;
-  const calculateQuarterlyPropertyTax = () => owned.reduce((total, propertyId, index) => {
-    const property = properties.find(item => item.id === propertyId);
-    if (!property) return total;
-    const base = getMarketValue(property) * getPropertyTaxRate(property) / 4;
-    return total + base * getProgressivePropertyFactor(index + 1) * 1.10;
-  }, 0);
-  const getBusinessFee = property => {
-    if (!property || !['Ticaret', 'Atölye', 'İşletme'].includes(property.type)) return 0;
-    const licence = property.type === 'İşletme' ? 1.25 : property.type === 'Atölye' ? 1.0 : 0.75;
-    const frontage = [13, 19, 25, 31, 40].includes(property.id) ? 1.25 : 0;
-    return licence + frontage;
-  };
-  const calculateMonthlyBusinessFees = () => owned.reduce((total, propertyId) => {
-    if (rented.includes(propertyId)) return total;
-    return total + getBusinessFee(properties.find(item => item.id === propertyId));
-  }, 0);
-  const settlePeriodicTaxes = (nextDay, nextMonth) => {
-    let total = 0;
-    const entries = [];
-    if (nextDay === 1 && QUARTER_START_MONTHS.includes(nextMonth) && owned.length) {
-      const propertyTax = calculateQuarterlyPropertyTax();
-      total += propertyTax;
-      entries.push('Emlak vergisi + kültür katkı payı -₺' + propertyTax.toFixed(2));
-    }
-    if (nextDay === 1 && owned.length) {
-      const businessFees = calculateMonthlyBusinessFees();
-      total += businessFees;
-      if (businessFees > 0) entries.push('Ruhsat/işyeri aidatları -₺' + businessFees.toFixed(2));
-    }
-    return { costs: Math.round(total * 100) / 100, entries };
-  };`;
-if (!s.includes('settlePeriodicTaxes')) s = s.replace(marketAnchor, taxHelpers);
-
 const old = /  const settleDailyBusinesses = \(\) => \{.*?\n  \};\n\n  const sleepUntilMorning = \(\) => \{.*?\n  \};/s;
 const replacement = `  const settleDailyBusinesses = () => {
     let operatingCosts = 0;
