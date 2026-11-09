@@ -200,7 +200,7 @@ export function createLivingResidents({scene,properties,isMobile=false,onVisit=(
     const dateKey=[clock.year,clock.month,clock.day,clock.hour].join('/');
     if(dateKey!==currentKey){
       currentKey=dateKey;
-      const playerMoving=stepResident({group:playerRig.group,path:playerPath,nextPoint:playerNext,journeySpeed:.52},seconds*2);\n    // Keep the current path index after stepResident mutates it.\n    // (The lightweight wrapper shares the path but owns its cursor.)\n    const playerWalker={group:playerRig.group,path:playerPath,nextPoint:playerNext,journeySpeed:.52};\n    stepResident(playerWalker,seconds*2);playerNext=playerWalker.nextPoint;\n    const playerStride=elapsed*4.7;playerRig.group.position.y=.018+Math.abs(Math.sin(playerStride))*.009*(playerMoving?1:.08);playerRig.legs[0].rotation.x=Math.sin(playerStride)*.19*(playerMoving?1:.08);playerRig.legs[1].rotation.x=-Math.sin(playerStride)*.19*(playerMoving?1:.08);playerRig.arms[0].rotation.x=-Math.sin(playerStride)*.14*(playerMoving?1:.08);playerRig.arms[1].rotation.x=Math.sin(playerStride)*.14*(playerMoving?1:.08);playerRig.group.visible=clock.hour>=6&&clock.hour<23;\n    for(const npc of historicResidents){
+    for(const npc of historicResidents){
         const target=npc.goingHome ? properties.find(p=>p.id===npc.homeId) : historicVenueFor(npc,properties,clock);
         npc.goingHome=!npc.goingHome;
         if(target){
@@ -232,6 +232,16 @@ export function createLivingResidents({scene,properties,isMobile=false,onVisit=(
     // 30 fps animation for residents, keeping the rest of the Three.js world
     // at its normal update rate. Time is accumulated from elapsed, not frames.
     if(frame%2===1)return;
+    const playerWalker={group:playerRig.group,path:playerPath,nextPoint:playerNext,journeySpeed:.52};
+    const playerMoving=stepResident(playerWalker,seconds*2);playerNext=playerWalker.nextPoint;
+    const playerStride=elapsed*4.7;
+    const playerPace=playerMoving?1:.08;
+    playerRig.group.position.y=.018+Math.abs(Math.sin(playerStride))*.009*playerPace;
+    playerRig.legs[0].rotation.x=Math.sin(playerStride)*.19*playerPace;
+    playerRig.legs[1].rotation.x=-Math.sin(playerStride)*.19*playerPace;
+    playerRig.arms[0].rotation.x=-Math.sin(playerStride)*.14*playerPace;
+    playerRig.arms[1].rotation.x=Math.sin(playerStride)*.14*playerPace;
+    playerRig.group.visible=clock.hour>=6&&clock.hour<23;
     for(const npc of historicResidents){
       if(elapsed < npc.insideUntil){npc.group.visible=false;continue;}
       if(npc.insideUntil && elapsed >= npc.insideUntil){npc.group.visible=true;npc.insideUntil=0;}

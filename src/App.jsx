@@ -206,8 +206,8 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
   const selectRef = useRef(onSelect);
   const talkRef = useRef(onTalk);
   const residentVisitRef = useRef(onResidentVisit);
-  const avatarProfileRef = useRef(avatarProfile);
-  useEffect(() => { avatarProfileRef.current = avatarProfile; }, [avatarProfile]);
+  const avatarProfileRef = useRef(avatarProfile);\n  const avatarSetterRef = useRef(null);
+  useEffect(() => { avatarProfileRef.current = avatarProfile; avatarSetterRef.current?.(avatarProfile); }, [avatarProfile]);
   const selectedRef = useRef(selected);
   const hourRef = useRef(hour);
   const ferryStateRef = useRef(ferryBusiness);
@@ -789,7 +789,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
     const harborScene = createHarborScene({ scene, oldFerry: ferry, isMobile: isMobileScene, ferryStateRef });
     const glbArchitecture = createGlbArchitecture({ properties, buildingMeshes, mobile: isMobileScene, developments, owned, ownerByProperty, playerId });
     const periodStreetLife = createPeriodStreetLife({ scene, properties, isMobile: isMobileScene });
-    const livingResidents = createLivingResidents({ scene, properties, isMobile: isMobileScene, onVisit: propertyId => residentVisitRef.current?.(propertyId), avatarProfile: avatarProfileRef.current });
+    const livingResidents = createLivingResidents({ scene, properties, isMobile: isMobileScene, onVisit: propertyId => residentVisitRef.current?.(propertyId), avatarProfile: avatarProfileRef.current });\n    avatarSetterRef.current = livingResidents.setAvatarProfile;
 
     // A subtle pulsing ring makes the currently selected property easy to spot.
     const selectionRingMaterial = new THREE.MeshStandardMaterial({
@@ -1523,7 +1523,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
       renderer.domElement.removeEventListener('contextmenu', onContextMenu);
       harborScene.dispose();
       glbArchitecture.dispose();
-      cameraControlRef.current = null;
+      avatarSetterRef.current = null;\n      cameraControlRef.current = null;
       scene.traverse(o => {
         if (o.geometry) o.geometry.dispose();
         if (o.material) {
