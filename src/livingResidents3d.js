@@ -228,6 +228,18 @@ export function createLivingResidents({scene,properties,isMobile=false,onVisit=(
     }
     const seconds=lastElapsed===null?0:Math.min(.12,Math.max(0,elapsed-lastElapsed));
     lastElapsed=elapsed;
+    avatarElapsed+=seconds;
+    if(playerNext>=playerPath.length || playerPath.length<2){
+      const destinations=[[-20,-16],[-14,8],[-6,-20],[3,14],[15,-12],[21,7],[8,22],[-23,4],[0,-5],[18,18]];
+      let choice=Math.floor(Math.abs(Math.sin(Math.floor(avatarElapsed/8)*17.31+901)*destinations.length))%destinations.length;
+      if(choice===playerLastDestination)choice=(choice+3)%destinations.length;
+      playerLastDestination=choice;
+      const [x,z]=destinations[choice];
+      const here={x:playerRig.group.position.x,z:playerRig.group.position.z};
+      playerPath=walkWaypoints(here,{x,z});
+      if(playerPath.length<2)playerPath=[here,{x,z}];
+      playerNext=1;
+    }
     frame++;
     // 30 fps animation for residents, keeping the rest of the Three.js world
     // at its normal update rate. Time is accumulated from elapsed, not frames.
