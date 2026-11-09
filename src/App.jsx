@@ -2334,6 +2334,56 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   // Distinct supply chains for every active commercial property. Similar businesses may sell
   // related goods, but their procurement items remain specific to the shop and its operating model.
   const BUSINESS_SPECIFIC_PROFILES = {
+    70: { name:'Lebon Pastanesi', materials:[
+      {id:'lebon-un',name:'Pastalık un ve badem unu',batch:8,cost:12},{id:'lebon-tereyag',name:'Tereyağı ve krema',batch:6,cost:14},{id:'lebon-seker',name:'Şeker, kakao ve vanilya',batch:8,cost:10},{id:'lebon-kahve',name:'Kahve çekirdeği ve kakao',batch:6,cost:13}
+    ],recipes:[['lebon-un',2,'lebon-tereyag',1],['lebon-un',1,'lebon-tereyag',1],['lebon-kahve',1,'lebon-seker',1]],productRules:[
+      {match:/kahve|çikolata|cikolata/i,recipe:[['lebon-kahve',1],['lebon-seker',1]]},{match:/pasta|tart|milföy|milfoy|tatlı|tatli/i,recipe:[['lebon-un',2],['lebon-tereyag',1],['lebon-seker',1]]}
+    ]},
+    71: { name:'Nisuaz Pastanesi', materials:[
+      {id:'nisuaz-un',name:'Un ve pastacılık malzemesi',batch:8,cost:11},{id:'nisuaz-sut',name:'Süt, krema ve yumurta',batch:6,cost:13},{id:'nisuaz-meyve',name:'Mevsim meyvesi ve reçel',batch:6,cost:10},{id:'nisuaz-seker',name:'Şeker ve şerbet',batch:8,cost:8}
+    ],recipes:[['nisuaz-un',1,'nisuaz-sut',1],['nisuaz-un',2,'nisuaz-sut',1],['nisuaz-meyve',1,'nisuaz-seker',1]],productRules:[
+      {match:/kahve/i,recipe:[['nisuaz-sut',1],['nisuaz-seker',1]]},{match:/ekler|pasta|tatlı|tatli/i,recipe:[['nisuaz-un',2],['nisuaz-sut',1],['nisuaz-seker',1]]},{match:/limonata|şerbet|serbet/i,recipe:[['nisuaz-meyve',1],['nisuaz-seker',1]]}
+    ]},
+    72: { name:'Elhamra Sineması', materials:[
+      {id:'elhamra-film',name:'Film kopyası ve gösterim lisansı',batch:4,cost:18},{id:'elhamra-elektrik',name:'Projektör karbon çubuğu ve elektrik sarfı',batch:8,cost:9},{id:'elhamra-baski',name:'Basılı program ve bilet kâğıdı',batch:10,cost:7},{id:'elhamra-salon',name:'Salon temizlik ve bakım malzemesi',batch:8,cost:8}
+    ],recipes:[['elhamra-film',1,'elhamra-elektrik',1],['elhamra-film',1,'elhamra-elektrik',1],['elhamra-baski',1,'elhamra-elektrik',1]],productRules:[
+      {match:/sinema|bilet|loca|balkon|gösterim|gosterim/i,recipe:[['elhamra-film',1],['elhamra-elektrik',1],['elhamra-salon',1]]},{match:/program/i,recipe:[['elhamra-baski',1],['elhamra-elektrik',1]]}
+    ]},
+    73: { name:'Maxim', materials:[
+      {id:'maxim-orkestra',name:'Orkestra ve sanatçı ücretleri',batch:4,cost:24},{id:'maxim-isik',name:'Sahne ışığı, elektrik ve salon yakıtı',batch:8,cost:10},{id:'maxim-bilet',name:'Davetiye, bilet ve program baskısı',batch:10,cost:8},{id:'maxim-salon',name:'Salon, masa ve servis hazırlığı',batch:8,cost:9}
+    ],recipes:[['maxim-orkestra',1,'maxim-isik',1,'maxim-bilet',1],['maxim-orkestra',1,'maxim-isik',1,'maxim-bilet',1],['maxim-orkestra',2,'maxim-isik',1,'maxim-bilet',2],['maxim-orkestra',1,'maxim-isik',1,'maxim-salon',1]],productRules:[
+      {match:/caz|solist|vals|balosu|konuk/i,recipe:[['maxim-orkestra',1],['maxim-isik',1],['maxim-bilet',1],['maxim-salon',1]]}
+    ]},
+    74: { name:'Tokatlıyan Oteli', materials:[
+      {id:'tokatliyan-carsaf',name:'Çarşaf, havlu ve yatak takımı',batch:8,cost:14},{id:'tokatliyan-kahvalti',name:'Kahvaltılık ve oda ikramı',batch:8,cost:13},{id:'tokatliyan-temizlik',name:'Kat hizmetleri ve temizlik sarfı',batch:8,cost:8},{id:'tokatliyan-yakit',name:'Asansör, kazan ve aydınlatma gideri',batch:8,cost:10}
+    ],recipes:[['tokatliyan-carsaf',1,'tokatliyan-temizlik',1],['tokatliyan-carsaf',1,'tokatliyan-kahvalti',1],['tokatliyan-kahvalti',2,'tokatliyan-yakit',1]],productRules:[
+      {match:/oda|gecelik|suit|kahvaltı|kahvalti/i,recipe:[['tokatliyan-carsaf',1],['tokatliyan-kahvalti',1],['tokatliyan-temizlik',1]]},{match:/balo|davet|salon/i,recipe:[['tokatliyan-kahvalti',2],['tokatliyan-yakit',1]]}
+    ]},
+    75: { name:'Çiçek Pasajı', materials:[
+      {id:'pasaj-cicek',name:'Kesme çiçek ve yeşillik',batch:8,cost:12},{id:'pasaj-saksi',name:'Saksı, toprak ve çiçek besini',batch:8,cost:9},{id:'pasaj-kagit',name:'Buket kâğıdı ve kurdele',batch:10,cost:7},{id:'pasaj-gazete',name:'Gazete ve kartpostal stoğu',batch:10,cost:8}
+    ],recipes:[['pasaj-cicek',1,'pasaj-kagit',1],['pasaj-saksi',1,'pasaj-cicek',1],['pasaj-cicek',2,'pasaj-kagit',1],['pasaj-gazete',1,'pasaj-kagit',1]],productRules:[
+      {match:/buket|çiçek|cicek|aranjman|gül|gul|çelenk|celenk/i,recipe:[['pasaj-cicek',2],['pasaj-kagit',1]]},{match:/saksı|saksi/i,recipe:[['pasaj-saksi',1],['pasaj-cicek',1]]},{match:/gazete|kartpostal/i,recipe:[['pasaj-gazete',1]]}
+    ]},
+    76: { name:'Pera Degüstasyon Salonu', materials:[
+      {id:'degu-sarap',name:'Şarap ve mahzen seçkisi',batch:8,cost:18},{id:'degu-peynir',name:'Peynir ve soğuk meze',batch:8,cost:12},{id:'degu-ekmek',name:'Ekmek ve kraker',batch:10,cost:7},{id:'degu-servis',name:'Kadeh, peçete ve masa servisi',batch:10,cost:8}
+    ],recipes:[['degu-peynir',1,'degu-ekmek',1,'degu-servis',1],['degu-sarap',1,'degu-servis',1]],productRules:[
+      {match:/şarap|sarap|kadeh/i,recipe:[['degu-sarap',1],['degu-servis',1]]},{match:/yemek|meze/i,recipe:[['degu-peynir',1],['degu-ekmek',1],['degu-servis',1]]}
+    ]},
+    78: { name:'Pera Matbaası ve Gazetesi', materials:[
+      {id:'pera-kagit',name:'Gazete kâğıdı ve karton',batch:10,cost:10},{id:'pera-murekkep',name:'Matbaa mürekkebi ve boya',batch:8,cost:11},{id:'pera-kalip',name:'Tipo hurufat ve baskı kalıbı',batch:6,cost:14},{id:'pera-cilt',name:'Cilt bezi ve tutkal',batch:6,cost:12}
+    ],recipes:[['pera-kagit',2,'pera-murekkep',1,'pera-kalip',1],['pera-kagit',1,'pera-murekkep',1,'pera-kalip',1],['pera-kagit',2,'pera-murekkep',1,'pera-cilt',1]],productRules:[
+      {match:/gazete|ilan|duyuru|baskı|baski/i,recipe:[['pera-kagit',2],['pera-murekkep',1],['pera-kalip',1]]},{match:/kitap|risale|cilt/i,recipe:[['pera-kagit',2],['pera-murekkep',1],['pera-cilt',1]]}
+    ]},
+    79: { name:'Pera Plakçısı', materials:[
+      {id:'plak-gomalak',name:'Gomalak plak hammaddesi ve plak stoğu',batch:6,cost:18},{id:'plak-etiket',name:'Plak etiketi ve kâğıt zarf',batch:10,cost:7},{id:'plak-igne',name:'Gramofon iğnesi ve mekanik parça',batch:8,cost:10},{id:'plak-ahsap',name:'Gramofon ahşap kasası ve metal aksam',batch:4,cost:22}
+    ],recipes:[['plak-gomalak',1,'plak-etiket',1],['plak-ahsap',1,'plak-igne',1],['plak-igne',1,'plak-etiket',1]],productRules:[
+      {match:/plak/i,recipe:[['plak-gomalak',1],['plak-etiket',1]]},{match:/gramofon/i,recipe:[['plak-ahsap',1],['plak-igne',1]]},{match:/iğne|igne/i,recipe:[['plak-igne',1],['plak-etiket',1]]}
+    ]},
+    80: { name:'Pasaj Esnafı', materials:[
+      {id:'esnaf-cicek',name:'Kesme çiçek ve yeşillik',batch:8,cost:11},{id:'esnaf-gazete',name:'Gazete ve süreli yayın',batch:10,cost:8},{id:'esnaf-kartpostal',name:'Kartpostal ve baskılı kâğıt',batch:10,cost:7},{id:'esnaf-ambalaj',name:'Kâğıt paket ve ip',batch:10,cost:6}
+    ],recipes:[['esnaf-cicek',1,'esnaf-ambalaj',1],['esnaf-gazete',1,'esnaf-ambalaj',1],['esnaf-kartpostal',1,'esnaf-ambalaj',1]],productRules:[
+      {match:/buket|çiçek|cicek/i,recipe:[['esnaf-cicek',1],['esnaf-ambalaj',1]]},{match:/gazete/i,recipe:[['esnaf-gazete',1],['esnaf-ambalaj',1]]},{match:/kartpostal/i,recipe:[['esnaf-kartpostal',1],['esnaf-ambalaj',1]]}
+    ]},
     38: { name:'Kuyumcu', materials:[
       {id:'kuy-altin',name:'Altın ve gümüş külçe',batch:4,cost:28},{id:'kuy-tas',name:'Değerli taş ve inci',batch:4,cost:22},
       {id:'kuy-tel',name:'Ayar teli, lehim ve maden sarfı',batch:6,cost:10},{id:'kuy-mekanizma',name:'Cep saati mekanizması ve zemberek',batch:4,cost:24}

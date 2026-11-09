@@ -291,40 +291,44 @@ export function createPeriodVisualPass({ scene, properties, buildingMeshes, isMo
   }
 
 
-  // Irregular stone paving for the narrow backstreets of 1920s Pera.
-  // Instanced pavers keep draw calls low on desktop and mobile.
-  const pavingGroup = new THREE.Group();
-  const pavingStone = material('#8d877b', 0.98);
-  const pavingAlt = material('#a39a8a', 0.99);
-  const pavingDark = material('#777267', 1);
-  const pavingRows = isMobile ? 13 : 25;
-  const pavingColumns = isMobile ? 5 : 7;
-  const pavingGeometry = new THREE.BoxGeometry(0.42, 0.045, 0.34);
-  for (const [lane, x] of [-23.2, -13.0, 3.0, 13.0, 23.0].entries()) {
-    const count = pavingRows * pavingColumns;
-    const meshes = [pavingStone, pavingAlt, pavingDark].map(mat => {
-      const mesh = new THREE.InstancedMesh(pavingGeometry, mat, count);
-      mesh.receiveShadow = true;
-      mesh.castShadow = false;
-      pavingGroup.add(mesh);
-      return mesh;
-    });
-    const dummy = new THREE.Object3D();
-    let n = 0;
-    for (let row = 0; row < pavingRows; row++) {
-      for (let col = 0; col < pavingColumns; col++) {
-        const seed = hash(lane * 1000 + row * 31 + col * 7);
-        const meshIndex = seed > .82 ? 2 : seed > .48 ? 1 : 0;
-        dummy.position.set(x + (col - (pavingColumns - 1) / 2) * .48 + (row % 2 ? .18 : 0), -0.005 + seed * .004, -22 + row * (44 / pavingRows));
-        dummy.rotation.y = (seed - .5) * .10;
-        dummy.scale.set(.82 + seed * .22, 1, .82 + seed * .2);
-        dummy.updateMatrix();
-        meshes[meshIndex].setMatrixAt(n++, dummy.matrix);
-      }
+  // Continuous, restrained Pera street surface: compacted dark limestone setts,
+  // subtly irregular joints and worn stone gutters. Pavers sit almost flush with the ground.
+  const streetGroup = new THREE.Group();
+  const streetBed = new THREE.MeshStandardMaterial({color:'#817c72',roughness:1});
+  const settMats = [
+    new THREE.MeshStandardMaterial({color:'#999286',roughness:1}),
+    new THREE.MeshStandardMaterial({color:'#8d877c',roughness:1}),
+    new THREE.MeshStandardMaterial({color:'#77736b',roughness:1}),
+    new THREE.MeshStandardMaterial({color:'#a49b8c',roughness:1})
+  ];
+  const settGeo = new THREE.BoxGeometry(.38,.018,.28);
+  const dummy = new THREE.Object3D();
+  const laneCenters = [-23.2,-13.0,3.0,13.0,23.0];
+  for(let lane=0;lane<laneCenters.length;lane++){
+    const x=laneCenters[lane], width=4.0, length=47;
+    const bed=new THREE.Mesh(new THREE.PlaneGeometry(width,length),streetBed);
+    bed.rotation.x=-Math.PI/2;bed.position.set(x,-.031,0);bed.receiveShadow=true;streetGroup.add(bed);
+    const count=(isMobile?110:220);
+    const meshes=settMats.map(mat=>{const m=new THREE.InstancedMesh(settGeo,mat,count);m.receiveShadow=true;m.castShadow=false;streetGroup.add(m);return m;});
+    const cols=10, rows=Math.ceil(count/cols);
+    for(let k=0;k<count;k++){
+      const row=Math.floor(k/cols),col=k%cols;
+      const seed=hash(lane*10000+k*17+9);
+      dummy.position.set(x+(col-(cols-1)/2)*.39+(row%2)*.19,-.018+seed*.0015,-23+row*(46/rows));
+      dummy.rotation.set(0,(seed-.5)*.12,0);
+      dummy.scale.set(.92+seed*.12,1,.88+seed*.16);
+      dummy.updateMatrix();
+      meshes[Math.floor(seed*settMats.length)].setMatrixAt(k,dummy.matrix);
     }
-    meshes.forEach(mesh => { mesh.count = n; mesh.instanceMatrix.needsUpdate = true; });
+    meshes.forEach(m=>{m.instanceMatrix.needsUpdate=true;});
+    // Worn, lighter limestone gutters define the carriageway without looking like a tiled grid.
+    const gutterMat=new THREE.MeshStandardMaterial({color:'#aaa18f',roughness:1});
+    for(const side of [-1,1]){
+      const gutter=new THREE.Mesh(new THREE.BoxGeometry(.16,.025,length),gutterMat);
+      gutter.position.set(x+side*(width/2-.08),-.012,0);gutter.receiveShadow=true;streetGroup.add(gutter);
+    }
   }
-  scene.add(pavingGroup);
+  scene.add(streetGroup);
 
   const markets = [
     [-4.6, -17.2, Math.PI * 0.08, 0],
