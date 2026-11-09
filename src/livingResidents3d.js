@@ -86,8 +86,8 @@ export function stepResident(npc,seconds){
 }
 // Named residents use the same low-poly rig and the same street movement as the city's other people.
 const HISTORIC_PEOPLE=[
-  {name:'Yahya Kemal Beyatlı',homeId:70,visitId:71,dialogue:'Beyoğlu’nda bir pastane masası, bazen uzun bir şiirin başlangıcıdır.'},
-  {name:'Ahmet Haşim',homeId:71,visitId:70,dialogue:'Akşam ışıkları bu sokağı bambaşka gösteriyor.'},
+  {name:'Yahya Kemal Beyatlı',bio:'Şair ve yazar. 1920’lerde İstanbul ve Pera’nın edebiyat çevrelerinde yer alır.',homeId:70,visitId:71,dialogue:'Beyoğlu’nda bir pastane masası, bazen uzun bir şiirin başlangıcıdır.'},
+  {name:'Ahmet Haşim',bio:'Şair ve öğretmen; Fecr-i Âti topluluğunun önemli isimlerinden.',homeId:71,visitId:70,dialogue:'Akşam ışıkları bu sokağı bambaşka gösteriyor.'},
   {name:'İbrahim Çallı',homeId:75,visitId:70,dialogue:'Bu şehrin her köşesi yeni bir resim olabilir.'},
   {name:'Muhsin Ertuğrul',homeId:72,visitId:74,dialogue:'Elhamra’da bu akşam yeni bir gösteri var.'},
   {name:'Ali Bey',homeId:77,visitId:75,dialogue:'Tramvayla pasaj arasında her gün gidip geliyorum.'},
@@ -129,6 +129,11 @@ export function createLivingResidents({scene,properties,isMobile=false}){
     const pin=new THREE.Mesh(new THREE.SphereGeometry(.035,8,8),new THREE.MeshStandardMaterial({color:'#6c392e',roughness:.7}));
     pin.position.set(0,1.44,.015);markerGroup.add(pin);
     rig.group.add(markerGroup);
+    // Larger floating brass identity marker: clearly visible and easy to hit.
+    const halo=new THREE.Mesh(new THREE.TorusGeometry(.22,.035,8,20),new THREE.MeshStandardMaterial({color:'#d9b66e',metalness:.45,roughness:.48,emissive:'#70521e',emissiveIntensity:.28}));
+    halo.position.set(0,1.68,0);markerGroup.add(halo);
+    const hitTarget=new THREE.Mesh(new THREE.SphereGeometry(.38,10,8),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));
+    hitTarget.position.set(0,1.65,0);hitTarget.userData.historicHitTarget=true;markerGroup.add(hitTarget);
     rig.group.userData.historicMarker=markerGroup;
     rig.group.name=person.name;
     scene.add(rig.group);
@@ -204,7 +209,7 @@ export function createLivingResidents({scene,properties,isMobile=false}){
       while(root && root.userData.historicPerson==null)root=root.parent;
       if(root && hit.distance<24) {
         const person=HISTORIC_PEOPLE[root.userData.historicPerson];
-        return person ? {name:person.name,dialogue:person.dialogue} : null;
+        return person ? {name:person.name,bio:person.bio || person.dialogue,dialogue:person.dialogue} : null;
       }
     }
     return null;
