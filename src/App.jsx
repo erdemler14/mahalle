@@ -17,7 +17,8 @@ import ToyShopInterior, { TOY_SHOP_ID } from './ToyShopInterior.jsx';
 import { createLivingResidents } from './livingResidents3d.js';
 import {
   getCityPopulation, normalizeNeighborhood, customerFlow, neighborhoodPulse,
-  getCityEconomicProfile, isBusinessOpen, getSupplyModifier, storyForDay, applyStoryDecision
+  getCityEconomicProfile, calculateMarketPrice, calculateSupplyCostFactor, businessClass,
+  isBusinessOpen, getSupplyModifier, storyForDay, applyStoryDecision
 } from './cityLifeEngine.js';
 import { FERRY_LICENSE_PRICE, FERRY_UPGRADES, normaliseFerryBusiness, calculateFerryDay, applyFerrySettlement } from './ferryBusiness.js';
 import { TRAMWAY_LICENSE_PRICE, TRAMWAY_UPGRADES, normaliseTramwayBusiness, calculateTramwayDay, applyTramwaySettlement } from './tramwayBusiness.js';
@@ -81,7 +82,9 @@ const properties = [
   { id: 78, name: 'Pera Matbaa ve Gazete İdaresi', type: 'Atölye', price: 1850, rent: 145, x: -45, z: -14, color: '#b9aa98', floors: 3, width: 4.0, depth: 3.0, style: '1920’ler matbaası; kurşun harf kasaları, baskı presleri, mürekkep kokulu atölye ve gazete idaresi', history: 'Günün gazetesi, ilanlar, ticari evrak ve kitap baskısı aynı binada hazırlanır. Abonelik ve ilan gelirleriyle büyür.' },
   { id: 79, name: 'Pera Plak ve Gramofon Evi', type: 'Ticaret', price: 1250, rent: 105, x: -51, z: -5, color: '#8f7770', floors: 2, width: 3.4, depth: 2.7, style: 'Ahşap vitrinli plakçı; gramofonlar, taş plaklar ve dinleme köşesi', history: 'Taş plaklar, gramofon iğneleri ve yeni kayıtlar müzik meraklılarını Pera’ya çeker.' },
   { id: 80, name: 'Pera Çiçek Pasajı Gazete ve Çiçekçi Sokağı', type: 'Ticaret', price: 980, rent: 88, x: -45, z: 5, color: '#c9b59d', floors: 2, width: 3.6, depth: 2.8, style: 'Pasaj girişinde çiçekçi ve gazete-kartpostal tezgâhı; camlı vitrinler ve dökme demir tabela', history: 'Çiçek Pasajı çevresindeki küçük esnafın buluştuğu, çiçek ve basılı yayınların birlikte satıldığı sokak dükkânı.' },
-  { id: 81, name: 'Karaköy Tütüncü ve Nargile Dükkânı', type: 'Ticaret', price: 1180, rent: 34, x: 15.5, z: -16.5, color: '#9e8067', floors: 2, width: 2.8, depth: 2.3, style: 'Koyu ahşap vitrinli tütüncü; pirinç teraziler, tütün kavanozları, nargile takımları ve duvarda eski usul tabela', history: 'Karaköy’de liman işçileri, gemiciler ve yolcular için kıyılmış tütün, sigara kâğıdı, pipo ve nargile malzemeleri satan küçük bir dükkân.' }
+  { id: 81, name: 'Karaköy Tütüncü ve Nargile Dükkânı', type: 'Ticaret', price: 1180, rent: 34, x: 15.5, z: -16.5, color: '#9e8067', floors: 2, width: 2.8, depth: 2.3, style: 'Koyu ahşap vitrinli tütüncü; pirinç teraziler, tütün kavanozları, nargile takımları ve duvarda eski usul tabela', history: 'Karaköy’de liman işçileri, gemiciler ve yolcular için kıyılmış tütün, sigara kâğıdı, pipo ve nargile malzemeleri satan küçük bir dükkân.' },
+  { id: 82, name: 'Karaköy Kereste Deposu ve Bıçkıhane', type: 'Atölye', price: 2450, rent: 46, x: 32.5, z: -13.5, color: '#ad9275', floors: 2, width: 3.2, depth: 2.6, style: 'Tomruk istifleri, el testereleri ve kesilmiş kereste rafları bulunan rıhtım atölyesi', history: 'Anadolu’dan ve Karadeniz kıyılarından gelen tomruklar burada biçilip marangozlara, inşaat ustalarına ve gemi tamircilerine ölçülü kereste olarak satılır.' },
+  { id: 83, name: 'Pera Mimari ve Tezyinat Stüdyosu', type: 'İşletme', price: 4250, rent: 74, x: 32.5, z: -5.5, color: '#c7b59f', floors: 2, width: 3.0, depth: 2.4, style: 'Çizim masaları, kumaş numuneleri, mobilya katalogları ve örnek ahşap işçiliklerin sergilendiği şehirli tasarım stüdyosu', history: 'Mimar ve tezyinat ustaları ev, mağaza ve bürolar için iç mekân düzenler; mobilya siparişlerini marangozlara, döşemeleri döşemecilere verir, seçkin parçaları Pera’daki ithalatçılardan temin ederdi.' }
 ];
 
 // Short, period-grounded vignettes give every building a distinct neighbourhood memory.
@@ -1948,7 +1951,9 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   ];
   const tradeCatalog = {
     3: [{id:'deniz-halat',name:'Gemi halatı ve palamar',cost:18,price:7,units:8},{id:'yelken-bezi',name:'Yelken bezi ve branda',cost:22,price:9,units:6},{id:'gemi-feneri',name:'Pirinç gemi feneri',cost:26,price:11,units:5,production:true},{id:'katran-macun',name:'Katran, zift ve kalafat macunu',cost:14,price:5,units:8},{id:'güverte-takimi',name:'Güverte el aleti takımı',cost:20,price:8,units:6}],
-    81: [{id:'karakoy-tutun',name:'Kıyılmış tütün ve tömbeki',cost:14,price:5.5,units:10},{id:'karakoy-pipo',name:'Pipo ve ağızlık',cost:18,price:7,units:6},{id:'karakoy-kagit',name:'Sigara kâğıdı ve ağızlık',cost:8,price:3,units:12},{id:'karakoy-nargile',name:'Nargile lülesi ve marpuç',cost:22,price:9,units:5},{id:'karakoy-tabaka',name:'Pirinç tabaka ve tütün kesesi',cost:20,price:8,units:5}],
+    81: [{id:'karakoy-tutun',name:'Kıyılmış tütün ve tömbeki',cost:14,price:24,units:10},{id:'karakoy-pipo',name:'Pipo ve ağızlık',cost:18,price:38,units:6},{id:'karakoy-kagit',name:'Sigara kâğıdı ve ağızlık',cost:8,price:18,units:12},{id:'karakoy-nargile',name:'Nargile lülesi ve marpuç',cost:22,price:46,units:5},{id:'karakoy-tabaka',name:'Pirinç tabaka ve tütün kesesi',cost:20,price:42,units:5}],
+    82: [{id:'ahsap',name:'Kesilmiş kereste ve ölçülü tahta',cost:22,price:48,units:8,production:true},{id:'kereste-kalas',name:'Kalın yapı kalası',cost:26,price:56,units:6,production:true},{id:'marangozluk-lata',name:'İnce lata ve çıta',cost:14,price:32,units:10,production:true}],
+    83: [{id:'st-mimari-proje',name:'İç mekân ve tezyinat projesi',cost:0,price:48,units:0,service:true},{id:'st-salon',name:'Salon tefrişi ve mobilya siparişi',cost:28,price:76,units:4},{id:'st-yemek',name:'Yemek odası takımı siparişi',cost:34,price:92,units:3},{id:'st-calisma',name:'Çalışma odası ve yazı masası takımı',cost:24,price:68,units:4}],
     1: [{ id: 'kolonya', name: 'Kolonya ve koku', cost: 12, price: 2.2, units: 10 }, { id: 'sabun', name: 'Sabun ve bakım', cost: 9, price: 1.8, units: 10 }],
     4: [{ id: 'han', name: 'Han odası kiralama', cost: 0, price: 0, units: 0 }],
     7: [{ id: 'sarap-uretim', name: 'Ev yapımı şarap üretimi', cost: 8, price: 4.5, units: 4, production: true }, { id: 'sarap', name: 'Toptan şişe şarap', cost: 8, price: 4.5, units: 4 }, { id: 'erzak', name: 'Kuru erzak', cost: 10, price: 2.5, units: 8 }, { id: 'zeytin', name: 'Zeytin ve peynir', cost: 11, price: 3, units: 8 }],
@@ -2034,6 +2039,8 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   const canonicalCatalog = {
     3: tradeCatalog[3],
     81: tradeCatalog[81],
+    82: tradeCatalog[82],
+    83: tradeCatalog[83],
     73: [
       {id:'maxim-caz-gecesi',name:'Pera Caz Orkestrası Gecesi',cost:57,price:145,units:8},
       {id:'maxim-solist',name:'Konuk Solist Konseri',cost:68,price:175,units:6},
@@ -2606,9 +2613,11 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     ]},
     81: { name:'Karaköy Tütüncü ve Nargile Dükkânı', materials:[
       {id:'karakoy-tutun',name:'Kıyılmış tütün, tömbeki ve tütün yaprağı',batch:10,cost:12},{id:'karakoy-pipo',name:'Pipo, ağızlık ve temizleme teli',batch:6,cost:14},{id:'karakoy-kagit',name:'Sigara kâğıdı ve filtre ağızlığı',batch:12,cost:7},{id:'karakoy-nargile',name:'Nargile lülesi, marpuç ve köz maşası',batch:5,cost:17},{id:'karakoy-tabaka',name:'Pirinç tabaka, tütün kesesi ve kutu',batch:5,cost:15}
-    ], recipes:[['karakoy-tutun',1,'karakoy-kagit',1],['karakoy-pipo',1,'karakoy-tabaka',1],['karakoy-nargile',1,'karakoy-tabaka',1]], productRules:[
+    ], recipes:[['karakoy-tutun',1,'karakoy-kagit',1],['karakoy-pipo',1,'karakoy-tabaka',1],['karakoy-nargile',1,'karakoy-tabaka',1],['karakoy-tabaka',1,'karakoy-kagit',1],['karakoy-tutun',1,'karakoy-tabaka',1]], productRules:[
       {match:/tütün|tutun|tömbeki|tombeki/i,recipe:[['karakoy-tutun',1],['karakoy-kagit',1]]},{match:/pipo|ağızlık|agizlik/i,recipe:[['karakoy-pipo',1],['karakoy-tabaka',1]]},{match:/nargile|lüle|lule|marpuç|marpuc/i,recipe:[['karakoy-nargile',1],['karakoy-tabaka',1]]},{match:/tabaka|kese|kutu/i,recipe:[['karakoy-tabaka',1],['karakoy-kagit',1]]}
     ]},
+    82: { name:'Karaköy Kereste Deposu ve Bıçkıhane', materials:[{id:'tomruk',name:'Ham tomruk ve ağaç gövdesi',batch:8,cost:18},{id:'testere',name:'Bıçkı testeresi ve kesici diş',batch:6,cost:12},{id:'kereste-bag',name:'Bağlama halatı ve istif takozu',batch:8,cost:7}], recipes:[['tomruk',2,'testere',1],['tomruk',3,'testere',1],['tomruk',1,'testere',1]], productRules:[{match:/kereste|tahta|kalas/i,recipe:[['tomruk',2],['testere',1],['kereste-bag',1]]},{match:/lata|çıta|cita/i,recipe:[['tomruk',1],['testere',1]]}] },
+    83: { name:'Pera Mimari ve Tezyinat Stüdyosu', materials:[{id:'st-mobilya',name:'Marangoz işi mobilya ve dolap',batch:4,cost:28},{id:'st-dokuma',name:'Döşemelik kumaş ve dolgu',batch:6,cost:14},{id:'st-metal',name:'Pirinç kulp ve mobilya bağlantısı',batch:8,cost:10},{id:'st-aksesuar',name:'Perde, halı ve dekoratif aksesuar',batch:6,cost:16}], recipes:[['st-mobilya',1,'st-dokuma',1],['st-mobilya',1,'st-metal',1],['st-mobilya',1,'st-dokuma',1,'st-metal',1]], productRules:[{match:/salon|tefriş|tefris/i,recipe:[['st-mobilya',1],['st-dokuma',1],['st-aksesuar',1]]},{match:/yemek odası|yemek/i,recipe:[['st-mobilya',1],['st-metal',1],['st-aksesuar',1]]},{match:/çalışma|calisma|yazı|yazi/i,recipe:[['st-mobilya',1],['st-metal',1]]}] },
     1: { name:'Bakkal ve şarküteri', materials:[{id:'el-bakkal-erzak',name:'Bakliyat ve kuru erzak çuvalı',batch:8,cost:12},{id:'el-bakkal-sarku',name:'Peynir, zeytin ve şarküteri kasası',batch:6,cost:14},{id:'el-bakkal-cay',name:'Çay ve kahve paketi',batch:8,cost:10},{id:'el-bakkal-konserve',name:'Konserve ve turşu kavanozu',batch:8,cost:9},{id:'el-bakkal-kagit',name:'Kesekağıdı ve tartı ambalajı',batch:10,cost:5},{id:'el-bakkal-kolonyaci',name:'Kolonya, esans ve koku şişesi kolisi',batch:6,cost:11},{id:'el-bakkal-sabun',name:'Sabun ve kişisel bakım ürünü kolisi',batch:6,cost:10}], recipes:[['el-bakkal-erzak',1,'el-bakkal-kagit',1],['el-bakkal-sarku',1,'el-bakkal-kagit',1],['el-bakkal-cay',1,'el-bakkal-konserve',1]], productRules:[{match:/hediye|tuvalet|set/i,recipe:[['el-bakkal-kolonyaci',1],['el-bakkal-sabun',1],['el-bakkal-kagit',1]]},{match:/kolonya|koku|esans|parfüm|parfum/i,recipe:[['el-bakkal-kolonyaci',1],['el-bakkal-kagit',1]]},{match:/sabun|bakım|bakim/i,recipe:[['el-bakkal-sabun',1],['el-bakkal-kagit',1]]},{match:/peynir|zeytin|pastirma|şarküteri|sarkuteri/i,recipe:[['el-bakkal-sarku',1],['el-bakkal-kagit',1]]},{match:/kahve|çay|cay|kakao/i,recipe:[['el-bakkal-cay',1],['el-bakkal-kagit',1]]},{match:/konserve|turşu|tursu|erzak|bakliyat/i,recipe:[['el-bakkal-erzak',1],['el-bakkal-konserve',1]]}] },
     4: { name:'Ticaret hanı ve konaklama', materials:[{id:'sahin-han-carsaf',name:'Yıkanmış çarşaf ve yatak takımı',batch:6,cost:14},{id:'sahin-han-temizlik',name:'Oda temizliği ve sabun sarfı',batch:8,cost:8},{id:'sahin-han-kahvalti',name:'Kahvaltılık erzak tepsisi',batch:6,cost:12},{id:'sahin-han-lamba',name:'Lamba yağı ve ısıtma yakıtı',batch:8,cost:9},{id:'sahin-han-ikram',name:'Misafir ikramı ve oda suyu',batch:8,cost:7}], recipes:[['sahin-han-carsaf',1,'sahin-han-temizlik',1],['sahin-han-kahvalti',1,'sahin-han-ikram',1],['sahin-han-lamba',1,'sahin-han-temizlik',1]], productRules:[{match:/kahvaltı|kahvalti|ikram|oda suyu/i,recipe:[['sahin-han-kahvalti',1],['sahin-han-ikram',1]]},{match:/çarşaf|carsaf|yatak|temizlik|sabun/i,recipe:[['sahin-han-carsaf',1],['sahin-han-temizlik',1]]}] },
     7: { name:'Şarap ve erzak mahzeni', materials:[{id:'vuc-uzum',name:'Şaraplık üzüm ve şıra',batch:8,cost:14},{id:'vuc-sise',name:'Şişe, mantar ve mühür',batch:8,cost:10},{id:'vuc-meze',name:'Olgun peynir ve zeytin sandığı',batch:6,cost:13},{id:'vuc-kiler',name:'Kuru erzak ve bakliyat',batch:8,cost:10},{id:'vuc-etiket',name:'Mahzen etiketi ve sargı',batch:10,cost:6}], recipes:[['vuc-uzum',1,'vuc-sise',1],['vuc-kiler',1,'vuc-etiket',1],['vuc-meze',1,'vuc-kiler',1]], productRules:[{match:/şarap|sarap|üzüm|uzum|şıra|sira|mahzen|fıçı|fici/i,recipe:[['vuc-uzum',1],['vuc-sise',1],['vuc-etiket',1]]},{match:/peynir|zeytin|meze/i,recipe:[['vuc-meze',1],['vuc-kiler',1]]},{match:/erzak|bakliyat|kuru/i,recipe:[['vuc-kiler',1],['vuc-etiket',1]]}] },
@@ -2649,7 +2658,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     // Professional offices sell time and expertise, not physical inventory.
     if ([42, 43, 44, 45, 46].includes(id)) return { name: ({42:'Dr. Deniz Hanım Muayenehanesi',43:'Avukat Nihat Bey Hukuk Bürosu',44:'Diş Tabibi Rauf Bey Kliniği',45:'Mühendislik ve Mimarlık Bürosu',46:'SMMM ve Muhasebe Yazıhanesi'})[id], materials: [], recipes: [], productRules: [] };
     if ([3,65].includes(id)) return BUSINESS_SPECIFIC_PROFILES[3];
-    if (id === 81) return BUSINESS_SPECIFIC_PROFILES[81];
+    if ([81,82,83].includes(id)) return BUSINESS_SPECIFIC_PROFILES[id];
     // Original lodging properties 4 and 21 have dedicated rules here;
     // the expansion hotels and pansiyon (55 and 56) use their own profiles below.
     if (id === 4) return {
@@ -2803,7 +2812,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const profile = getBusinessProfile(propertyId);
     return Math.round(getBusinessRecipe(propertyId, product).reduce((sum, part) => {
       const material = profile.materials.find(item => item.id === part.id);
-      return sum + (material ? material.cost / material.batch * part.qty * getSupplyModifier(properties.find(p => p.id === Number(propertyId)),{ferryBusiness,neighborhood}) : 0);
+      return sum + (material ? material.cost / material.batch * part.qty * getSupplyModifier(properties.find(p => p.id === Number(propertyId)),{ferryBusiness,neighborhood}) * getUpstreamMaterialFactor(material.id) : 0);
     }, 0) * 100) / 100;
   };
   // Older saves may contain raw-material IDs from the former generic procurement profile.
@@ -2830,10 +2839,22 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   };
   // Keep production goods at a modest, sustainable gross margin of roughly 28%.
   // Catalog prices remain the minimum floor for established retail/luxury goods.
+  const getUpstreamMaterialFactor = (materialId) => {
+    const supplier = materialId === 'ahsap' ? 82 : materialId === 'st-mobilya' ? 17 : null;
+    if (!supplier) return 1;
+    const linkedProduct = materialId === 'ahsap' ? 'ahsap' : 'mobilya';
+    const stock = Math.max(0,Number(stockByProperty[supplier]?.products?.[linkedProduct])||0);
+    return calculateSupplyCostFactor({stock,targetStock:materialId === 'ahsap' ? 18 : 10});
+  };
   const getBusinessSalePrice = (propertyId, product) => {
     if (!product) return 0;
     const recipeCost = getBusinessRecipeCost(propertyId, product);
-    return Math.round(Math.max(Number(product.price) || 0, recipeCost * 1.38) * 100) / 100;
+    const basePrice = Math.max(Number(product.price) || 0, recipeCost * 1.38);
+    const property = properties.find(p => p.id === Number(propertyId));
+    const economy = getCityEconomicProfile({properties,clock:{year,month,day,hour},ferryBusiness,tramwayBusiness,neighborhood});
+    const sector = businessClass(property);
+    const cityStock = Object.values(stockByProperty).reduce((sum,inventory)=>sum+Math.max(0,Number(inventory?.products?.[product.id])||0),0);
+    return calculateMarketPrice({basePrice,demandMultiplier:economy.demand[sector]||1,stock:cityStock,targetStock:Math.max(8,(Number(product.units)||4)*3)});
   };
 
   // Audit every stocked catalog item at startup so missing or broken recipes
@@ -3638,6 +3659,8 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     if (id === 41) return 'dryclean';
     if ([42,43,44,45,46,47].includes(id)) return 'service';
     if (id === 38) return 'jewelry';
+    if (id === 82) return 'wood';
+    if (id === 83) return 'general';
     if (id === 48) return 'toys';
     if (id === 49) return 'clock';
     if (id === 51) return 'textile';
@@ -4006,7 +4029,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       if(room>0)continue;
       const refund=Math.round([...returns].reduce((sum,[id,n])=>sum+getMaterialUnitValue(propertyId,id)*n*.85,0)*100)/100;
       const logisticsFactor = getSupplyModifier(properties.find(p=>p.id===Number(propertyId)),{ferryBusiness,neighborhood});
-      const purchaseCost=Math.round(deficits.reduce((s,p)=>s+p.material.cost*p.missing/p.material.batch,0)*logisticsFactor*100)/100;
+      const purchaseCost=Math.round(deficits.reduce((s,p)=>s+p.material.cost*p.missing/p.material.batch*getUpstreamMaterialFactor(p.id),0)*logisticsFactor*100)/100;
       if(purchaseCost>maxBudget+refund)continue;
       return {batch,deficits,returns,refund,purchaseCost,profile};
     }
@@ -4073,7 +4096,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     profile.materials.filter(m=>m.id!==materialId).map(m=>({m,n:Math.max(0,Number(inventory.materials?.[m.id])||0),keep:preserve.get(m.id)||0})).filter(x=>x.n>x.keep).sort((a,b)=>(a.n-a.keep)-(b.n-b.keep)).reverse().forEach(x=>{if(room<=0)return;const take=Math.min(x.n-x.keep,room);if(take){returns.set(x.m.id,(returns.get(x.m.id)||0)+take);room-=take;}});
     if(room>0){tell('Depoda yeterli alan açılamadı. Seçili ürünün reçetesini koruyarak DEPOYU DÜZENLE seçeneğini kullan.');return;}
     const refund=Math.round([...returns].reduce((sum,[id,n])=>sum+getMaterialUnitValue(propertyId,id)*n*.85,0)*100)/100;
-    const cost=Math.round(material.cost*quantity/material.batch*100)/100;
+    const cost=Math.round(material.cost*quantity/material.batch*getUpstreamMaterialFactor(materialId)*100)/100;
     if(cash+refund<cost){tell('Tedarik ₺'+cost.toLocaleString('tr-TR')+' tutuyor. Stok iadesi ₺'+refund.toLocaleString('tr-TR')+'; kalan tutar için bakiye yetersiz.');return;}
     const next={...(inventory.materials||{})};returns.forEach((n,id)=>{next[id]=Math.max(0,(Number(next[id])||0)-n);});next[materialId]=current+quantity;
     setCash(v=>Math.round((v+refund-cost)*100)/100);
@@ -4846,7 +4869,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
               availableProducts.forEach(product => getBusinessRecipe(active.id, product).forEach(part => materialUseCount.set(part.id, (materialUseCount.get(part.id) || 0) + 1)));
               const simpleSupplyMaterials = [...unlockedMaterials]
                 .sort((a,b) => (materialUseCount.get(b.id) || 0) - (materialUseCount.get(a.id) || 0))
-                .slice(0,4);
+                .slice(0, active.id === 81 ? 5 : 4);
               const validMaterialIds = new Set(profile.materials.map(material => material.id));
               const totalRaw = Object.values(inventory.materials || {}).reduce((sum, amount) => sum + Math.max(0, Number(amount) || 0), 0);
                const legacyMaterials = getLegacyMaterials(active.id, inventory);

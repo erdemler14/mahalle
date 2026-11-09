@@ -40,7 +40,22 @@ export function businessClass(p) {
 }
 
 // Derived city indices make demand respond to the actual neighbourhood state.
-export function getCityEconomicProfile({properties=[],clock={},ferryBusiness={},tramwayBusiness={},neighborhood={}}={}) {
+export function getCityEconomicProfile({properties=[],clock={},ferryBusiness={},tramwayBusiness={},neighborhood={}}={}) {export function calculateMarketPrice({basePrice=0,demandMultiplier=1,stock=0,targetStock=10}={}) {
+  const demand=clamp(demandMultiplier,.65,1.65);
+  const inventory=Math.max(0,Number(stock)||0);
+  const target=Math.max(1,Number(targetStock)||10);
+  const scarcity=clamp(1.18-(inventory/(target*2))*.36,.82,1.18);
+  const demandEffect=clamp(.82+(demand-1)*.48,.72,1.30);
+  const index=clamp(demandEffect*scarcity,.72,1.52);
+  return round2(Math.max(0,Number(basePrice)||0)*index);
+}
+export function calculateSupplyCostFactor({stock=0,targetStock=12}={}) {
+  const inventory=Math.max(0,Number(stock)||0);
+  const target=Math.max(1,Number(targetStock)||12);
+  return round2(clamp(1.2-(inventory/(target*2))*.4,.82,1.22));
+}
+
+
   const shops=properties.filter(p=>['Ticaret','Atölye','İşletme','Depo'].includes(p.type));
   const homes=properties.filter(p=>p.type==='Konut');
   const lodging=shops.filter(p=>/otel|han|pansiyon|konaklama/i.test(p.name||'')).length;

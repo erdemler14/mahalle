@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import {
-  getCityPopulation,visitIntent,customerFlow,getSupplyModifier,
+  getCityPopulation,visitIntent,customerFlow,getSupplyModifier,calculateMarketPrice,calculateSupplyCostFactor,
   storyForDay,applyStoryDecision,normalizeNeighborhood,neighborhoodPulse,
   walkWaypoints,interpolateWaypoints,isBusinessOpen
 } from '../src/cityLifeEngine.js';
@@ -223,4 +223,20 @@ test('city economy remains bounded for empty and very large cities', async () =>
   });
   for (const value of Object.values(large.demand)) assert.ok(value >= .72 && value <= 1.48);
   assert.ok(large.population <= 100 && large.portActivity <= 100 && large.tourism <= 100);
+});
+
+
+test('market prices respond to sector demand and total city stock',()=>{
+  const scarce=calculateMarketPrice({basePrice:20,demandMultiplier:1.3,stock:0,targetStock:12});
+  const abundant=calculateMarketPrice({basePrice:20,demandMultiplier:.85,stock:36,targetStock:12});
+  const balanced=calculateMarketPrice({basePrice:20,demandMultiplier:1,stock:12,targetStock:12});
+  assert.ok(scarce>balanced);
+  assert.ok(abundant<balanced);
+  assert.ok(scarce<=30.4&&abundant>=14.4);
+});
+test('upstream timber supply lowers carpentry input costs',()=>{
+  const shortage=calculateSupplyCostFactor({stock:0,targetStock:12});
+  const supplied=calculateSupplyCostFactor({stock:24,targetStock:12});
+  assert.ok(shortage>1);
+  assert.ok(supplied<1);
 });
