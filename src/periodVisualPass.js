@@ -266,8 +266,65 @@ export function createPeriodVisualPass({ scene, properties, buildingMeshes, isMo
       block(group, enamel, 0.18, 0.16, 0.023, -w * 0.37, 0.77, frontage + 0.095);
       block(group, paper, 0.10, 0.018, 0.027, -w * 0.37, 0.77, frontage + 0.113);
     }
+    if (property.id === 73) {
+      // Maxim: a distinctive 1920s Pera cabaret frontage with an Art Deco marquee.
+      const decoGold = material('#b18a4d', 0.62, 0.38);
+      const midnight = material('#26313a', 0.76, 0.12);
+      const warmGlass = new THREE.MeshStandardMaterial({color:'#e9c98c',emissive:'#b77b36',emissiveIntensity:.48,roughness:.4});
+      block(group, midnight, w * .88, .38, .13, 0, 1.48, frontage + .17);
+      block(group, decoGold, w * .94, .055, .17, 0, 1.70, frontage + .18);
+      block(group, decoGold, .09, .62, .10, -w * .40, 1.43, frontage + .17);
+      block(group, decoGold, .09, .62, .10, w * .40, 1.43, frontage + .17);
+      for (let lamp = -2; lamp <= 2; lamp++) {
+        const bulb = new THREE.Mesh(new THREE.SphereGeometry(.045, 8, 8), warmGlass);
+        bulb.position.set(lamp * .30, 1.49, frontage + .255);
+        group.add(bulb);
+      }
+      const canopy = block(group, material('#6a3430'), w * .92, .10, .62, 0, 1.12, frontage + .34);
+      canopy.rotation.x = -.10;
+      for (const side of [-1, 1]) {
+        const fin = block(group, decoGold, .07, .78, .08, side * (w * .48), 1.35, frontage + .24);
+        fin.rotation.z = side * -.04;
+      }
+    }
     architectureKit.decorate({ group, property, width: w, depth: d, height, floorHeight, index });
   }
+
+
+  // Irregular stone paving for the narrow backstreets of 1920s Pera.
+  // Instanced pavers keep draw calls low on desktop and mobile.
+  const pavingGroup = new THREE.Group();
+  const pavingStone = material('#8d877b', 0.98);
+  const pavingAlt = material('#a39a8a', 0.99);
+  const pavingDark = material('#777267', 1);
+  const pavingRows = isMobile ? 13 : 25;
+  const pavingColumns = isMobile ? 5 : 7;
+  const pavingGeometry = new THREE.BoxGeometry(0.42, 0.045, 0.34);
+  for (const [lane, x] of [-23.2, -13.0, 3.0, 13.0, 23.0].entries()) {
+    const count = pavingRows * pavingColumns;
+    const meshes = [pavingStone, pavingAlt, pavingDark].map(mat => {
+      const mesh = new THREE.InstancedMesh(pavingGeometry, mat, count);
+      mesh.receiveShadow = true;
+      mesh.castShadow = false;
+      pavingGroup.add(mesh);
+      return mesh;
+    });
+    const dummy = new THREE.Object3D();
+    let n = 0;
+    for (let row = 0; row < pavingRows; row++) {
+      for (let col = 0; col < pavingColumns; col++) {
+        const seed = hash(lane * 1000 + row * 31 + col * 7);
+        const meshIndex = seed > .82 ? 2 : seed > .48 ? 1 : 0;
+        dummy.position.set(x + (col - (pavingColumns - 1) / 2) * .48 + (row % 2 ? .18 : 0), -0.005 + seed * .004, -22 + row * (44 / pavingRows));
+        dummy.rotation.y = (seed - .5) * .10;
+        dummy.scale.set(.82 + seed * .22, 1, .82 + seed * .2);
+        dummy.updateMatrix();
+        meshes[meshIndex].setMatrixAt(n++, dummy.matrix);
+      }
+    }
+    meshes.forEach(mesh => { mesh.count = n; mesh.instanceMatrix.needsUpdate = true; });
+  }
+  scene.add(pavingGroup);
 
   const markets = [
     [-4.6, -17.2, Math.PI * 0.08, 0],
