@@ -101,7 +101,8 @@ export function createLivingResidents({scene,properties,isMobile=false}){
   const roster=getCityPopulation(properties);
   // Keep the large simulated population for the economy but draw only a
   // lightweight crowd. Old 76/34 detailed rigs were expensive on phones.
-  const activePeople=roster.slice(0,isMobile?MAX_RENDERED_RESIDENTS.mobile:MAX_RENDERED_RESIDENTS.desktop).map(person=>{
+  const activeLimit=Math.max(0,(isMobile?MAX_RENDERED_RESIDENTS.mobile:MAX_RENDERED_RESIDENTS.desktop)-HISTORIC_PEOPLE.length);
+  const activePeople=roster.slice(0,activeLimit).map(person=>{
     const rig=makePerson(person.id,person.role);
     const home=properties.find(p=>p.id===person.homeId);
     const homeX=home?.x||0, homeZ=home?.z||0;
