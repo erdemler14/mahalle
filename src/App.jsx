@@ -206,7 +206,8 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
   const selectRef = useRef(onSelect);
   const talkRef = useRef(onTalk);
   const residentVisitRef = useRef(onResidentVisit);
-  const avatarProfileRef = useRef(avatarProfile);\n  const avatarSetterRef = useRef(null);
+  const avatarProfileRef = useRef(avatarProfile);
+  const avatarSetterRef = useRef(null);
   useEffect(() => { avatarProfileRef.current = avatarProfile; avatarSetterRef.current?.(avatarProfile); }, [avatarProfile]);
   const selectedRef = useRef(selected);
   const hourRef = useRef(hour);
@@ -789,7 +790,8 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
     const harborScene = createHarborScene({ scene, oldFerry: ferry, isMobile: isMobileScene, ferryStateRef });
     const glbArchitecture = createGlbArchitecture({ properties, buildingMeshes, mobile: isMobileScene, developments, owned, ownerByProperty, playerId });
     const periodStreetLife = createPeriodStreetLife({ scene, properties, isMobile: isMobileScene });
-    const livingResidents = createLivingResidents({ scene, properties, isMobile: isMobileScene, onVisit: propertyId => residentVisitRef.current?.(propertyId), avatarProfile: avatarProfileRef.current });\n    avatarSetterRef.current = livingResidents.setAvatarProfile;
+    const livingResidents = createLivingResidents({ scene, properties, isMobile: isMobileScene, onVisit: propertyId => residentVisitRef.current?.(propertyId), avatarProfile: avatarProfileRef.current });
+    avatarSetterRef.current = livingResidents.setAvatarProfile;
 
     // A subtle pulsing ring makes the currently selected property easy to spot.
     const selectionRingMaterial = new THREE.MeshStandardMaterial({
@@ -1523,7 +1525,8 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
       renderer.domElement.removeEventListener('contextmenu', onContextMenu);
       harborScene.dispose();
       glbArchitecture.dispose();
-      avatarSetterRef.current = null;\n      cameraControlRef.current = null;
+      avatarSetterRef.current = null;
+      cameraControlRef.current = null;
       scene.traverse(o => {
         if (o.geometry) o.geometry.dispose();
         if (o.material) {
@@ -4536,7 +4539,8 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       <p style={{fontSize:11,opacity:.7,margin:'0 0 12px'}}>Karakterin mahallede kendi başına dolaşır. Kıyafet ve aksesuarlarını değiştirdikçe görünümü güncellenir.</p>
       <button type="button" onClick={()=>setAvatarEditorOpen(false)} style={{width:'100%',padding:10,background:'#4b4034',color:'#fff',border:0,borderRadius:8}}>GARDIROBU KAPAT</button>
     </section>}
-\n        {toyShopOpen && <ToyShopInterior property={properties.find(p=>p.id===TOY_SHOP_ID)} owned={owned.includes(TOY_SHOP_ID)} stock={getTotalStock(TOY_SHOP_ID)} onExit={leaveToyShop}/>}
+
+        {toyShopOpen && <ToyShopInterior property={properties.find(p=>p.id===TOY_SHOP_ID)} owned={owned.includes(TOY_SHOP_ID)} stock={getTotalStock(TOY_SHOP_ID)} onExit={leaveToyShop}/>}
     <section className="game-layout fullscreen-layout">
       <div className="world-panel">
         <div className="world-topline"><span><span className="live-dot" /> BEYOĞLU MERKEZİ</span><label className="property-finder"><span>⌕</span><input aria-label="Mülk ara ve haritada göster" list="mahalle-property-options" placeholder="Mülk adı yaz..." value={mapSearch} onChange={event => { const value = event.target.value; setMapSearch(value); const match = properties.find(property => property.name.toLocaleLowerCase('tr-TR') === value.trim().toLocaleLowerCase('tr-TR')); if (match) { selectProperty(match.id); setMapSearch(''); } }} /><datalist id="mahalle-property-options">{properties.map(property => <option key={property.id} value={property.name}>{owned.includes(property.id) ? 'Senin mülkün' : 'Satılık'}</option>)}</datalist><small>{properties.length} MÜLK</small></label><span className="world-year">OYUN DÜNYASI <i>·</i> {year}</span></div>
