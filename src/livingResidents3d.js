@@ -86,22 +86,63 @@ export function stepResident(npc,seconds){
 }
 // Named residents use the same low-poly rig and the same street movement as the city's other people.
 const HISTORIC_PEOPLE=[
-  {id:'yahya-kemal',gender:'male',name:'Yahya Kemal Beyatlı',bio:'Şair ve yazar. 1920’lerde İstanbul ve Pera’nın edebiyat çevrelerinde yer alır.',homeId:70,visitId:71,dialogue:'Beyoğlu’nda bir pastane masası, bazen uzun bir şiirin başlangıcıdır.'},
-  {id:'ahmet-hasim',gender:'male',name:'Ahmet Haşim',bio:'Şair ve öğretmen; Fecr-i Âti topluluğunun önemli isimlerinden.',homeId:71,visitId:70,dialogue:'Akşam ışıkları bu sokağı bambaşka gösteriyor.'},
-  {id:'ibrahim-calli',gender:'male',name:'İbrahim Çallı',bio:"Ressam; Türk resminde izlenimci yaklaşımın önde gelen temsilcilerindendir. 1882’de doğdu, Sanâyi-i Nefîse’de eğitim gördü.",homeId:75,visitId:70,dialogue:'Bu şehrin her köşesi yeni bir resim olabilir.'},
-  {id:'muhsin-ertugrul',gender:'male',name:'Muhsin Ertuğrul',bio:"Tiyatro ve sinema yönetmeni, oyuncu. Türkiye’de çağdaş tiyatro ve sinemanın kurumsallaşmasında öncü rol oynadı.",homeId:72,visitId:74,dialogue:'Elhamra’da bu akşam yeni bir gösteri var.'},
-  {id:'ali-bey',gender:'male',name:'Ali Bey',bio:"Tramvay işletmesinde çalışan, kurmaca bir Pera sakini; dönemin şehir ulaşımını temsil eder.",homeId:77,visitId:75,dialogue:'Tramvayla pasaj arasında her gün gidip geliyorum.'},
-  {id:'ayse-hanim',gender:'female',name:'Ayşe Hanım',bio:"Pera’da yaşayan kurmaca bir pastane müdavimi; gündelik şehir hayatını temsil eder.",homeId:71,visitId:75,dialogue:'Pastanenin önünde bugün çok kalabalık vardı.'},
-  {id:'resat-nuri',gender:'male',name:'Reşat Nuri Güntekin',bio:"Romancı, öykücü ve oyun yazarı. Çalıkuşu başta olmak üzere eserleriyle Cumhuriyet dönemi edebiyatının önemli isimlerindendir.",homeId:78,visitId:70,dialogue:'Bir şehrin hikâyesi, sokaklarında yaşayan insanlarla yazılır.'},
-  {id:'orhan-seyfi',gender:'male',name:'Orhan Seyfi Orhon',bio:"Şair, gazeteci ve yazar; Beş Hececiler topluluğunun üyelerindendir.",homeId:79,visitId:71,dialogue:'Bir şiir bazen bir pastane masasındaki sohbetten doğar.'},
-  {id:'rusen-esref',gender:'male',name:'Ruşen Eşref Ünaydın',bio:"Yazar, gazeteci ve diplomat; mülakat türündeki eserleriyle tanınır.",homeId:78,visitId:72,dialogue:'Bugünkü gazete için Pera’dan birkaç satır not almalıyım.'},
-  {id:'mehmet-akif',gender:'male',name:'Mehmet Âkif Ersoy',bio:"Şair ve düşünür; İstiklâl Marşı’nın yazarıdır. Safahat adlı eseriyle tanınır.",homeId:74,visitId:78,dialogue:'Şehrin sesini dinlemek, insanı memleketin kendisine yaklaştırır.'},
-  {id:'peyami-safa',gender:'male',name:'Peyami Safa',bio:"Romancı ve gazeteci; psikolojik romanları ve fikir yazılarıyla tanınır.",homeId:78,visitId:79,dialogue:'Pera’nın kalabalığında insan ruhunu gözlemlemek mümkün.'},
-  {id:'cenap-sahabettin',gender:'male',name:'Cenap Şahabettin',bio:"Şair ve yazar; Servet-i Fünûn edebiyatının önde gelen isimlerindendir.",homeId:70,visitId:76,dialogue:'Güzel bir akşam, iyi bir sohbetle tamamlanır.'},
-  {id:'suleyman-nazif',gender:'male',name:'Süleyman Nazif',bio:"Şair, yazar ve gazeteci; güçlü hitabeti ve millî edebiyat çevresindeki yazılarıyla tanınır.",homeId:74,visitId:78,dialogue:'Şehrin hafızası, sokaklarında ve gazetelerinde yaşar.'},
-  {id:'huseyin-rahmi',gender:'male',name:'Hüseyin Rahmi Gürpınar',bio:"Romancı; İstanbul’un gündelik hayatını, mahallelerini ve toplumsal tiplerini mizahla anlattı.",homeId:75,visitId:70,dialogue:'İstanbul insanını seyretmek, başlı başına bir romandır.'},
-  {id:'abdulhak-sinasi',gender:'male',name:'Abdülhak Şinasi Hisar',bio:"Yazar; İstanbul’un geçmişini, Boğaziçi kültürünü ve hatıralarını anlattığı eserleriyle tanınır.",homeId:74,visitId:71,dialogue:'Eski İstanbul’un zarafeti küçük ayrıntılarda saklıdır.'}
+  {id:'yahya-kemal',gender:'male',name:'Yahya Kemal Beyatlı',bio:'Şair ve yazar. 1920’lerde İstanbul ve Pera’nın edebiyat çevrelerinde yer alır.',homeId:70,visitId:71,dialogue:'Beyoğlu’nda bir pastane masası, bazen uzun bir şiirin başlangıcıdır.',hangouts:['literary','coffee','restaurant'],visitHours:[11,14,20],historicalBasis:'Kahvehane ve edebiyat sohbetleriyle ilişkilendirilen çevrelerden esinlenen, Pera içindeki kurmaca rota.'},
+  {id:'ahmet-hasim',gender:'male',name:'Ahmet Haşim',bio:'Şair ve öğretmen; Fecr-i Âti topluluğunun önemli isimlerinden.',homeId:71,visitId:70,dialogue:'Akşam ışıkları bu sokağı bambaşka gösteriyor.',hangouts:['coffee','quiet','literary'],visitHours:[10,15,18],historicalBasis:'Kahvehanelere düşkünlüğü ve Mihran’ın Kahvesi çevresindeki anıları belgelenmiştir; Pera rotası oyun uyarlamasıdır.'},
+  {id:'ibrahim-calli',gender:'male',name:'İbrahim Çallı',bio:"Ressam; Türk resminde izlenimci yaklaşımın önde gelen temsilcilerindendir. 1882’de doğdu, Sanâyi-i Nefîse’de eğitim gördü.",homeId:75,visitId:70,dialogue:'Bu şehrin her köşesi yeni bir resim olabilir.',hangouts:['art','coffee','book'],visitHours:[10,14,17]},
+  {id:'muhsin-ertugrul',gender:'male',name:'Muhsin Ertuğrul',bio:"Tiyatro ve sinema yönetmeni, oyuncu. Türkiye’de çağdaş tiyatro ve sinemanın kurumsallaşmasında öncü rol oynadı.",homeId:72,visitId:74,dialogue:'Elhamra’da bu akşam yeni bir gösteri var.',hangouts:['cinema','theatre','cafe'],visitHours:[13,18,21]},
+  {id:'ali-bey',gender:'male',name:'Ali Bey',bio:"Tramvay işletmesinde çalışan, kurmaca bir Pera sakini; dönemin şehir ulaşımını temsil eder.",homeId:77,visitId:75,dialogue:'Tramvayla pasaj arasında her gün gidip geliyorum.',hangouts:['coffee','market','restaurant'],visitHours:[8,13,19]},
+  {id:'ayse-hanim',gender:'female',name:'Ayşe Hanım',bio:"Pera’da yaşayan kurmaca bir pastane müdavimi; gündelik şehir hayatını temsil eder.",homeId:71,visitId:75,dialogue:'Pastanenin önünde bugün çok kalabalık vardı.',hangouts:['pastry','market','cinema'],visitHours:[10,15,19]},
+  {id:'resat-nuri',gender:'male',name:'Reşat Nuri Güntekin',bio:"Romancı, öykücü ve oyun yazarı. Çalıkuşu başta olmak üzere eserleriyle Cumhuriyet dönemi edebiyatının önemli isimlerindendir.",homeId:78,visitId:70,dialogue:'Bir şehrin hikâyesi, sokaklarında yaşayan insanlarla yazılır.',hangouts:['literary','coffee','book','restaurant'],visitHours:[11,15,20]},
+  {id:'orhan-seyfi',gender:'male',name:'Orhan Seyfi Orhon',bio:"Şair, gazeteci ve yazar; Beş Hececiler topluluğunun üyelerindendir.",homeId:79,visitId:71,dialogue:'Bir şiir bazen bir pastane masasındaki sohbetten doğar.',hangouts:['literary','pastry','coffee','gazino'],visitHours:[11,16,20]},
+  {id:'rusen-esref',gender:'male',name:'Ruşen Eşref Ünaydın',bio:"Yazar, gazeteci ve diplomat; mülakat türündeki eserleriyle tanınır.",homeId:78,visitId:72,dialogue:'Bugünkü gazete için Pera’dan birkaç satır not almalıyım.',hangouts:['press','coffee','literary','restaurant'],visitHours:[9,13,18]},
+  {id:'mehmet-akif',gender:'male',name:'Mehmet Âkif Ersoy',bio:"Şair ve düşünür; İstiklâl Marşı’nın yazarıdır. Safahat adlı eseriyle tanınır.",homeId:74,visitId:78,dialogue:'Şehrin sesini dinlemek, insanı memleketin kendisine yaklaştırır.',hangouts:['quiet','coffee','book','restaurant'],visitHours:[10,14,18]},
+  {id:'peyami-safa',gender:'male',name:'Peyami Safa',bio:"Romancı ve gazeteci; psikolojik romanları ve fikir yazılarıyla tanınır.",homeId:78,visitId:79,dialogue:'Pera’nın kalabalığında insan ruhunu gözlemlemek mümkün.',hangouts:['press','coffee','plak','cinema'],visitHours:[11,16,20]},
+  {id:'cenap-sahabettin',gender:'male',name:'Cenap Şahabettin',bio:"Şair ve yazar; Servet-i Fünûn edebiyatının önde gelen isimlerindendir.",homeId:70,visitId:76,dialogue:'Güzel bir akşam, iyi bir sohbetle tamamlanır.',hangouts:['literary','restaurant','gazino','coffee'],visitHours:[12,17,21]},
+  {id:'suleyman-nazif',gender:'male',name:'Süleyman Nazif',bio:"Şair, yazar ve gazeteci; güçlü hitabeti ve millî edebiyat çevresindeki yazılarıyla tanınır.",homeId:74,visitId:78,dialogue:'Şehrin hafızası, sokaklarında ve gazetelerinde yaşar.',hangouts:['press','literary','coffee','restaurant'],visitHours:[9,14,19]},
+  {id:'huseyin-rahmi',gender:'male',name:'Hüseyin Rahmi Gürpınar',bio:"Romancı; İstanbul’un gündelik hayatını, mahallelerini ve toplumsal tiplerini mizahla anlattı.",homeId:75,visitId:70,dialogue:'İstanbul insanını seyretmek, başlı başına bir romandır.',hangouts:['meyhane','coffee','restaurant','pastry'],visitHours:[12,17,21]},
+  {id:'abdulhak-sinasi',gender:'male',name:'Abdülhak Şinasi Hisar',bio:"Yazar; İstanbul’un geçmişini, Boğaziçi kültürünü ve hatıralarını anlattığı eserleriyle tanınır.",homeId:74,visitId:71,dialogue:'Eski İstanbul’un zarafeti küçük ayrıntılarda saklıdır.',hangouts:['literary','coffee','gazino','restaurant'],visitHours:[11,16,20]}
 ];
+
+const venueKeywords={
+  literary:/pastane|kahve|kitabevi|kitap|lokanta|gazete/i,
+  coffee:/kahvehane|kıraathane|kahve|café|cafe|pastane/i,
+  quiet:/kahvehane|kıraathane|kitabevi|kitap|pastane/i,
+  pastry:/pastane|fırın|firin|şekerleme/i,
+  cinema:/sinem|elhamra|tiyatro/i,
+  theatre:/tiyatro|sinem|elhamra|gazino/i,
+  art:/kitabevi|matbaa|pasaj|pastane|galeri/i,
+  book:/kitabevi|kitap|matbaa|gazete/i,
+  press:/matbaa|gazete|kitabevi/i,
+  restaurant:/lokanta|meyhane|restoran|şarküteri/i,
+  meyhane:/meyhane|lokanta/i,
+  gazino:/gazino|maxim|musiki/i,
+  plak:/plak|gramofon|gazino/i,
+  market:/pasaj|çiçek|cicek|dükkân|dukkan|mağaza|magaza/i
+};
+function historicVenueFor(person,properties,clock){
+  const hour=Number(clock.hour)||0;
+  const tags=person.hangouts||['coffee','literary'];
+  const candidates=properties.filter(p=>p.id!==person.homeId&&p.type!=='Konut'&&p.type!=='Depo'&&
+    (p.opens==null||Number(clock.year)>=p.opens) &&
+    (p.type==='İşletme'||p.type==='Ticaret'||p.type==='Atölye'));
+  const scored=candidates.map(p=>{
+    const name=String(p.name||'')+' '+String(p.style||'');
+    let score=0;
+    tags.forEach((tag,index)=>{if(venueKeywords[tag]?.test(name))score+=6-index*.45;});
+    if(hour<11&&/pastane|kahve|kıraathane|kitabevi/i.test(name))score+=2;
+    if(hour>=18&&/meyhane|gazino|lokanta|sinem|tiyatro/i.test(name))score+=3;
+    if(hour>=22&&!/gazino|meyhane/i.test(name))score-=4;
+    const seed=Math.abs(Math.sin((person.index+1)*71.17+(p.id||0)*19.31+(clock.day||1)*7.13+(clock.hour||0)*3.71));
+    return {p,score:score+seed*2.4,seed};
+  }).filter(x=>x.score>1.5).sort((a,b)=>b.score-a.score);
+  if(!scored.length)return properties.find(p=>p.id===person.visitId)||properties.find(p=>p.id===person.homeId);
+  // Choose among several good fits, not a single fixed venue. Seeded by day/hour
+  // so each character has varied but reproducible habits.
+  const pool=scored.slice(0,Math.min(7,scored.length));
+  const seed=Math.abs(Math.sin((person.index+3)*31.7+(clock.day||1)*11.3+(clock.hour||0)*5.9));
+  return pool[Math.floor(seed*pool.length)].p;
+}
+
 export function createLivingResidents({scene,properties,isMobile=false,onVisit=()=>{}}){
   const roster=getCityPopulation(properties);
   // Keep the large simulated population for the economy but draw only a
@@ -147,7 +188,7 @@ export function createLivingResidents({scene,properties,isMobile=false,onVisit=(
     if(dateKey!==currentKey){
       currentKey=dateKey;
       for(const npc of historicResidents){
-        const target=properties.find(p=>p.id===(npc.goingHome?npc.homeId:npc.visitId));
+        const target=npc.goingHome ? properties.find(p=>p.id===npc.homeId) : historicVenueFor(npc,properties,clock);
         npc.goingHome=!npc.goingHome;
         if(target){
           const here={x:npc.group.position.x,z:npc.group.position.z};
