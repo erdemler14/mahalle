@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { createSceneFallback } from './sceneFallback.js';
 import * as THREE from 'three';
 import Peer from 'peerjs';
 import { createLivingCity, cityLifePhase } from './livingCity.js';
@@ -279,22 +280,41 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
     camera.position.set(12, 13, 17);
     camera.lookAt(0, 0, 0);
     const isMobileScene = window.matchMedia('(max-width: 760px)').matches || navigator.maxTouchPoints > 0;
-    const renderer = new THREE.WebGLRenderer({ antialias: !isMobileScene, alpha: false, powerPreference: 'high-performance' });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isMobileScene ? 1.35 : 1.8));
+    // Some older laptops expose WebGL but cannot sustain the previous high-cost scene.
+    // Prefer a conservative renderer; keep a readable 2D city map if WebGL2 is unavailable.
+    let renderer;
+    try {
+      renderer = new THREE.WebGLRenderer({ antialias: false, alpha: false, powerPreference: 'low-power', failIfMajorPerformanceCaveat: false });
+    } catch (error) {
+      console.error('[Mahalle] WebGL renderer unavailable; switching to 2D city map.', error);
+      return createSceneFallback(el, properties, setSelected);
+    }
+    const lowGpu = (Number(navigator.hardwareConcurrency) > 0 && navigator.hardwareConcurrency <= 4) ||
+      (Number(navigator.deviceMemory) > 0 && navigator.deviceMemory <= 4) || renderer.capabilities.maxTextureSize < 4096;
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, lowGpu ? 1.1 : isMobileScene ? 1.2 : 1.45));
     renderer.setSize(el.clientWidth, el.clientHeight);
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.shadowMap.enabled = !lowGpu;
+    renderer.shadowMap.type = THREE.PCFShadowMap;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.15;
     el.appendChild(renderer.domElement);
+    let contextFallbackCleanup = null;
+    const onWebGLContextLost = event => {
+      event.preventDefault();
+      if (contextFallbackCleanup) return;
+      console.error('[Mahalle] WebGL context lost; switching to 2D city map.');
+      renderer.domElement.style.display = 'none';
+      contextFallbackCleanup = createSceneFallback(el, properties, setSelected);
+    };
+    renderer.domElement.addEventListener('webglcontextlost', onWebGLContextLost, false);
 
     const hemisphere = new THREE.HemisphereLight('#fffaf0', '#89877f', 2.0);
     scene.add(hemisphere);
     const sun = new THREE.DirectionalLight('#fff5dd', 3.0);
     sun.position.set(-7, 15, 8);
-    sun.castShadow = true;
-    sun.shadow.mapSize.set(2048, 2048);
+    sun.castShadow = !lowGpu;
+    sun.shadow.mapSize.set(lowGpu ? 512 : 1024, lowGpu ? 512 : 1024);
     sun.shadow.camera.left = -22; sun.shadow.camera.right = 22; sun.shadow.camera.top = 22; sun.shadow.camera.bottom = -22;
     scene.add(sun);
 
@@ -1560,6 +1580,8 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
           });
         }
       });
+      contextFallbackCleanup?.();
+      renderer.domElement.removeEventListener('webglcontextlost', onWebGLContextLost, false);
       renderer.dispose();
       renderer.domElement.remove();
     };
