@@ -230,6 +230,7 @@ test('market prices respond to sector demand and total city stock',()=>{
   const scarce=calculateMarketPrice({basePrice:20,demandMultiplier:1.3,stock:0,targetStock:12});
   const abundant=calculateMarketPrice({basePrice:20,demandMultiplier:.85,stock:36,targetStock:12});
   const balanced=calculateMarketPrice({basePrice:20,demandMultiplier:1,stock:12,targetStock:12});
+  assert.equal(balanced,20);
   assert.ok(scarce>balanced);
   assert.ok(abundant<balanced);
   assert.ok(scarce<=30.4&&abundant>=14.4);
