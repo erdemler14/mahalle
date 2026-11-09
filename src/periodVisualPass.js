@@ -301,20 +301,20 @@ export function createPeriodVisualPass({ scene, properties, buildingMeshes, isMo
     new THREE.MeshStandardMaterial({color:'#77736b',roughness:1}),
     new THREE.MeshStandardMaterial({color:'#a49b8c',roughness:1})
   ];
-  const settGeo = new THREE.BoxGeometry(.38,.018,.28);
+  const settGeo = new THREE.BoxGeometry(.42,.018,.42);
   const dummy = new THREE.Object3D();
   const laneCenters = [-23.2,-13.0,3.0,13.0,23.0];
   for(let lane=0;lane<laneCenters.length;lane++){
     const x=laneCenters[lane], width=4.0, length=47;
     const bed=new THREE.Mesh(new THREE.PlaneGeometry(width,length),streetBed);
     bed.rotation.x=-Math.PI/2;bed.position.set(x,-.031,0);bed.receiveShadow=true;streetGroup.add(bed);
-    const count=(isMobile?110:220);
+    const count=(isMobile?1100:1300);
     const meshes=settMats.map(mat=>{const m=new THREE.InstancedMesh(settGeo,mat,count);m.receiveShadow=true;m.castShadow=false;streetGroup.add(m);return m;});
     const cols=10, rows=Math.ceil(count/cols);
     for(let k=0;k<count;k++){
       const row=Math.floor(k/cols),col=k%cols;
       const seed=hash(lane*10000+k*17+9);
-      dummy.position.set(x+(col-(cols-1)/2)*.39+(row%2)*.19,-.018+seed*.0015,-23+row*(46/rows));
+      dummy.position.set(x+(col-(cols-1)/2)*.40+(row%2)*.20,-.018+seed*.0015,-23+row*(46/rows));
       dummy.rotation.set(0,(seed-.5)*.12,0);
       dummy.scale.set(.92+seed*.12,1,.88+seed*.16);
       dummy.updateMatrix();
