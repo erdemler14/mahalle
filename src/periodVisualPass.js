@@ -328,6 +328,24 @@ export function createPeriodVisualPass({ scene, properties, buildingMeshes, isMo
       gutter.position.set(x+side*(width/2-.08),-.012,0);gutter.receiveShadow=true;streetGroup.add(gutter);
     }
   }
+  // Secondary Pera lanes: narrow cross-streets and worn pedestrian passages,
+  // linking the main carriageways so the district reads as a continuous city block.
+  const alleyBedMat=new THREE.MeshStandardMaterial({color:'#746f66',roughness:1});
+  const alleyStoneMats=['#918a7d','#817b70','#a09889'].map(color=>new THREE.MeshStandardMaterial({color,roughness:1}));
+  const alleyStoneGeo=new THREE.BoxGeometry(.34,.016,.34);
+  for(const [index,z] of [-18,-9,0,9,18].entries()){
+    const bed=new THREE.Mesh(new THREE.PlaneGeometry(54,2.8),alleyBedMat);
+    bed.rotation.x=-Math.PI/2;bed.position.set(-10,-.028,z);bed.receiveShadow=true;streetGroup.add(bed);
+    const total=isMobile?280:520,cols= Math.floor(54/.38),rows=Math.ceil(total/cols),dummyAlley=new THREE.Object3D();
+    const alleyMeshes=alleyStoneMats.map(mat=>{const mesh=new THREE.InstancedMesh(alleyStoneGeo,mat,total);mesh.receiveShadow=true;streetGroup.add(mesh);return mesh;});
+    for(let k=0;k<total;k++){
+      const row=Math.floor(k/cols),col=k%cols,seed=hash(index*8000+k*19+31);
+      dummyAlley.position.set(-37+col*.38,-.015+seed*.001,z+(row-(rows-1)/2)*.36+(col%2)*.12);
+      dummyAlley.rotation.y=(seed-.5)*.16;dummyAlley.scale.set(.9+seed*.15,1,.9+seed*.15);dummyAlley.updateMatrix();
+      alleyMeshes[Math.floor(seed*alleyMeshes.length)].setMatrixAt(k,dummyAlley.matrix);
+    }
+    alleyMeshes.forEach(mesh=>{mesh.instanceMatrix.needsUpdate=true;});
+  }
   scene.add(streetGroup);
 
   const markets = [

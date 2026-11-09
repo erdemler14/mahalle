@@ -199,12 +199,13 @@ function supportsProfessionAt(property, professionId) {
   return Boolean(property && venueTypesByProfession[professionId]?.includes(property.type));
 }
 
-function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', onSelect, onTalk, onUniversity, hour, day = 1, month = 1, year = 1923, overlay, developments = {}, buildingLevels = {}, ferryBusiness = {}, neighborhood = {} }) {
+function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', onSelect, onTalk, onResidentVisit, onUniversity, hour, day = 1, month = 1, year = 1923, overlay, developments = {}, buildingLevels = {}, ferryBusiness = {}, neighborhood = {} }) {
   const host = useRef(null);
   const overlayRef = useRef(null);
   const overlayContentRef = useRef(overlay);
   const selectRef = useRef(onSelect);
   const talkRef = useRef(onTalk);
+  const residentVisitRef = useRef(onResidentVisit);
   const selectedRef = useRef(selected);
   const hourRef = useRef(hour);
   const ferryStateRef = useRef(ferryBusiness);
@@ -226,6 +227,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
   });
   useEffect(() => { selectRef.current = onSelect; }, [onSelect]);
   useEffect(() => { talkRef.current = onTalk; }, [onTalk]);
+  useEffect(() => { residentVisitRef.current = onResidentVisit; }, [onResidentVisit]);
   useEffect(() => { selectedRef.current = selected; }, [selected]);
   useEffect(() => {
     overlayContentRef.current = overlay;
@@ -785,7 +787,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
     const harborScene = createHarborScene({ scene, oldFerry: ferry, isMobile: isMobileScene, ferryStateRef });
     const glbArchitecture = createGlbArchitecture({ properties, buildingMeshes, mobile: isMobileScene, developments, owned, ownerByProperty, playerId });
     const periodStreetLife = createPeriodStreetLife({ scene, properties, isMobile: isMobileScene });
-    const livingResidents = createLivingResidents({ scene, properties, isMobile: isMobileScene });
+    const livingResidents = createLivingResidents({ scene, properties, isMobile: isMobileScene, onVisit: propertyId => residentVisitRef.current?.(propertyId) });
 
     // A subtle pulsing ring makes the currently selected property easy to spot.
     const selectionRingMaterial = new THREE.MeshStandardMaterial({
@@ -1339,7 +1341,7 @@ function CityScene({ selected, owned, ownerByProperty = {}, playerId = 'solo', o
       pointer.set(((event.clientX-rect.left)/rect.width)*2-1,-((event.clientY-rect.top)/rect.height)*2+1);
       raycaster.setFromCamera(pointer,camera);
       const person=livingResidents.pick(raycaster);
-      if(person){ talkRef.current?.(person.name+' — '+person.dialogue);return; }
+      if(person){ talkRef.current?.(person);return; }
       const building = buildingUnderPointer(event);
       if (building) selectRef.current(building.id);
     };
@@ -1714,6 +1716,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   const sendAction = () => false;
   const publishOwners = (nextOwners) => { setOwnerByProperty(nextOwners); sendPeerMessage({ type: 'world-update', owners: nextOwners, playerName: playerName.trim() || 'Oyuncu' }); };
   const getMarketValue = property => property.id === 73 ? (owned.includes(73) ? 25000 : 500) : Math.max(1,Math.round((Number(marketValues[property.id])||property.price)*100)/100);
+  const recordHistoricFootfall = propertyId => { setMarketValues(previous => { const property = properties.find(item => item.id === Number(propertyId)); if (!property) return previous; const current = Number(previous[property.id]) || property.price; const next = Math.round(current * 1.0025 * 100) / 100; return { ...previous, [property.id]: next }; }); };
   const getPropertyTaxRate = property => PROPERTY_TAX_RATES[property?.type] || 0.0015;
   const getProgressivePropertyFactor = position => PROPERTY_TAX_PROGRESSIVE[Math.min(Math.max(0, position - 1), PROPERTY_TAX_PROGRESSIVE.length - 1)] || 2.5;
   const calculateQuarterlyPropertyTax = () => owned.reduce((total, propertyId, index) => {
@@ -2728,6 +2731,10 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     // Explicit product-to-supply recipes prevent a shop's entire range from sharing one generic recipe.
     const profile = getBusinessProfile(propertyId);
     if (!profile.materials?.length || !profile.recipes?.length) return [];
+    if (id === 73) {
+      const maximRecipe = [['maxim-orkestra',1],['maxim-isik',1],['maxim-bilet',1],['maxim-salon',1]];
+      if (['maxim-caz-gecesi','maxim-solist','maxim-yeni-yil','maxim-vals'].includes(product?.id)) return maximRecipe.map(([materialId,qty])=>({id:materialId,qty}));
+    }
     const customRule = profile.productRules?.find(entry => entry.match.test(key));
     if (customRule && customRule.recipe.every(([materialId, qty]) => profile.materials.some(material => material.id === materialId) && qty > 0)) {
       return customRule.recipe.map(([materialId, qty]) => ({ id: materialId, qty }));
@@ -4502,7 +4509,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     <section className="game-layout fullscreen-layout">
       <div className="world-panel">
         <div className="world-topline"><span><span className="live-dot" /> BEYOĞLU MERKEZİ</span><label className="property-finder"><span>⌕</span><input aria-label="Mülk ara ve haritada göster" list="mahalle-property-options" placeholder="Mülk adı yaz..." value={mapSearch} onChange={event => { const value = event.target.value; setMapSearch(value); const match = properties.find(property => property.name.toLocaleLowerCase('tr-TR') === value.trim().toLocaleLowerCase('tr-TR')); if (match) { selectProperty(match.id); setMapSearch(''); } }} /><datalist id="mahalle-property-options">{properties.map(property => <option key={property.id} value={property.name}>{owned.includes(property.id) ? 'Senin mülkün' : 'Satılık'}</option>)}</datalist><small>{properties.length} MÜLK</small></label><span className="world-year">OYUN DÜNYASI <i>·</i> {year}</span></div>
-        <CityScene selected={selected} owned={owned} ownerByProperty={ownerByProperty} playerId={playerId} onSelect={selectProperty} onTalk={person => setHistoricStory(person)} ferryBusiness={ferryBusiness} onUniversity={() => setActiveHudPanel(v => v === 'university' ? null : 'university')} hour={hour} day={day} month={month} year={year} neighborhood={neighborhood} developments={developments} buildingLevels={buildingLevels} overlay={sceneActionDismissed ? null : <div className="scene-action-card" style={{ position: 'relative', paddingTop: 28 }}>
+        <CityScene selected={selected} owned={owned} ownerByProperty={ownerByProperty} playerId={playerId} onSelect={selectProperty} onTalk={person => setHistoricStory(person)} onResidentVisit={recordHistoricFootfall} ferryBusiness={ferryBusiness} onUniversity={() => setActiveHudPanel(v => v === 'university' ? null : 'university')} hour={hour} day={day} month={month} year={year} neighborhood={neighborhood} developments={developments} buildingLevels={buildingLevels} overlay={sceneActionDismissed ? null : <div className="scene-action-card" style={{ position: 'relative', paddingTop: 28 }}>
           <button type="button" aria-label="Seçili bina penceresini kapat" title="Kapat" onClick={() => setSceneActionDismissed(true)} style={{ position: 'absolute', top: 7, right: 8, zIndex: 5, width: 28, height: 28, border: '1px solid rgba(255,255,255,.35)', borderRadius: 8, background: 'rgba(12,24,48,.72)', color: '#fff', fontSize: 21, lineHeight: '24px', cursor: 'pointer' }}>×</button>
           <div className="scene-action-eyebrow">SEÇİLİ BİNA · {String(active.id).padStart(2, '0')}</div><strong>{active.name}</strong>
           <span>{ownerByProperty[active.id] ? (ownerByProperty[active.id].playerId === playerId ? `Sahibi: ${ownerByProperty[active.id].name} (sen)` : `Sahibi: ${ownerByProperty[active.id].name}`) : 'Satılık'} · ₺{getMarketValue(active).toLocaleString('tr-TR')}</span>

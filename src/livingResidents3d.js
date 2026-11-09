@@ -88,21 +88,21 @@ export function stepResident(npc,seconds){
 const HISTORIC_PEOPLE=[
   {name:'Yahya Kemal Beyatlı',bio:'Şair ve yazar. 1920’lerde İstanbul ve Pera’nın edebiyat çevrelerinde yer alır.',homeId:70,visitId:71,dialogue:'Beyoğlu’nda bir pastane masası, bazen uzun bir şiirin başlangıcıdır.'},
   {name:'Ahmet Haşim',bio:'Şair ve öğretmen; Fecr-i Âti topluluğunun önemli isimlerinden.',homeId:71,visitId:70,dialogue:'Akşam ışıkları bu sokağı bambaşka gösteriyor.'},
-  {name:'İbrahim Çallı',homeId:75,visitId:70,dialogue:'Bu şehrin her köşesi yeni bir resim olabilir.'},
-  {name:'Muhsin Ertuğrul',homeId:72,visitId:74,dialogue:'Elhamra’da bu akşam yeni bir gösteri var.'},
-  {name:'Ali Bey',homeId:77,visitId:75,dialogue:'Tramvayla pasaj arasında her gün gidip geliyorum.'},
-  {name:'Ayşe Hanım',homeId:71,visitId:75,dialogue:'Pastanenin önünde bugün çok kalabalık vardı.'},
-  {name:'Reşat Nuri Güntekin',homeId:78,visitId:70,dialogue:'Bir şehrin hikâyesi, sokaklarında yaşayan insanlarla yazılır.'},
-  {name:'Orhan Seyfi Orhon',homeId:79,visitId:71,dialogue:'Bir şiir bazen bir pastane masasındaki sohbetten doğar.'},
-  {name:'Ruşen Eşref Ünaydın',homeId:78,visitId:72,dialogue:'Bugünkü gazete için Pera’dan birkaç satır not almalıyım.'},
-  {name:'Mehmet Âkif Ersoy',homeId:74,visitId:78,dialogue:'Şehrin sesini dinlemek, insanı memleketin kendisine yaklaştırır.'},
-  {name:'Peyami Safa',homeId:78,visitId:79,dialogue:'Pera’nın kalabalığında insan ruhunu gözlemlemek mümkün.'},
-  {name:'Cenap Şahabettin',homeId:70,visitId:76,dialogue:'Güzel bir akşam, iyi bir sohbetle tamamlanır.'},
-  {name:'Süleyman Nazif',homeId:74,visitId:78,dialogue:'Şehrin hafızası, sokaklarında ve gazetelerinde yaşar.'},
-  {name:'Hüseyin Rahmi Gürpınar',homeId:75,visitId:70,dialogue:'İstanbul insanını seyretmek, başlı başına bir romandır.'},
-  {name:'Abdülhak Şinasi Hisar',homeId:74,visitId:71,dialogue:'Eski İstanbul’un zarafeti küçük ayrıntılarda saklıdır.'}
+  {name:'İbrahim Çallı',bio:"Ressam; Türk resminde izlenimci yaklaşımın önde gelen temsilcilerindendir. 1882’de doğdu, Sanâyi-i Nefîse’de eğitim gördü.",homeId:75,visitId:70,dialogue:'Bu şehrin her köşesi yeni bir resim olabilir.'},
+  {name:'Muhsin Ertuğrul',bio:"Tiyatro ve sinema yönetmeni, oyuncu. Türkiye’de çağdaş tiyatro ve sinemanın kurumsallaşmasında öncü rol oynadı.",homeId:72,visitId:74,dialogue:'Elhamra’da bu akşam yeni bir gösteri var.'},
+  {name:'Ali Bey',bio:"Tramvay işletmesinde çalışan, kurmaca bir Pera sakini; dönemin şehir ulaşımını temsil eder.",homeId:77,visitId:75,dialogue:'Tramvayla pasaj arasında her gün gidip geliyorum.'},
+  {name:'Ayşe Hanım',bio:"Pera’da yaşayan kurmaca bir pastane müdavimi; gündelik şehir hayatını temsil eder.",homeId:71,visitId:75,dialogue:'Pastanenin önünde bugün çok kalabalık vardı.'},
+  {name:'Reşat Nuri Güntekin',bio:"Romancı, öykücü ve oyun yazarı. Çalıkuşu başta olmak üzere eserleriyle Cumhuriyet dönemi edebiyatının önemli isimlerindendir.",homeId:78,visitId:70,dialogue:'Bir şehrin hikâyesi, sokaklarında yaşayan insanlarla yazılır.'},
+  {name:'Orhan Seyfi Orhon',bio:"Şair, gazeteci ve yazar; Beş Hececiler topluluğunun üyelerindendir.",homeId:79,visitId:71,dialogue:'Bir şiir bazen bir pastane masasındaki sohbetten doğar.'},
+  {name:'Ruşen Eşref Ünaydın',bio:"Yazar, gazeteci ve diplomat; mülakat türündeki eserleriyle tanınır.",homeId:78,visitId:72,dialogue:'Bugünkü gazete için Pera’dan birkaç satır not almalıyım.'},
+  {name:'Mehmet Âkif Ersoy',bio:"Şair ve düşünür; İstiklâl Marşı’nın yazarıdır. Safahat adlı eseriyle tanınır.",homeId:74,visitId:78,dialogue:'Şehrin sesini dinlemek, insanı memleketin kendisine yaklaştırır.'},
+  {name:'Peyami Safa',bio:"Romancı ve gazeteci; psikolojik romanları ve fikir yazılarıyla tanınır.",homeId:78,visitId:79,dialogue:'Pera’nın kalabalığında insan ruhunu gözlemlemek mümkün.'},
+  {name:'Cenap Şahabettin',bio:"Şair ve yazar; Servet-i Fünûn edebiyatının önde gelen isimlerindendir.",homeId:70,visitId:76,dialogue:'Güzel bir akşam, iyi bir sohbetle tamamlanır.'},
+  {name:'Süleyman Nazif',bio:"Şair, yazar ve gazeteci; güçlü hitabeti ve millî edebiyat çevresindeki yazılarıyla tanınır.",homeId:74,visitId:78,dialogue:'Şehrin hafızası, sokaklarında ve gazetelerinde yaşar.'},
+  {name:'Hüseyin Rahmi Gürpınar',bio:"Romancı; İstanbul’un gündelik hayatını, mahallelerini ve toplumsal tiplerini mizahla anlattı.",homeId:75,visitId:70,dialogue:'İstanbul insanını seyretmek, başlı başına bir romandır.'},
+  {name:'Abdülhak Şinasi Hisar',bio:"Yazar; İstanbul’un geçmişini, Boğaziçi kültürünü ve hatıralarını anlattığı eserleriyle tanınır.",homeId:74,visitId:71,dialogue:'Eski İstanbul’un zarafeti küçük ayrıntılarda saklıdır.'}
 ];
-export function createLivingResidents({scene,properties,isMobile=false}){
+export function createLivingResidents({scene,properties,isMobile=false,onVisit=()=>{}}){
   const roster=getCityPopulation(properties);
   // Keep the large simulated population for the economy but draw only a
   // lightweight crowd. Old 76/34 detailed rigs were expensive on phones.
@@ -122,7 +122,7 @@ export function createLivingResidents({scene,properties,isMobile=false}){
     rig.group.userData.historicPerson=i;
     // Distinctive, period-appropriate recognition marker: a small brass medallion above the head.
     const markerGroup=new THREE.Group();
-    const medallion=new THREE.Mesh(new THREE.CircleGeometry(.105,16),new THREE.MeshStandardMaterial({color:'#c5a35d',metalness:.58,roughness:.42,side:THREE.DoubleSide,emissive:'#5b431c',emissiveIntensity:.16}));
+    const medallion=new THREE.Mesh(new THREE.CircleGeometry(.16,16),new THREE.MeshStandardMaterial({color:'#c5a35d',metalness:.58,roughness:.42,side:THREE.DoubleSide,emissive:'#5b431c',emissiveIntensity:.16}));
     medallion.position.set(0,1.43,0);markerGroup.add(medallion);
     const center=new THREE.Mesh(new THREE.CircleGeometry(.057,12),new THREE.MeshStandardMaterial({color:'#f4e6c4',roughness:.8,side:THREE.DoubleSide}));
     center.position.set(0,1.435,.006);markerGroup.add(center);
@@ -131,13 +131,13 @@ export function createLivingResidents({scene,properties,isMobile=false}){
     rig.group.add(markerGroup);
     // Larger floating brass identity marker: clearly visible and easy to hit.
     const halo=new THREE.Mesh(new THREE.TorusGeometry(.22,.035,8,20),new THREE.MeshStandardMaterial({color:'#d9b66e',metalness:.45,roughness:.48,emissive:'#70521e',emissiveIntensity:.28}));
-    halo.position.set(0,1.68,0);markerGroup.add(halo);
+    halo.position.set(0,1.78,0);markerGroup.add(halo);
     const hitTarget=new THREE.Mesh(new THREE.SphereGeometry(.38,10,8),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));
-    hitTarget.position.set(0,1.65,0);hitTarget.userData.historicHitTarget=true;markerGroup.add(hitTarget);
+    hitTarget.position.set(0,1.78,0);hitTarget.userData.historicHitTarget=true;markerGroup.add(hitTarget);
     rig.group.userData.historicMarker=markerGroup;
     rig.group.name=person.name;
     scene.add(rig.group);
-    return {...person,...rig,index:112+i,path:[],nextPoint:0,journeySpeed:.65,goingHome:false};
+    return {...person,...rig,index:112+i,path:[],nextPoint:0,journeySpeed:.65,goingHome:false,insideUntil:0,visitCount:0};
   });
   let currentKey='',lastElapsed=null,frame=0;
   function update({clock,elapsed,weather={}}){
@@ -149,10 +149,12 @@ export function createLivingResidents({scene,properties,isMobile=false}){
         npc.goingHome=!npc.goingHome;
         if(target){
           const here={x:npc.group.position.x,z:npc.group.position.z};
-          const destination={x:target.x+(npc.index%2?.8:-.8),z:target.z+1.6};
+          const destination={x:target.x+(npc.index%2?.8:-.8),z:target.z+((target.depth||2.4)/2)+.22};
           npc.path=[here,...walkWaypoints(here,destination).slice(1)];
+          npc.pathTargetId=target.id;
           if(npc.path.length<2)npc.path=[here,destination];
           npc.nextPoint=1;
+          npc.justVisited=false;
         }
       }
       for(const npc of activePeople){
@@ -175,7 +177,13 @@ export function createLivingResidents({scene,properties,isMobile=false}){
     // at its normal update rate. Time is accumulated from elapsed, not frames.
     if(frame%2===1)return;
     for(const npc of historicResidents){
+      if(elapsed < npc.insideUntil){npc.group.visible=false;continue;}
+      if(npc.insideUntil && elapsed >= npc.insideUntil){npc.group.visible=true;npc.insideUntil=0;}
       const moving=stepResident(npc,seconds*2);
+      if(!moving && npc.path.length>1 && npc.nextPoint>=npc.path.length && npc.pathTargetId && npc.pathTargetId!==npc.homeId && !npc.justVisited){
+        npc.justVisited=true;npc.visitCount++;onVisit(npc.pathTargetId);
+        npc.insideUntil=elapsed+18+((npc.index*7)%24);npc.group.visible=false;
+      } else if(moving) npc.justVisited=false;
       const stride=elapsed*4.5+npc.index;
       const pace=moving?1:.08;
       npc.group.position.y=.018+Math.abs(Math.sin(stride))*.008*pace;
@@ -207,7 +215,7 @@ export function createLivingResidents({scene,properties,isMobile=false}){
     for(const hit of hits){
       let root=hit.object;
       while(root && root.userData.historicPerson==null)root=root.parent;
-      if(root && hit.distance<24) {
+      if(root) {
         const person=HISTORIC_PEOPLE[root.userData.historicPerson];
         return person ? {name:person.name,bio:person.bio || person.dialogue,dialogue:person.dialogue} : null;
       }
