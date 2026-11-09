@@ -68,3 +68,15 @@ test('production console uses the selected property rather than an undefined ren
   assert.doesNotMatch(source,/const availableProducts = allProducts\.filter\(item => isBusinessProductUnlocked\(propertyId, item\)/);
   assert.doesNotMatch(source,/const unlocked = isBusinessProductUnlocked\(propertyId, item\)/);
 });
+
+test('trade school level two correctly depends on the level-one certificate ID',()=>{
+  const source=fs.readFileSync('src/App.jsx','utf8');
+  assert.match(source,/const previousId = level === 1 \? null : \(level === 2 \? branch\.id : branch\.id \+ '-level-' \+ \(level - 1\)\);/);
+  assert.match(source,/universityCourses\.find\(c=>c\.id===\(i===0\?branch\.id:branch\.id\+'-level-'\+\(i\+1\)\)\)/);
+});
+test('only health and pharmacy advanced courses require owned premises and all branches remain visible',()=>{
+  const source=fs.readFileSync('src/App.jsx','utf8');
+  assert.match(source,/premiseId:\['medical','pharmacy','medicine'\]\.includes\(branch\.id\) \? \(branch\.premiseId \|\| null\) : null/);
+  assert.match(source,/universityCourseBranches\.map\(branch=>/);
+  assert.doesNotMatch(source,/universityCourseBranches\.filter\(branch=>!branch\.premiseId\|\|owned\.includes\(branch\.premiseId\)\)/);
+});
