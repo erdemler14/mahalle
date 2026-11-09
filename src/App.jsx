@@ -1912,6 +1912,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     else if(message.decision==='reject'&&offer.fromPlayerId===playerId){setIncomingOffer(null);setNotice('Satın alma teklifin reddedildi.');}
   };
   const selectProperty = (id) => {
+    setHistoricStory(null);
     setSceneActionDismissed(false);
     if (toyShopOpen) setToyShopOpen(false);
     if (sendAction('selectProperty', id)) return;
@@ -4098,15 +4099,14 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const recipe = getBusinessRecipe(propertyId, item);
     if (!recipe.length) { tell('Bu ürün için geçerli bir hammadde reçetesi tanımlanmamış. Yanlış veya bedelsiz üretim yapılmasını önlemek için işlem durduruldu.'); return; }
     let productionMaterials = { ...(inventory.materials || {}) };
+    let purchasePlan = null;
     if (purchaseMissingMaterials) {
-      const plan = planWarehouseSpace(propertyId, item, productionBatch, inventory, false, cash);
-      if (!plan) { tell('Eksik malzemeleri alacak bütçe veya depo alanı yok. Daha küçük üretim adedi seçebilirsin.'); return; }
+      purchasePlan = planWarehouseSpace(propertyId, item, productionBatch, inventory, false, cash);
+      if (!purchasePlan) { tell('Eksik malzemeleri alacak bütçe veya depo alanı yok. Daha küçük üretim adedi seçebilirsin.'); return; }
       const unlocked = new Set(getUnlockedBusinessMaterials(propertyId, level, item).map(material => material.id));
-      if (plan.deficits.some(part => !part.material || !unlocked.has(part.id))) { tell('Bu ürünün gerekli malzemeleri henüz açılmamış.'); return; }
-      productionMaterials = applyWarehouseReturns(propertyId, inventory, plan);
-      plan.deficits.forEach(part => { productionMaterials[part.id] = (Number(productionMaterials[part.id]) || 0) + part.missing; });
-      setCash(value => Math.round((value + plan.refund - plan.purchaseCost) * 100) / 100);
-      setBusinessStats(old => { const previous = old[propertyId] || { unitsSold: 0, revenue: 0, stockInvested: 0 }; return { ...old, [propertyId]: { ...previous, stockInvested: Math.max(0, Math.round(((Number(previous.stockInvested) || 0) + plan.purchaseCost - plan.refund) * 100) / 100) } }; });
+      if (purchasePlan.deficits.some(part => !part.material || !unlocked.has(part.id))) { tell('Bu ürünün gerekli malzemeleri henüz açılmamış.'); return; }
+      productionMaterials = applyWarehouseReturns(propertyId, inventory, purchasePlan);
+      purchasePlan.deficits.forEach(part => { productionMaterials[part.id] = (Number(productionMaterials[part.id]) || 0) + part.missing; });
     }
     const materialLimit = recipe.reduce((limit, part) => Math.min(limit, Math.floor((Number(productionMaterials[part.id]) || 0) / part.qty)), Infinity);
     const capacity = getStockCapacity(propertyId);
@@ -4119,6 +4119,10 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       return;
     }
     if (quantity < requested) tell('Depo veya hammadde sınırı nedeniyle ' + quantity + ' adet üretim kuyruğa alınıyor.');
+    if (purchasePlan) {
+      setCash(value => Math.round((value + purchasePlan.refund - purchasePlan.purchaseCost) * 100) / 100);
+      setBusinessStats(old => { const previous = old[propertyId] || { unitsSold: 0, revenue: 0, stockInvested: 0 }; return { ...old, [propertyId]: { ...previous, stockInvested: Math.max(0, Math.round(((Number(previous.stockInvested) || 0) + purchasePlan.purchaseCost - purchasePlan.refund) * 100) / 100) } }; });
+    }
     const nextMaterials = { ...productionMaterials };
     recipe.forEach(part => { nextMaterials[part.id] = (Number(nextMaterials[part.id]) || 0) - part.qty * quantity; });
     const pendingKey = propertyId + ':' + item.id;
@@ -4579,7 +4583,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     <section className="game-layout fullscreen-layout">
       <div className="world-panel">
         <div className="world-topline"><span><span className="live-dot" /> BEYOĞLU MERKEZİ</span><label className="property-finder"><span>⌕</span><input aria-label="Mülk ara ve haritada göster" list="mahalle-property-options" placeholder="Mülk adı yaz..." value={mapSearch} onChange={event => { const value = event.target.value; setMapSearch(value); const match = properties.find(property => property.name.toLocaleLowerCase('tr-TR') === value.trim().toLocaleLowerCase('tr-TR')); if (match) { selectProperty(match.id); setMapSearch(''); } }} /><datalist id="mahalle-property-options">{properties.map(property => <option key={property.id} value={property.name}>{owned.includes(property.id) ? 'Senin mülkün' : 'Satılık'}</option>)}</datalist><small>{properties.length} MÜLK</small></label><span className="world-year">OYUN DÜNYASI <i>·</i> {year}</span></div>
-        <CityScene selected={selected} owned={owned} ownerByProperty={ownerByProperty} playerId={playerId} onSelect={selectProperty} onTalk={person => setHistoricStory(person)} onResidentVisit={recordHistoricFootfall} avatarProfile={avatarProfile} focusPersona={activeHudPanel === 'persona'} focusPersonaToken={personaFocusToken} ferryBusiness={ferryBusiness} onUniversity={() => setActiveHudPanel(v => v === 'university' ? null : 'university')} hour={hour} day={day} month={month} year={year} neighborhood={neighborhood} developments={developments} buildingLevels={buildingLevels} overlay={sceneActionDismissed ? null : <div className="scene-action-card" style={{ position: 'relative', paddingTop: 28 }}>
+        <CityScene selected={selected} owned={owned} ownerByProperty={ownerByProperty} playerId={playerId} onSelect={selectProperty} onTalk={person => { setBuildingStoryId(null); setHistoricStory(person); }} onResidentVisit={recordHistoricFootfall} avatarProfile={avatarProfile} focusPersona={activeHudPanel === 'persona'} focusPersonaToken={personaFocusToken} ferryBusiness={ferryBusiness} onUniversity={() => setActiveHudPanel(v => v === 'university' ? null : 'university')} hour={hour} day={day} month={month} year={year} neighborhood={neighborhood} developments={developments} buildingLevels={buildingLevels} overlay={sceneActionDismissed ? null : <div className="scene-action-card" style={{ position: 'relative', paddingTop: 28 }}>
           <button type="button" aria-label="Seçili bina penceresini kapat" title="Kapat" onClick={() => setSceneActionDismissed(true)} style={{ position: 'absolute', top: 7, right: 8, zIndex: 5, width: 28, height: 28, border: '1px solid rgba(255,255,255,.35)', borderRadius: 8, background: 'rgba(12,24,48,.72)', color: '#fff', fontSize: 21, lineHeight: '24px', cursor: 'pointer' }}>×</button>
           <div className="scene-action-eyebrow">SEÇİLİ BİNA · {String(active.id).padStart(2, '0')}</div><strong>{active.name}</strong>
           <span>{ownerByProperty[active.id] ? (ownerByProperty[active.id].playerId === playerId ? `Sahibi: ${ownerByProperty[active.id].name} (sen)` : `Sahibi: ${ownerByProperty[active.id].name}`) : 'Satılık'} · ₺{getMarketValue(active).toLocaleString('tr-TR')}</span>
@@ -4595,7 +4599,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
         {active.id === TOY_SHOP_ID && <button type="button" className="toy-shop-floating-cta" onClick={enterToyShop}>✦ OYUNCAKÇININ İÇİNE GİR <span>↗</span></button>}
         <button type="button" className="harbor-open-button tramway-open-button" onClick={() => setActiveHudPanel(activeHudPanel === 'tramway' ? null : 'tramway')} aria-label="Beyoğlu Tramvay İşletmesi ekranını aç"><span>🚋</span><strong>BEYOĞLU TRAMVAYI</strong><small>{tramwayBusiness.owned ? 'İŞLETMEN FAALİYETTE' : 'İŞLETME RUHSATI'}</small></button>
         <button type="button" className="harbor-open-button" onClick={() => setActiveHudPanel(activeHudPanel === 'ferry' ? null : 'ferry')} aria-label="Haliç Vapur Hattı işletme ekranını aç"><span>⚓</span><strong>HALİÇ VAPUR HATTI</strong><small>{ferryBusiness.owned ? 'İŞLETMEN FAALİYETTE' : 'İMTİYAZ · ₺200'}</small></button>
-        {historicStory && <aside className="building-history-popover historic-person-card" role="dialog" aria-label="Tarihî şahsiyet"><button className="building-history-close" type="button" aria-label="Bilgilendirmeyi kapat" onClick={() => setHistoricStory(null)}>×</button><span className="building-history-kicker">1923 · PERA'DA BİR SİMÂ</span><h3>{historicStory.name}</h3><p>{historicStory.bio || historicStory.dialogue}</p><small>Bu tarihî kişiyi pirinç rozetli işaretinden tanıyabilirsin.</small></aside>}
+        {historicStory && <aside className={'building-history-popover historic-person-card ' + (historicStory.kind || 'historic')} role="dialog" aria-label={historicStory.marker || 'Mahalle sakini'}><button type="button" className="building-history-close" aria-label="Kapat" title="Kapat" onClick={() => setHistoricStory(null)}>×</button><span className="building-history-kicker">{historicStory.kind === 'player' ? 'SENİN MAHALLEDEKİ KARAKTERİN' : historicStory.kind === 'resident' ? 'BEYOĞLU · MAHALLE SAKİNİ' : '1923 · PERA'DA BİR SİMÂ'}</span><h3>{historicStory.name}</h3><span className="person-card-type">{historicStory.marker || 'TARİHÎ ŞAHSİYET'}</span><p>{historicStory.bio || historicStory.dialogue}</p>{historicStory.dialogue && historicStory.kind !== 'player' && <small>{historicStory.dialogue}</small>}</aside>}
         {buildingStoryId != null && (() => { const storyProperty = properties.find(item => item.id === buildingStoryId); if (!storyProperty) return null; const storyText = storyProperty.history || storyProperty.style || 'Bu yapı, 1920’lerin Beyoğlu’sunda mahallenin gündelik yaşamının bir parçası.'; return <aside className="building-history-popover" role="status" aria-live="polite"><button className="building-history-close" type="button" aria-label="Bilgilendirmeyi kapat" onClick={() => setBuildingStoryId(null)}>×</button><span className="building-history-kicker">PERA · DÖNEM NOTU</span><h3>{storyProperty.name}</h3><p>{storyText.length > 300 ? storyText.slice(0,297).trimEnd() + '…' : storyText}</p></aside>; })()}
         <div className="map-legend"><span><i className="legend-dot available" /> SATILIK MÜLK</span><span><i className="legend-dot owned" /> SENİN MÜLKÜN</span><span className="map-hint">SÜRÜKLE: DÖNDÜR · KAYDIR: YAKINLAŞ · BİNAYA TIKLA</span></div>
         <div className="world-caption"><span>İSTANBUL / BEYOĞLU</span><span>{String(day).padStart(2, '0')} {['OCAK','ŞUBAT','MART','NİSAN','MAYIS','HAZİRAN','TEMMUZ','AĞUSTOS','EYLÜL','EKİM','KASIM','ARALIK'][month - 1]} {year} <i>·</i> {String(hour).padStart(2, '0')}:00</span></div>
@@ -4892,12 +4896,12 @@ function App({ session = null, supabase = null, authConfigured = false }) {
                       {!item.service && <div className="production-batch-picker production-batch-picker-compact"><span>ÜRETİM ADEDİ</span><div>
                         {[['1','1'],['5','5'],['10','10'],['max','Maks.']].map(([value,label]) => <button type="button" key={value} className={String(productionBatch)===value?'active':''} onClick={()=>setProductionBatch(value)}>{label}</button>)}
                       </div></div>}
-                      {!itemRecipe.length
-                        ? <button type="button" className="stock-button" disabled>TARİF HENÜZ TANIMLANMADI</button>
-                        : missingParts.length
-                          ? <button type="button" className="stock-button production-primary-action" onClick={()=>stockBusiness(item.id,true)}>TEDARİK ET VE ÜRET</button>
-                          : item.service
-                            ? <button type="button" className="stock-button production-primary-action" onClick={()=>selectBusinessPlan(item.id)}>HİZMETE HAZIR</button>
+                      {item.service
+                        ? <button type="button" className="stock-button production-primary-action" onClick={()=>selectBusinessPlan(item.id)}>HİZMETİ SEÇ VE AKTİF ET</button>
+                        : !itemRecipe.length
+                          ? <button type="button" className="stock-button" disabled>TARİF HENÜZ TANIMLANMADI</button>
+                          : missingParts.length
+                            ? <button type="button" className="stock-button production-primary-action" onClick={()=>stockBusiness(item.id,true)}>TEDARİK ET VE ÜRET</button>
                             : <button type="button" className="stock-button production-primary-action" disabled={itemCapacity<=0} onClick={()=>stockBusiness(item.id)}>{itemCapacity<=0?'ÜRÜN DEPOSU DOLU':itemPending?'ÜRETİME EKLE':'ÜRETİME BAŞLA'}</button>}
                     </div>
                     {itemPending && <div className="production-queue-summary">{itemPending.units} adet sırada · ilk ürün {Math.max(0,Math.ceil((itemPending.readyAt-productionNow)/1000))} sn içinde hazır</div>}

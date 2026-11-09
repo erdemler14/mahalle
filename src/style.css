@@ -1283,9 +1283,15 @@ body{overflow:hidden}
 
 
 /* Short historical context shown when a player selects a building on the map */
-.building-history-popover{position:absolute;z-index:12;left:16px;bottom:66px;width:min(350px,calc(100% - 32px));padding:17px 18px 15px;border:1px solid rgba(128,103,69,.32);border-radius:13px;background:rgba(248,243,231,.97);box-shadow:0 12px 36px rgba(35,31,24,.24);color:#3b342b;backdrop-filter:blur(12px);animation:building-story-in .18s ease-out}
+.building-history-popover{position:absolute;z-index:24;left:16px;bottom:66px;width:min(350px,calc(100% - 32px));max-height:min(42vh,320px);overflow:auto;pointer-events:auto;padding:17px 18px 15px;border:1px solid rgba(128,103,69,.32);border-radius:13px;background:rgba(248,243,231,.98);box-shadow:0 12px 36px rgba(35,31,24,.3);color:#3b342b;backdrop-filter:blur(12px);animation:building-story-in .18s ease-out}
 .building-history-kicker{display:block;margin-bottom:7px;font-size:10px;letter-spacing:1.25px;font-weight:800;color:#856b45}
 .building-history-popover h3{margin:0 28px 8px 0;font:600 18px/1.25 Georgia,'Times New Roman',serif;color:#352d25}
+.person-card-type{display:inline-block;margin:0 0 9px;padding:4px 7px;border-radius:5px;background:#e9dfca;color:#76572b;font:700 9px/1.2 'IBM Plex Mono',monospace;letter-spacing:.08em}
+.historic-person-card.player{border-color:rgba(76,139,128,.6);background:rgba(238,247,242,.98)}
+.historic-person-card.player .person-card-type{background:#d7ebe4;color:#245e55}
+.historic-person-card.resident{border-color:rgba(103,123,145,.5)}
+.building-history-popover .building-history-close{position:absolute;z-index:2;top:7px;right:7px;width:30px;height:30px;display:grid;place-items:center;border:1px solid rgba(87,75,59,.24);border-radius:8px;background:#fffaf0;color:#493d30;font-size:21px;line-height:1;cursor:pointer;pointer-events:auto}
+.building-history-popover .building-history-close:hover{background:#e9dfca}
 .building-history-popover p{margin:0 0 12px;font-size:12px;line-height:1.6;color:#5d5346}
 .building-history-close{position:absolute;top:8px;right:9px;width:30px;height:30px;border:0;border-radius:7px;background:transparent;color:#665746;font-size:24px;cursor:pointer}
 .building-history-close:hover{background:#e8decc}

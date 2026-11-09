@@ -22,6 +22,11 @@ function block(parent,mat,size,pos){
   mesh.position.set(...pos);mesh.castShadow=false;
   parent.add(mesh);return mesh;
 }
+function addPersonHitTarget(group, y = 0.9, radius = 0.52) {
+  const hit = new THREE.Mesh(new THREE.SphereGeometry(radius, 10, 8),
+    new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false,colorWrite:false}));
+  hit.position.y=y; hit.userData.personHitTarget=true; group.add(hit); return hit;
+}
 function makePerson(index,role,gender='male',custom={}){
   const group=new THREE.Group();
   const outfit=custom.coat ? new THREE.MeshStandardMaterial({color:custom.coat,roughness:.98}) : coats[index%coats.length];
@@ -153,6 +158,9 @@ export function createLivingResidents({scene,properties,isMobile=false,onVisit=(
     const home=properties.find(p=>p.id===person.homeId);
     const homeX=home?.x||0, homeZ=home?.z||0;
     rig.group.position.set(homeX,0,homeZ);
+    rig.group.userData.residentId=person.id;
+    rig.group.userData.residentName=person.name || 'Mahalle sakini';
+    addPersonHitTarget(rig.group,0.9,0.54);
     scene.add(rig.group);
     return {...person,...rig,path:[],nextPoint:0,intent:null};
   });
@@ -161,6 +169,16 @@ export function createLivingResidents({scene,properties,isMobile=false,onVisit=(
   playerRig.group.name='Oyuncu karakteri';
   playerRig.group.position.set(2.5,0,1.2);
   playerRig.group.userData.isPlayerAvatar=true;
+  // Distinct enamel marker for the player's own persona.
+  const personaMarker=new THREE.Group();
+  const personaStem=new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,.24,8),new THREE.MeshStandardMaterial({color:'#6eaaa0',metalness:.35,roughness:.45,emissive:'#244d49',emissiveIntensity:.35}));
+  personaStem.position.y=1.34; personaMarker.add(personaStem);
+  const personaRing=new THREE.Mesh(new THREE.TorusGeometry(.19,.045,8,24),new THREE.MeshStandardMaterial({color:'#8fd0c2',metalness:.42,roughness:.35,emissive:'#285c55',emissiveIntensity:.45}));
+  personaRing.position.y=1.55; personaMarker.add(personaRing);
+  const personaDiamond=new THREE.Mesh(new THREE.OctahedronGeometry(.105,0),new THREE.MeshStandardMaterial({color:'#f1e7c9',metalness:.3,roughness:.4}));
+  personaDiamond.position.y=1.55; personaMarker.add(personaDiamond);
+  playerRig.group.add(personaMarker);
+  addPersonHitTarget(playerRig.group,.94,.62);
   scene.add(playerRig.group);
   let playerPath=[],playerNext=0,playerTarget={x:2.5,z:1.2},playerLastDestination=-1;
   function applyAvatarProfile(profile={}){
@@ -188,9 +206,10 @@ export function createLivingResidents({scene,properties,isMobile=false,onVisit=(
     // Larger floating brass identity marker: clearly visible and easy to hit.
     const halo=new THREE.Mesh(new THREE.TorusGeometry(.22,.035,8,20),new THREE.MeshStandardMaterial({color:'#d9b66e',metalness:.45,roughness:.48,emissive:'#70521e',emissiveIntensity:.28}));
     halo.position.set(0,1.78,0);markerGroup.add(halo);
-    const hitTarget=new THREE.Mesh(new THREE.SphereGeometry(.38,10,8),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));
-    hitTarget.position.set(0,1.78,0);hitTarget.userData.historicHitTarget=true;markerGroup.add(hitTarget);
+    const hitTarget=new THREE.Mesh(new THREE.SphereGeometry(.62,12,10),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false,colorWrite:false}));
+    hitTarget.position.set(0,1.55,0);hitTarget.userData.personHitTarget=true;markerGroup.add(hitTarget);
     rig.group.userData.historicMarker=markerGroup;
+    rig.group.userData.residentName=person.name;
     rig.group.name=person.name;
     scene.add(rig.group);
     return {...person,...rig,index:112+i,path:[],nextPoint:0,journeySpeed:.65,goingHome:false,insideUntil:0,visitCount:0};
@@ -296,16 +315,19 @@ export function createLivingResidents({scene,properties,isMobile=false,onVisit=(
     }
   }
   function pick(raycaster){
-    // Resolve the nearest hit to its own resident root. Never infer a person's
-    // identity from a shared mesh index or a mutable array position.
-    const hits=raycaster.intersectObjects(historicResidents.map(n=>n.group),true);
+    // Larger invisible hit volumes make every character easier to select.
+    // Resolve character hits before building hits so a nearby façade cannot steal the click.
+    const roots=[playerRig.group,...historicResidents.map(n=>n.group),...activePeople.map(n=>n.group)];
+    const hits=raycaster.intersectObjects(roots,true);
     for(const hit of hits){
       let root=hit.object;
-      while(root && root.userData.historicPersonId==null)root=root.parent;
+      while(root && !root.userData.isPlayerAvatar && root.userData.historicPersonId==null && root.userData.residentId==null)root=root.parent;
       if(!root)continue;
-      const person=historicResidents.find(npc=>npc.group===root);
-      if(!person || !person.id)continue;
-      return {id:person.id,name:person.name,gender:person.gender,bio:person.bio || person.dialogue,dialogue:person.dialogue};
+      if(root.userData.isPlayerAvatar) return {kind:'player',id:'player-persona',name:avatarProfile.name || 'Benim personam',gender:avatarProfile.gender,bio:avatarProfile.bio || 'Beyoğlu mahallesinde kendi hikâyeni yazıyorsun.',dialogue:'Bu, mahallede oluşturduğun kişisel karakterin.',marker:'PERSONAN'};
+      const historic=historicResidents.find(npc=>npc.group===root);
+      if(historic) return {kind:'historic',id:historic.id,name:historic.name,gender:historic.gender,bio:historic.bio || historic.dialogue,dialogue:historic.dialogue,marker:'TARİHÎ ŞAHSİYET'};
+      const resident=activePeople.find(npc=>npc.group===root);
+      if(resident) return {kind:'resident',id:resident.id,name:resident.name || 'Mahalle sakini',gender:resident.gender,bio:resident.bio || resident.dialogue || 'Beyoğlu’nun gündelik hayatından bir mahalle sakini.',dialogue:resident.dialogue || 'Mahallenin gündelik hayatı burada akıp gidiyor.',marker:'MAHALLE SAKİNİ'};
     }
     return null;
   }
