@@ -2018,12 +2018,14 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     29: [['lavanta-sabun','Lavanta sabunu',17,6.5,6,2],['kokulu-sabun','Kokulu misafir sabunu',22,8.5,5,3],['kolonya-uretim','Kolonya ve esans',28,11,4,4],['otel-seti','Otel sabun seti',36,14,3,5]],
     31: [['pilav','Pilav ve zeytinyağlı',15,5.5,7,2],['kebap','Kebap ve ızgara',22,8,5,3],['tatli-galata','Günün tatlısı',25,9.5,4,4],['usta-sofrasi','Usta sofrası',34,13,3,5]],
     32: [['davetiye-galata','Davetiye ve kartvizit',15,5.5,7,2],['ciltli-eser','Ciltli kitap ve defter',21,7.5,5,3],['afis','Renkli afiş ve ilan',28,10,4,4],['prestij-baski','Prestijli sanat baskısı',36,13,3,5]],
-    33: [['ilk-tiras','Tıraş ve sakal bakımı',6,3.2,8,1],['sakal-bakimi','Sakal bakımı ve kolonya',10,4.8,6,2],['sac-kesimi','Saç kesimi ve şekillendirme',15,6.5,5,3],['damat-tirasi','Damat tıraşı ve bakım',22,9.5,4,4],['ustura-seti','Usta işi tıraş ve sıcak havlu',30,13,3,5]]
+    33: [['ilk-tiras','Tıraş ve sakal bakımı',6,3.2,8,1],['sakal-bakimi','Sakal bakımı ve kolonya',10,4.8,6,2],['sac-kesimi','Saç kesimi ve şekillendirme',15,6.5,5,3],['damat-tirasi','Damat tıraşı ve bakım',22,9.5,4,4],['ustura-seti','Usta işi tıraş ve sıcak havlu',30,13,3,5]],
+    3: [['rihtim-yelken-takimi','Yelken bakım ve onarım takımı',24,58,5,2,55],['rihtim-donanım','Gemi donanım ve bağlantı seti',28,66,4,3,60],['rihtim-seyir','Deniz haritası ve seyir defteri',20,48,5,3,60],['rihtim-kalafat','Tekne kalafat ve bakım kiti',32,76,4,4,68],['rihtim-kaptan','Kaptan ihtiyaç sandığı',42,98,3,5,75]],
+    65: [['rihtim-yelken-takimi','Yelken bakım ve onarım takımı',24,58,5,2,55],['rihtim-donanım','Gemi donanım ve bağlantı seti',28,66,4,3,60],['rihtim-seyir','Deniz haritası ve seyir defteri',20,48,5,3,60],['rihtim-kalafat','Tekne kalafat ve bakım kiti',32,76,4,4,68],['rihtim-kaptan','Kaptan ihtiyaç sandığı',42,98,3,5,75]]
   };
   Object.entries(advancedProducts).forEach(([id, rows]) => {
     if (!tradeCatalog[id]) tradeCatalog[id] = [];
-    rows.forEach(([productId, name, cost, price, units, unlockLevel]) => {
-      if (!tradeCatalog[id].some(item => item.id === productId)) tradeCatalog[id].push({ id: productId, name, cost, price, units, unlockLevel });
+    rows.forEach(([productId, name, cost, price, units, unlockLevel, unlockReputation]) => {
+      if (!tradeCatalog[id].some(item => item.id === productId)) tradeCatalog[id].push({ id: productId, name, cost, price, units, unlockLevel, unlockReputation });
     });
   });
   // Canonical product catalog: only the active commercial properties below are exposed.
@@ -2071,13 +2073,6 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       {id:'smmm-hesap',name:'Aylık hesap ve kasa mutabakatı',cost:0,price:24,units:0,service:true},
       {id:'smmm-ucret',name:'Ücret ve bordro hesabı',cost:0,price:22,units:0,service:true},
       {id:'smmm-ticari',name:'Ticari defter açılış ve kapanış işlemi',cost:0,price:38,units:0,service:true}
-    ],
-    3: [
-      {id:'ambar-depolama',name:'Sandık ve yük depolama hizmeti',cost:10,price:23,units:8,service:true},
-      {id:'ambar-yukleme',name:'Yükleme ve hamal hizmeti',cost:12,price:27,units:8,service:true},
-      {id:'ambar-sevkiyat',name:'Karaköy içi sevkiyat',cost:16,price:36,units:6,service:true},
-      {id:'ambar-sandik',name:'Tahta sevk sandığı',cost:14,price:31,units:6},
-      {id:'ambar-toptan',name:'Ticari mal kabul ve tasnif paketi',cost:20,price:45,units:4,service:true}
     ],
     1: [
       {id:'bakkal-bakliyat',name:'Bakliyat ve kuru erzak',cost:12,price:24,units:8},
@@ -2246,7 +2241,10 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       {id:'cicek-saksi',name:'Saksı çiçeği',cost:14,price:29,units:6},
       {id:'cicek-celenk',name:'Tören ve cenaze çelengi',cost:22,price:46,units:4},
       {id:'cicek-dugun',name:'Düğün ve nişan aranjmanı',cost:26,price:54,units:4},
-      {id:'cicek-kurumsal',name:'Otel ve mağaza haftalık çiçek düzenlemesi',cost:18,price:39,units:5,service:true}
+      {id:'cicek-kurumsal',name:'Otel ve mağaza haftalık çiçek düzenlemesi',cost:18,price:39,units:5,service:true,unlockLevel:3,unlockReputation:58},
+      {id:'cicek-mevsimlik-aranjman',name:'Mevsimlik özel salon aranjmanı',cost:24,price:52,units:4,unlockLevel:3,unlockReputation:60},
+      {id:'cicek-ithal-orkide',name:'Nadir ithal orkide ve saksı bitkisi',cost:32,price:72,units:3,unlockLevel:4,unlockReputation:68},
+      {id:'cicek-otel-abonelik',name:'Otel ve konaklar için haftalık çiçek aboneliği',cost:38,price:86,units:3,service:true,unlockLevel:5,unlockReputation:75}
     ],
     35: [
       {id:'gazino-meze',name:'Gazino meze tabağı',cost:14,price:30,units:8},
@@ -2290,7 +2288,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     ]
   };
   Object.entries(canonicalCatalog).forEach(([id, items]) => { tradeCatalog[id] = items; });
-  Object.values(tradeCatalog).forEach(items => items.forEach((item, index) => { item.unlockLevel = Math.min(5, index + 1); }));
+  Object.values(tradeCatalog).forEach(items => items.forEach((item, index) => { item.unlockLevel = Math.max(1, Number(item.unlockLevel) || Math.min(5, index + 1)); }));
   const businessMaterialProfiles = {
     pharmacy: { name: 'Eczahane', materials: [{id:'ecz-ot',name:'Şifalı ot ve etkin madde',batch:6,cost:9},{id:'ecz-sise',name:'Cam şişe ve kavanoz',batch:6,cost:8},{id:'ecz-sargi',name:'Sargı bezi ve temiz pamuk',batch:6,cost:10},{id:'ecz-ambalaj',name:'Etiket ve kâğıt ambalaj',batch:8,cost:7}], recipes: [['ecz-ot',1,'ecz-sise',1],['ecz-ot',2,'ecz-sise',1],['ecz-ot',1,'ecz-ambalaj',2],['ecz-sargi',2,'ecz-ambalaj',1],['ecz-ot',2,'ecz-sise',2]] },
     food: { name: 'Gıda', materials: [{id:'gida-un',name:'Un ve tahıl',batch:8,cost:8},{id:'gida-yag',name:'Yağ ve süt ürünleri',batch:6,cost:9},{id:'gida-urun',name:'Taze gıda ve et',batch:6,cost:12},{id:'gida-baharat',name:'Baharat ve maya',batch:8,cost:7}], recipes: [['gida-un',2,'gida-yag',1],['gida-urun',1,'gida-baharat',1],['gida-urun',2,'gida-yag',1],['gida-un',1,'gida-baharat',1],['gida-urun',2,'gida-baharat',1]] },
@@ -2633,7 +2631,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     31: { name:'Şeref Usta lokantası', materials:[{id:'seref-balik',name:'Günlük balık ve et',batch:6,cost:16},{id:'seref-meze',name:'Meze, yoğurt ve zeytinyağlı',batch:8,cost:10},{id:'seref-ekmek',name:'Fırın ekmeği ve tahıl',batch:8,cost:9},{id:'seref-yag',name:'Zeytinyağı ve yemeklik yağ',batch:6,cost:11},{id:'seref-baharat',name:'Baharat, limon ve taze ot',batch:8,cost:8}], recipes:[['seref-balik',1,'seref-ekmek',1],['seref-meze',1,'seref-yag',1],['seref-balik',1,'seref-baharat',1]], productRules:[{match:/meze|peynir|zeytin|çorba|corba/i,recipe:[['seref-meze',1],['seref-yag',1],['seref-baharat',1]]},{match:/balık|balik|et|ızgara|izgara|kebap/i,recipe:[['seref-balik',1],['seref-baharat',1],['seref-yag',1]]},{match:/usta|sofra|menü|menu/i,recipe:[['seref-balik',1],['seref-meze',1],['seref-ekmek',1],['seref-yag',1],['seref-baharat',1]]},{match:/yemek|pilav|zeytinyağlı|zeytinyagli|tatlı|tatli/i,recipe:[['seref-ekmek',1],['seref-meze',1],['seref-yag',1]]}] },
     32: { name:'Papadopulos matbaa ve kırtasiye', materials:[{id:'papa-kagit',name:'Baskı kâğıdı ve karton',batch:8,cost:10},{id:'papa-murekkep',name:'Matbaa mürekkebi ve baskı boyası',batch:6,cost:12},{id:'papa-kalem',name:'Kalem, mürekkep hokkası ve cetvel',batch:8,cost:9},{id:'papa-cilt',name:'Cilt bezi ve defter teli',batch:6,cost:11},{id:'papa-harf',name:'Kurşun harf ve klişe',batch:6,cost:13}], recipes:[['papa-kagit',2,'papa-murekkep',1],['papa-kagit',1,'papa-kalem',1],['papa-kagit',1,'papa-cilt',1]], productRules:[{match:/baski|baskı|ilan|evrak|davetiye|afiş|afis/i,recipe:[['papa-kagit',2],['papa-murekkep',1],['papa-harf',1]]},{match:/defter|kırtasiye|kirtasiye|kalem/i,recipe:[['papa-kagit',1],['papa-kalem',1],['papa-cilt',1]]}] },
     33: { name:'Şevket Efendi berberhanesi', materials:[{id:'sev-sabun',name:'Tıraş sabunu ve köpük',batch:8,cost:8},{id:'sev-jilet',name:'Ustura bileme ve jilet sarfı',batch:6,cost:10},{id:'sev-havlu',name:'Temiz havlu ve sıcak su',batch:8,cost:8},{id:'sev-kolonya',name:'Kolonya ve saç losyonu',batch:6,cost:10},{id:'sev-yag',name:'Bıyık balmı ve saç yağı',batch:6,cost:11}], recipes:[['sev-sabun',1,'sev-havlu',1],['sev-jilet',1,'sev-havlu',1],['sev-kolonya',1,'sev-yag',1]], productRules:[{match:/sabun|tıraş|tiras|bakım|bakim/i,recipe:[['sev-sabun',1],['sev-havlu',1]]},{match:/kolonya|saç|sac|losyon|bıyık|biyik/i,recipe:[['sev-kolonya',1],['sev-yag',1]]},{match:/ustura|jilet|tıraş|tiras/i,recipe:[['sev-jilet',1],['sev-havlu',1]]}] },
-    34: { name:'Çiçekçi', materials:[{id:'cicek-taze',name:'Taze kesme çiçek',batch:10,cost:12},{id:'cicek-yesillik',name:'Yeşillik ve dolgu dalı',batch:10,cost:7},{id:'cicek-saksi',name:'Saksı, toprak ve gübre',batch:8,cost:10},{id:'cicek-kagit',name:'Ambalaj kâğıdı ve kurdele',batch:10,cost:6},{id:'cicek-tel',name:'Aranjman teli ve sünger',batch:8,cost:8}], recipes:[['cicek-taze',3,'cicek-kagit',1],['cicek-saksi',1,'cicek-yesillik',1],['cicek-taze',5,'cicek-tel',1]], productRules:[{match:/saksı|saksi|toprak|gübre|gubre/i,recipe:[['cicek-saksi',1],['cicek-yesillik',1]]},{match:/çelenk|tören|toren|aranjman/i,recipe:[['cicek-taze',5],['cicek-tel',1],['cicek-yesillik',2],['cicek-kagit',1]]},{match:/gül|gul|demet|buket|çiçek|cicek|kolonya/i,recipe:[['cicek-taze',3],['cicek-yesillik',1],['cicek-kagit',1]]}] },
+    34: { name:'Çiçekçi', materials:[{id:'cicek-taze',name:'Taze kesme çiçek',batch:10,cost:12},{id:'cicek-yesillik',name:'Yeşillik ve dolgu dalı',batch:10,cost:7},{id:'cicek-saksi',name:'Saksı, toprak ve gübre',batch:8,cost:10},{id:'cicek-kagit',name:'Ambalaj kâğıdı ve kurdele',batch:10,cost:6},{id:'cicek-tel',name:'Aranjman teli ve sünger',batch:8,cost:8}], recipes:[['cicek-taze',3,'cicek-kagit',1],['cicek-saksi',1,'cicek-yesillik',1],['cicek-taze',5,'cicek-tel',1]], productRules:[{match:/saksı|saksi|toprak|gübre|gubre/i,recipe:[['cicek-saksi',1],['cicek-yesillik',1]]},{match:/çelenk|tören|toren|aranjman/i,recipe:[['cicek-taze',5],['cicek-tel',1],['cicek-yesillik',2],['cicek-kagit',1]]},{match:/otel|mağaza|magaza|kurumsal|haftalık|haftalik|düzenleme|duzenleme|abonelik/i,recipe:[['cicek-taze',4],['cicek-yesillik',2],['cicek-kagit',1],['cicek-tel',1]]},{match:/gül|gul|demet|buket|çiçek|cicek|kolonya/i,recipe:[['cicek-taze',3],['cicek-yesillik',1],['cicek-kagit',1]]}] },
     35: { name:'Haliç Gazinosu', materials:[{id:'halic-mutfak',name:'Gazino mutfağı meze ve sıcak yemek stoğu',batch:8,cost:14},{id:'halic-icecek',name:'Şerbet, limonata ve içecek fıçısı',batch:8,cost:11},{id:'halic-servis',name:'Masa örtüsü, tabak ve servis takımı',batch:8,cost:10},{id:'halic-sahne',name:'Nota, sahne aksesuarı ve müzik sarfı',batch:6,cost:13},{id:'halic-yakit',name:'Mutfak ve sahne aydınlatma yakıtı',batch:8,cost:9}], recipes:[['halic-mutfak',1,'halic-servis',1],['halic-icecek',1,'halic-servis',1],['halic-sahne',1,'halic-yakit',1]], productRules:[{match:/meze|lokum|akide|helva|badem|yemek|atıştırmalık|atistirmalik/i,recipe:[['halic-mutfak',1],['halic-servis',1]]},{match:/limonata|şerbet|serbet|içecek|icecek|şarap|sarap/i,recipe:[['halic-icecek',1],['halic-servis',1]]},{match:/müzik|muzik|sahne|musiki|bilet|gazino|giriş|giris|loca|davet/i,recipe:[['halic-sahne',1],['halic-yakit',1]]},{match:/masa|servis|teras/i,recipe:[['halic-mutfak',1],['halic-servis',1]]}] },
     36: { name:'Kohen Hemşireler Kitabevi', materials:[{id:'kohen-yabanci',name:'Yabancı dilde kitap ve roman sandığı',batch:6,cost:15},{id:'kohen-sozluk',name:'Sözlük ve dilbilgisi kitabı partisi',batch:6,cost:14},{id:'kohen-kirtasiye',name:'Mürekkep, defter ve kalem',batch:8,cost:9},{id:'kohen-nadir',name:'Nadir ciltli eser ve ithal yayın',batch:4,cost:20}], recipes:[['kohen-yabanci',1,'kohen-kirtasiye',1],['kohen-sozluk',1,'kohen-kirtasiye',1],['kohen-nadir',1,'kohen-kirtasiye',1]], productRules:[{match:/sözlük|sozluk|dil kitabı|dil kitabi/i,recipe:[['kohen-sozluk',1],['kohen-kirtasiye',1]]},{match:/kırtasiye|kirtasiye|defter|kalem|mürekkep|murekkep/i,recipe:[['kohen-kirtasiye',1]]},{match:/nadir|ciltli|ansiklopedi|eser/i,recipe:[['kohen-nadir',1],['kohen-kirtasiye',1]]},{match:/tarih|seyahat|kitab|roman|kitap|yayın|yayin/i,recipe:[['kohen-yabanci',1],['kohen-kirtasiye',1]]}] },
     39: { name:'Sokrat Kıraathanesi', materials:[{id:'sokrat-kahve',name:'Dibek kahvesi ve kahve çekirdeği',batch:8,cost:12},{id:'sokrat-cay',name:'Çay, şeker ve limon',batch:8,cost:9},{id:'sokrat-serbet',name:'Şerbet özü ve lokum',batch:8,cost:10},{id:'sokrat-fincan',name:'Porselen fincan ve bardak',batch:8,cost:8},{id:'sokrat-nargile',name:'Nargile tütünü, lüle ve köz',batch:6,cost:12},{id:'sokrat-tavla',name:'Tavla takımı ve oyun masası sarfı',batch:6,cost:8}], recipes:[['sokrat-kahve',1,'sokrat-fincan',1],['sokrat-cay',1,'sokrat-fincan',1],['sokrat-serbet',1,'sokrat-fincan',1]], productRules:[{match:/kahve.*lokum|lokum.*kahve/i,recipe:[['sokrat-kahve',1],['sokrat-serbet',1],['sokrat-fincan',1]]},{match:/kahve/i,recipe:[['sokrat-kahve',1],['sokrat-fincan',1]]},{match:/çay|cay|şerbet|serbet/i,recipe:[['sokrat-cay',1],['sokrat-serbet',1],['sokrat-fincan',1]]},{match:/lokum|tatlı|tatli/i,recipe:[['sokrat-serbet',1],['sokrat-cay',1]]},{match:/nargile|köz|koz/i,recipe:[['sokrat-nargile',1],['sokrat-fincan',1]]},{match:/tavla|oyun masası|oyun masasi/i,recipe:[['sokrat-tavla',1],['sokrat-fincan',1]]}] },
@@ -2649,7 +2647,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     if ([53,62].includes(id) || /meyhane|meyhaneci|taverna/.test(propertyName)) return id === 62 ? BUSINESS_SPECIFIC_PROFILES[62] : BUSINESS_SPECIFIC_PROFILES[53];
     // Professional offices sell time and expertise, not physical inventory.
     if ([42, 43, 44, 45, 46].includes(id)) return { name: ({42:'Dr. Deniz Hanım Muayenehanesi',43:'Avukat Nihat Bey Hukuk Bürosu',44:'Diş Tabibi Rauf Bey Kliniği',45:'Mühendislik ve Mimarlık Bürosu',46:'SMMM ve Muhasebe Yazıhanesi'})[id], materials: [], recipes: [], productRules: [] };
-    if (id === 3) return BUSINESS_SPECIFIC_PROFILES[3];
+    if ([3,65].includes(id)) return BUSINESS_SPECIFIC_PROFILES[3];
     if (id === 81) return BUSINESS_SPECIFIC_PROFILES[81];
     // Original lodging properties 4 and 21 have dedicated rules here;
     // the expansion hotels and pansiyon (55 and 56) use their own profiles below.
@@ -2823,7 +2821,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   const getUnlockedBusinessMaterials = (propertyId, level = getBusinessSalesLevel(propertyId), product = null) => {
     const profile = getBusinessProfile(propertyId);
     const professionalOffice = [42, 43, 44, 45, 46].includes(Number(propertyId));
-    const products = (tradeCatalog[propertyId] || []).filter(item => (!professionalOffice || !item.service) && item.price > 0 && (item.unlockLevel || 1) <= level );
+    const products = (tradeCatalog[propertyId] || []).filter(item => (!professionalOffice || !item.service) && item.price > 0 && isBusinessProductUnlocked(propertyId, item) );
     const recipeMaterialIds = new Set();
     products.forEach(item => getBusinessRecipe(propertyId, item).forEach(part => recipeMaterialIds.add(part.id)));
     // Keep the supply list tied to the recipes of products this business can actually make.
@@ -3141,10 +3139,10 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     { id: 'deliver-order', title: 'Sözünü tut', detail: 'Bir müşteri siparişini teslim et.', target: 1, progress: 0, reward: 85, xp: 25, claimed: false }
   ];
   const createDailyOrders = () => {
-    const candidates = owned.filter(id => !rented.includes(id) && (tradeCatalog[id] || []).some(product => product.price > 0 && !product.service && (product.unlockLevel || 1) <= getBusinessSalesLevel(id) ));
+    const candidates = owned.filter(id => !rented.includes(id) && (tradeCatalog[id] || []).some(product => product.price > 0 && !product.service && isBusinessProductUnlocked(id, product) ));
     const ordersForDay = [];
     candidates.forEach(propertyId => {
-      const catalog = (tradeCatalog[propertyId] || []).filter(product => product.price > 0 && !product.service && (product.unlockLevel || 1) <= getBusinessSalesLevel(propertyId) );
+      const catalog = (tradeCatalog[propertyId] || []).filter(product => product.price > 0 && !product.service && isBusinessProductUnlocked(propertyId, product) );
       if (!catalog.length) return;
       const product = catalog[Math.floor(Math.random() * catalog.length)];
       const quantity = 2 + Math.floor(Math.random() * 4);
@@ -3158,7 +3156,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
         const property = properties.find(p => p.id === propertyId);
         const propertyName = property?.name || '';
         const catalog = (tradeCatalog[propertyId] || []).filter(product =>
-          product.price > 0 && !product.service && (product.unlockLevel || 1) <= getBusinessSalesLevel(propertyId) 
+          product.price > 0 && !product.service && isBusinessProductUnlocked(propertyId, product) 
         );
         const eligible = catalog.filter(product => {
           const text = (product.id || '') + ' ' + (product.name || '') + ' ' + propertyName;
@@ -3184,7 +3182,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     return ordersForDay.sort(() => Math.random() - 0.5).slice(0, offerLimit);
   };
   useEffect(() => {
-    const hasOrderEligibleBusiness = owned.some(id => !rented.includes(id) && (tradeCatalog[id] || []).some(product => product.price > 0 && (product.unlockLevel || 1) <= getBusinessSalesLevel(id) ));
+    const hasOrderEligibleBusiness = owned.some(id => !rented.includes(id) && (tradeCatalog[id] || []).some(product => product.price > 0 && isBusinessProductUnlocked(id, product) ));
     if (ordersDateKey !== currentGameDateKey) {
       // Keep accepted orders alive across the in-game day boundary; their own expiry
       // clock decides when they fail. Refresh only the unaccepted daily offers.
@@ -3370,7 +3368,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const autoNotes = [];
     owned.forEach(propertyId => {
       if (!autoSupplyByProperty[propertyId] || rented.includes(propertyId)) return;
-      const products = (tradeCatalog[propertyId] || []).filter(product => (product.unlockLevel || 1) <= getBusinessSalesLevel(propertyId) );
+      const products = (tradeCatalog[propertyId] || []).filter(product => isBusinessProductUnlocked(propertyId, product) );
       const product = products.find(item => item.id === businessPlans[propertyId]) || products[0];
       if (!product || !getBusinessRecipe(propertyId, product).length) return;
       const inventory = getInventoryState(propertyId, autoStockChanges[propertyId] || stockByProperty[propertyId]);
@@ -3579,6 +3577,13 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     let level = 1;
     for (let index = 1; index < thresholds.length; index++) { if (sold >= thresholds[index]) level = index + 1; else break; }
     return Math.min(15, level);
+  };
+  // Premium stock depends on both the shop's mastery and the neighbourhood's commercial vitality.
+  const isBusinessProductUnlocked = (propertyId, item) => {
+    if (!item) return false;
+    const level = getBusinessSalesLevel(propertyId);
+    const reputation = normalizeNeighborhood(neighborhood).reputation;
+    return (Number(item.unlockLevel) || 1) <= level && reputation >= (Number(item.unlockReputation) || 0);
   };
   // Global player progression complements each shop's own sales-based mastery.
   // Catalog tiers 1–2 stay accessible early; tiers 3–5 require player levels 2–4.
@@ -4086,14 +4091,14 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   const stockBusiness = (requestedProductId = null, purchaseMissingMaterials = false) => {
     if (sendAction('stockBusiness')) return;
     const propertyId = active.id;
-    const availableProducts = (tradeCatalog[propertyId] || []).filter(product => (product.unlockLevel || 1) <= getBusinessSalesLevel(propertyId) );
+    const availableProducts = (tradeCatalog[propertyId] || []).filter(product => isBusinessProductUnlocked(propertyId, product) );
     const item = availableProducts.find(product => product.id === requestedProductId) || availableProducts.find(product => product.id === businessPlans[propertyId]) || availableProducts[0];
     if (requestedProductId != null) setBusinessPlans(old => ({ ...old, [propertyId]: requestedProductId }));
     if (!owned.includes(propertyId) || rented.includes(propertyId)) { tell('İşletmeyi yönetmek için sahibi olmalı ve kiraya vermemiş olmalısın.'); return; }
     if (!item || item.price <= 0) { tell('Önce satışa sunacağın ürün veya hizmeti seç.'); return; }
     if (item.service) { tell(item.name + ' bir hizmettir; üretim kuyruğuna girmez. Gerekli sarf malzemelerini tedarik et, hizmet verildikçe tüketilir.'); return; }
     const level = getBusinessSalesLevel(propertyId);
-    if ((item.unlockLevel || 1) > level) { tell(item.name + ' için işletme seviyesi ' + item.unlockLevel + ' gerekli. Şu an seviye ' + level + '.'); return; }
+    if (!isBusinessProductUnlocked(propertyId, item)) { tell(item.name + ' için işletme seviyesi ' + item.unlockLevel + ' gerekli. Şu an seviye ' + level + '.'); return; }
     if (!isPlayerProductUnlocked(item)) { tell(item.name + ' kilitli. Oyuncu seviyesi ' + getPlayerUnlockLevel(item) + ' olduğunda açılacak.'); return; }
     const inventory = getInventoryState(propertyId);
     const recipe = getBusinessRecipe(propertyId, item);
@@ -4805,7 +4810,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
             {(() => {
               const level = getBusinessSalesLevel(active.id);
               const allProducts = (tradeCatalog[active.id] || []).filter(item => item.price > 0);
-              const availableProducts = allProducts.filter(item => (item.unlockLevel || 1) <= level );
+              const availableProducts = allProducts.filter(item => isBusinessProductUnlocked(propertyId, item) );
               const selectedProduct = availableProducts.find(item => item.id === businessPlans[active.id]) || availableProducts[0];
               const profile = getBusinessProfile(active.id);
               const inventory = getInventoryState(active.id);
@@ -4833,14 +4838,14 @@ function App({ session = null, supabase = null, authConfigured = false }) {
               if ([42, 43, 44, 45, 46, 47].includes(Number(active.id))) {
                 const serviceProducts = (tradeCatalog[active.id] || []).filter(item => item.service && item.price > 0);
                 const serviceLevel = getBusinessSalesLevel(active.id);
-                const selectedService = serviceProducts.find(item => item.id === businessPlans[active.id]) || serviceProducts.find(item => (item.unlockLevel || 1) <= serviceLevel ) || serviceProducts[0];
+                const selectedService = serviceProducts.find(item => item.id === businessPlans[active.id]) || serviceProducts.find(item => isBusinessProductUnlocked(active.id, item) ) || serviceProducts[0];
                 const stats = businessStats[active.id] || { unitsSold: 0, revenue: 0, productUnitsSold: {} };
                 return <div className="service-console">
                   <div className="production-console-head"><div><span className="card-label">MESLEKİ HİZMET OFİSİ</span><h3>{profile.name}</h3><p>Ürün, hammadde ve depo yönetimi yok. Hizmet seç; müşteri talebi geldikçe ücret doğrudan kasaya yazılır.</p></div><div className="production-level-chip"><strong>SEV. {serviceLevel}/15</strong><small>{stats.unitsSold} hizmet tamamlandı</small></div></div>
                   <div className="production-quick-stats"><div><span>TOPLAM HİZMET GELİRİ</span><strong>₺{Number(stats.revenue || 0).toLocaleString('tr-TR',{maximumFractionDigits:2})}</strong></div><div><span>HİZMET SAYISI</span><strong>{Number(stats.unitsSold)||0}</strong></div><div><span>TEDARİK GİDERİ</span><strong>₺0</strong></div></div>
-                  <div className="production-materials-head"><strong>Hizmet kataloğu</strong><span>{serviceProducts.filter(item => (item.unlockLevel || 1) <= serviceLevel ).length}/{serviceProducts.length} açık</span></div>
+                  <div className="production-materials-head"><strong>Hizmet kataloğu</strong><span>{serviceProducts.filter(item => isBusinessProductUnlocked(active.id, item) ).length}/{serviceProducts.length} açık</span></div>
                   <p className="service-catalog-intro">Bir hizmet kartını seçerek ofisinin ana hizmetini belirle. Her ofiste tek bir hizmet grubu etkin olur; stok veya ambalaj gerekmez.</p>
-                  <div className="service-catalog-list">{serviceProducts.map(item => { const itemStats = stats.productUnitsSold?.[item.id] || {}; const unlocked = (item.unlockLevel || 1) <= serviceLevel ; const chosen = businessPlans[active.id] === item.id; return <div className={`service-catalog-row ${chosen ? 'service-catalog-row-selected' : ''}`} key={item.id}><div className="service-catalog-copy"><strong>{unlocked ? '◈' : '🔒'} {item.name}</strong><small>{unlocked ? `Tarife ₺${getBusinessSalePrice(active.id,item).toLocaleString('tr-TR',{maximumFractionDigits:2})} · Tamamlanan ${Number(itemStats.units)||0}` : `İşletme seviyesi ${item.unlockLevel} ile açılır`}</small></div><button className="stock-button" disabled={!unlocked} onClick={() => selectBusinessPlan(item.id)}>{chosen ? '✓ SEÇİLİ' : unlocked ? 'HİZMETİ SEÇ' : 'KİLİTLİ'}</button></div>; })}</div>
+                  <div className="service-catalog-list">{serviceProducts.map(item => { const itemStats = stats.productUnitsSold?.[item.id] || {}; const unlocked = isBusinessProductUnlocked(active.id, item) ; const chosen = businessPlans[active.id] === item.id; return <div className={`service-catalog-row ${chosen ? 'service-catalog-row-selected' : ''}`} key={item.id}><div className="service-catalog-copy"><strong>{unlocked ? '◈' : '🔒'} {item.name}</strong><small>{unlocked ? `Tarife ₺${getBusinessSalePrice(active.id,item).toLocaleString('tr-TR',{maximumFractionDigits:2})} · Tamamlanan ${Number(itemStats.units)||0}` : `İşletme seviyesi ${item.unlockLevel} ile açılır`}</small></div><button className="stock-button" disabled={!unlocked} onClick={() => selectBusinessPlan(item.id)}>{chosen ? '✓ SEÇİLİ' : unlocked ? 'HİZMETİ SEÇ' : 'KİLİTLİ'}</button></div>; })}</div>
                   <div className="mastery-panel"><div className="mastery-head"><span className="card-label">MESLEKİ İTİBAR</span><strong>SEV. {serviceLevel}/15</strong></div><div className="mastery-name">{serviceLevel >= 10 ? 'Mahallenin aranan uzmanı' : serviceLevel >= 5 ? 'Yerleşik meslek ofisi' : serviceLevel >= 2 ? 'Tanınırlık kazanıyor' : 'Yeni açılmış ofis'}</div><div className="mastery-meter"><span style={{width: Math.min(100,serviceLevel/15*100)+'%'}} /></div><div className="mastery-foot"><span>{Number(stats.unitsSold)||0} hizmet tamamlandı</span><span>{serviceLevel >= 15 ? 'En üst seviye' : 'Hizmet verdikçe gelişir'}</span></div></div>
                 </div>;
               }
@@ -4855,7 +4860,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
                 </div>
                 <div className="production-product-picker">
                   {allProducts.map(item => {
-                    const unlocked = (item.unlockLevel || 1) <= level ;
+                    const unlocked = isBusinessProductUnlocked(propertyId, item) ;
                     const chosen = selectedProduct?.id === item.id;
                     return <button type="button" key={item.id} className={`production-product-choice ${chosen ? 'active' : ''} ${!unlocked ? 'locked' : ''}`} disabled={!unlocked} onClick={() => setBusinessPlans(old => ({...old,[active.id]:item.id}))}>
                       <strong>{item.name}</strong>
