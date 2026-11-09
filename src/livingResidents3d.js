@@ -91,7 +91,11 @@ const HISTORIC_PEOPLE=[
   {name:'İbrahim Çallı',homeId:75,visitId:70,dialogue:'Bu şehrin her köşesi yeni bir resim olabilir.'},
   {name:'Muhsin Ertuğrul',homeId:72,visitId:74,dialogue:'Elhamra’da bu akşam yeni bir gösteri var.'},
   {name:'Ali Bey',homeId:77,visitId:75,dialogue:'Tramvayla pasaj arasında her gün gidip geliyorum.'},
-  {name:'Ayşe Hanım',homeId:71,visitId:75,dialogue:'Pastanenin önünde bugün çok kalabalık vardı.'}
+  {name:'Ayşe Hanım',homeId:71,visitId:75,dialogue:'Pastanenin önünde bugün çok kalabalık vardı.'},
+  {name:'Reşat Nuri Güntekin',homeId:78,visitId:70,dialogue:'Bir şehrin hikâyesi, sokaklarında yaşayan insanlarla yazılır.'},
+  {name:'Orhan Seyfi Orhon',homeId:79,visitId:71,dialogue:'Bir şiir bazen bir pastane masasındaki sohbetten doğar.'},
+  {name:'Ruşen Eşref Ünaydın',homeId:78,visitId:72,dialogue:'Bugünkü gazete için Pera’dan birkaç satır not almalıyım.'},
+  {name:'Mehmet Âkif Ersoy',homeId:74,visitId:78,dialogue:'Şehrin sesini dinlemek, insanı memleketin kendisine yaklaştırır.'}
 ];
 export function createLivingResidents({scene,properties,isMobile=false}){
   const roster=getCityPopulation(properties);

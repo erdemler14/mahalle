@@ -10,6 +10,7 @@ import { createHarborScene } from './harborScene.js';
 import { applyWaterfrontZoning } from './waterfrontZoning.js';
 import { createPeriodStreetLife } from './periodStreetLife.js';
 import FerryBusinessPanel from './FerryBusinessPanel.jsx';
+import TramwayBusinessPanel from './TramwayBusinessPanel.jsx';
 import SharedOffersPanel from './SharedOffersPanel.jsx';
 import CityLifePanel from './CityLifePanel.jsx';
 import ToyShopInterior, { TOY_SHOP_ID } from './ToyShopInterior.jsx';
@@ -19,6 +20,7 @@ import {
   isBusinessOpen, getSupplyModifier, storyForDay, applyStoryDecision
 } from './cityLifeEngine.js';
 import { FERRY_LICENSE_PRICE, FERRY_UPGRADES, normaliseFerryBusiness, calculateFerryDay, applyFerrySettlement } from './ferryBusiness.js';
+import { TRAMWAY_LICENSE_PRICE, TRAMWAY_UPGRADES, normaliseTramwayBusiness, calculateTramwayDay, applyTramwaySettlement } from './tramwayBusiness.js';
 
 const properties = [
   { id: 1, name: 'Madam Eleni’nin Bakkal ve Şarküterisi', type: 'Ticaret', price: 1890, rent: 26, x: -4.2, z: -1.1, color: '#d9b99c', floors: 3, style: 'Galata taş cephesi' },
@@ -70,11 +72,14 @@ const properties = [
   { id: 70, name: 'Lebon Pastanesi', type: 'İşletme', price: 900, rent: 80, x: -33, z: -14, color: '#d9c0a2', floors: 3, width: 3.4, depth: 2.7, style: 'Pera pastanesi; aynalı vitrin, mermer masalar, süslü kapı ve pirinç detaylar', history: 'Pera edebiyat çevresinin tarihî buluşma noktalarından Lebon Pastanesi.' },
   { id: 71, name: 'Nisuaz Pastanesi', type: 'İşletme', price: 720, rent: 72, x: -39, z: -14, color: '#dac4b4', floors: 3, width: 3.2, depth: 2.6, style: '1923 Pera pastanesi; yüksek cam vitrin, tatlı teşhiri ve ahşap doğrama', history: '1923 yılında açılan, edebiyat ve gece sohbetleriyle tanınan Nisuaz.' },
   { id: 72, name: 'Elhamra Sineması', type: 'İşletme', price: 1800, rent: 145, x: -33, z: -5, color: '#c6a68f', floors: 4, width: 4.5, depth: 3.5, style: 'Elhamra sineması; gösterişli taş giriş, afiş panoları ve tiyatro kanopisi', history: '1920’lerde sinema ve gösterilerin merkezi Elhamra.' },
-  { id: 73, name: 'Maxime Gece Kulübü', type: 'İşletme', price: 500, rent: 15600, x: -39, z: -5, color: '#9a7c73', floors: 3, width: 4.0, depth: 3.0, style: 'Pera caz kulübü; Art Deco esintili cephesi, ışıklı tabela ve orkestra salonu', history: 'Özel erken yatırım: 500 TL giriş bedeliyle satın alındıktan sonra 8.500 TL mülk değerine ulaşır, her oyun günü 520 TL net gelir elde eder.' },
+  { id: 73, name: 'Maxim Gece Kulübü', type: 'İşletme', price: 500, rent: 15600, x: -39, z: -5, color: '#9a7c73', floors: 3, width: 4.0, depth: 3.0, style: 'Pera caz kulübü; Art Deco esintili cephesi, ışıklı tabela ve orkestra salonu', history: 'Özel erken yatırım: 500 TL giriş bedeliyle satın alındıktan sonra 25.000 TL mülk değerine ulaşır, her oyun günü 520 TL net gelir elde eder.' },
   { id: 74, name: 'Tokatlıyan Oteli', type: 'İşletme', price: 2200, rent: 180, x: -33, z: 5, color: '#d1bba4', floors: 5, width: 4.4, depth: 3.6, style: 'Büyük Pera oteli; yüksek kemerli pencereler, balkonlar ve görkemli saçak', history: 'Beyoğlu’nda konaklama ve seçkin davetlerin önemli adresi.' },
   { id: 75, name: 'Çiçek Pasajı', type: 'Ticaret', price: 1350, rent: 120, x: -39, z: 5, color: '#cdb69c', floors: 4, width: 4.5, depth: 3.7, style: 'Avrupa pasajı; kemerli taş giriş, uzun cam çatı ve çoklu dükkân vitrinleri', history: '19. yüzyıldan kalma tarihî pasaj, Pera ticaret ve sosyal hayatının parçası.' },
   { id: 76, name: 'Degüstasyon Lokantası', type: 'İşletme', price: 800, rent: 95, x: -33, z: 14, color: '#bba08d', floors: 2, width: 3.3, depth: 2.8, style: 'Çiçek Pasajı çevresinde tarihî lokanta; ahşap panjur, tente ve vitrin', history: '1928 yılında açılan Degüstasyon lokantası; 1928 öncesi satın alınamaz.', opens: 1928 },
-  { id: 77, name: 'Beyoğlu Elektrikli Tramvay İşletmesi', type: 'İşletme', price: 1400, rent: 150, x: -39, z: 14, color: '#b9b1a0', floors: 2, width: 4.6, depth: 3.7, style: 'Tramvay işletme binası; vagon deposu kapıları, bilet gişesi ve saat panosu', history: '1914 sonrasında hizmet veren elektrikli tramvayları işletebilir; her oyun günü 90 TL ek net gelir getirir.' }
+  { id: 77, name: 'Beyoğlu Elektrikli Tramvay İşletmesi', type: 'İşletme', price: 1400, rent: 150, x: -39, z: 14, color: '#b9b1a0', floors: 2, width: 4.6, depth: 3.7, style: 'Tramvay işletme binası; vagon deposu kapıları, bilet gişesi ve saat panosu', history: '1914 sonrasında hizmet veren elektrikli tramvayları işletebilir; günlük sefer ve bilet geliri sağlar.' },
+  { id: 78, name: 'Pera Matbaa ve Gazete İdaresi', type: 'Atölye', price: 1850, rent: 145, x: -45, z: -14, color: '#b9aa98', floors: 3, width: 4.0, depth: 3.0, style: '1920’ler matbaası; kurşun harf kasaları, baskı presleri, mürekkep kokulu atölye ve gazete idaresi', history: 'Günün gazetesi, ilanlar, ticari evrak ve kitap baskısı aynı binada hazırlanır. Abonelik ve ilan gelirleriyle büyür.' },
+  { id: 79, name: 'Pera Plak ve Gramofon Evi', type: 'Ticaret', price: 1250, rent: 105, x: -51, z: -5, color: '#8f7770', floors: 2, width: 3.4, depth: 2.7, style: 'Ahşap vitrinli plakçı; gramofonlar, taş plaklar ve dinleme köşesi', history: 'Taş plaklar, gramofon iğneleri ve yeni kayıtlar müzik meraklılarını Pera’ya çeker.' },
+  { id: 80, name: 'Pera Çiçek Pasajı Gazete ve Çiçekçi Sokağı', type: 'Ticaret', price: 980, rent: 88, x: -45, z: 5, color: '#c9b59d', floors: 2, width: 3.6, depth: 2.8, style: 'Pasaj girişinde çiçekçi ve gazete-kartpostal tezgâhı; camlı vitrinler ve dökme demir tabela', history: 'Çiçek Pasajı çevresindeki küçük esnafın buluştuğu, çiçek ve basılı yayınların birlikte satıldığı sokak dükkânı.' },
 ];
 
 // Short, period-grounded vignettes give every building a distinct neighbourhood memory.
@@ -137,7 +142,8 @@ Object.assign(properties.find(property => property.id === 41), { x: 27.2, z: 22.
 // Added Pera culture quarter: fixed sites beyond the existing property frontages.
 const peraLocations = {
   70: [-33, -14], 71: [-39, -14], 72: [-33, -5], 73: [-39, -5],
-  74: [-33, 5], 75: [-39, 5], 76: [-33, 14], 77: [-39, 14]
+  74: [-33, 5], 75: [-39, 5], 76: [-33, 14], 77: [-39, 14],
+  78: [-45, -14], 79: [-51, -5], 80: [-45, 5]
 };
 properties.forEach(p => { if (peraLocations[p.id]) { [p.x, p.z] = peraLocations[p.id]; p.rotation = 0; } });
 // Apply after commercial-shop build scripts: property IDs, names, prices and owners never change.
@@ -1583,6 +1589,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     return Number.isFinite(saved.cash) ? saved.cash : STARTING_CASH;
   });
   const [ferryBusiness, setFerryBusiness] = useState(() => normaliseFerryBusiness(saved.ferryBusiness));
+  const [tramwayBusiness, setTramwayBusiness] = useState(() => normaliseTramwayBusiness(saved.tramwayBusiness));
   const [owned, setOwned] = useState(() => Array.isArray(saved.owned) ? saved.owned.filter(id => properties.some(p => p.id === id)) : []);
   const ownedIdsRef = useRef(owned);
   useEffect(() => { ownedIdsRef.current = owned; }, [owned]);
@@ -1705,7 +1712,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   const sendPeerMessage = (message) => { if (connectionRef.current?.open) connectionRef.current.send(message); };
   const sendAction = () => false;
   const publishOwners = (nextOwners) => { setOwnerByProperty(nextOwners); sendPeerMessage({ type: 'world-update', owners: nextOwners, playerName: playerName.trim() || 'Oyuncu' }); };
-  const getMarketValue = property => Math.max(1,Math.round((Number(marketValues[property.id])||property.price)*100)/100);
+  const getMarketValue = property => property.id === 73 ? (owned.includes(73) ? 25000 : 500) : Math.max(1,Math.round((Number(marketValues[property.id])||property.price)*100)/100);
   const updateMarketValues = (nextYear,nextMonth) => setMarketValues(old=>Object.fromEntries(properties.map(property=>{
     const current=Number(old[property.id])||property.price;
     const cycle=Math.sin((nextYear-1923)*0.38+nextMonth*0.72)*0.0035;
@@ -1713,7 +1720,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const area=[1,4,10,12].includes(property.id)?0.0022:[3,17,18].includes(property.id)?-0.0008:0;
     const demand=property.type==='Ticaret'?0.0012:property.type==='Konut'?0.0007:property.type==='Atölye'?0.0003:0;
     const next=current*(1+inflation+area+demand-0.001+(Math.random()-0.5)*0.018);
-    return [property.id,Math.max(property.id === 73 && owned.includes(73) ? 8500 : property.price*0.45,Math.min(property.id === 73 && owned.includes(73) ? 20000 : property.price*3.5,Math.round(next*100)/100))];
+    return [property.id,Math.max(property.id === 73 && owned.includes(73) ? 25000 : property.price*0.45,Math.min(property.id === 73 && owned.includes(73) ? 25000 : property.price*3.5,Math.round(next*100)/100))];
   })));
   // Shared city offers live in Supabase, so both players can answer without
   // PeerJS rooms or being online at the same moment.
@@ -1904,6 +1911,15 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     31: [{ id: 'lokanta-galata', name: 'Günün yemeği', cost: 16, price: 6.5, units: 8 }, { id: 'meze', name: 'Meze ve sıcak çorba', cost: 11, price: 4.5, units: 8 }],
     32: [{ id: 'baski-galata', name: 'Basılı ilan ve evrak', cost: 14, price: 5, units: 8 }, { id: 'kirtasiye-galata', name: 'Defter ve kırtasiye', cost: 10, price: 3.8, units: 8 }],
     34: [{ id: 'buketi', name: 'Mevsim çiçekleri buketi', cost: 10, price: 4, units: 8 }, { id: 'saksi-cicegi', name: 'Saksı çiçeği', cost: 12, price: 4.8, units: 6 }, { id: 'cenaze-celengi', name: 'Çelenk ve tören aranjmanı', cost: 18, price: 7, units: 4 }, { id: 'gul-demeti', name: 'Gül demeti', cost: 14, price: 5.5, units: 6 }],
+    70: [{id:'lebon-kahve',name:'Kahve ve sıcak çikolata',cost:18,price:6.5,units:8},{id:'lebon-pasta',name:'Fransız pastası ve tart',cost:22,price:8.5,units:7},{id:'lebon-milfoy',name:'Milföy ve kremalı tatlı',cost:16,price:6,units:8}],
+    71: [{id:'nisuaz-kahve',name:'Pastane kahvesi',cost:15,price:5.5,units:8},{id:'nisuaz-ekler',name:'Ekler ve küçük pasta',cost:18,price:7,units:8},{id:'nisuaz-limonata',name:'Limonata ve şerbet',cost:10,price:4,units:8}],
+    72: [{id:'elhamra-bilet',name:'Sinema bileti',cost:0,price:8,units:0,service:true},{id:'elhamra-loca',name:'Balkon ve loca bileti',cost:0,price:14,units:0,service:true},{id:'elhamra-program',name:'Gösterim programı',cost:6,price:3,units:10}],
+    74: [{id:'tokatliyan-oda',name:'Otel oda geceliği',cost:0,price:24,units:0,service:true},{id:'tokatliyan-suit',name:'Üst kat oda ve kahvaltı',cost:0,price:38,units:0,service:true},{id:'tokatliyan-salon',name:'Balo ve davet salonu',cost:0,price:55,units:0,service:true}],
+    75: [{id:'cicek-pasaji-dukkani',name:'Pasaj dükkânı günlük kira geliri',cost:0,price:18,units:0,service:true},{id:'cicek-pasaji-cicek',name:'Çiçek ve aranjman',cost:12,price:5,units:8}],
+    76: [{id:'degustasyon-yemek',name:'Günün yemeği',cost:18,price:7,units:8},{id:'degustasyon-sarap',name:'Kadeh şarap',cost:16,price:6,units:8}],
+    78: [{id:'gazete-baski',name:'Günlük gazete baskısı',cost:18,price:7,units:8,production:true},{id:'ilan-baski',name:'Ticari ilan ve duyuru',cost:14,price:6,units:8,production:true},{id:'kitap-baski',name:'Kitap ve risale baskısı',cost:24,price:10,units:6,production:true}],
+    79: [{id:'tas-plak',name:'Taş plak',cost:22,price:9,units:8},{id:'gramofon',name:'Masa üstü gramofon',cost:48,price:20,units:4},{id:'gramofon-igne',name:'Gramofon iğnesi',cost:8,price:3.5,units:10}],
+    80: [{id:'pasaj-buket',name:'Mevsim buketi',cost:12,price:5,units:8},{id:'pasaj-gazete',name:'Günlük gazete',cost:7,price:3,units:10},{id:'pasaj-kartpostal',name:'İstanbul kartpostalı',cost:6,price:2.5,units:10}],
     36: [{id:'kitap-kohen',name:'Yabancı dilde roman',cost:12,price:4.2,units:8},{id:'sozluk-kohen',name:'Sözlük ve dil kitabı',cost:16,price:5.5,units:6},{id:'kirtasiye-kohen',name:'Defter, kalem ve mürekkep',cost:8,price:3,units:10},{id:'nadir-eser-kohen',name:'Nadir ve ciltli eser',cost:24,price:8,units:4}],
     39: [{id:'kahve-sokrat',name:'Türk kahvesi',cost:8,price:3,units:10},{id:'cay-sokrat',name:'Çay ve şerbet',cost:6,price:2.5,units:10},{id:'tatli-sokrat',name:'Lokum ve küçük tatlı',cost:8,price:3.2,units:8}],
     40: [{id:'hamam-giris',name:'Hamam giriş ücreti',cost:5,price:3.5,units:12},{id:'kese',name:'Kese ve köpük hizmeti',cost:7,price:5,units:8},{id:'hamam-havlu',name:'Havlu ve peştamal',cost:8,price:3.5,units:8}],
@@ -2756,13 +2772,13 @@ function App({ session = null, supabase = null, authConfigured = false }) {
         window.localStorage.setItem(saveBackupKey, JSON.stringify(previousSave));
       }
       window.localStorage.setItem(saveKey, JSON.stringify({
-        version: 3, economyVersion: STARTER_ECONOMY_VERSION, playerName, steps, cash, ferryBusiness, neighborhood, owned, rented, unitOwners, unitRented, buildingLevels, selected, showPortfolio, professionId, marketValues,
+        version: 3, economyVersion: STARTER_ECONOMY_VERSION, playerName, steps, cash, ferryBusiness, tramwayBusiness, neighborhood, owned, rented, unitOwners, unitRented, buildingLevels, selected, showPortfolio, professionId, marketValues,
         hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, autoSupplyByProperty, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, eventChain, log: log.slice(0, 5)
       }));
     } catch {
       // The game remains playable if browser storage is disabled or full.
     }
-  }, [playerName, steps, cash, ferryBusiness, neighborhood, owned, rented, unitOwners, unitRented, buildingLevels, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, autoSupplyByProperty, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, eventChain, log]);
+  }, [playerName, steps, cash, ferryBusiness, tramwayBusiness, neighborhood, owned, rented, unitOwners, unitRented, buildingLevels, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, autoSupplyByProperty, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, eventChain, log]);
 
   useEffect(() => {
     if (!session || !supabase) { setCloudReady(true); return undefined; }
@@ -2840,6 +2856,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
           if (Number.isFinite(state.cash)) setCash(state.cash);
           
           if (state.ferryBusiness) setFerryBusiness(normaliseFerryBusiness(state.ferryBusiness));
+          if (state.tramwayBusiness) setTramwayBusiness(normaliseTramwayBusiness(state.tramwayBusiness));
           if (Array.isArray(state.rented)) setRented(state.rented.filter(id => properties.some(p => p.id === id)));
           if (properties.some(p => p.id === state.selected)) setSelected(state.selected);
           if (typeof state.showPortfolio === 'boolean') setShowPortfolio(state.showPortfolio);
@@ -2868,7 +2885,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
           if (Array.isArray(state.log)) setLog(state.log.slice(0, 5));
           if (state.developments && typeof state.developments === 'object') setDevelopments(state.developments);
         } else {
-          const initialState = { version: 2, economyVersion: STARTER_ECONOMY_VERSION, playerName: displayName, steps, cash: STARTING_CASH, ferryBusiness: normaliseFerryBusiness(null), neighborhood: normalizeNeighborhood(null), owned: [], rented, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, autoSupplyByProperty, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, experience, careerReputation, enrolledCourse, certificates, log: log.slice(0, 5), developments };
+          const initialState = { version: 2, economyVersion: STARTER_ECONOMY_VERSION, playerName: displayName, steps, cash: STARTING_CASH, ferryBusiness: normaliseFerryBusiness(null), tramwayBusiness: normaliseTramwayBusiness(null), neighborhood: normalizeNeighborhood(null), owned: [], rented, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, autoSupplyByProperty, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, experience, careerReputation, enrolledCourse, certificates, log: log.slice(0, 5), developments };
           const { error } = await supabase.from('player_saves').upsert({ user_id: userId, state: initialState, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
           if (error) throw error;
           setPlayerName(displayName);
@@ -2898,13 +2915,13 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   useEffect(() => {
     if (!session || !supabase || !cloudReady) return;
     const state = {
-      version: 2, economyVersion: STARTER_ECONOMY_VERSION, playerName, steps, cash, ferryBusiness, neighborhood, owned, rented, selected, showPortfolio, professionId, marketValues,
+      version: 2, economyVersion: STARTER_ECONOMY_VERSION, playerName, steps, cash, ferryBusiness, tramwayBusiness, neighborhood, owned, rented, selected, showPortfolio, professionId, marketValues,
       hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty,
       businessStats, autoSupplyByProperty, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, eventChain, experience, dailySalesLog, dailySalesRevenue, careerReputation, enrolledCourse, certificates, log: log.slice(0, 5), developments
     };
     supabase.from('player_saves').upsert({ user_id: session.user.id, state, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
       .then(({ error }) => { if (error) setMultiplayerStatus('Kayıt eşitlenemedi · ' + error.message); });
-  }, [session?.user?.id, supabase, cloudReady, playerName, steps, cash, ferryBusiness, neighborhood, owned, rented, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, autoSupplyByProperty, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, eventChain, experience, dailySalesLog, dailySalesRevenue, careerReputation, enrolledCourse, certificates, log, developments]);
+  }, [session?.user?.id, supabase, cloudReady, playerName, steps, cash, ferryBusiness, neighborhood, owned, rented, selected, showPortfolio, professionId, marketValues, hour, day, month, year, workHours, careerHours, shopPropertyId, wineBottles, businessPlans, stockByProperty, businessStats, autoSupplyByProperty, pendingProductions, orders, ordersDateKey, dailyTasks, dailyTasksDateKey, eventChain, experience, dailySalesLog, dailySalesRevenue, careerReputation, enrolledCourse, certificates, log, developments, tramwayBusiness]);
 
 
   const tell = (text) => {
@@ -2940,6 +2957,25 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     setFerryBusiness(previous => ({ ...normaliseFerryBusiness(previous), owned: true }));
     tell('Haliç Vapur Hattı işletme imtiyazını ₺200 karşılığında aldın. Yolcu seferlerinin net geliri her oyun günü sonunda tahsil edilir.');
   };
+  const purchaseTramwayLine = () => {
+    if (session && !cloudReady) { tell('Hesap kaydı yüklenmeden tramvay işletmesi başlatılamaz.'); return; }
+    if (!owned.includes(77) || rented.includes(77)) { tell('Önce Beyoğlu Elektrikli Tramvay İşletmesi binasını satın almalısın.'); return; }
+    if (tramwayBusiness.owned) { tell('Tramvay işletmesi zaten faal.'); return; }
+    if (cash < TRAMWAY_LICENSE_PRICE) { tell('Tramvay işletme ruhsatı için ₺' + TRAMWAY_LICENSE_PRICE + ' gerekiyor.'); return; }
+    setCash(value => Math.round((value - TRAMWAY_LICENSE_PRICE) * 100) / 100);
+    setTramwayBusiness(previous => ({ ...normaliseTramwayBusiness(previous), owned: true }));
+    tell('Beyoğlu tramvay işletme ruhsatını aldın. Sefer gelirleri her oyun günü kapanışında hesaplanacak.');
+  };
+  const upgradeTramwayLine = id => {
+    if (session && !cloudReady) return;
+    const item = TRAMWAY_UPGRADES.find(upgrade => upgrade.id === id);
+    if (!item || !tramwayBusiness.owned || tramwayBusiness.upgrades[id]) return;
+    if (cash < item.price) { tell(item.name + ' için ₺' + item.price + ' gerekiyor.'); return; }
+    setCash(value => Math.round((value - item.price) * 100) / 100);
+    setTramwayBusiness(previous => ({ ...normaliseTramwayBusiness(previous), upgrades: { ...normaliseTramwayBusiness(previous).upgrades, [id]: true } }));
+    tell(item.name + ' tamamlandı. Tramvay hattının kapasitesi ve sefer verimliliği arttı.');
+  };
+
   const upgradeFerryLine = id => {
     if (session && !cloudReady) return;
     const item = FERRY_UPGRADES.find(upgrade => upgrade.id === id);
@@ -3129,6 +3165,8 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       const dailyCost = DAILY_LIVING_COST + maintenance + business.costs;
       const ferryClosing = calculateFerryDay(ferryBusiness, { year, month, day });
       if (!ferryClosing.skipped) setFerryBusiness(previous => applyFerrySettlement(previous, ferryClosing));
+      const tramwayClosing = calculateTramwayDay(owned.includes(77) && !rented.includes(77) ? tramwayBusiness : { ...tramwayBusiness, owned: false }, { year, month, day });
+      if (!tramwayClosing.skipped) setTramwayBusiness(previous => applyTramwaySettlement(previous, tramwayClosing));
       const dailyRent = Math.round((properties.filter(p => owned.includes(p.id) && rented.includes(p.id)).reduce((sum, p) => sum + Number(p.rent || 0) / 30, 0) + Object.entries(unitRented).reduce((sum, [key, activeRent]) => { if (!activeRent) return sum; const [pid] = key.split(':'); const p = properties.find(item => item.id === Number(pid)); const unitOwner = unitOwners[key]; return sum + (p && unitOwner?.playerId === playerId ? Number(p.rent || 0) / (p.units || 1) / 30 : 0); }, 0)) * 100) / 100;
       const dryCleanOwned = owned.includes(41) && !rented.includes(41);
       let dryCleanDelta = 0;
@@ -3149,12 +3187,13 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       const reportRows = [...dailySalesLog];
       if (business.entries.length) reportRows.push(...business.entries.map(text => ({ text, kind: 'daily' })));
       if (!ferryClosing.skipped) reportRows.push({ text: 'Haliç vapuru: ' + ferryClosing.passengers + ' yolcu · hasılat +₺' + ferryClosing.gross.toFixed(2) + ' · gider -₺' + ferryClosing.cost.toFixed(2) + ' · net +₺' + ferryClosing.net.toFixed(2), kind: 'daily' });
+      if (!tramwayClosing.skipped) reportRows.push({ text: 'Beyoğlu tramvayı: ' + tramwayClosing.passengers + ' yolcu · hasılat +₺' + tramwayClosing.gross.toFixed(2) + ' · gider -₺' + tramwayClosing.cost.toFixed(2) + ' · net +₺' + tramwayClosing.net.toFixed(2), kind: 'daily' });
       const daySalesRevenue = Math.max(0, Number(dailySalesRevenue) || 0);
-      setZReport({ date: `${day}.${String(month).padStart(2, '0')}.${year}`, nextDate: `${nextDay}.${String(nextMonth).padStart(2, '0')}.${nextMonthRaw > 12 ? year + 1 : year}`, rows: reportRows, totalRevenue: daySalesRevenue + ferryClosing.gross, costs: (Number(dailyCost) || 0) + ferryClosing.cost, rent: Number(dailyRent) || 0, net: Number(dailyRent + daySalesRevenue - dailyCost + dryCleanDelta + ferryClosing.net + (owned.includes(73) && !rented.includes(73) ? 520 : 0) + (owned.includes(77) && !rented.includes(77) ? 90 : 0)) || 0, dryCleanDelta });
+      setZReport({ date: `${day}.${String(month).padStart(2, '0')}.${year}`, nextDate: `${nextDay}.${String(nextMonth).padStart(2, '0')}.${nextMonthRaw > 12 ? year + 1 : year}`, rows: reportRows, totalRevenue: daySalesRevenue + ferryClosing.gross + tramwayClosing.gross, costs: (Number(dailyCost) || 0) + ferryClosing.cost + tramwayClosing.cost, rent: Number(dailyRent) || 0, net: Number(dailyRent + daySalesRevenue - dailyCost + dryCleanDelta + ferryClosing.net + tramwayClosing.net + (owned.includes(73) && !rented.includes(73) ? 520 : 0)) || 0, dryCleanDelta });
       setDailySalesLog([]);
       setDailySalesRevenue(0);
-      const culturalNet = (owned.includes(73) && !rented.includes(73) ? 520 : 0) + (owned.includes(77) && !rented.includes(77) ? 90 : 0);
-      const dailyNet = dailyRent + business.revenue - dailyCost + dryCleanDelta + ferryClosing.net + culturalNet;
+      const culturalNet = (owned.includes(73) && !rented.includes(73) ? 520 : 0);
+      const dailyNet = dailyRent + business.revenue - dailyCost + dryCleanDelta + ferryClosing.net + tramwayClosing.net + culturalNet;
       setCash(v => Math.round((v + dailyNet) * 100) / 100);
       setDay(nextDay);
       setMonth(nextMonth);
@@ -4014,7 +4053,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
         }
         setCash(Number(result.cash));
         setOwned(old => old.includes(active.id)?old:[...old,active.id]);
-        if (active.id === 73) setMarketValues(old => ({ ...old, [73]: 8500 }));
+        if (active.id === 73) setMarketValues(old => ({ ...old, [73]: 25000 }));
         setRented(old=>old.filter(id=>id!==active.id));
         setOwnerByProperty(old=>({...old,[active.id]:{
           playerId:session.user.id,name:result.owner_name||playerName.trim()||'Mahalle sakini'
@@ -4039,7 +4078,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     if (cash < purchasePrice) { tell('Bu mülk için ₺' + purchasePrice.toLocaleString('tr-TR') + ' gerekiyor. Önce çalışıp birikim yap.'); return; }
     setCash(v => v - purchasePrice);
     setOwned(v => [...v, active.id]);
-    if (active.id === 73) setMarketValues(old => ({ ...old, [73]: 8500 }));
+    if (active.id === 73) setMarketValues(old => ({ ...old, [73]: 25000 }));
     setRented(v => v.filter(id => id !== active.id));
     publishOwners({ ...ownerByProperty, [active.id]: { playerId, name: playerName.trim() || (playerId === 'host' ? 'Ev sahibi' : playerId === 'guest' ? 'Oyuncu 2' : 'Ben') } });
     setShopPropertyId(null);
@@ -4414,6 +4453,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
           ferryBusiness={ferryBusiness} stats={businessStats} cash={cash} owned={owned}
           onChoice={onCityStoryChoice} busy={Boolean(session&&!cloudReady)}/>
         <FerryBusinessPanel state={ferryBusiness} cash={cash} year={year} month={month} day={day} hour={hour} onPurchase={purchaseFerryLine} onUpgrade={upgradeFerryLine} disabled={!!session && !cloudReady} />
+        <TramwayBusinessPanel state={tramwayBusiness} cash={cash} year={year} month={month} day={day} hour={hour} propertyOwned={owned.includes(77) && !rented.includes(77)} onPurchase={purchaseTramwayLine} onUpgrade={upgradeTramwayLine} disabled={!!session && !cloudReady} />
         <section className="orders-panel">
           <div className="card-label">MAHALLE PAZARI · SİPARİŞLER</div><h2>Müşteri talepleri</h2>
           <div className="event-chain-card">
