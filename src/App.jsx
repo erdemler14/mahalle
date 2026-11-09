@@ -1931,6 +1931,12 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     32: [{ id: 'baski-galata', name: 'Basılı ilan ve evrak', cost: 14, price: 5, units: 8 }, { id: 'kirtasiye-galata', name: 'Defter ve kırtasiye', cost: 10, price: 3.8, units: 8 }],
     34: [{ id: 'buketi', name: 'Mevsim çiçekleri buketi', cost: 10, price: 4, units: 8 }, { id: 'saksi-cicegi', name: 'Saksı çiçeği', cost: 12, price: 4.8, units: 6 }, { id: 'cenaze-celengi', name: 'Çelenk ve tören aranjmanı', cost: 18, price: 7, units: 4 }, { id: 'gul-demeti', name: 'Gül demeti', cost: 14, price: 5.5, units: 6 }],
     70: [{id:'lebon-kahve',name:'Kahve ve sıcak çikolata',cost:18,price:6.5,units:8},{id:'lebon-pasta',name:'Fransız pastası ve tart',cost:22,price:8.5,units:7},{id:'lebon-milfoy',name:'Milföy ve kremalı tatlı',cost:16,price:6,units:8}],
+    73: [
+      {id:'maxim-caz-gecesi',name:'Caz Orkestrası Gecesi · Genel Giriş',cost:0,price:18,units:0,service:true},
+      {id:'maxim-solist',name:'Konuk Solist Gecesi · Balkon Bileti',cost:0,price:30,units:0,service:true},
+      {id:'maxim-yeni-yil',name:'Büyük Pera Balosu · Davetiye',cost:0,price:42,units:0,service:true},
+      {id:'maxim-vals',name:'Viyana Valsi ve Dans Gecesi · Giriş',cost:0,price:22,units:0,service:true}
+    ],
     71: [{id:'nisuaz-kahve',name:'Pastane kahvesi',cost:15,price:5.5,units:8},{id:'nisuaz-ekler',name:'Ekler ve küçük pasta',cost:18,price:7,units:8},{id:'nisuaz-limonata',name:'Limonata ve şerbet',cost:10,price:4,units:8}],
     72: [{id:'elhamra-bilet',name:'Sinema bileti',cost:0,price:8,units:0,service:true},{id:'elhamra-loca',name:'Balkon ve loca bileti',cost:0,price:14,units:0,service:true},{id:'elhamra-program',name:'Gösterim programı',cost:6,price:3,units:10}],
     74: [{id:'tokatliyan-oda',name:'Otel oda geceliği',cost:0,price:24,units:0,service:true},{id:'tokatliyan-suit',name:'Üst kat oda ve kahvaltı',cost:0,price:38,units:0,service:true},{id:'tokatliyan-salon',name:'Balo ve davet salonu',cost:0,price:55,units:0,service:true}],

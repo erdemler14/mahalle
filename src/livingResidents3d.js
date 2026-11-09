@@ -95,7 +95,12 @@ const HISTORIC_PEOPLE=[
   {name:'Reşat Nuri Güntekin',homeId:78,visitId:70,dialogue:'Bir şehrin hikâyesi, sokaklarında yaşayan insanlarla yazılır.'},
   {name:'Orhan Seyfi Orhon',homeId:79,visitId:71,dialogue:'Bir şiir bazen bir pastane masasındaki sohbetten doğar.'},
   {name:'Ruşen Eşref Ünaydın',homeId:78,visitId:72,dialogue:'Bugünkü gazete için Pera’dan birkaç satır not almalıyım.'},
-  {name:'Mehmet Âkif Ersoy',homeId:74,visitId:78,dialogue:'Şehrin sesini dinlemek, insanı memleketin kendisine yaklaştırır.'}
+  {name:'Mehmet Âkif Ersoy',homeId:74,visitId:78,dialogue:'Şehrin sesini dinlemek, insanı memleketin kendisine yaklaştırır.'},
+  {name:'Peyami Safa',homeId:78,visitId:79,dialogue:'Pera’nın kalabalığında insan ruhunu gözlemlemek mümkün.'},
+  {name:'Cenap Şahabettin',homeId:70,visitId:76,dialogue:'Güzel bir akşam, iyi bir sohbetle tamamlanır.'},
+  {name:'Süleyman Nazif',homeId:74,visitId:78,dialogue:'Şehrin hafızası, sokaklarında ve gazetelerinde yaşar.'},
+  {name:'Hüseyin Rahmi Gürpınar',homeId:75,visitId:70,dialogue:'İstanbul insanını seyretmek, başlı başına bir romandır.'},
+  {name:'Abdülhak Şinasi Hisar',homeId:74,visitId:71,dialogue:'Eski İstanbul’un zarafeti küçük ayrıntılarda saklıdır.'}
 ];
 export function createLivingResidents({scene,properties,isMobile=false}){
   const roster=getCityPopulation(properties);
@@ -115,6 +120,16 @@ export function createLivingResidents({scene,properties,isMobile=false}){
     const home=properties.find(p=>p.id===person.homeId);
     rig.group.position.set((home?.x||0)+(i%2?.8:-.8),0,(home?.z||0)+1.6);
     rig.group.userData.historicPerson=i;
+    // Distinctive, period-appropriate recognition marker: a small brass medallion above the head.
+    const markerGroup=new THREE.Group();
+    const medallion=new THREE.Mesh(new THREE.CircleGeometry(.105,16),new THREE.MeshStandardMaterial({color:'#c5a35d',metalness:.58,roughness:.42,side:THREE.DoubleSide,emissive:'#5b431c',emissiveIntensity:.16}));
+    medallion.position.set(0,1.43,0);markerGroup.add(medallion);
+    const center=new THREE.Mesh(new THREE.CircleGeometry(.057,12),new THREE.MeshStandardMaterial({color:'#f4e6c4',roughness:.8,side:THREE.DoubleSide}));
+    center.position.set(0,1.435,.006);markerGroup.add(center);
+    const pin=new THREE.Mesh(new THREE.SphereGeometry(.035,8,8),new THREE.MeshStandardMaterial({color:'#6c392e',roughness:.7}));
+    pin.position.set(0,1.44,.015);markerGroup.add(pin);
+    rig.group.add(markerGroup);
+    rig.group.userData.historicMarker=markerGroup;
     rig.group.name=person.name;
     scene.add(rig.group);
     return {...person,...rig,index:112+i,path:[],nextPoint:0,journeySpeed:.65,goingHome:false};
