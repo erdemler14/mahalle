@@ -1713,6 +1713,25 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   const sendAction = () => false;
   const publishOwners = (nextOwners) => { setOwnerByProperty(nextOwners); sendPeerMessage({ type: 'world-update', owners: nextOwners, playerName: playerName.trim() || 'Oyuncu' }); };
   const getMarketValue = property => property.id === 73 ? (owned.includes(73) ? 25000 : 500) : Math.max(1,Math.round((Number(marketValues[property.id])||property.price)*100)/100);
+  const getPropertyTaxRate = property => PROPERTY_TAX_RATES[property?.type] || 0.0015;
+  const getProgressivePropertyFactor = position => PROPERTY_TAX_PROGRESSIVE[Math.min(Math.max(0, position - 1), PROPERTY_TAX_PROGRESSIVE.length - 1)] || 2.5;
+  const calculateQuarterlyPropertyTax = () => owned.reduce((total, propertyId, index) => {
+    const property = properties.find(item => item.id === propertyId);
+    if (!property) return total;
+    const marketValue = getMarketValue(property);
+    const quarterlyBase = marketValue * getPropertyTaxRate(property) / 4;
+    return total + quarterlyBase * getProgressivePropertyFactor(index + 1) * 1.10;
+  }, 0);
+  const getBusinessFee = property => {
+    if (!property || !['Ticaret', 'Atölye', 'İşletme'].includes(property.type)) return 0;
+    const licence = property.type === 'İşletme' ? 1.25 : property.type === 'Atölye' ? 1.0 : 0.75;
+    const frontage = [13, 19, 25, 31, 40].includes(property.id) ? 1.25 : 0;
+    return licence + frontage;
+  };
+  const calculateMonthlyBusinessFees = () => owned.reduce((total, propertyId) => {
+    if (rented.includes(propertyId)) return total;
+    return total + getBusinessFee(properties.find(item => item.id === propertyId));
+  }, 0);
   const updateMarketValues = (nextYear,nextMonth) => setMarketValues(old=>Object.fromEntries(properties.map(property=>{
     const current=Number(old[property.id])||property.price;
     const cycle=Math.sin((nextYear-1923)*0.38+nextMonth*0.72)*0.0035;
