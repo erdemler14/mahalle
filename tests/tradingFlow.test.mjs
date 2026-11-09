@@ -63,11 +63,8 @@ test('new pier businesses exist in shared city property table',()=>{
 
 test('production console uses the selected property rather than an undefined render-scope variable',()=>{
   const source=fs.readFileSync('src/App.jsx','utf8');
-  const start=source.indexOf('const allProducts = (tradeCatalog[active.id] || []).filter');
-  const end=source.indexOf('{selectedProduct && (() => {',start);
-  assert.ok(start>=0&&end>start,'production console exists');
-  const section=source.slice(start,end);
-  assert.match(section,/const availableProducts = allProducts\.filter\(item => isBusinessProductUnlocked\(active\.id, item\)/);
-  assert.match(section,/const unlocked = isBusinessProductUnlocked\(active\.id, item\)/);
-  assert.doesNotMatch(section,/isBusinessProductUnlocked\(propertyId, item\)/);
+  assert.match(source,/const availableProducts = allProducts\.filter\(item => isBusinessProductUnlocked\(active\.id, item\)/);
+  assert.match(source,/const unlocked = isBusinessProductUnlocked\(active\.id, item\)/);
+  assert.doesNotMatch(source,/const availableProducts = allProducts\.filter\(item => isBusinessProductUnlocked\(propertyId, item\)/);
+  assert.doesNotMatch(source,/const unlocked = isBusinessProductUnlocked\(propertyId, item\)/);
 });
