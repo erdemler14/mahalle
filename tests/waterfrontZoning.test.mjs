@@ -34,6 +34,22 @@ test('commercial build includes new authentic quay venues as buyable properties'
   }
 });
 
+test('timber mill and Pera design studio are registered as new properties',()=>{
+  const properties=readBuiltProperties();
+  const timber=properties.find(p=>p.id===82);
+  const studio=properties.find(p=>p.id===83);
+  assert.ok(timber && timber.type==='Atölye' && timber.price>0);
+  assert.ok(studio && studio.type==='İşletme' && studio.price>0);
+  const app=fs.readFileSync('src/App.jsx','utf8');
+  assert.match(app,/82: \[\{id:'ahsap',name:'Kesilmiş kereste/);
+  assert.match(app,/83: \[\{id:'st-mimari-proje',name:'İç mekân/);
+  assert.match(app,/getUpstreamMaterialFactor/);
+  assert.match(app,/active\.id === 81 \? 5 : 4/);
+  const migration=fs.readFileSync('supabase/migrations/202611090002_register_timber_and_design_studio.sql','utf8');
+  assert.match(migration,/\(82,'Karaköy Kereste Deposu ve Bıçkıhane'/);
+  assert.match(migration,/\(83,'Pera Mimari ve Tezyinat Stüdyosu'/);
+});
+
 test('backstreet and non-maritime businesses no longer occupy the Haliç',()=>{
   const props=readBuiltProperties();
   for(const id of [41,56,58,60,62]){
