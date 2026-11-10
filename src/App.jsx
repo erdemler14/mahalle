@@ -2032,7 +2032,11 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     80: [{id:'pasaj-buket',name:'Mevsim buketi',cost:12,price:5,units:8},{id:'pasaj-gazete',name:'Günlük gazete',cost:7,price:3,units:10},{id:'pasaj-kartpostal',name:'İstanbul kartpostalı',cost:6,price:2.5,units:10}],
     36: [{id:'kitap-kohen',name:'Yabancı dilde roman',cost:12,price:4.2,units:8},{id:'sozluk-kohen',name:'Sözlük ve dil kitabı',cost:16,price:5.5,units:6},{id:'kirtasiye-kohen',name:'Defter, kalem ve mürekkep',cost:8,price:3,units:10},{id:'nadir-eser-kohen',name:'Nadir ve ciltli eser',cost:24,price:8,units:4}],
     39: [{id:'kahve-sokrat',name:'Türk kahvesi',cost:8,price:3,units:10},{id:'cay-sokrat',name:'Çay ve şerbet',cost:6,price:2.5,units:10},{id:'tatli-sokrat',name:'Lokum ve küçük tatlı',cost:8,price:3.2,units:8}],
-    40: [{id:'hamam-giris',name:'Hamam giriş ücreti',cost:5,price:3.5,units:12},{id:'kese',name:'Kese ve köpük hizmeti',cost:7,price:5,units:8},{id:'hamam-havlu',name:'Havlu ve peştamal',cost:8,price:3.5,units:8}],
+    40: [
+      {id:'hamam-giris',name:'Hamam giriş ücreti',cost:5,price:3.5,units:12,service:true},
+      {id:'kese',name:'Kese ve köpük hizmeti',cost:7,price:5,units:8,service:true},
+      {id:'hamam-havlu',name:'Havlu ve peştamal',cost:8,price:3.5,units:8}
+    ],
     41: [{id:'takim-temizleme',name:'Takım elbise temizliği',cost:12,price:6,units:8},{id:'palto-temizleme',name:'Palto ve kaban temizliği',cost:14,price:7,units:6},{id:'ipek-temizleme',name:'İpek ve hassas kumaş bakımı',cost:18,price:9,units:4},{id:'utu-paket',name:'Ütüleme ve paketleme',cost:8,price:4,units:10}]
   };
 
@@ -3816,7 +3820,9 @@ function App({ session = null, supabase = null, authConfigured = false }) {
         const products = { ...(inventory.products || {}) };
         (tradeCatalog[propertyId] || []).filter(item => item.price > 0).forEach(product => {
           const serviceSale = Boolean(product.service);
-          if (serviceSale && businessPlans[propertyId] !== product.id) return;
+          // Non-professional service venues sell every unlocked service in parallel.
+          // Only professional offices retain the one-selected-service operating model.
+          if (serviceSale && [42,43,44,45,46,47].includes(Number(propertyId)) && businessPlans[propertyId] !== product.id) return;
           const serviceRecipe = serviceSale ? getBusinessRecipe(propertyId, product) : [];
           const serviceMaterialLimit = serviceRecipe.length ? serviceRecipe.reduce((limit, part) => Math.min(limit, Math.floor((Number(inventory.materials?.[part.id]) || 0) / part.qty)), Infinity) : Infinity;
           const stock = Math.max(0, Number(products[product.id]) || 0);
@@ -5035,14 +5041,14 @@ function App({ session = null, supabase = null, authConfigured = false }) {
                   <div className="production-console-head"><div><span className="card-label">MESLEKİ HİZMET OFİSİ</span><h3>{profile.name}</h3><p>Ürün, hammadde ve depo yönetimi yok. Hizmet seç; müşteri talebi geldikçe ücret doğrudan kasaya yazılır.</p></div><div className="production-level-chip"><strong>SEV. {serviceLevel}/15</strong><small>{stats.unitsSold} hizmet tamamlandı</small></div></div>
                   <div className="production-quick-stats"><div><span>TOPLAM HİZMET GELİRİ</span><strong>₺{Number(stats.revenue || 0).toLocaleString('tr-TR',{maximumFractionDigits:2})}</strong></div><div><span>HİZMET SAYISI</span><strong>{Number(stats.unitsSold)||0}</strong></div><div><span>TEDARİK GİDERİ</span><strong>₺0</strong></div></div>
                   <div className="production-materials-head"><strong>Hizmet kataloğu</strong><span>{serviceProducts.filter(item => isBusinessProductUnlocked(active.id, item) ).length}/{serviceProducts.length} açık</span></div>
-                  <p className="service-catalog-intro">Bir hizmet kartını seçerek ofisinin ana hizmetini belirle. Her ofiste tek bir hizmet grubu etkin olur; stok veya ambalaj gerekmez.</p>
+                  <p className="service-catalog-intro">Hizmetler müşteri talebine göre otomatik sunulur. Bir hizmeti seçmen yalnızca ana hizmet tercihini belirler; diğer açık hizmetler de satışa devam eder. Stok veya ambalaj gerekmez.</p>
                   <div className="service-catalog-list">{serviceProducts.map(item => { const itemStats = stats.productUnitsSold?.[item.id] || {}; const unlocked = isBusinessProductUnlocked(active.id, item) ; const chosen = businessPlans[active.id] === item.id; return <div className={`service-catalog-row ${chosen ? 'service-catalog-row-selected' : ''}`} key={item.id}><div className="service-catalog-copy"><strong>{unlocked ? '◈' : '🔒'} {item.name}</strong><small>{unlocked ? `Tarife ₺${getBusinessSalePrice(active.id,item).toLocaleString('tr-TR',{maximumFractionDigits:2})} · Tamamlanan ${Number(itemStats.units)||0}` : `İşletme seviyesi ${item.unlockLevel} ile açılır`}</small></div><button className="stock-button" disabled={!unlocked} onClick={() => selectBusinessPlan(item.id)}>{chosen ? '✓ SEÇİLİ' : unlocked ? 'HİZMETİ SEÇ' : 'KİLİTLİ'}</button></div>; })}</div>
                   <div className="mastery-panel"><div className="mastery-head"><span className="card-label">MESLEKİ İTİBAR</span><strong>SEV. {serviceLevel}/15</strong></div><div className="mastery-name">{serviceLevel >= 10 ? 'Mahallenin aranan uzmanı' : serviceLevel >= 5 ? 'Yerleşik meslek ofisi' : serviceLevel >= 2 ? 'Tanınırlık kazanıyor' : 'Yeni açılmış ofis'}</div><div className="mastery-meter"><span style={{width: Math.min(100,serviceLevel/15*100)+'%'}} /></div><div className="mastery-foot"><span>{Number(stats.unitsSold)||0} hizmet tamamlandı</span><span>{serviceLevel >= 15 ? 'En üst seviye' : 'Hizmet verdikçe gelişir'}</span></div></div>
                 </div>;
               }
               return <>
                 <div className="production-console-head">
-                  <div><span className="card-label">{selectedProduct?.service ? 'HİZMET İŞLETMESİ' : 'ÜRETİM ATÖLYESİ'}</span><h3>{profile.name}</h3><p>{selectedProduct?.service ? 'Hizmeti seç; gerekli sarf malzemelerini tedarik et. Hizmet verildikçe malzeme tüketilir.' : 'Ürünü seç; o ürüne ait hammaddeleri tedarik et ve üretimi sıraya koy.'}</p></div>
+                  <div><span className="card-label">{selectedProduct?.service ? 'HİZMET İŞLETMESİ' : 'ÜRETİM ATÖLYESİ'}</span><h3>{profile.name}</h3><p>{selectedProduct?.service ? 'Hizmetler müşteri trafiğine göre otomatik sunulur. Sarf malzemesi gereken hizmetlerde tüketim satış sırasında depodan düşer.' : 'Ürünü seç; o ürüne ait hammaddeleri tedarik et ve üretimi sıraya koy.'}</p></div>
                   <div className="production-level-chip"><strong>SEV. {level}/5</strong><small>{level === 5 ? 'Usta işletme' : Math.max(0, nextTarget - sold) + ' satışla seviye atla'}</small></div>
                 </div>
                 {(() => {
@@ -5137,7 +5143,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
           {owned.includes(active.id) && (rented.includes(active.id)
             ? <div className="property-note"><span>i</span> Bu mülk kirada. İşletme satışları kiracılık bitene kadar durur.</div>
             : (tradeCatalog[active.id] || []).some(item => item.price > 0)
-              ? <div className="property-note"><span>i</span> İşletme otomatik çalışır; ürün grubu seçip stok tedarik etmen yeterli.</div>
+              ? <div className="property-note"><span>i</span> İşletme otomatik çalışır. Ürün satan yerlerde stok üret; hizmet işletmelerinde açık hizmetler müşteri trafiğine göre otomatik satılır.</div>
               : <div className="property-note"><span>i</span> Bu mülk şu an kira geliri veya başka kullanım için değerlendirilebilir.</div> )}
           <div className="property-note"><span>i</span> Mülk fiyatları şimdilik oyun dengesi için belirlenmiştir.</div>
         </section>
