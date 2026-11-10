@@ -86,3 +86,23 @@ test('professional offices retain their explicitly selected service model',async
   assert.match(app,/HİZMETİ SEÇ/);
   assert.match(app,/Hizmetler müşteri talebine göre otomatik sunulur/);
 });
+
+
+test('service venues enforce daily capacity across hourly sales and preserve usage for the game day',async()=>{
+  const fs=await import('node:fs');
+  const app=fs.readFileSync('src/App.jsx','utf8');
+  for (const [id,product,capacity] of [['40','hamam-giris','36'],['72','elhamra-bilet','96'],['74','tokatliyan-oda','24']]) {
+    assert.match(app,new RegExp(id+':\\s*\\{[^}]*'+product+':'+capacity));
+  }
+  assert.match(app,/serviceCapacityDate === serviceDateKey/);
+  assert.match(app,/serviceCapacityUsed/);
+  assert.match(app,/capacityRemaining <= 0/);
+  assert.match(app,/serviceDemandUnits/);
+});
+
+test('service venues do not require warehouse stock to sell admission and lodging services',async()=>{
+  const fs=await import('node:fs');
+  const app=fs.readFileSync('src/App.jsx','utf8');
+  assert.match(app,/product\?\.service && \[40,42,43,44,45,46,47,72,73,74,75\]\.includes\(id\)\) return \[\]/);
+  assert.match(app,/serviceOperatingCost = \(\{40:12,72:16,73:24,74:22,75:8\}\)/);
+});
