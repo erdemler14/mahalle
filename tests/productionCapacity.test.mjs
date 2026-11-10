@@ -103,6 +103,7 @@ test('service venues enforce daily capacity across hourly sales and preserve usa
 test('service venues do not require warehouse stock to sell admission and lodging services',async()=>{
   const fs=await import('node:fs');
   const app=fs.readFileSync('src/App.jsx','utf8');
-  assert.match(app,/product\?\.service && \[40,42,43,44,45,46,47,72,73,74,75\]\.includes\(id\)\) return \[\]/);
-  assert.match(app,/serviceOperatingCost = \(\{40:12,72:16,73:24,74:22,75:8\}\)/);
+  assert.match(app,/if \(product\?\.service\) return \[\]/);
+  assert.match(app,/serviceOperatingCost = \(\{33:8,35:18,40:12,55:10,56:18,57:16,58:20,60:12,61:8,63:10,66:8,72:16,73:24,74:22,75:8\}\)/);
+  assert.match(app,/Number\(serviceDailyCapacity\[propertyId\]\?\.\[product\.id\]\) \|\| 24/);
 });
