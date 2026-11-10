@@ -143,7 +143,11 @@ const EXTRA_TRADE_CATALOG = {
     { id: 'rihtim-emanet', name: 'Sandık ve bagaj emanet hizmeti', cost: 0, price: 9, units: 0, service: true },
     { id: 'rihtim-yuk', name: 'Küçük yük sevkiyatı', cost: 0, price: 14, units: 0, service: true },
     { id: 'rihtim-posta', name: 'Posta ve paket teslim hizmeti', cost: 0, price: 7, units: 0, service: true }
-  ]
+  ],
+  84: [{id:'pera-simit',name:'Susamlı simit',cost:18,price:5.5,units:10},{id:'pera-acma',name:'Tereyağlı açma',cost:20,price:6.5,units:8},{id:'pera-corek',name:'Sıcak çörek',cost:16,price:5,units:8},{id:'pera-ozel-simit',name:'Özel susamlı simit tepsisi',cost:28,price:9,units:6}],
+  85: [{id:'antika-konsol',name:'Oyma ahşap konsol',cost:68,price:145,units:3},{id:'antika-ayna',name:'Avrupa işi çerçeveli ayna',cost:42,price:92,units:4},{id:'antika-cep-saati',name:'Koleksiyon cep saati',cost:56,price:128,units:3},{id:'antika-sandalye',name:'Restorasyonlu maun sandalye',cost:36,price:82,units:4},{id:'antika-saat',name:'Masa üstü kurmalı saat',cost:48,price:108,units:3}],
+  86: [{id:'sutte-peynir',name:'Olgunlaştırılmış Avrupa peyniri',cost:28,price:12,units:8},{id:'sutte-salam',name:'Dana salam ve jambon',cost:32,price:14,units:8},{id:'sutte-fume',name:'Füme et seçkisi',cost:36,price:16,units:6},{id:'sutte-zeytin',name:'Zeytin ve soğuk meze',cost:18,price:8,units:8},{id:'sutte-ithal',name:'İthal şarküteri sepeti',cost:48,price:22,units:5}],
+  87: [{id:'gulmez-portre',name:'Stüdyo portresi',cost:20,price:18,units:6},{id:'gulmez-aile',name:'Aile fotoğrafı ve baskı',cost:24,price:22,units:6},{id:'gulmez-kartpostal',name:'İstanbul manzara kartpostalı',cost:14,price:12,units:10},{id:'gulmez-negatif',name:'Cam negatif baskısı',cost:18,price:16,units:6},{id:'gulmez-album',name:'Ciltli fotoğraf albümü',cost:28,price:26,units:4}]
 };
 
 // Catalog cost is the total purchase price for the whole stock batch, not a per-unit cost.
