@@ -2825,9 +2825,9 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   const getBusinessRecipe = (propertyId, product) => {
     const id = Number(propertyId);
     const key = String((product?.id || '') + ' ' + (product?.name || '')).toLocaleLowerCase('tr-TR');
-    // Admission and treatment services are capacity-limited, not blocked by a product warehouse.
-    // Their operating consumables are represented in the venue's daily operating costs.
-    if (product?.service && [40,42,43,44,45,46,47,72,73,74,75].includes(id)) return [];
+    // Services are sold through customer demand and staff/venue capacity, never through
+    // finished-goods inventory. Consumables are reflected in the venue's operating costs.
+    if (product?.service) return [];
     // Explicit product-to-supply recipes prevent a shop's entire range from sharing one generic recipe.
     const profile = getBusinessProfile(propertyId);
     if (!profile.materials?.length || !profile.recipes?.length) return [];
@@ -3789,7 +3789,17 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const serviceDateKey = [year,month,day].join('-');
     const serviceCapacityUsed = {};
     const serviceDailyCapacity = {
+      33: {'berber-tiras':18,'berber-sakal':14,'berber-sac':16,'berber-bakim':12},
+      35: {'halic-meze':55,'halic-icecek':60,'halic-masa':24,'halic-musiki':40},
       40: {'hamam-giris':36,'kese':18},
+      55: {'pansiyon-gece':12,'pansiyon-kahvalti':18},
+      56: {'otel-oda':24,'otel-suit':8,'otel-yemek':30},
+      57: {'sinema-bilet':96},
+      58: {'gazino-giris':55,'gazino-masa':24,'gazino-muzik':40},
+      60: {'hamam-giris':36,'hamam-kese':18},
+      61: {'han-oda':8,'han-depo':16},
+      63: {'iskele-kahve':32,'iskele-serbet':28,'iskele-ikram':20},
+      66: {'rihtim-emanet':18,'rihtim-yuk':16,'rihtim-posta':28},
       72: {'elhamra-bilet':96,'elhamra-loca':20},
       73: {'maxim-caz-gecesi':70,'maxim-solist':24,'maxim-yeni-yil':36,'maxim-vals':48},
       74: {'tokatliyan-oda':24,'tokatliyan-suit':8,'tokatliyan-salon':2},
@@ -3917,7 +3927,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       if (!property || !['İşletme', 'Atölye', 'Ticaret', 'Depo'].includes(property.type)) return;
       const product = (tradeCatalog[propertyId] || []).find(item => item.id === businessPlans[propertyId]) || (tradeCatalog[propertyId] || []).find(item => item.price > 0);
       if (!product || product.price <= 0) return;
-      const serviceOperatingCost = ({40:12,72:16,73:24,74:22,75:8})[propertyId] || 0;
+      const serviceOperatingCost = ({33:8,35:18,40:12,55:10,56:18,57:16,58:20,60:12,61:8,63:10,66:8,72:16,73:24,74:22,75:8})[propertyId] || 0;
       const dailyCost = (property.type === 'İşletme' ? 4.5 : property.type === 'Atölye' ? 3.5 : 2.5) + serviceOperatingCost;
       operatingCosts += dailyCost;
       const hasStock = product?.service ? getBusinessRecipe(propertyId, product).every(part => (Number(getInventoryState(propertyId).materials?.[part.id]) || 0) >= part.qty) : getTotalStock(propertyId) > 0;
@@ -5112,7 +5122,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
                 {selectedProduct && (() => {
                   const item = selectedProduct;
                   const itemRecipe = getBusinessRecipe(active.id,item);
-                  const serviceCapacityLimit = ({40:{'hamam-giris':36,'kese':18},72:{'elhamra-bilet':96,'elhamra-loca':20},73:{'maxim-caz-gecesi':70,'maxim-solist':24,'maxim-yeni-yil':36,'maxim-vals':48},74:{'tokatliyan-oda':24,'tokatliyan-suit':8,'tokatliyan-salon':2},75:{'cicek-pasaji-dukkani':8}}[active.id] || {})[item.id] || null;
+                  const serviceCapacityLimit = ({33:{'berber-tiras':18,'berber-sakal':14,'berber-sac':16,'berber-bakim':12},35:{'halic-meze':55,'halic-icecek':60,'halic-masa':24,'halic-musiki':40},40:{'hamam-giris':36,'kese':18},55:{'pansiyon-gece':12,'pansiyon-kahvalti':18},56:{'otel-oda':24,'otel-suit':8,'otel-yemek':30},57:{'sinema-bilet':96},58:{'gazino-giris':55,'gazino-masa':24,'gazino-muzik':40},60:{'hamam-giris':36,'hamam-kese':18},61:{'han-oda':8,'han-depo':16},63:{'iskele-kahve':32,'iskele-serbet':28,'iskele-ikram':20},66:{'rihtim-emanet':18,'rihtim-yuk':16,'rihtim-posta':28},72:{'elhamra-bilet':96,'elhamra-loca':20},73:{'maxim-caz-gecesi':70,'maxim-solist':24,'maxim-yeni-yil':36,'maxim-vals':48},74:{'tokatliyan-oda':24,'tokatliyan-suit':8,'tokatliyan-salon':2},75:{'cicek-pasaji-dukkani':8}}[active.id] || {})[item.id] || (item.service ? 24 : null);
                   const serviceUsedToday = businessStats[active.id]?.serviceCapacityDate === [year,month,day].join('-')
                     ? Number(businessStats[active.id]?.serviceCapacityUsed?.[item.id]) || 0 : 0;
                   const serviceRemainingToday = serviceCapacityLimit === null ? null : Math.max(0,serviceCapacityLimit-serviceUsedToday);
