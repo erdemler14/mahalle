@@ -91,7 +91,7 @@ test('professional offices retain their explicitly selected service model',async
 test('service venues enforce daily capacity across hourly sales and preserve usage for the game day',async()=>{
   const fs=await import('node:fs');
   const app=fs.readFileSync('src/App.jsx','utf8');
-  for (const config of ["40: {'hamam-giris':36,'kese':18}","72: {'elhamra-bilet':96,'elhamra-loca':20}","74: {'tokatliyan-oda':24,'tokatliyan-suit':8,'tokatliyan-salon':2}"]) {
+  for (const config of ["40:{'hamam-giris':36,'kese':18}","72:{'elhamra-bilet':96,'elhamra-loca':20}","74:{'tokatliyan-oda':24,'tokatliyan-suit':8,'tokatliyan-salon':2}"]) {
     assert.ok(app.includes(config), 'missing venue capacity: ' + config);
   }
   assert.match(app,/serviceCapacityDate === serviceDateKey/);
