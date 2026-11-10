@@ -68,3 +68,21 @@ test('a stale production-processing lock is released so a stalled job can be ret
   assert.match(app,/setTimeout\(\(\) => \{ delete productionProcessingRef\.current\[lockKey\]; \}, 1200\)/);
   assert.match(app,/if \(completedUnits <= 0\) \{\s*delete productionProcessingRef\.current\[lockKey\]/);
 });
+
+
+test('non-professional service venues sell all unlocked services without a selected plan',async()=>{
+  const fs=await import('node:fs');
+  const app=fs.readFileSync('src/App.jsx','utf8');
+  assert.match(app,/if \(serviceSale && \[42,43,44,45,46,47\]\.includes\(Number\(propertyId\)\) && businessPlans\[propertyId\] !== product\.id\) return/);
+  assert.match(app,/40:\s*\[[\s\S]*?id:'hamam-giris'[\s\S]*?service:true[\s\S]*?id:'kese'[\s\S]*?service:true/);
+  assert.match(app,/72:\s*\[\{id:'elhamra-bilet'[\s\S]*?service:true/);
+  assert.match(app,/74:\s*\[\{id:'tokatliyan-oda'[\s\S]*?service:true/);
+});
+
+test('professional offices retain their explicitly selected service model',async()=>{
+  const fs=await import('node:fs');
+  const app=fs.readFileSync('src/App.jsx','utf8');
+  assert.match(app,/MESLEKİ HİZMET OFİSİ/);
+  assert.match(app,/HİZMETİ SEÇ/);
+  assert.match(app,/Hizmetler müşteri talebine göre otomatik sunulur/);
+});
