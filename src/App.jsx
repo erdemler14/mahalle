@@ -2805,6 +2805,30 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     // Explicit product-to-supply recipes prevent a shop's entire range from sharing one generic recipe.
     const profile = getBusinessProfile(propertyId);
     if (!profile.materials?.length || !profile.recipes?.length) return [];
+    // Stable, ID-keyed recipes for the flower shop and tobacco shop.
+    // Name-based rules alone are fragile when catalog labels are edited or localized.
+    const explicitRecipes = {
+      34: {
+        'buketi': [['cicek-taze',3],['cicek-yesillik',1],['cicek-kagit',1]],
+        'saksi-cicegi': [['cicek-saksi',1],['cicek-yesillik',1]],
+        'cenaze-celengi': [['cicek-taze',5],['cicek-tel',1],['cicek-yesillik',2],['cicek-kagit',1]],
+        'gul-demeti': [['cicek-taze',3],['cicek-yesillik',1],['cicek-kagit',1]]
+      },
+      81: {
+        'karakoy-tutun': [['karakoy-tutun',1],['karakoy-kagit',1]],
+        'karakoy-pipo': [['karakoy-pipo',1],['karakoy-tabaka',1]],
+        'karakoy-kagit': [['karakoy-kagit',1],['karakoy-tabaka',1]],
+        'karakoy-nargile': [['karakoy-nargile',1],['karakoy-tabaka',1]],
+        'karakoy-tabaka': [['karakoy-tabaka',1],['karakoy-kagit',1]]
+      }
+    };
+    const explicitRecipe = explicitRecipes[id]?.[product?.id];
+    if (explicitRecipe) {
+      const valid = explicitRecipe.every(([materialId,qty]) =>
+        profile.materials.some(material => material.id === materialId) && Number(qty) > 0
+      );
+      if (valid) return explicitRecipe.map(([materialId,qty]) => ({id:materialId,qty}));
+    }
     if (id === 73) {
       const maximRecipe = [['maxim-orkestra',1],['maxim-isik',1],['maxim-bilet',1],['maxim-salon',1]];
       if (['maxim-caz-gecesi','maxim-solist','maxim-yeni-yil','maxim-vals'].includes(product?.id)) return maximRecipe.map(([materialId,qty])=>({id:materialId,qty}));

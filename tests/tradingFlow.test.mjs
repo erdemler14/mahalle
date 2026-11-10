@@ -97,3 +97,18 @@ test('accepted customer orders can release finished-goods space without liquidat
   assert.match(source,/getBusinessSalePrice\(order\.propertyId,item\.product\) \* 0\.8/);
   assert.match(source,/SİPARİŞ İÇİN DEPOYU BOŞALT/);
 });
+
+
+test('flower shop products all have explicit valid production recipes',()=>{
+  const source=fs.readFileSync('src/App.jsx','utf8');
+  for(const id of ['buketi','saksi-cicegi','cenaze-celengi','gul-demeti']) {
+    assert.match(source,new RegExp("'"+id+"': \\[\\['cicek-"));
+  }
+  assert.match(source,/const explicitRecipe = explicitRecipes\[id\]\?\.\[product\?\.id\]/);
+});
+test('tobacco shop products all have explicit valid production recipes',()=>{
+  const source=fs.readFileSync('src/App.jsx','utf8');
+  for(const id of ['karakoy-tutun','karakoy-pipo','karakoy-kagit','karakoy-nargile','karakoy-tabaka']) {
+    assert.match(source,new RegExp("'"+id+"': \\[\\['karakoy-"));
+  }
+});
