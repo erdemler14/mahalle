@@ -46,6 +46,7 @@ test('App loads repaired queues and uses one shared capacity counter for all bus
   const fs=await import('node:fs');
   const app=fs.readFileSync('src/App.jsx','utf8');
   assert.match(app,/normalizePendingProductions\(saved\.pendingProductions\)/);
+  assert.match(app,/setPendingProductions\(normalizePendingProductions\(state\.pendingProductions\)\)/);
   assert.match(app,/countPendingProductionUnits\(pendingProductions, propertyId\)/);
   assert.match(app,/getStockCapacity\(propertyId\)/);
 });
