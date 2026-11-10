@@ -80,3 +80,20 @@ test('only health and pharmacy advanced courses require owned premises and all b
   assert.match(source,/universityCourseBranches\.map\(branch=>/);
   assert.doesNotMatch(source,/universityCourseBranches\.filter\(branch=>!branch\.premiseId\|\|owned\.includes\(branch\.premiseId\)\)/);
 });
+
+
+test('customer orders cannot be accepted when finished-goods capacity cannot cover the missing quantity',()=>{
+  const source=fs.readFileSync('src/App.jsx','utf8');
+  const start=source.indexOf('const acceptCustomerOrder = (orderId) => {');
+  const end=source.indexOf('const deliverCustomerOrder =',start);
+  const section=source.slice(start,end);
+  assert.match(section,/requiredProduction > freeSpace/);
+  assert.match(section,/getStockCapacity\(order\.propertyId\) - getTotalStock\(order\.propertyId\) - getPendingUnits\(order\.propertyId\)/);
+});
+test('accepted customer orders can release finished-goods space without liquidating stock reserved for other accepted orders',()=>{
+  const source=fs.readFileSync('src/App.jsx','utf8');
+  assert.match(source,/const makeRoomForCustomerOrder = \(orderId\) =>/);
+  assert.match(source,/reservedProducts = new Set\(orders\.filter/);
+  assert.match(source,/getBusinessSalePrice\(order\.propertyId,item\.product\) \* 0\.8/);
+  assert.match(source,/SİPARİŞ İÇİN DEPOYU BOŞALT/);
+});

@@ -3297,9 +3297,17 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   const acceptCustomerOrder = (orderId) => {
     const order = orders.find(item => item.id === orderId);
     if (!order || order.status !== 'available') return;
+    const ready = getProductStock(order.propertyId, order.productId);
+    const queued = Number(pendingProductions[order.propertyId + ':' + order.productId]?.units) || 0;
+    const requiredProduction = Math.max(0, Number(order.quantity) - ready - queued);
+    const freeSpace = Math.max(0, getStockCapacity(order.propertyId) - getTotalStock(order.propertyId) - getPendingUnits(order.propertyId));
+    if (requiredProduction > freeSpace) {
+      tell('Sipariş henüz kabul edilemedi: ' + order.propertyName + ' ürün deposunda ' + freeSpace + ' boş yer var; siparişi hazırlamak için ' + requiredProduction + ' yer gerekiyor. Önce mevcut ürünleri sat veya depoyu genişlet.');
+      return;
+    }
     setOrders(old => old.map(item => item.id === orderId ? { ...item, status: 'accepted' } : item));
     updateDailyTask('accept-orders', 1);
-    tell('Sipariş kabul edildi: ' + order.quantity + ' adet ' + order.productName + '. Teslim süresini kaçırma.');
+    tell('Sipariş kabul edildi: ' + order.quantity + ' adet ' + order.productName + '. Depo kapasitesi teslimat için yeterli.');
   };
   const deliverCustomerOrder = (orderId) => {
     const order = orders.find(item => item.id === orderId);
@@ -4216,6 +4224,53 @@ function App({ session = null, supabase = null, authConfigured = false }) {
 
     tell((existingUnits > 0 ? 'Üretim kuyruğuna eklendi: ' : 'Üretim başladı: ') + item.name + ' ×' + quantity + '. İlk ürün yaklaşık ' + Math.max(1, Math.ceil((firstReadyAt - now) / 1000)) + ' sn içinde hazır.');
   };
+  const makeRoomForCustomerOrder = (orderId) => {
+    const order = orders.find(item => item.id === orderId && item.status === 'accepted');
+    if (!order || !owned.includes(order.propertyId) || rented.includes(order.propertyId)) return;
+    const ready = getProductStock(order.propertyId, order.productId);
+    const queued = Number(pendingProductions[order.propertyId + ':' + order.productId]?.units) || 0;
+    const required = Math.max(0, Number(order.quantity) - ready - queued);
+    const free = Math.max(0, getStockCapacity(order.propertyId) - getTotalStock(order.propertyId) - getPendingUnits(order.propertyId));
+    let shortage = Math.max(0, required - free);
+    if (!shortage) { tell('Bu sipariş için depo alanı yeterli. Üretime geçebilirsin.'); return; }
+    const inventory = getInventoryState(order.propertyId);
+    const reservedProducts = new Set(orders.filter(item => item.propertyId === order.propertyId && item.status === 'accepted' && item.id !== order.id).map(item => item.productId));
+    const catalog = tradeCatalog[order.propertyId] || [];
+    const candidates = Object.entries(inventory.products || {})
+      .filter(([id,qty]) => id !== order.productId && !reservedProducts.has(id) && Number(qty) > 0)
+      .map(([id,qty]) => ({id,qty:Number(qty),product:catalog.find(item => item.id === id)}))
+      .filter(item => item.product);
+    candidates.sort((a,b)=>getBusinessSalePrice(order.propertyId,a.product)-getBusinessSalePrice(order.propertyId,b.product));
+    const nextProducts = {...(inventory.products || {})};
+    let released = 0, proceeds = 0;
+    const liquidated = [];
+    for (const item of candidates) {
+      if (shortage <= 0) break;
+      const qty = Math.min(item.qty,shortage);
+      const unitPrice = getBusinessSalePrice(order.propertyId,item.product) * 0.8;
+      const revenue = Math.round(unitPrice * qty * 100) / 100;
+      nextProducts[item.id] = Math.max(0,item.qty-qty);
+      released += qty; shortage -= qty; proceeds += revenue;
+      liquidated.push({id:item.id,qty,revenue});
+    }
+    if (!released) { tell('Depoda bu sipariş için satılabilir fazla ürün yok. Siparişe bağlı olmayan ürün stoğu oluştur veya depo seviyesini yükselt.'); return; }
+    setStockByProperty(old => {
+      const current = getInventoryState(order.propertyId,old[order.propertyId]);
+      return {...old,[order.propertyId]:{materials:current.materials,products:nextProducts}};
+    });
+    setCash(old=>Math.round((old+proceeds)*100)/100);
+    setBusinessStats(old=>{
+      const previous=old[order.propertyId]||{unitsSold:0,revenue:0,stockInvested:0};
+      const productUnitsSold={...(previous.productUnitsSold||{})};
+      liquidated.forEach(item=>{
+        const stats=productUnitsSold[item.id]||{};
+        productUnitsSold[item.id]={...stats,units:(Number(stats.units)||0)+item.qty,revenue:Math.round(((Number(stats.revenue)||0)+item.revenue)*100)/100};
+      });
+      return {...old,[order.propertyId]:{...previous,unitsSold:(Number(previous.unitsSold)||0)+released,revenue:Math.round(((Number(previous.revenue)||0)+proceeds)*100)/100,productUnitsSold}};
+    });
+    tell('Siparişe yer açıldı: ' + released + ' adet diğer ürün %80 piyasa fiyatıyla toptan satıldı. Kasa +₺' + proceeds.toLocaleString('tr-TR') + (shortage>0?'. Hâlâ '+shortage+' birim boşluk gerekiyor.':'. Şimdi sipariş ürününü üretebilirsin.'));
+  };
+
   const buy = async () => {
     if (purchaseBusy) return;
     if (active.opens && year < active.opens) { tell(active.name + ' ' + active.opens + ' yılında açılacak.'); return; }
@@ -4922,7 +4977,24 @@ function App({ session = null, supabase = null, authConfigured = false }) {
                   <div><span className="card-label">{selectedProduct?.service ? 'HİZMET İŞLETMESİ' : 'ÜRETİM ATÖLYESİ'}</span><h3>{profile.name}</h3><p>{selectedProduct?.service ? 'Hizmeti seç; gerekli sarf malzemelerini tedarik et. Hizmet verildikçe malzeme tüketilir.' : 'Ürünü seç; o ürüne ait hammaddeleri tedarik et ve üretimi sıraya koy.'}</p></div>
                   <div className="production-level-chip"><strong>SEV. {level}/5</strong><small>{level === 5 ? 'Usta işletme' : Math.max(0, nextTarget - sold) + ' satışla seviye atla'}</small></div>
                 </div>
-                {(() => { const order = orders.find(item => item.id === focusedOrderId && item.status === 'accepted' && item.propertyId === active.id); if (!order) return null; const ready = getProductStock(active.id, order.productId); const needed = Math.max(0, Number(order.quantity) - ready); return <div className="focused-order-production"><div className="focused-order-top"><span>↗ SİPARİŞTEN ÜRETİME</span><button type="button" onClick={() => setFocusedOrderId(null)} aria-label="Sipariş hedefini kapat">×</button></div><strong>{order.productName} · {order.propertyName}</strong><div className="focused-order-count"><span>Hazır <b>{ready}</b></span><span>Hedef <b>{order.quantity}</b></span><span>Üretilecek <b>{needed}</b></span></div><div className="customer-order-stock-meter"><span style={{width: Math.min(100, ready / Math.max(1, order.quantity) * 100) + '%'}} /></div><small>Ürün otomatik seçildi. Aşağıda eksik hammaddeleri tedarik edip üretimi başlatabilirsin.</small></div>; })()}
+                {(() => {
+                  const order = orders.find(item => item.id === focusedOrderId && item.status === 'accepted' && item.propertyId === active.id);
+                  if (!order) return null;
+                  const ready = getProductStock(active.id,order.productId);
+                  const queued = Number(pendingProductions[active.id + ':' + order.productId]?.units)||0;
+                  const needed = Math.max(0,Number(order.quantity)-ready-queued);
+                  const free = Math.max(0,getStockCapacity(active.id)-getTotalStock(active.id)-getPendingUnits(active.id));
+                  const shortage = Math.max(0,needed-free);
+                  return <div className="focused-order-production">
+                    <div className="focused-order-top"><span>↗ SİPARİŞTEN ÜRETİME</span><button type="button" onClick={() => setFocusedOrderId(null)} aria-label="Sipariş hedefini kapat">×</button></div>
+                    <strong>{order.productName} · {order.propertyName}</strong>
+                    <div className="focused-order-count"><span>Hazır <b>{ready}</b></span><span>Kuyrukta <b>{queued}</b></span><span>Hedef <b>{order.quantity}</b></span><span>Boş yer <b>{free}</b></span></div>
+                    <div className="customer-order-stock-meter"><span style={{width:Math.min(100,(ready+queued)/Math.max(1,order.quantity)*100)+'%'}} /></div>
+                    {shortage>0
+                      ? <><small>Depoda sipariş için {shortage} birim yer eksik. Siparişe bağlı olmayan fazla ürünleri %80 piyasa fiyatıyla toptan satarak yer açabilirsin.</small><button type="button" className="stock-button" onClick={()=>makeRoomForCustomerOrder(order.id)}>SİPARİŞ İÇİN DEPOYU BOŞALT</button></>
+                      : <small>Depo kapasitesi uygun. Eksik hammaddeleri tedarik edip üretimi başlatabilirsin.</small>}
+                  </div>;
+                })()}
                 <div className="production-catalog-heading">
                   <div><strong>Ne üretmek istiyorsun?</strong><small>{availableProducts.length} ürün hazır · ürün seç, gerisini işletme halletsin</small></div>
                 </div>
