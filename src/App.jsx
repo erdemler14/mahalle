@@ -4359,7 +4359,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
           const error = response.error;
           const details = [error.message,error.details,error.hint].filter(Boolean).join(' · ');
           if (/mülk.*bulunamadı|property.*not found|not registered|ortak şehirde henüz kayıtlı|PGRST202|42883/i.test(details)||['PGRST202','42883'].includes(error.code)) {
-            throw new Error('Ortak şehir satın alma fonksiyonu veya mülk kaydı eksik. Supabase 202611040001 SQL güncellemesi gerekli. Ayrıntı: '+details);
+            throw new Error('Bu mülk ortak şehir kayıtlarında bulunamadı veya satın alma RPC şeması güncel değil. Mülk kaydı senkronizasyonu gerekli. Ayrıntı: '+details);
           }
           throw new Error(details||'Sunucu satın alma işlemini reddetti.');
         }
