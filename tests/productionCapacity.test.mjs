@@ -17,16 +17,17 @@ test('legacy production jobs without readyAt are repaired and can finish instead
   assert.equal(countPendingProductionUnits(normalized,34),2);
 });
 
-test('invalid and empty production jobs do not consume warehouse capacity',()=>{
+test('empty or unidentifiable jobs are ignored while malformed timestamps are repaired',()=>{
   const now=1_900_000_000_000;
   const normalized=normalizePendingProductions({
     '12:bread':{units:0,productId:'bread',propertyId:12,readyAt:now+1000},
     '12:broken':{units:8,productId:'broken',propertyId:12,readyAt:NaN},
-    '12:missing-product':{units:3,propertyId:12,readyAt:now+1000},
+    '12:':{units:3,propertyId:12,readyAt:now+1000},
     'not-a-property:bread':{units:5,productId:'bread',readyAt:now+1000}
   },now);
-  assert.deepEqual(normalized,{});
-  assert.equal(countPendingProductionUnits(normalized,12),0);
+  assert.deepEqual(Object.keys(normalized),['12:broken']);
+  assert.equal(normalized['12:broken'].readyAt,now+2500);
+  assert.equal(countPendingProductionUnits(normalized,12),8);
 });
 
 test('capacity reservations are isolated by business and count only live, completable jobs',()=>{
