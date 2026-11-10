@@ -3109,7 +3109,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
           if (state.autoSupplyByProperty && typeof state.autoSupplyByProperty === 'object') setAutoSupplyByProperty(state.autoSupplyByProperty);
           if (state.businessStats && typeof state.businessStats === 'object') setBusinessStats(state.businessStats);
           if (state.neighborhood && typeof state.neighborhood === 'object') setNeighborhood(normalizeNeighborhood(state.neighborhood));
-          if (state.pendingProductions && typeof state.pendingProductions === 'object') setPendingProductions(state.pendingProductions);
+          if (state.pendingProductions && typeof state.pendingProductions === 'object') setPendingProductions(normalizePendingProductions(state.pendingProductions));
           if (Array.isArray(state.orders)) setOrders(state.orders);
           if (typeof state.ordersDateKey === 'string') setOrdersDateKey(state.ordersDateKey);
           if (Array.isArray(state.dailyTasks)) setDailyTasks(state.dailyTasks);
