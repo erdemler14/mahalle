@@ -3846,7 +3846,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
           if (serviceSale && [42,43,44,45,46,47].includes(Number(propertyId)) && businessPlans[propertyId] !== product.id) return;
           const serviceRecipe = serviceSale ? getBusinessRecipe(propertyId, product) : [];
           const serviceMaterialLimit = serviceRecipe.length ? serviceRecipe.reduce((limit, part) => Math.min(limit, Math.floor((Number(inventory.materials?.[part.id]) || 0) / part.qty)), Infinity) : Infinity;
-          const dailyCapacity = serviceSale ? Number(serviceDailyCapacity[propertyId]?.[product.id]) || Infinity : Infinity;
+          const dailyCapacity = serviceSale ? Number(serviceDailyCapacity[propertyId]?.[product.id]) || 24 : Infinity;
           const savedCapacity = businessStats[propertyId]?.serviceCapacityDate === serviceDateKey
             ? Number(businessStats[propertyId]?.serviceCapacityUsed?.[product.id]) || 0 : 0;
           const alreadyUsed = Number(serviceCapacityUsed[propertyId]?.[product.id]) || savedCapacity;
