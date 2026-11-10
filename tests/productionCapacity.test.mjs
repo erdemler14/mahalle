@@ -110,3 +110,13 @@ test('service venues do not require warehouse stock to sell admission and lodgin
   }
   assert.match(app,/Number\(serviceDailyCapacity\[propertyId\]\?\.\[product\.id\]\) \|\| 24/);
 });
+
+
+test('property-tax build patch preserves the modern daily service sales engine',async()=>{
+  const fs=await import('node:fs');
+  const script=fs.readFileSync('scripts/apply-property-taxes.mjs','utf8');
+  assert.match(script,/const hasCurrentSettlement =/);
+  assert.match(script,/s\.includes\('const sales = processBusinessSales\(17\);'\)/);
+  assert.match(script,/s\.includes\('const serviceOperatingCost ='/);
+  assert.match(script,/if \(!hasCurrentSettlement\)/);
+});
