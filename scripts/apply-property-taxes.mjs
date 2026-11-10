@@ -143,8 +143,18 @@ const replacement = `  const settleDailyBusinesses = () => {
     const taxDetail = periodicTaxes.entries.length ? ' ' + periodicTaxes.entries.join(' · ') + '.' : '';
     tell(\`Gün kapandı. Kira +₺\${rent.toFixed(2)}, gün içi işletme satışları kasaya işlendi, yaşam ve bakım -₺\${(DAILY_LIVING_COST + maintenance).toFixed(2)}, işletme giderleri -₺\${business.costs.toFixed(2)}.\${taxDetail} Net: ₺\${net.toFixed(2)}.\${business.entries.length ? ' ' + business.entries.slice(0, 3).join(' · ') : ''}\`);
   };`;
-if (!old.test(s)) throw new Error('Could not locate daily settlement block');
-s = s.replace(old, replacement);
+// This script originally supplied a legacy daily-settlement implementation.
+// The current App.jsx has its own sales engine (processBusinessSales), daily
+// capacity accounting and inventory-aware service logic. Never overwrite that
+// implementation during the Vercel build; doing so removes the newer mechanics
+// immediately before npm test runs.
+const hasCurrentSettlement = s.includes('const sales = processBusinessSales(17);')
+  && s.includes('const serviceOperatingCost =')
+  && s.includes('serviceCapacityDate');
+if (!hasCurrentSettlement) {
+  if (!old.test(s)) throw new Error('Could not locate daily settlement block');
+  s = s.replace(old, replacement);
+}
 
 const uiAnchor = '        <section className="progression-card" aria-label="Gelişim hedefi">';
 const taxUi = `        <section className="balance-card tax-card" aria-label="Vergi ve belediye giderleri">
