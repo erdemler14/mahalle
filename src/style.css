@@ -1459,3 +1459,25 @@ body{overflow:hidden}
 .living-sector-demand small{font-size:9px;color:#776650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .living-sector-demand strong{font-size:13px;color:#4d5b4b;font-variant-numeric:tabular-nums}
 @media(max-width:560px){.living-city-index-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.living-sector-demand>div{grid-template-columns:repeat(2,minmax(0,1fr))}.living-sector-demand>div>div:last-child{grid-column:span 2}}
+
+/* Keep the automatic service-capacity notice inside the selected-product card. */
+.production-selected-controls>.production-queue-summary{
+  flex:1 1 100%;
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  box-sizing:border-box;
+  white-space:normal;
+  overflow-wrap:anywhere;
+  word-break:normal;
+  line-height:1.45;
+  padding:9px 11px;
+  border:1px solid #d8d2c2;
+  border-radius:8px;
+  background:#f0eee5;
+}
+.production-selected-controls>.production-queue-summary span{
+  display:block;
+  margin-top:3px;
+  white-space:normal;
+}
