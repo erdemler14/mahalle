@@ -50,3 +50,21 @@ test('App loads repaired queues and uses one shared capacity counter for all bus
   assert.match(app,/countPendingProductionUnits\(pendingProductions, propertyId\)/);
   assert.match(app,/getStockCapacity\(propertyId\)/);
 });
+
+
+test('Schumacher bakery and Pera mixed shop have stable product-ID recipes',async()=>{
+  const fs=await import('node:fs');
+  const app=fs.readFileSync('src/App.jsx','utf8');
+  for (const productId of ['sch-ekmek','sch-ozel','pasaj-buket','pasaj-gazete','pasaj-kartpostal']) {
+    assert.match(app,new RegExp("'" + productId + "'\\s*:\\s*\\["));
+  }
+  assert.match(app,/13:\s*\{[\s\S]*?'sch-ekmek':[\s\S]*?'sch-ozel'/);
+  assert.match(app,/80:\s*\{[\s\S]*?'pasaj-buket':[\s\S]*?'pasaj-gazete':[\s\S]*?'pasaj-kartpostal'/);
+});
+
+test('a stale production-processing lock is released so a stalled job can be retried',async()=>{
+  const fs=await import('node:fs');
+  const app=fs.readFileSync('src/App.jsx','utf8');
+  assert.match(app,/setTimeout\(\(\) => \{ delete productionProcessingRef\.current\[lockKey\]; \}, 1200\)/);
+  assert.match(app,/if \(completedUnits <= 0\) \{\s*delete productionProcessingRef\.current\[lockKey\]/);
+});
