@@ -9,7 +9,8 @@ export const WATERFRONT_RELOCATIONS = Object.freeze({
   56: { x: 16.5, z: 27.2, rotation: -0.04, zone: 'hotel', reason: 'Otel iskele dolgu alanı yerine ana ticaret caddesine taşındı.' },
   58: { x: -28.0, z: -28.5, rotation: 0.06, zone: 'entertainment', reason: 'Musiki salonu yapılaşmış iç sokağa taşındı.' },
   60: { x: -28.0, z: 20.0, rotation: -0.02, zone: 'residential', reason: 'Hamam iç mahalleye taşındı.' },
-  62: { x: -28.0, z: 8.0, rotation: 0.03, zone: 'evening', reason: 'Arka Sokak Meyhanesi daha sakin ara sokağa taşındı.' }
+  62: { x: -28.0, z: 8.0, rotation: 0.03, zone: 'evening', reason: 'Arka Sokak Meyhanesi daha sakin ara sokağa taşındı.' },
+  86: { x: -28.0, z: -10.0, rotation: 0.0, zone: 'inner', reason: 'Şütte Şarküteri iç ticaret sokağında, Haliç kıyısından uzakta konumlandırıldı.' }
 });
 
 // New venues are real, buyable properties that use the game's current property
