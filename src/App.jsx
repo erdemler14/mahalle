@@ -5112,6 +5112,11 @@ function App({ session = null, supabase = null, authConfigured = false }) {
                 {selectedProduct && (() => {
                   const item = selectedProduct;
                   const itemRecipe = getBusinessRecipe(active.id,item);
+                  const serviceCapacityLimit = ({40:{'hamam-giris':36,'kese':18},72:{'elhamra-bilet':96,'elhamra-loca':20},73:{'maxim-caz-gecesi':70,'maxim-solist':24,'maxim-yeni-yil':36,'maxim-vals':48},74:{'tokatliyan-oda':24,'tokatliyan-suit':8,'tokatliyan-salon':2},75:{'cicek-pasaji-dukkani':8}}[active.id] || {})[item.id] || null;
+                  const serviceUsedToday = businessStats[active.id]?.serviceCapacityDate === [year,month,day].join('-')
+                    ? Number(businessStats[active.id]?.serviceCapacityUsed?.[item.id]) || 0 : 0;
+                  const serviceRemainingToday = serviceCapacityLimit === null ? null : Math.max(0,serviceCapacityLimit-serviceUsedToday);
+                  const isProfessionalService = [42,43,44,45,46,47].includes(Number(active.id));
                   const itemPending = pendingProductions[active.id + ':' + item.id];
                   const itemStock = getProductStock(active.id,item.id);
                   const itemCapacity = Math.max(0,getStockCapacity(active.id)-getTotalStock(active.id)-getPendingUnits(active.id));
@@ -5122,11 +5127,13 @@ function App({ session = null, supabase = null, authConfigured = false }) {
                   return <section className="production-selected-product">
                     <div className="production-selected-heading">
                       <div><span className="card-label">SEÇİLİ ÜRÜN</span><h4>{item.name}</h4><small>Satış fiyatı ₺{getBusinessSalePrice(active.id,item).toLocaleString('tr-TR',{maximumFractionDigits:2})}</small></div>
-                      <div className="production-selected-stock">{item.service ? 'HİZMET' : 'STOK ' + itemStock}<small>{itemPending ? itemPending.units + ' üretimde' : 'Üretim kuyruğu boş'}</small></div>
+                      <div className="production-selected-stock">{item.service ? 'HİZMET' + (serviceCapacityLimit !== null ? ' · ' + serviceRemainingToday + '/' + serviceCapacityLimit : '') : 'STOK ' + itemStock}<small>{item.service ? (isProfessionalService ? 'Seçilen hizmet aktif' : 'Otomatik müşteri satışı') : itemPending ? itemPending.units + ' üretimde' : 'Üretim kuyruğu boş'}</small></div>
                     </div>
                     <div className="production-selected-recipe">
                       <div className="production-recipe-title">GEREKLİ MALZEMELER</div>
-                      {itemRecipe.length ? itemRecipe.slice(0,4).map(part => {
+                      {item.service && !isProfessionalService
+                        ? <div className="production-recipe-line"><span>Stok veya üretim gerekmez. Müşteriler kapasite ve talebe göre otomatik kabul edilir.</span></div>
+                        : itemRecipe.length ? itemRecipe.slice(0,4).map(part => {
                         const material = profile.materials.find(m=>m.id===part.id);
                         const have = Number(inventory.materials?.[part.id])||0;
                         const need = part.qty*targetUnits;
@@ -5143,7 +5150,9 @@ function App({ session = null, supabase = null, authConfigured = false }) {
                         {[['1','1'],['5','5'],['10','10'],['max','Maks.']].map(([value,label]) => <button type="button" key={value} className={String(productionBatch)===value?'active':''} onClick={()=>setProductionBatch(value)}>{label}</button>)}
                       </div></div>}
                       {item.service
-                        ? <button type="button" className="stock-button production-primary-action" onClick={()=>selectBusinessPlan(item.id)}>HİZMETİ SEÇ VE AKTİF ET</button>
+                        ? (isProfessionalService
+                          ? <button type="button" className="stock-button production-primary-action" onClick={()=>selectBusinessPlan(item.id)}>HİZMETİ SEÇ VE AKTİF ET</button>
+                          : <div className="production-queue-summary">HİZMET OTOMATİK SATIŞTA · {serviceCapacityLimit === null ? 'Kapasite sınırsız' : 'Bugün kalan kapasite: ' + serviceRemainingToday + ' / ' + serviceCapacityLimit}</div>)
                         : !itemRecipe.length
                           ? <button type="button" className="stock-button" disabled>TARİF HENÜZ TANIMLANMADI</button>
                           : itemCapacity <= 0
