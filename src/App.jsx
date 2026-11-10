@@ -5162,7 +5162,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
                       {item.service
                         ? (isProfessionalService
                           ? <button type="button" className="stock-button production-primary-action" onClick={()=>selectBusinessPlan(item.id)}>HİZMETİ SEÇ VE AKTİF ET</button>
-                          : <div className="production-queue-summary">HİZMET OTOMATİK SATIŞTA · {serviceCapacityLimit === null ? 'Kapasite sınırsız' : 'Bugün kalan kapasite: ' + serviceRemainingToday + ' / ' + serviceCapacityLimit}</div>)
+                          : <div className="production-queue-summary">OTOMATİK HİZMET SATIŞI<span>Bugün kalan kapasite: {serviceRemainingToday} / {serviceCapacityLimit || 24}</span></div>)
                         : !itemRecipe.length
                           ? <button type="button" className="stock-button" disabled>TARİF HENÜZ TANIMLANMADI</button>
                           : itemCapacity <= 0
