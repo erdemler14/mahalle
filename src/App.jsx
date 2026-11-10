@@ -4215,8 +4215,20 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     let productionMaterials = { ...(inventory.materials || {}) };
     let purchasePlan = null;
     if (purchaseMissingMaterials) {
+      const productFreeSpace = Math.max(0, getStockCapacity(propertyId) - getTotalStock(propertyId) - getPendingUnits(propertyId));
+      if (productFreeSpace <= 0) {
+        tell('Hazır ürün deposunda boş yer yok. Önce mevcut ürünleri sat, sipariş teslim et veya depo seviyesini yükselt; ardından yeniden tedarik edip üret.');
+        return;
+      }
       purchasePlan = planWarehouseSpace(propertyId, item, productionBatch, inventory, false, cash);
-      if (!purchasePlan) { tell('Eksik malzemeleri alacak bütçe veya depo alanı yok. Daha küçük üretim adedi seçebilirsin.'); return; }
+      if (!purchasePlan) {
+        const rawTotal = Object.values(inventory.materials || {}).reduce((sum, amount) => sum + Math.max(0, Number(amount) || 0), 0);
+        const rawFree = Math.max(0, getMaterialCapacity(propertyId) - rawTotal);
+        tell(rawFree <= 0
+          ? 'Hammadde deposu dolu. Seçili ürünün reçetesini koruyarak fazla veya uyumsuz hammaddeleri iade et ya da daha küçük üretim partisi seç.'
+          : 'Tedarik için bakiye veya uygun depo alanı yetersiz. Daha küçük üretim adedi seç veya fazla hammaddeleri iade et.');
+        return;
+      }
       const unlocked = new Set(getUnlockedBusinessMaterials(propertyId, level, item).map(material => material.id));
       if (purchasePlan.deficits.some(part => !part.material || !unlocked.has(part.id))) { tell('Bu ürünün gerekli malzemeleri henüz açılmamış.'); return; }
       productionMaterials = applyWarehouseReturns(propertyId, inventory, purchasePlan);
@@ -5078,9 +5090,11 @@ function App({ session = null, supabase = null, authConfigured = false }) {
                         ? <button type="button" className="stock-button production-primary-action" onClick={()=>selectBusinessPlan(item.id)}>HİZMETİ SEÇ VE AKTİF ET</button>
                         : !itemRecipe.length
                           ? <button type="button" className="stock-button" disabled>TARİF HENÜZ TANIMLANMADI</button>
-                          : missingParts.length
-                            ? <button type="button" className="stock-button production-primary-action" onClick={()=>stockBusiness(item.id,true)}>TEDARİK ET VE ÜRET</button>
-                            : <button type="button" className="stock-button production-primary-action" disabled={itemCapacity<=0} onClick={()=>stockBusiness(item.id)}>{itemCapacity<=0?'ÜRÜN DEPOSU DOLU':itemPending?'ÜRETİME EKLE':'ÜRETİME BAŞLA'}</button>}
+                          : itemCapacity <= 0
+                            ? <button type="button" className="stock-button production-primary-action" disabled>ÜRÜN DEPOSU DOLU</button>
+                            : missingParts.length
+                              ? <button type="button" className="stock-button production-primary-action" onClick={()=>stockBusiness(item.id,true)}>TEDARİK ET VE ÜRET</button>
+                              : <button type="button" className="stock-button production-primary-action" onClick={()=>stockBusiness(item.id)}>{itemPending?'ÜRETİME EKLE':'ÜRETİME BAŞLA'}</button>}
                     </div>
                     {itemPending && <div className="production-queue-summary">{itemPending.units} adet sırada · ilk ürün {Math.max(0,Math.ceil((itemPending.readyAt-productionNow)/1000))} sn içinde hazır</div>}
                   </section>;
