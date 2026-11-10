@@ -1725,11 +1725,22 @@ function App({ session = null, supabase = null, authConfigured = false }) {
         const lockKey = key + ':' + job.readyAt;
         if (productionProcessingRef.current[lockKey]) return;
         productionProcessingRef.current[lockKey] = true;
+        // Never let a stale or interrupted queue update permanently lock this job.
+        // The next timer pass may retry it if the state update did not commit.
+        setTimeout(() => { delete productionProcessingRef.current[lockKey]; }, 1200);
         const duration = Math.max(500, Number(job.duration) || 2500);
         const completedUnits = Math.min(Number(job.units) || 0, 1 + Math.floor((now - Number(job.readyAt)) / duration));
-        if (completedUnits <= 0) return;
+        if (completedUnits <= 0) {
+          delete productionProcessingRef.current[lockKey];
+          return;
+        }
         const propertyId = Number(job.propertyId || key.split(':')[0]);
         const productId = job.productId || key.split(':').slice(1).join(':');
+        if (!Number.isSafeInteger(propertyId) || propertyId <= 0 || !productId) {
+          delete productionProcessingRef.current[lockKey];
+          tell('Üretim kaydı onarılamadı: işletme veya ürün kimliği eksik.');
+          return;
+        }
         setStockByProperty(old => {
           const current = getInventoryState(propertyId, old[propertyId]);
           return { ...old, [propertyId]: { materials: current.materials || {}, products: { ...(current.products || {}), [productId]: (Number(current.products?.[productId]) || 0) + completedUnits } } };
@@ -2817,11 +2828,23 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     // Stable, ID-keyed recipes for the flower shop and tobacco shop.
     // Name-based rules alone are fragile when catalog labels are edited or localized.
     const explicitRecipes = {
+      13: {
+        'sch-ekmek': [['fir-un',2],['fir-maya',1]],
+        'sch-pogaca': [['fir-un',1],['fir-yag',1]],
+        'sch-simit': [['fir-un',1],['fir-seker',1]],
+        'sch-tatli': [['fir-yag',2],['fir-seker',1]],
+        'sch-ozel': [['fir-un',2],['fir-yag',2]]
+      },
       34: {
         'buketi': [['cicek-taze',3],['cicek-yesillik',1],['cicek-kagit',1]],
         'saksi-cicegi': [['cicek-saksi',1],['cicek-yesillik',1]],
         'cenaze-celengi': [['cicek-taze',5],['cicek-tel',1],['cicek-yesillik',2],['cicek-kagit',1]],
         'gul-demeti': [['cicek-taze',3],['cicek-yesillik',1],['cicek-kagit',1]]
+      },
+      80: {
+        'pasaj-buket': [['esnaf-cicek',1],['esnaf-ambalaj',1]],
+        'pasaj-gazete': [['esnaf-gazete',1],['esnaf-ambalaj',1]],
+        'pasaj-kartpostal': [['esnaf-kartpostal',1],['esnaf-ambalaj',1]]
       },
       81: {
         'karakoy-tutun': [['karakoy-tutun',1],['karakoy-kagit',1]],
