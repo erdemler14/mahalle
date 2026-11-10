@@ -24,6 +24,7 @@ import {
 import { FERRY_LICENSE_PRICE, FERRY_UPGRADES, normaliseFerryBusiness, calculateFerryDay, applyFerrySettlement } from './ferryBusiness.js';
 import { TRAMWAY_LICENSE_PRICE, TRAMWAY_UPGRADES, normaliseTramwayBusiness, calculateTramwayDay, applyTramwaySettlement } from './tramwayBusiness.js';
 import { validateBusinessCatalog } from './businessCatalogValidation.js';
+import { normalizePendingProductions, countPendingProductionUnits } from './productionCapacity.js';
 
 const properties = [
   { id: 1, name: 'Madam Eleni’nin Bakkal ve Şarküterisi', type: 'Ticaret', price: 1890, rent: 26, x: -4.2, z: -1.1, color: '#d9b99c', floors: 3, style: 'Galata taş cephesi' },
@@ -1690,7 +1691,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   const [neighborhood, setNeighborhood] = useState(() => normalizeNeighborhood(saved.neighborhood));
   const storyActionLock = useRef(null);
   const [autoSupplyByProperty, setAutoSupplyByProperty] = useState(() => saved.autoSupplyByProperty && typeof saved.autoSupplyByProperty === 'object' ? saved.autoSupplyByProperty : {});
-  const [pendingProductions, setPendingProductions] = useState(() => saved.pendingProductions && typeof saved.pendingProductions === 'object' ? saved.pendingProductions : {});
+  const [pendingProductions, setPendingProductions] = useState(() => normalizePendingProductions(saved.pendingProductions));
   const productionProcessingRef = useRef({});
   const [productionBatch, setProductionBatch] = useState('1');
   const [orders, setOrders] = useState(() => Array.isArray(saved.orders) ? saved.orders : []);
@@ -3706,7 +3707,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   const getProductStock = (propertyId, productId, value = stockByProperty[propertyId]) => Math.max(0, Number(getInventoryState(propertyId, value).products?.[productId]) || 0);
   const getTotalStock = (propertyId, value = stockByProperty[propertyId]) => Object.values(getInventoryState(propertyId, value).products || {}).reduce((sum, qty) => sum + Math.max(0, Number(qty) || 0), 0);
   const getProductionDuration = (propertyId, productId) => { const seed = String(productId || propertyId).split('').reduce((sum, char) => sum + char.charCodeAt(0), Number(propertyId) || 0); return 2500 + (seed % 6) * 1000; };
-  const getPendingUnits = (propertyId) => Object.entries(pendingProductions).reduce((sum, [key, job]) => Number(key.split(':')[0]) === Number(propertyId) ? sum + (Number(job.units) || 0) : sum, 0);
+  const getPendingUnits = (propertyId) => countPendingProductionUnits(pendingProductions, propertyId);
   const getWarehouseLevel = (propertyId) => Math.max(1, Math.min(15, Number(businessStats[propertyId]?.stockCapacityLevel) || 1));
   const getWarehouseProfileKey = (propertyId) => {
     const id = Number(propertyId);
