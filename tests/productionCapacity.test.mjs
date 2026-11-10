@@ -104,6 +104,9 @@ test('service venues do not require warehouse stock to sell admission and lodgin
   const fs=await import('node:fs');
   const app=fs.readFileSync('src/App.jsx','utf8');
   assert.match(app,/if \(product\?\.service\) return \[\]/);
-  assert.match(app,/const\s+serviceOperatingCost\s*=\s*\(\s*\{[^}]*33\s*:\s*8[^}]*75\s*:\s*8[^}]*\}\s*\)\s*\[\s*propertyId\s*\]/, 'service venue operating-cost schedule is missing or changed');
+  assert.ok(app.includes('const serviceOperatingCost ='), 'service venue operating-cost schedule is missing');
+  for (const entry of ['33:8','35:18','40:12','55:10','56:18','57:16','58:20','60:12','61:8','63:10','66:8','72:16','73:24','74:22','75:8']) {
+    assert.ok(app.includes(entry), 'missing service operating-cost entry ' + entry);
+  }
   assert.match(app,/Number\(serviceDailyCapacity\[propertyId\]\?\.\[product\.id\]\) \|\| 24/);
 });
