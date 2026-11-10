@@ -2825,7 +2825,9 @@ function App({ session = null, supabase = null, authConfigured = false }) {
   const getBusinessRecipe = (propertyId, product) => {
     const id = Number(propertyId);
     const key = String((product?.id || '') + ' ' + (product?.name || '')).toLocaleLowerCase('tr-TR');
-    if (product?.service && [42,43,44,45,46,47].includes(id)) return [];
+    // Admission and treatment services are capacity-limited, not blocked by a product warehouse.
+    // Their operating consumables are represented in the venue's daily operating costs.
+    if (product?.service && [40,42,43,44,45,46,47,72,73,74,75].includes(id)) return [];
     // Explicit product-to-supply recipes prevent a shop's entire range from sharing one generic recipe.
     const profile = getBusinessProfile(propertyId);
     if (!profile.materials?.length || !profile.recipes?.length) return [];
@@ -3541,7 +3543,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
         const next = { ...old };
         Object.entries(hourlySales.salesByProperty).forEach(([id, sale]) => {
           const previous = next[id] || { unitsSold: 0, revenue: 0, stockInvested: 0 };
-          const productUnitsSold = { ...(previous.productUnitsSold || {}) }; Object.entries(sale.products || {}).forEach(([productId, productSale]) => { const oldProduct = productUnitsSold[productId] || { units: 0, revenue: 0 }; productUnitsSold[productId] = { units: oldProduct.units + productSale.units, revenue: Math.round((oldProduct.revenue + productSale.revenue) * 100) / 100 }; }); next[id] = { ...previous, productUnitsSold, unitsSold: previous.unitsSold + sale.units, revenue: Math.round((previous.revenue + sale.revenue) * 100) / 100 };
+          const productUnitsSold = { ...(previous.productUnitsSold || {}) }; Object.entries(sale.products || {}).forEach(([productId, productSale]) => { const oldProduct = productUnitsSold[productId] || { units: 0, revenue: 0 }; productUnitsSold[productId] = { units: oldProduct.units + productSale.units, revenue: Math.round((oldProduct.revenue + productSale.revenue) * 100) / 100 }; }); const sameServiceDay = previous.serviceCapacityDate === sale.serviceCapacityDate; next[id] = { ...previous, productUnitsSold, serviceCapacityDate: sale.serviceCapacityDate || previous.serviceCapacityDate, serviceCapacityUsed: sale.serviceCapacityUsed ? { ...(sameServiceDay ? previous.serviceCapacityUsed || {} : {}), ...sale.serviceCapacityUsed } : previous.serviceCapacityUsed, unitsSold: previous.unitsSold + sale.units, revenue: Math.round((previous.revenue + sale.revenue) * 100) / 100 };
         });
         return next;
       });
@@ -3784,6 +3786,15 @@ function App({ session = null, supabase = null, authConfigured = false }) {
     const localStocks = { ...stockByProperty };
     const entries = [];
     const salesByProperty = {};
+    const serviceDateKey = [year,month,day].join('-');
+    const serviceCapacityUsed = {};
+    const serviceDailyCapacity = {
+      40: {'hamam-giris':36,'kese':18},
+      72: {'elhamra-bilet':96,'elhamra-loca':20},
+      73: {'maxim-caz-gecesi':70,'maxim-solist':24,'maxim-yeni-yil':36,'maxim-vals':48},
+      74: {'tokatliyan-oda':24,'tokatliyan-suit':8,'tokatliyan-salon':2},
+      75: {'cicek-pasaji-dukkani':8}
+    };
     const addSale = (propertyId, productId, units, amount, detail) => {
       revenue += amount;
       const previous = salesByProperty[propertyId] || { units: 0, revenue: 0, products: {} };
@@ -3825,13 +3836,21 @@ function App({ session = null, supabase = null, authConfigured = false }) {
           if (serviceSale && [42,43,44,45,46,47].includes(Number(propertyId)) && businessPlans[propertyId] !== product.id) return;
           const serviceRecipe = serviceSale ? getBusinessRecipe(propertyId, product) : [];
           const serviceMaterialLimit = serviceRecipe.length ? serviceRecipe.reduce((limit, part) => Math.min(limit, Math.floor((Number(inventory.materials?.[part.id]) || 0) / part.qty)), Infinity) : Infinity;
+          const dailyCapacity = serviceSale ? Number(serviceDailyCapacity[propertyId]?.[product.id]) || Infinity : Infinity;
+          const savedCapacity = businessStats[propertyId]?.serviceCapacityDate === serviceDateKey
+            ? Number(businessStats[propertyId]?.serviceCapacityUsed?.[product.id]) || 0 : 0;
+          const alreadyUsed = Number(serviceCapacityUsed[propertyId]?.[product.id]) || savedCapacity;
+          const capacityRemaining = Math.max(0,dailyCapacity-alreadyUsed);
           const stock = Math.max(0, Number(products[product.id]) || 0);
           const soldBefore = Number(businessStats[propertyId]?.productUnitsSold?.[product.id]?.units) || 0;
           const reputation = Math.min(100, Math.floor(soldBefore * 1.5));
           const eventEffect = getEconomicEventEffect(property, product);
           const salesChance = Math.min(0.94, (0.34 + (reputation / 100) * 0.12) * eventEffect.chance * customerFlowForShop.demand);
-          if ((!serviceSale && stock <= 0) || (serviceSale && serviceMaterialLimit <= 0) || Math.random() > salesChance) return;
-          const sold = serviceSale ? Math.min(1, serviceMaterialLimit) : Math.min(stock, 1 + (Math.random() > 0.72 ? 1 : 0));
+          if ((!serviceSale && stock <= 0) || (serviceSale && (serviceMaterialLimit <= 0 || capacityRemaining <= 0)) || Math.random() > salesChance) return;
+          const serviceDemandUnits = Math.max(1,Math.min(4,Math.floor(customerFlowForShop.demand * 2)));
+          const sold = serviceSale
+            ? Math.min(capacityRemaining,serviceMaterialLimit,serviceDemandUnits)
+            : Math.min(stock, 1 + (Math.random() > 0.72 ? 1 : 0));
           const baseMultiplier = 1;
           if (serviceSale && serviceRecipe.length) {
             const nextMaterials = { ...(inventory.materials || {}) };
@@ -3842,7 +3861,14 @@ function App({ session = null, supabase = null, authConfigured = false }) {
           const salePrice = getBusinessSalePrice(propertyId, product);
           const takings = Math.round(sold * salePrice * (1 + (masteryLevel - 1) * 0.02) * eventEffect.sales * 100) / 100;
           if (!serviceSale) products[product.id] = stock - sold;
-          addSale(propertyId, product.id, sold, takings, property.name + ': ' + (serviceSale ? product.name + ' hizmeti' : sold + ' adet ' + product.name) + ' satıldı (+₺' + takings.toFixed(2) + ')');
+          addSale(propertyId, product.id, sold, takings, property.name + ': ' + (serviceSale ? product.name + ' (' + sold + '/' + dailyCapacity + ' kapasite)' : sold + ' adet ' + product.name) + ' satıldı (+₺' + takings.toFixed(2) + ')');
+          if (serviceSale) {
+            if (!serviceCapacityUsed[propertyId]) serviceCapacityUsed[propertyId] = {};
+            serviceCapacityUsed[propertyId][product.id] = alreadyUsed + sold;
+            const propertySales = salesByProperty[propertyId];
+            propertySales.serviceCapacityDate = serviceDateKey;
+            propertySales.serviceCapacityUsed = { ...(propertySales.serviceCapacityUsed || {}), ...serviceCapacityUsed[propertyId] };
+          }
         });
         localStocks[propertyId] = { ...inventory, products };
       });
@@ -3889,9 +3915,10 @@ function App({ session = null, supabase = null, authConfigured = false }) {
       if (rented.includes(propertyId)) return;
       const property = properties.find(item => item.id === propertyId);
       if (!property || !['İşletme', 'Atölye', 'Ticaret', 'Depo'].includes(property.type)) return;
-      const product = (tradeCatalog[propertyId] || []).find(item => item.id === businessPlans[propertyId]);
+      const product = (tradeCatalog[propertyId] || []).find(item => item.id === businessPlans[propertyId]) || (tradeCatalog[propertyId] || []).find(item => item.price > 0);
       if (!product || product.price <= 0) return;
-      const dailyCost = property.type === 'İşletme' ? 4.5 : property.type === 'Atölye' ? 3.5 : 2.5;
+      const serviceOperatingCost = ({40:12,72:16,73:24,74:22,75:8})[propertyId] || 0;
+      const dailyCost = (property.type === 'İşletme' ? 4.5 : property.type === 'Atölye' ? 3.5 : 2.5) + serviceOperatingCost;
       operatingCosts += dailyCost;
       const hasStock = product?.service ? getBusinessRecipe(propertyId, product).every(part => (Number(getInventoryState(propertyId).materials?.[part.id]) || 0) >= part.qty) : getTotalStock(propertyId) > 0;
       if (!hasStock) {
@@ -3921,7 +3948,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
         const next = { ...old };
         Object.entries(sales.salesByProperty).forEach(([id, sale]) => {
           const previous = next[id] || { unitsSold: 0, revenue: 0, stockInvested: 0 };
-          next[id] = { ...previous, unitsSold: previous.unitsSold + sale.units, revenue: Math.round((previous.revenue + sale.revenue) * 100) / 100 };
+          const sameServiceDay = previous.serviceCapacityDate === sale.serviceCapacityDate; next[id] = { ...previous, serviceCapacityDate: sale.serviceCapacityDate || previous.serviceCapacityDate, serviceCapacityUsed: sale.serviceCapacityUsed ? { ...(sameServiceDay ? previous.serviceCapacityUsed || {} : {}), ...sale.serviceCapacityUsed } : previous.serviceCapacityUsed, unitsSold: previous.unitsSold + sale.units, revenue: Math.round((previous.revenue + sale.revenue) * 100) / 100 };
         });
         return next;
       });
@@ -5078,7 +5105,7 @@ function App({ session = null, supabase = null, authConfigured = false }) {
                     const chosen = selectedProduct?.id === item.id;
                     return <button type="button" key={item.id} className={`production-product-choice ${chosen ? 'active' : ''} ${!unlocked ? 'locked' : ''}`} disabled={!unlocked} onClick={() => setBusinessPlans(old => ({...old,[active.id]:item.id}))}>
                       <strong>{item.name}</strong>
-                      <small>{unlocked ? (item.service ? 'Hizmet' : 'Stok ' + getProductStock(active.id,item.id)) : 'Seviye ' + (item.unlockLevel || 1)}</small>
+                      <small>{unlocked ? (item.service ? 'Hizmet · günlük kapasite ' + ({40:{'hamam-giris':36,'kese':18},72:{'elhamra-bilet':96,'elhamra-loca':20},73:{'maxim-caz-gecesi':70,'maxim-solist':24,'maxim-yeni-yil':36,'maxim-vals':48},74:{'tokatliyan-oda':24,'tokatliyan-suit':8,'tokatliyan-salon':2},75:{'cicek-pasaji-dukkani':8}}[active.id]?.[item.id] || '—') : 'Stok ' + getProductStock(active.id,item.id)) : 'Seviye ' + (item.unlockLevel || 1)}</small>
                     </button>;
                   })}
                 </div>
